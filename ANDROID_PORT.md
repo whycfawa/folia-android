@@ -365,3 +365,11 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - latent 背景的节奏脉动在 automix 可听过渡期间保持当前速度，settle 后再交回新歌；
   避免两条 deck 的 analyser 能量叠加造成背景抽动/闪烁（同一首歌重复过渡同样生效）。
 - 不改智能动感模式本身，也不改音频输出。
+
+### 0.7.22-android.281：修复酷狗扫码登录被非 ASCII Cookie 打断
+
+- OkHttp 拒绝 Cookie 头里的非 ASCII 字符（真机报 `Unexpected char 0x5fb5 at 414 in Cookie value`），
+  而 WebView 的 cookie 罐可能存着带中文的 cookie。
+- FoliaNative.httpRequest 在发送前把 Cookie 值按 UTF-8 百分号编码，非法 cookie 名丢弃；
+  显式 Cookie 头和 WebView 自动补的 Cookie 都走同一套清洗。
+- 补 Java 单测覆盖中文值、空格和非法名字。

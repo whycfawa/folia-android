@@ -302,7 +302,15 @@ public class FoliaNativePlugin extends Plugin {
                     String headerName = headerNames.next();
                     Object headerValue = headers.opt(headerName);
                     if (headerValue != null) {
-                        builder.header(headerName, String.valueOf(headerValue));
+                        String value = String.valueOf(headerValue);
+                        // OkHttp rejects non-ASCII header values (the WebView cookie store can
+                        // hold a cookie with a CJK value). Cookie values must be ASCII; encode
+                        // the invalid bytes rather than failing the whole request.
+                        if ("cookie".equalsIgnoreCase(headerName)) {
+                            value = sanitizeCookieHeader(value);
+                            if (value.isEmpty()) continue;
+                        }
+                        builder.header(headerName, value);
                     }
                 }
             }
@@ -317,7 +325,8 @@ public class FoliaNativePlugin extends Plugin {
             if (sendCookies && !hasHeader(headers, "cookie")) {
                 String storedCookies = CookieManager.getInstance().getCookie(url);
                 if (storedCookies != null && !storedCookies.isEmpty()) {
-                    builder.header("Cookie", storedCookies);
+                    String sanitized = sanitizeCookieHeader(storedCookies);
+                    if (!sanitized.isEmpty()) builder.header("Cookie", sanitized);
                 }
             }
 
@@ -1145,6 +1154,53 @@ public class FoliaNativePlugin extends Plugin {
         if (ref == null || !ref.startsWith("imported-")) return null;
         if (ref.contains("/") || ref.contains("\\") || ref.contains("..")) return null;
         return new File(directory, ref);
+    }
+
+    /**
+     * 把 WebView Cookie 值里的非 ASCII 字节按 UTF-8 百分号编码。
+     *
+     * OkHttp 的 Headers.Builder 会拒绝非 ASCII 字符（报 "Unexpected char 0x.... in Cookie value"），
+     * 而 WebView 的 CookieManager 可能存着带中文的 cookie（酷狗登录时出现过 0x5fb5）。
+     * HTTP cookie 本来只能是 ASCII；这里只编码非 ASCII/控制字符，普通 token 原样保留。
+     * cookie 名不是合法 token 的整对丢弃，避免把请求头再次弄坏。
+     */
+    static String sanitizeCookieHeader(String raw) {
+        if (raw == null || raw.isEmpty()) return "";
+        StringBuilder out = new StringBuilder(raw.length());
+        for (String pair : raw.split(";")) {
+            int separator = pair.indexOf('=');
+            if (separator <= 0) continue;
+            String name = pair.substring(0, separator).trim();
+            String value = pair.substring(separator + 1).trim();
+            if (name.isEmpty() || !isCookieName(name)) continue;
+            if (out.length() > 0) out.append("; ");
+            out.append(name).append('=');
+            appendCookieValue(out, value);
+        }
+        return out.toString();
+    }
+
+    private static boolean isCookieName(String name) {
+        for (int i = 0; i < name.length(); i += 1) {
+            char c = name.charAt(i);
+            boolean token = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+                || "!#$%&'*+-.^_`|~".indexOf(c) >= 0;
+            if (!token) return false;
+        }
+        return true;
+    }
+
+    private static void appendCookieValue(StringBuilder out, String value) {
+        for (byte b : value.getBytes(java.nio.charset.StandardCharsets.UTF_8)) {
+            int v = b & 0xff;
+            if (v >= 0x20 && v <= 0x7e) {
+                out.append((char) v);
+            } else {
+                out.append('%');
+                out.append(Character.toUpperCase(Character.forDigit((v >> 4) & 0x0f, 16)));
+                out.append(Character.toUpperCase(Character.forDigit(v & 0x0f, 16)));
+            }
+        }
     }
 
     /** 与 OkHttp 的 HttpMethod.requiresRequestBody 同一份判定：这几个方法必须有请求体。 */
