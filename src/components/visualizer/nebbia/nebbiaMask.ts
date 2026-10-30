@@ -2,7 +2,7 @@ import { NebbiaBreathMask } from './nebbiaBreath';
 import { clamp, NEBBIA_FIXED, MASK_SCALE, smooth } from './nebbiaConstants';
 import { windDrift, type NebbiaGlassMotion } from './nebbiaDrops';
 import type { NebbiaHits } from './nebbiaHits';
-import { drawChar, strokePath, strokeTrail, type InkContext } from './nebbiaInk';
+import { drawChar, strokeCurrentPath, strokeTrail, type InkContext } from './nebbiaInk';
 import { yieldFactor, type LaidLine } from './nebbiaScene';
 import { buildWipe, isSwept, streakProgress } from './nebbiaWipe';
 import type { NebbiaTuning } from './types';
@@ -86,11 +86,11 @@ export class NebbiaMask {
             const lp = streakProgress(st, ue);
             if (lp <= 0) continue;
             const pts = st.pts, n = pts.length - 1, f = lp * n, i = Math.floor(f);
-            const path = new Path2D();
-            path.moveTo(pts[0][0], pts[0][1]);
-            for (let k = 1; k <= Math.min(i, n); k += 1) path.lineTo(pts[k][0], pts[k][1]);
-            if (i < n) { const a = pts[i], b = pts[i + 1], r = f - i; path.lineTo(a[0] + (b[0] - a[0]) * r, a[1] + (b[1] - a[1]) * r); }
-            strokePath(ctx, path, st.w, vw);
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1]);
+            for (let k = 1; k <= Math.min(i, n); k += 1) ctx.lineTo(pts[k][0], pts[k][1]);
+            if (i < n) { const a = pts[i], b = pts[i + 1], r = f - i; ctx.lineTo(a[0] + (b[0] - a[0]) * r, a[1] + (b[1] - a[1]) * r); }
+            strokeCurrentPath(ctx, st.w, vw);
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         if (ue >= 1) for (const b of w.beads) ink.motion.put(b.x, b.y, b.r * (0.55 + 0.45 * vbw), vbw);
@@ -106,10 +106,10 @@ export class NebbiaMask {
             // 甩出的印子留得久：停下后保持 SMEAR_HOLD 秒，再用 refog 的 SMEAR_REFOG 倍慢慢回雾
             const v = m.end === null ? 1 : 1 - smooth(clamp((now - m.end - SMEAR_HOLD) / (tuning.refog * SMEAR_REFOG)));
             if (v <= 0.002) { m.gone = true; smears.splice(i, 1); continue; }
-            const p = new Path2D();
-            p.moveTo(m.x + m.ax, m.y + m.ay);
-            p.lineTo(m.x + m.bx, m.y + m.by);
-            strokePath(ctx, p, m.w * 0.14, v * 0.9);
+            ctx.beginPath();
+            ctx.moveTo(m.x + m.ax, m.y + m.ay);
+            ctx.lineTo(m.x + m.bx, m.y + m.by);
+            strokeCurrentPath(ctx, m.w * 0.14, v * 0.9);
         }
         const trails = motion.trails;
         for (let i = trails.length - 1; i >= 0; i -= 1) {

@@ -1,5 +1,5 @@
 import { clamp, MASK_SCALE, smooth } from './nebbiaConstants';
-import { strokePath } from './nebbiaInk';
+import { strokeCurrentPath } from './nebbiaInk';
 import type { NebbiaGlassMotion } from './nebbiaDrops';
 import { lineRect, type LaidLine } from './nebbiaScene';
 import { createVisualizerRng, mixVisualizerSeed } from '../visualizerSeedHash';
@@ -176,14 +176,14 @@ export class NebbiaHits {
             const bv = 1 - smooth(clamp((age - 0.4 - beadHold * 0.5) / refog));
             // 大雨点砸开的清点比水珠略大一圈、很快回雾，不然显成一个暗环
             if (h.big && v > 0.002) {
-                const p = new Path2D();
+                ctx.beginPath();
                 for (let j = 0; j < 7; j += 1) {
                     const a = h.seed + j * 0.9, d = R * 0.3;
                     const x = h.x + Math.cos(a) * d, y = h.y + Math.sin(a * 1.3) * d;
-                    p.moveTo(x, y);
-                    p.lineTo(x + 0.1, y);
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + 0.1, y);
                 }
-                strokePath(ctx, p, R * 1.3, v);
+                strokeCurrentPath(ctx, R * 1.3, v);
             }
             if (bv > 0.01) {
                 // 刚砸上时拍扁、横向摊开，0.12 秒内回弹
