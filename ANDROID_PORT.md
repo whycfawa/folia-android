@@ -373,3 +373,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - FoliaNative.httpRequest 在发送前把 Cookie 值按 UTF-8 百分号编码，非法 cookie 名丢弃；
   显式 Cookie 头和 WebView 自动补的 Cookie 都走同一套清洗。
 - 补 Java 单测覆盖中文值、空格和非法名字。
+
+### 0.7.24-android.282：同步上游 v0.7.24
+
+- 合并上游 0.7.24（含町景/雾笺/花火等歌词样式、HiFi 信号路径、音量平衡、YTM 等更新）。
+- 保留 Android 适配：底部命令面板按钮、手机适配布局标记、原生桥、酷狗 Cookie 清洗、酷狗歌手解析、latent 过渡脉动保护。
+- 版本 0.7.24-android.282 / versionCode 320。

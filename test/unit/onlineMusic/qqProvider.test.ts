@@ -302,6 +302,25 @@ describe('qqProvider', () => {
         expect(normalizeQqCollection({ dissid: 9, dirId: 201, name: '别人的我喜欢', songnum: 1 }).isLiked).toBeUndefined();
     });
 
+    it('keeps the owned playlist update time in milliseconds across account cache hydration', () => {
+        const collection = normalizeQqCollection({ ...PLAYLIST_ITEM, updateTime: 1792948021 });
+        expect(collection.updatedAt).toBe(1792948021000);
+        expect(normalizeQqCollection(collection)).toEqual(collection);
+        expect(normalizeQqCollection({ ...PLAYLIST_ITEM, updatedAt: 1792948021000, updateTime: 1 }).updatedAt)
+            .toBe(1792948021000);
+        expect(normalizeQqCollection({ tid: 8, dirId: 1, dirName: '自建歌单', songNum: 0, updateTime: '1792948025' }).updatedAt)
+            .toBe(1792948025000);
+    });
+
+    it('does not treat an empty liked folder or a favourite ordering time as a collection version', () => {
+        expect(normalizeQqCollection({ ...PLAYLIST_ITEM, songNum: 0, updateTime: 1792948021 }).updatedAt).toBeUndefined();
+        expect(normalizeQqCollection({ ...PLAYLIST_ITEM, songNum: 0, updatedAt: 1792948021000 }).updatedAt).toBeUndefined();
+        expect(normalizeQqCollection({ tid: 9, name: '收藏歌单', songnum: 3, orderTime: 1792948021 }).updatedAt).toBeUndefined();
+        for (const updateTime of [undefined, null, '', 0, -1, 'invalid', Infinity]) {
+            expect(normalizeQqCollection({ ...PLAYLIST_ITEM, updateTime }).updatedAt).toBeUndefined();
+        }
+    });
+
     it('normalizes the playlist and profile payloads, including a profile without a display name', () => {
         expect(normalizeQqCollection(PLAYLIST_ITEM)).toEqual({
             providerId: 'qq',

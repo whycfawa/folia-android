@@ -58,7 +58,6 @@ export const PLATFORM_NAME_PLACES: Record<string, PlatformNamePlace> = {
     'src/components/modal/LocalSongMetadataMatchDialog.tsx': { n: { netease: 4, qq: 3, kugou: 2 }, kind: 'lyric', why: 'the metadata dialog\'s own list of sources' },
     'src/components/modal/lyric-match/LocalSongLyricMatch.tsx': { n: { netease: 1 }, kind: 'lyric' },
     'src/components/modal/lyric-match/navidromeSongMatch.ts': { n: { netease: 1 }, kind: 'lyric' },
-    'src/components/modal/newFeaturesRelease.ts': { n: { qishui: 1 }, kind: 'stored', why: 'the id of a release note entry, also its i18n key; 0.7.22 release notes name the new qishui card instead of qq' },
     'src/components/modal/settings/pages/HelpPage.tsx': { n: { qq: 5 }, kind: 'namesake', why: 'the QQ chat app\'s community group, not QQ Music: its number and its i18n key' },
     'src/components/modal/settings/pages/IntegrationPage.tsx': { n: { netease: 4 }, kind: 'stored', why: 'the stored setting neteaseScrobbleEnabled and its i18n keys' },
     'src/components/modal/settings/pages/LyricsPage.tsx': { n: { spotify: 1 }, kind: 'lyric', why: 'which of two hand-written descriptions of the lyric sources is shown' },

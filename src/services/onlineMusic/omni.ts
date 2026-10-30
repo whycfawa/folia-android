@@ -898,6 +898,12 @@ export const omni = {
         return withActiveProvider(async provider => provider.explore?.getSectionItems?.(cursor) ?? { items: [] });
     },
 
+    // The provider's `explore.songsShownAs`, or null where it has none (see `OnlineExploreProvider`).
+    exploreSongsShownAs(providerId: OmniProviderId): ((songs: UnifiedSong[]) => Promise<Map<string, UnifiedSong | null>>) | null {
+        const explore = getOnlineMusicProvider(providerId)?.explore;
+        return explore?.songsShownAs ? songs => explore.songsShownAs!(songs) : null;
+    },
+
     async getSongDetail(providerId: OmniProviderId, id: MediaId): Promise<UnifiedSong | null> {
         return requireOnlineMusicProvider(providerId).playback?.getSongDetail(id) ?? null;
     },
@@ -1049,6 +1055,11 @@ export const omni = {
     // said. False for any other URL, as for one handed out too long ago to be remembered.
     isPreviewAudioSource(url: string): boolean {
         return audioSourceLevels.get(audioSourceLevelKey(url))?.preview === true;
+    },
+
+    // The i18n key of the notice for a preview clip of a provider's song (`OnlinePlaybackProvider.previewNoticeKey`).
+    previewNoticeKey(providerId: OmniProviderId): string {
+        return getOnlineMusicProvider(providerId)?.playback?.previewNoticeKey ?? 'status.songPreviewOnly';
     },
 
     // Cheap invalidation for playback's small per-URL cache: a provider may reuse a URL with

@@ -18,6 +18,8 @@ import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX, clampPlayerBottomBarOffset, resolvePl
 import type { PlayerControlSlotActionId, PlayerControlSlotContext } from './floating-player/playerControlSlotActions';
 import { usePlayerOverlayObstacle } from '../hooks/usePlayerOverlayLayout';
 import { resolveLyricSeekMediaTime } from '../utils/lyrics/lyricSeekTime';
+import { HifiProgressRow } from './hifi/HifiBadge';
+import { useIsHifiRoute } from './hifi/useHifiSignalPath';
 
 export interface TrackNavigation {
     /** 当前曲目的稳定身份，用于识别「确实换歌了」；相邻两首同名时标题字符串不变，不能拿标题判断 */
@@ -499,6 +501,9 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     );
 };
 
+/** 展开视图里进度那一行在网格中的位置；HiFi 路线和 Web 路线共用。 */
+const PROGRESS_ROW_CLASS = 'col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm:col-span-1 sm:row-start-2';
+
 // 展开视图组件
 interface ExpandedViewProps {
     currentSong: { name: string; } | null;
@@ -541,6 +546,19 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     slotSecondary,
     slotContext,
 }) => {
+    const isHifiRoute = useIsHifiRoute();
+    const progressBar = (
+        <ProgressBar
+            currentTime={currentTime}
+            duration={duration}
+            onSeek={onSeek}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+            trackColor={trackColor}
+            disabled={controlsDisabled}
+        />
+    );
+
     return (
         <div
             data-folia-player-bar-grid="true"
@@ -619,20 +637,13 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
             </div>
 
             {/* Row 2: Current Time, Progress Bar, Duration */}
-            <div
-                data-folia-player-bar-progress="true"
-                className="col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm:col-span-1 sm:row-start-2"
-            >
-                <ProgressBar
-                    currentTime={currentTime}
-                    duration={duration}
-                    onSeek={onSeek}
-                    primaryColor={primaryColor}
-                    secondaryColor={secondaryColor}
-                    trackColor={trackColor}
-                    disabled={controlsDisabled}
-                />
-            </div>
+            {isHifiRoute ? (
+                <HifiProgressRow data-folia-player-bar-progress="true" className={PROGRESS_ROW_CLASS} isDaylight={isDaylight} disabled={controlsDisabled}>
+                    {progressBar}
+                </HifiProgressRow>
+            ) : (
+                <div data-folia-player-bar-progress="true" className={PROGRESS_ROW_CLASS}>{progressBar}</div>
+            )}
         </div>
     );
 };

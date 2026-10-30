@@ -14,8 +14,10 @@ import {
     stopBeatFx,
     tickBeatFx,
 } from '@/services/beatFx/beatFxLive';
-import { liveBeatEffectStrength, visualizerWantsBeatClock, visualizerWantsBeats, visualizerWantsDrumHits, type BeatClockSettings } from '@/components/visualizer/beatClockTargets';
-import { BEAT_EFFECT_IDS, resolveBeatEffectSetting, smartBeatActive, smartBeatMayAnalyse } from '@/services/beatFx/beatEffects';
+import { liveBeatEffectStrength, visualizerWantsBeatClock, visualizerWantsBeats, visualizerWantsDrumHits, visualizerWantsStems, type BeatClockSettings } from '@/components/visualizer/beatClockTargets';
+import { anyDrumBeatEffectOn, BEAT_EFFECT_IDS, DRUM_BEAT_EFFECT_IDS, resolveBeatEffectSetting, smartBeatActive, smartBeatMayAnalyse } from '@/services/beatFx/beatEffects';
+import { VISUALIZER_REGISTRY } from '@/components/visualizer/registry';
+import { VISUALIZER_BACKGROUND_REGISTRY } from '@/components/visualizer/backgrounds/registry';
 import {
     SONNET_BEAT_FX,
     applySonnetBeatFxLayers,
@@ -143,6 +145,17 @@ describe('智能动感模式 setting', () => {
         expect(useVisualizerSettingsStore.getState().smartBeat.effects).toEqual({});
     });
 
+    it('keeps an effect\'s part strengths, each patched, clamped and round-tripped on its own', () => {
+        const id = BEAT_EFFECT_IDS.nebbiaDrizzleRide;
+        const store = useVisualizerSettingsStore.getState();
+        store.handleSetSmartBeat({ effects: { [id]: { parts: { rain: 1.6 } } } });
+        useVisualizerSettingsStore.getState().handleSetSmartBeat({ effects: { [id]: { parts: { bump: 9, 'bad key': 1 } } } });
+        const setting = useVisualizerSettingsStore.getState().smartBeat.effects[id];
+        expect(setting.parts).toEqual({ rain: 1.6, bump: 2 });
+        const smartBeat = toStoredSmartBeat({ mode: 'on', effects: { [id]: setting } });
+        expect(decompressConfig(compressConfig({ smartBeat })).smartBeat).toEqual(smartBeat);
+    });
+
     it('reads a malformed stored value as the default', () => {
         storage.setItem(SMART_BEAT_STORAGE_KEY, '{not json');
         expect(readStoredSmartBeatSettings()).toEqual(DEFAULT_SMART_BEAT_SETTINGS);
@@ -202,7 +215,7 @@ describe('智能动感模式 setting', () => {
 describe('when the beat clock runs', () => {
     const settings = (patch: Partial<BeatClockSettings>): BeatClockSettings => ({
         smartBeat: on,
-        visualizerMode: 'tempera',
+        visualizerMode: 'partita',
         visualizerBackgroundMode: null,
         ...patch,
     });
@@ -235,6 +248,15 @@ describe('when the beat clock runs', () => {
         expect(visualizerWantsBeats(settings({ visualizerMode: 'pendolo' }))).toBe(false);
         expect(visualizerWantsBeats(settings({ visualizerMode: 'sonnet' }))).toBe(true);
         expect(visualizerWantsDrumHits(settings({ visualizerMode: 'sonnet' }))).toBe(false);
+        // 凝彩: 墨染奥行 reads drums only.
+        expect(visualizerWantsDrumHits(settings({ visualizerMode: 'tempera' }))).toBe(true);
+        expect(visualizerWantsBeats(settings({ visualizerMode: 'tempera' }))).toBe(false);
+        // 雾笺: 疏雨轻车 reads the drum hits and the vocal envelope, off one htdemucs run; the clock carries its key.
+        expect(visualizerWantsStems(settings({ visualizerMode: 'nebbia' }))).toBe(true);
+        expect(visualizerWantsDrumHits(settings({ visualizerMode: 'nebbia' }))).toBe(false);
+        expect(visualizerWantsBeats(settings({ visualizerMode: 'nebbia' }))).toBe(false);
+        expect(visualizerWantsBeatClock(settings({ visualizerMode: 'nebbia' }))).toBe(true);
+        expect(visualizerWantsStems(settings({ visualizerMode: 'pendolo' }))).toBe(false);
     });
 
     it('not for an effect switched off, and at each effect\'s own strength', () => {
@@ -243,6 +265,26 @@ describe('when the beat clock runs', () => {
         expect(liveBeatEffectStrength(settings({ smartBeat, visualizerMode: 'diorama' }), 'beats')).toBeCloseTo(0.4);
         expect(liveBeatEffectStrength(settings({ smartBeat, visualizerMode: 'sonnet' }), 'beats')).toBe(1);
         expect(liveBeatEffectStrength(settings({ smartBeat, visualizerMode: 'sonnet' }), 'drums')).toBe(0);
+    });
+});
+
+describe('drum-hit effects on any picture', () => {
+    it('lists every effect a registry entry declares with the drums source', () => {
+        const declared = [...VISUALIZER_REGISTRY, ...VISUALIZER_BACKGROUND_REGISTRY]
+            .flatMap(entry => entry.beatEffects ?? [])
+            .filter(effect => effect.source === 'drums')
+            .map(effect => effect.id);
+        expect([...DRUM_BEAT_EFFECT_IDS].sort()).toEqual([...new Set(declared)].sort());
+    });
+
+    it('counts 墨染奥行 as well as 仿真鼓面, so the drums automix separates stay kept for either', () => {
+        const only = (id: string): SmartBeatSettings => ({
+            mode: 'on',
+            effects: Object.fromEntries(DRUM_BEAT_EFFECT_IDS.map(other => [other, { on: other === id, strength: 1 }])),
+        });
+        expect(anyDrumBeatEffectOn(only(BEAT_EFFECT_IDS.pendoloDrumhead))).toBe(true);
+        expect(anyDrumBeatEffectOn(only(BEAT_EFFECT_IDS.temperaInkFlash))).toBe(true);
+        expect(anyDrumBeatEffectOn(only('none'))).toBe(false);
     });
 });
 

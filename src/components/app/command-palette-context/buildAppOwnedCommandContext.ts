@@ -13,6 +13,7 @@ import { openAddToPlaylist, useAddToPlaylistStore } from '../../../stores/useAdd
 import { useInteractionSettingsStore } from '../../../stores/useInteractionSettingsStore';
 import { usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { isLocalPlaybackSong } from '../../../utils/appPlaybackGuards';
+import { openHifiSignalPath } from '../../hifi/hifiPanelStore';
 
 // src/components/app/command-palette-context/buildAppOwnedCommandContext.ts
 // The four namespaces whose state genuinely still lives in App.tsx: shared, playback, navigation
@@ -96,6 +97,9 @@ export const buildPlaybackCommandContext = (
         releaseModEqualizerCurve: () => {
             useAudioSettingsStore.getState().handleReleaseModEqualizerCurve({ kind: 'command' });
         },
+        // Read at the press: each new song picks its route without this context being rebuilt.
+        isHifiRoute: () => usePlaybackStore.getState().playbackRoute === 'hifi',
+        openHifiSignalPath,
     };
 };
 

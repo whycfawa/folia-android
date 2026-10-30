@@ -57,6 +57,7 @@ import { audioBands, audioPower, currentTime } from '../stores/motionSignals';
 import { useVisualizerTunings } from '../components/visualizer/useVisualizerTunings';
 import { useVisualizerBackgroundConfig } from '../components/visualizer/useVisualizerBackgroundConfig';
 import { usePlayerChromeSettingsStore } from '../stores/usePlayerChromeSettingsStore';
+import { getObservedMedia } from '../services/hifi/hifiMediaShim';
 
 // src/hooks/useObsBrowserSourcePublisher.ts
 // Publishes the single playback surface to the local OBS browser source.
@@ -141,6 +142,7 @@ export const useObsBrowserSourcePublisher = ({
     // Read here rather than passed in. Every one of these is a store field or a module-level motion
     // signal, and App.tsx was naming 22 of them purely to forward them to this hook.
     const activePlaybackContext = usePlaybackStore(state => state.activePlaybackContext);
+    const playbackRoute = usePlaybackStore(state => state.playbackRoute);
     const currentSong = usePlaybackStore(selectDisplaySong);
     const lyrics = usePlaybackStore(selectDisplayLyrics);
     const duration = usePlaybackStore(selectDisplayDuration);
@@ -160,6 +162,7 @@ export const useObsBrowserSourcePublisher = ({
     const harmonySubtitleBackground = useTypographySettingsStore(state => state.harmonySubtitleBackground);
     const showSubtitleTranslation = useTypographySettingsStore(state => state.showSubtitleTranslation);
     const subtitleContentMode = useTypographySettingsStore(state => state.subtitleContentMode);
+    const subtitleOverlayLayout = useTypographySettingsStore(state => state.subtitleOverlayLayout);
     const cappellaCustomEmojiImages = useVisualizerAssetStore(state => state.cappellaCustomEmojiImages);
     const cappellaCustomAvatarImages = useVisualizerAssetStore(state => state.cappellaCustomAvatarImages);
     const monetPortraitImage = useVisualizerAssetStore(state => state.monetPortraitImage);
@@ -289,6 +292,7 @@ export const useObsBrowserSourcePublisher = ({
             hideTranslationSubtitle,
             showSubtitleTranslation,
             subtitleContentMode,
+            subtitleOverlayLayout,
             seed,
             cappellaCustomEmojiImages: obsCustomImages.cappellaEmoji,
             cappellaCustomAvatarImages: obsCustomImages.cappellaAvatar,
@@ -303,6 +307,7 @@ export const useObsBrowserSourcePublisher = ({
         hideTranslationSubtitle,
         showSubtitleTranslation,
         subtitleContentMode,
+        subtitleOverlayLayout,
         isDaylight,
         lyrics,
         lyricsFontScale,
@@ -325,7 +330,8 @@ export const useObsBrowserSourcePublisher = ({
     ]);
 
     const buildClock = useCallback((): ObsBrowserSourceClock => {
-        const displayedAudio = getDisplayAudioElement?.() ?? audioRef.current;
+        // The HiFi media shim on the HiFi route: its source names no preview clip, so the clip start is 0.
+        const displayedAudio = getObservedMedia(getDisplayAudioElement?.() ?? audioRef.current);
         // Stage clocks are independent of any old audio deck. For main playback, the URL belongs
         // to the held picture during a blend, just as in usePlaybackVisualizerBridge.
         const clipStartMs = activePlaybackContext === 'main'
@@ -339,7 +345,7 @@ export const useObsBrowserSourcePublisher = ({
             playbackRate: 1,
             lyricOffsetMs: offsetMs,
         }, clipStartMs);
-    }, [activePlaybackContext, audioRef, getDisplayAudioElement, currentTime, duration, playerState, offsetMs]);
+    }, [activePlaybackContext, audioRef, getDisplayAudioElement, currentTime, duration, playbackRoute, playerState, offsetMs]);
 
     const buildAudio = useCallback((): ObsBrowserSourceAudio => ({
         audioPower: audioPower.get(),

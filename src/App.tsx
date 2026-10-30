@@ -85,10 +85,21 @@ import { useNeteaseLibrary } from './hooks/useNeteaseLibrary';
 import { useLibraryAccountController } from './library/app/useLibraryAccountController';
 import { createLibraryAccountSwitchCleanupPort } from './library/app/createLibraryAccountPort';
 import { useAppWallToolsHost } from './components/app/wall-tools/useAppWallToolsHost';
+import { useRemoteQueueCommands } from './components/app/playback/bridges/useRemoteQueueCommands';
 import { useLibraryAccountProviders } from './library/core/account/useLibraryAccount';
 import { resolveActiveProviderSummary } from './library/core/account/accountRules';
 import { useAppPreferences } from './hooks/useAppPreferences';
 import { useElectronPlaybackBridge } from './components/app/playback/bridges/useElectronPlaybackBridge';
+import { useHifiPlaybackBridge } from './components/hifi/useHifiPlaybackBridge';
+import { seekHifiRoute } from './components/hifi/hifiRouteTransport';
+import { useHifiAutomixGate } from './components/hifi/useHifiAutomixGate';
+import { useWebEngineYield } from './components/hifi/useWebEngineYield';
+import { useHifiMediaSessionKeepAlive } from './components/hifi/useHifiMediaSessionKeepAlive';
+import { useHifiMpris } from './components/hifi/useHifiMpris';
+import { useHifiWebRouteNotice } from './components/hifi/useHifiWebRouteNotice';
+import { isHifiRoute, useHifiTrackStore } from './services/hifi/hifiPlayback';
+import { hifiEngine } from './services/hifi/hifiEngine';
+import { selectHifiEngineConfig, useHifiSettingsStore } from './stores/useHifiSettingsStore';
 import { useElectronDisplaySleepBlocker } from './hooks/useElectronDisplaySleepBlocker';
 import { useBackgroundLyricHold } from './components/app/backgroundThrottling/useBackgroundLyricHold';
 import { readLiveLyricTime, useBackgroundLyricHoldStore } from './components/app/backgroundThrottling/backgroundLyricHoldStore';
@@ -475,14 +486,12 @@ export default function App() {
     } = useTypographySettingsStore(useShallow(selectTypographySettingsSnapshot));
     const {
         globalLyricTimelineOffsetMs,
-        lyricFilterPattern,
-        lyricFilterEnabled,
+        lyricLineRules,
         lyricStaffPolicy,
         lyricStaffMinDwellSeconds,
         lyricStaffAbsorbMode,
         lyricStaffPattern,
-        handleSetLyricFilterPattern,
-        handleSetLyricFilterEnabled,
+        handleSetLyricLineRules,
         handleSetLyricStaffPolicy,
         handleSetLyricStaffMinDwellSeconds,
         handleSetLyricStaffAbsorbMode,
@@ -535,13 +544,13 @@ export default function App() {
     });
 
     const setLyrics = useMemo(
-        () => createLyricsSetter(setLyricsState, lyricFilterEnabled ? lyricFilterPattern : '', currentSongFullRef, {
+        () => createLyricsSetter(setLyricsState, lyricLineRules, currentSongFullRef, {
             policy: lyricStaffPolicy,
             minDwellSeconds: lyricStaffMinDwellSeconds,
             absorbMode: lyricStaffAbsorbMode,
             pattern: lyricStaffPattern,
         }),
-        [lyricFilterEnabled, lyricFilterPattern, lyricStaffPolicy, lyricStaffMinDwellSeconds, lyricStaffAbsorbMode, lyricStaffPattern],
+        [lyricLineRules, lyricStaffPolicy, lyricStaffMinDwellSeconds, lyricStaffAbsorbMode, lyricStaffPattern],
     );
     // 保存过滤设置后要用新设置重新铺一遍当前歌词，而此时闭包里的 setLyrics 还是旧的。
     const setLyricsRef = useRef(setLyrics);
@@ -614,9 +623,14 @@ export default function App() {
             const nextVolume = pendingVolumePreviewRef.current;
             if (nextVolume !== null) {
                 syncOutputGain(nextVolume, 0.015);
+                // On HiFi with software volume the drag is heard from mpv; the engine skips a config it already has.
+                const hifiSettings = useHifiSettingsStore.getState();
+                if (isHifiRoute() && hifiSettings.softwareVolume) {
+                    void hifiEngine.configure(selectHifiEngineConfig(hifiSettings, nextVolume, isMuted));
+                }
             }
         });
-    }, [syncOutputGain]);
+    }, [isMuted, syncOutputGain]);
 
     const {
         shouldRefreshCurrentOnlineAudioSource,
@@ -853,6 +867,7 @@ export default function App() {
         isDev,
         isElectronWindow,
         audioRef,
+        blobUrlRef,
         shouldAutoPlayRef: shouldAutoPlay,
         pendingResumeTimeRef,
         lastAudioRecoverySourceRef,
@@ -981,9 +996,7 @@ export default function App() {
         [navigateToCollection],
     );
     const handleSaveLyricFilterPattern = useMemo(() => createLyricFilterPatternSaver({
-        currentEffectivePattern: lyricFilterEnabled ? lyricFilterPattern : '',
-        handleSetLyricFilterPattern,
-        handleSetLyricFilterEnabled,
+        handleSetLyricLineRules,
         handleSetLyricStaffPolicy,
         handleSetLyricStaffMinDwellSeconds,
         handleSetLyricStaffAbsorbMode,
@@ -991,10 +1004,7 @@ export default function App() {
         loadCurrentSongLyricPreview,
         setLyrics: setLyricsStable,
     }), [
-        lyricFilterPattern,
-        lyricFilterEnabled,
-        handleSetLyricFilterPattern,
-        handleSetLyricFilterEnabled,
+        handleSetLyricLineRules,
         handleSetLyricStaffPolicy,
         handleSetLyricStaffMinDwellSeconds,
         handleSetLyricStaffPattern,
@@ -1143,13 +1153,15 @@ export default function App() {
         return () => registerLocalTrackFileReader(null);
     }, [getLocalStemBytes]);
 
+    // mpv is not one of the two decks a blend needs: off while this song or the next one plays on HiFi.
+    const hifiBlocksAutomix = useHifiAutomixGate();
     const automix = useAutomixDecks({
         audioRef,
         audioContextRef,
         currentSongKeyRef: currentSongRef,
         coverUrl,
         loopMode: effectiveLoopMode,
-        isEnabled: automixEnabled && !isNowPlayingStageActive,
+        isEnabled: automixEnabled && !isNowPlayingStageActive && !hifiBlocksAutomix,
         transition: transitionSettings,
         onAdvanceTrack: () => {
             // Same advance the end of a track would trigger, only early enough for the outgoing
@@ -1168,6 +1180,8 @@ export default function App() {
     });
 
     automixRef.current = automix;
+    // The route flipping to HiFi silences both decks and suspends the AudioContext before mpv opens the device.
+    useWebEngineYield({ audioRef, audioContextRef, automix });
 
     /**
      * The now-playing picture, which lags the app's own idea of what is playing.
@@ -1399,6 +1413,7 @@ export default function App() {
         pauseDuringTransition: handlePauseDuringTransition,
         isTransitionAudible: automix.isTransitionAudible,
     });
+    useHifiPlaybackBridge({ handleNextTrack, playSong, shouldAutoPlayRef: shouldAutoPlay, isLyricsLoading, effectiveLoopMode, isFmMode });
     useNavidromeScrobbleReporter({
         audioRef,
         currentSong,
@@ -1424,7 +1439,7 @@ export default function App() {
         taskbarPlayerStateRef,
     } = useTransportCommandRefs({ resumePlayback, pausePlayback, handlePrevTrack, handleNextTrack });
 
-    useMediaSessionBridge({
+    const mediaSessionOptions = {
         audioRef,
         // All three describe the DISPLAYED track, and that is the whole of the fix: the metadata,
         // the clock the position is read off, and the source the readiness guard compares against.
@@ -1444,7 +1459,12 @@ export default function App() {
         mediaSessionPrevRef,
         mediaSessionNextRef,
         isNowPlayingControlDisabledRef,
-    });
+    };
+    useMediaSessionBridge(mediaSessionOptions);
+    // Linux: on the HiFi route the system media controls come from main's MPRIS, fed the same.
+    useHifiMpris(mediaSessionOptions);
+    useHifiMediaSessionKeepAlive();
+    useHifiWebRouteNotice();
 
     const {
         exportState,
@@ -1600,6 +1620,8 @@ export default function App() {
         visualizerMode,
     ]);
     const isNowPlayingControlDisabled = isNowPlayingStageActive;
+    const playbackRoute = usePlaybackStore(state => state.playbackRoute);
+    const hasHifiTrack = useHifiTrackStore(state => state.current !== null);
 
     useElectronWindowChrome();
     // Android：物理返回键 / 返回手势交给页面层级处理（桌面端是空操作）。
@@ -1637,16 +1659,20 @@ export default function App() {
         stageActiveEntryKind,
         audioSrc,
         duration,
+        playbackRoute,
+        hasHifiTrack,
     }), [
         activePlaybackContext,
         audioSrc,
         currentView,
         disableHomeDynamicBackground,
         duration,
+        hasHifiTrack,
         hidePlayerProgressBar,
         hidePlayerRightPanelButton,
         hidePlayerTranslationSubtitle,
         isNowPlayingControlDisabled,
+        playbackRoute,
         stageActiveEntryKind,
     ]);
     // 播放页空闲时连指针一起隐藏。复用控制栏的自动隐藏时钟（3 秒无鼠标移动），不新开计时器：
@@ -1792,16 +1818,14 @@ export default function App() {
         toggleTransparentBackground: () => { void toggleTransparentModeWithHandoff(!transparentPlayerBackground); },
         toggleDaylightMode,
         cycleLyricStaffPolicy: () => handleSaveLyricFilterPattern({
-            pattern: lyricFilterPattern,
-            filterEnabled: lyricFilterEnabled,
+            rules: lyricLineRules,
             staffPolicy: nextLyricStaffPolicy(lyricStaffPolicy),
             staffMinDwellSeconds: lyricStaffMinDwellSeconds,
             staffAbsorbMode: lyricStaffAbsorbMode,
             staffPattern: lyricStaffPattern,
         }),
         cycleLyricStaffAbsorbMode: () => handleSaveLyricFilterPattern({
-            pattern: lyricFilterPattern,
-            filterEnabled: lyricFilterEnabled,
+            rules: lyricLineRules,
             staffPolicy: lyricStaffPolicy,
             staffMinDwellSeconds: lyricStaffMinDwellSeconds,
             staffAbsorbMode: nextLyricStaffAbsorbMode(lyricStaffAbsorbMode),
@@ -2014,6 +2038,8 @@ export default function App() {
      * the live song, queue-mode and blend state.
      */
     seekDuringTransitionRef.current = (time: number) => {
+        // HiFi route: mpv seeks. Arrow keys and the remote seek mpv before this, so it is seekMainAudio's and resumes.
+        if (seekHifiRoute(time, { resume: true })) return true;
         const tailElement = cancelBlendToDisplayedTrack(true);
         if (!tailElement) return false;
         const seekTarget = Math.max(0, time);
@@ -2184,6 +2210,8 @@ export default function App() {
         clearQueue,
         saveCurrentQueueAsLocalPlaylist,
     });
+    // 遥控窗口展开的队列：点歌、下一首播放、移到末尾、移除，走浮岛的同一组队列动作。
+    useRemoteQueueCommands(wallToolsHost, playQueue, isNowPlayingControlDisabledRef);
     const homeModel = useHomeModel({
         account: accountController,
         activeProvider,
@@ -2441,11 +2469,15 @@ export default function App() {
     // The two automix decks are identical and interchangeable. Every handler below ignores the
     // deck that is not currently active, so a track fading out in the background can never drive
     // the progress bar, the duration, the queue, or the player state.
+    // On the HiFi route mpv plays the song: no deck gets a source (resolveDeckSrc would hand the
+    // active one a warmed source), and every handler below does nothing, so a deck that still
+    // fires an event (its pause on the way out) never drives the HiFi song.
     const renderAudioDeck = (deck: AutomixDeckId, register: (element: HTMLAudioElement | null) => void) => (
         <audio
             key={deck}
             ref={register}
-            src={automix.deckSrc(deck)}
+            data-playback-deck={deck}
+            src={playbackRoute === 'hifi' ? undefined : automix.deckSrc(deck)}
             preload="auto"
             crossOrigin="anonymous"
             loop={effectiveLoopMode === 'one' && automix.activeDeck === deck}
@@ -2475,6 +2507,7 @@ export default function App() {
                 }
             }}
             onPlay={(e) => {
+                if (isHifiRoute()) return;
                 if (!automix.isActiveDeck(e.currentTarget)) return;
                 shouldAutoPlay.current = false;
                 // The same split onTimeUpdate, onSeeked and onLoadedMetadata all make, and the two
@@ -2484,6 +2517,7 @@ export default function App() {
                 setPlayerState(PlayerState.PLAYING);
             }}
             onPlaying={(e) => {
+                if (isHifiRoute()) return;
                 if (!automix.isActiveDeck(e.currentTarget)) return;
                 shouldAutoPlay.current = false;
                 if (!isShowingTail) currentTime.set(e.currentTarget.currentTime);
@@ -2501,6 +2535,8 @@ export default function App() {
                 // A pause that flushing a fade-out made, while a new song is already being set up:
                 // the transport state and play intent belong to that song now.
                 if (consumeProgrammaticPause(e.currentTarget)) return;
+                // The Web engine yielding to mpv pauses the deck: the HiFi song's autoplay intent stays.
+                if (isHifiRoute()) return;
                 if (!automix.isActiveDeck(e.currentTarget)) return;
                 // A deck whose source failed fires `pause` immediately AFTER `error` - Chromium
                 // clears the play state as part of failing the load - and that is not the listener
@@ -2516,6 +2552,7 @@ export default function App() {
                 }
             }}
             onTimeUpdate={(e) => {
+                if (isHifiRoute()) return;
                 const audioElement = e.currentTarget;
                 const isActive = automix.isActiveDeck(audioElement);
                 // The clock and the transport are driven by different decks during a transition.
@@ -2562,6 +2599,7 @@ export default function App() {
                 automix.checkTransitionPoint(audioElement.currentTime);
             }}
             onSeeked={(e) => {
+                if (isHifiRoute()) return;
                 // Same split as onTimeUpdate: whichever deck the bar is showing is the one a seek
                 // on it has to be reflected from.
                 const isActive = automix.isActiveDeck(e.currentTarget);
@@ -2594,6 +2632,8 @@ export default function App() {
             //     }
             // }}
             onEnded={(e) => {
+                // mpv's own end advances the queue on the HiFi route (useHifiPlaybackBridge).
+                if (isHifiRoute()) return;
                 // A track finishing in the background has already handed the queue over.
                 if (!automix.isActiveDeck(e.currentTarget)) {
                     automix.handleTailEnded();
@@ -2619,6 +2659,7 @@ export default function App() {
                 }
             }}
             onLoadedMetadata={(e) => {
+                if (isHifiRoute()) return;
                 const audioElement = e.currentTarget;
                 if (!automix.isActiveDeck(audioElement)) return;
                 setDuration(audioElement.duration);
@@ -2643,6 +2684,7 @@ export default function App() {
                 currentTime.set(0); // Ensure currentTime is reset when new audio loads
             }}
             onError={(e) => {
+                if (isHifiRoute()) return;
                 const audioElement = e.currentTarget;
                 const isActiveDeck = automix.isActiveDeck(audioElement);
                 // 诊断：播放失败时记下媒体错误码和地址种类（blob/远端+主机），

@@ -3,8 +3,9 @@ import { Heart, ListX, Pause, Piano, Play, Repeat, Shuffle, SkipBack, SkipForwar
 import { executeModeCommand } from './executeModeCommand';
 import { queueCommand } from './queueCommand';
 import { volumeCommand } from './volumeCommand';
+import { isHifiVolumeFixed, tellHifiVolumeFixed } from '../surfaces/volumeSurface';
 import { fmModeCommand } from './fmModeCommand';
-import type { CommandPaletteCommand } from '../types';
+import type { CommandPaletteCommand, CommandPaletteContext } from '../types';
 import { createToggleCommand, createReplayGainCommand, createSoundPresetCommand, defineCommand } from '../commandFactories';
 import { canShuffleQueue } from '../../../utils/playbackNeighbors';
 import { undoFoliumQueueReplace, useFoliumQueueUndoStore } from '../../../mods/runtime/queue/queueReplaceUndo';
@@ -15,6 +16,15 @@ import { undoFoliumQueueReplace, useFoliumQueueUndoStore } from '../../../mods/r
 
 /** One press of volume up or down, as a fraction of full volume. */
 const VOLUME_STEP = 0.05;
+
+/** Volume up and down: on HiFi without software volume the DAC or amplifier sets the level, so they say so instead. */
+const stepVolumeUnlessFixed = (context: CommandPaletteContext, delta: number) => {
+    if (isHifiVolumeFixed(context)) {
+        tellHifiVolumeFixed(context);
+        return;
+    }
+    context.playback.stepVolume(delta);
+};
 
 export const playbackCommands: CommandPaletteCommand[] = [
     executeModeCommand,
@@ -32,6 +42,7 @@ export const playbackCommands: CommandPaletteCommand[] = [
     createReplayGainCommand('off', 'Disable ReplayGain', 'Play audio without ReplayGain adjustment', ['replaygain off', 'audio gain off', '关闭音频增益', '关闭 replaygain', 'gbyyzy']),
     createReplayGainCommand('track', 'ReplayGain: Track mode', 'Apply per-track ReplayGain adjustment', ['replaygain track', 'track gain', 'single track gain', '单曲增益', '单曲 replaygain']),
     createReplayGainCommand('album', 'ReplayGain: Album mode', 'Apply album ReplayGain adjustment', ['replaygain album', 'album gain', '专辑增益', '专辑 replaygain']),
+    createReplayGainCommand('auto', 'ReplayGain: Smart balance', 'Measure each song’s loudness and turn the loud ones down to match', ['volume balance', 'loudness normalization', 'replaygain auto', '智能平衡', '音量平衡', '响度平衡']),
     {
         id: 'playback-equalizer',
         // It opens the controls panel tab to reach the equalizer, so it needs the player surface.
@@ -149,7 +160,7 @@ export const playbackCommands: CommandPaletteCommand[] = [
         'Volume up',
         'Raise the volume by 5%',
         ['louder', 'increase volume', '音量加', '调大音量', '大声'],
-        context => context.playback.stepVolume(VOLUME_STEP),
+        context => stepVolumeUnlessFixed(context, VOLUME_STEP),
         { icon: Volume2 },
     ),
     createToggleCommand(
@@ -158,7 +169,7 @@ export const playbackCommands: CommandPaletteCommand[] = [
         'Volume down',
         'Lower the volume by 5%',
         ['quieter', 'decrease volume', '音量减', '调小音量', '小声'],
-        context => context.playback.stepVolume(-VOLUME_STEP),
+        context => stepVolumeUnlessFixed(context, -VOLUME_STEP),
         { icon: Volume1 },
     ),
     createToggleCommand('playback-shuffle', 'playback', 'Shuffle queue', 'Shuffle current play queue', ['shuffle', '打乱', '打乱队列'], context => context.playback.shuffleQueue(), {

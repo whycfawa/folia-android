@@ -1,5 +1,6 @@
 const { createDebugLogWriter, logsRoot } = require('./debugLogWriter.cjs');
 const { createMemoryMonitor } = require('./memoryMonitor.cjs');
+const { redactCredentials } = require('./redactCredentials.cjs');
 const fs = require('fs');
 
 // electron/debug/debugHost.cjs
@@ -154,11 +155,17 @@ const createPanelFeed = ({ limit = PANEL_BACKLOG, defer = setImmediate } = {}) =
     };
 };
 
+/**
+ * An Error nested in a logged object. JSON.stringify writes one as `{}`: name and message live on
+ * the prototype, not on the object, which is how a failed call ended up in the log as `"error":{}`.
+ */
+const errorReplacer = (_key, value) => (value instanceof Error ? `${value.name}: ${value.message}` : value);
+
 /** One console call as a line of text. A value that cannot be serialised is not a reason to lose the line. */
 const consoleText = args => args.map((value) => {
     if (typeof value === 'string') return value;
     if (value instanceof Error) return value.stack || value.message;
-    try { return JSON.stringify(value); } catch { return String(value); }
+    try { return JSON.stringify(value, errorReplacer); } catch { return String(value); }
 }).join(' ');
 
 const createDebugHost = ({ app, ipcMain, store, BrowserWindow }) => {
@@ -220,7 +227,8 @@ const createDebugHost = ({ app, ipcMain, store, BrowserWindow }) => {
     const writeRuntime = (at, level, tag, text) => {
         if (!runtimeWriter) return;
         const stamp = new Date(at).toISOString();
-        runtimeWriter.write(`${stamp} [${level}] ${tag ? `[${tag}] ` : ''}${String(text).replace(/\s+$/, '')}`);
+        // Credential values never reach the file, from any process (see redactCredentials.cjs).
+        runtimeWriter.write(`${stamp} [${level}] ${tag ? `[${tag}] ` : ''}${redactCredentials(String(text)).replace(/\s+$/, '')}`);
     };
 
     // ---- memory log --------------------------------------------------------
@@ -378,7 +386,7 @@ const createDebugHost = ({ app, ipcMain, store, BrowserWindow }) => {
                 const at = Date.now();
                 const text = consoleText(args);
                 writeRuntime(at, level, 'main', text);
-                if (state.consoleCaptureEnabled) panel.add(at, level, text);
+                if (state.consoleCaptureEnabled) panel.add(at, level, redactCredentials(text));
             } catch { /* never let logging break the thing that logged */ }
             original(...args);
         };

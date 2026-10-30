@@ -279,6 +279,7 @@ contextBridge.exposeInMainWorld('electron', {
         return () => ipcRenderer.removeListener('remote-control-window-settings-changed', listener);
     },
     getRemoteControlPointerInside: () => ipcRenderer.invoke('remote-control-get-pointer-inside'),
+    setRemoteControlQueueExpansion: (wantedHeight, options) => ipcRenderer.invoke('remote-control-set-queue-expansion', wantedHeight, options),
     onRemoteControlPointerInside: (callback) => {
         const listener = (_event, inside) => callback(Boolean(inside));
         ipcRenderer.on('remote-control-pointer-inside', listener);
@@ -384,6 +385,64 @@ contextBridge.exposeInMainWorld('electron', {
             const listener = (_event, change) => callback(change);
             ipcRenderer.on('folia-mods:secret-changed', listener);
             return () => ipcRenderer.removeListener('folia-mods:secret-changed', listener);
+        },
+    },
+    hifi: {
+        getRuntimeStatus: () => ipcRenderer.invoke('hifi:get-runtime-status'),
+        detectRuntime: () => ipcRenderer.invoke('hifi:detect-runtime'),
+        pickRuntimePath: () => ipcRenderer.invoke('hifi:pick-runtime-path'),
+        installRuntime: () => ipcRenderer.invoke('hifi:install-runtime'),
+        cancelInstall: () => ipcRenderer.invoke('hifi:cancel-install'),
+        configure: (config) => ipcRenderer.invoke('hifi:configure', config),
+        listDevices: () => ipcRenderer.invoke('hifi:list-devices'),
+        load: (request) => ipcRenderer.invoke('hifi:load', request),
+        play: () => ipcRenderer.invoke('hifi:play'),
+        pause: () => ipcRenderer.invoke('hifi:pause'),
+        seek: (positionSec) => ipcRenderer.invoke('hifi:seek', positionSec),
+        stop: () => ipcRenderer.invoke('hifi:stop'),
+        setLoopFile: (loop) => ipcRenderer.invoke('hifi:set-loop-file', loop),
+        preloadNext: (request) => ipcRenderer.invoke('hifi:preload-next', request),
+        clearNext: () => ipcRenderer.invoke('hifi:clear-next'),
+        getSnapshot: () => ipcRenderer.invoke('hifi:get-snapshot'),
+        probeOutput: () => ipcRenderer.invoke('hifi:probe-output'),
+        respondRead: (readId, response) => ipcRenderer.invoke('hifi:read-result', readId, response),
+        // Linux：HiFi 在放时主进程登记的 MPRIS（electron/hifi/mpris/）。
+        setMprisState: (state) => ipcRenderer.invoke('hifi:mpris-state', state),
+        setMprisArtwork: (trackKey, artwork) => ipcRenderer.invoke('hifi:mpris-artwork', trackKey, artwork),
+        onMprisCommand: (callback) => {
+            const listener = (_event, command) => callback(command);
+            ipcRenderer.on('hifi:mpris-command', listener);
+            return () => ipcRenderer.removeListener('hifi:mpris-command', listener);
+        },
+        onMprisStatus: (callback) => {
+            const listener = (_event, status) => callback(status);
+            ipcRenderer.on('hifi:mpris-status', listener);
+            return () => ipcRenderer.removeListener('hifi:mpris-status', listener);
+        },
+        onState: (callback) => {
+            const listener = (_event, state) => callback(state);
+            ipcRenderer.on('hifi:state', listener);
+            return () => ipcRenderer.removeListener('hifi:state', listener);
+        },
+        onClock: (callback) => {
+            const listener = (_event, update) => callback(update);
+            ipcRenderer.on('hifi:clock', listener);
+            return () => ipcRenderer.removeListener('hifi:clock', listener);
+        },
+        onError: (callback) => {
+            const listener = (_event, hifiError) => callback(hifiError);
+            ipcRenderer.on('hifi:error', listener);
+            return () => ipcRenderer.removeListener('hifi:error', listener);
+        },
+        onInstallProgress: (callback) => {
+            const listener = (_event, progress) => callback(progress);
+            ipcRenderer.on('hifi:install-progress', listener);
+            return () => ipcRenderer.removeListener('hifi:install-progress', listener);
+        },
+        onReadRequest: (callback) => {
+            const listener = (_event, request) => callback(request);
+            ipcRenderer.on('hifi:read', listener);
+            return () => ipcRenderer.removeListener('hifi:read', listener);
         },
     },
 });

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { MotionValue } from 'framer-motion';
 import { applyOnlineAudioSourceMetadata, loadOnlineSongLyrics } from '../../../../services/onlinePlayback';
-import { isSongUnavailable } from '../../../../services/onlineMusic/songAvailability';
+import { askPlayedSong, isSongUnavailable } from '../../../../services/onlineMusic/songAvailability';
 import { getSongResourceCacheKey } from '../../../../services/onlineMusic/resourceKeys';
 import { getPersonalFmSelection } from '../../../../stores/usePersonalFmModeStore';
 import { omni } from '../../../../services/onlineMusic/omni';
@@ -68,6 +68,7 @@ import { hasBeforePlayHook, notifyPlaybackFailed, runBeforePlayHook } from '../.
 import { wholeQueueWritesSoFar } from '../../../../services/wholeQueueWrites';
 import { noteQueueStart } from './queueStarts';
 import { errorMessage } from '../../../../utils/errorText';
+import { hifiTransport, isHifiRoute } from '../../../../services/hifi/hifiPlayback';
 
 // src/components/app/playback/start/usePlaybackQueueController.ts
 
@@ -171,6 +172,13 @@ const readAutoSkipUnplayable = () => useAudioSettingsStore.getState().autoSkipUn
 const isPassingFailure = (shown: OnlineFailure) => (
     shown.case === 'unreachable' || shown.case === 'retry-later' || shown.case === 'local-service-stopped'
 );
+
+// The stops that leave the current song where it is pause what actually sounds it. On the HiFi route that
+// is mpv: the deck there has no source, so pausing it alone left the song playing under a stopped player.
+const pauseWhatIsSounding = (audio: HTMLAudioElement | null) => {
+    audio?.pause();
+    if (isHifiRoute()) void hifiTransport.pause();
+};
 
 // A sign-in that has run out comes with the button that opens the sign-in window for that platform.
 const withSignInAction = (
@@ -514,6 +522,24 @@ export function usePlaybackQueueController({
         if (!allowedSong || playSongCallIdRef.current !== playSongCallId || playsDroppedSoFar() !== droppedAtStart) {
             return;
         }
+        // A music video a list showed as itself (its song was not known in time) plays as its song:
+        // the song takes its place in the queue, with its own name, picture, length and lyrics, as
+        // another version of a song taken down does. Asked only where the platform has such songs;
+        // the blend's advance plays what it readied.
+        const playedAs = options.isAutomixAdvance ? null : askPlayedSong(allowedSong);
+        const playedSong = playedAs ? await playedAs : null;
+        if (playSongCallIdRef.current !== playSongCallId || playsDroppedSoFar() !== droppedAtStart) {
+            return;
+        }
+        if (playedSong) {
+            const shownQueue = queue.length > 0 ? queue : usePlaybackStore.getState().playQueue;
+            const shownKey = getPlaybackSongKey(allowedSong);
+            const playedQueue = shownQueue.length > 0
+                ? shownQueue.map(queued => (getPlaybackSongKey(queued) === shownKey ? playedSong : queued))
+                : [playedSong];
+            await latestQueueActionsRef.current.playSong(playedSong, playedQueue, isFmCall, options);
+            return;
+        }
         const song = allowedSong;
         // A pause still fading out belongs to the song being replaced. Run it now instead of
         // dropping it: the old song is still sounding and the new one can take seconds to load, so
@@ -584,8 +610,23 @@ export function usePlaybackQueueController({
         playbackAutoSkipCountRef.current = skipCount;
         // For the plays this one defers (the replacement dialog, the timed skip): they start after a
         // prompt or a countdown, so they are not the blend's advance even when this call was.
-        // Nor do they carry a judgement of the queue made for another play (`queueRewritten`).
-        const deferredPlayOptions: PlaybackNavigationOptions = { ...options, isAutomixAdvance: undefined, queueRewritten: undefined };
+        // Nor do they carry a judgement of the queue made for another play (`queueRewritten`), nor where
+        // this song was to start, paused or quiet: those are about this song only (see `startOptions`).
+        const deferredPlayOptions: PlaybackNavigationOptions = {
+            ...options,
+            isAutomixAdvance: undefined,
+            queueRewritten: undefined,
+            startAtSec: undefined,
+            autoplay: undefined,
+            quietLoadedToast: undefined,
+        };
+        // Where a local or Navidrome song starts, whether it plays and whether it shows its own toasts:
+        // the HiFi bridge asks for them when it moves the song it was playing to the other engine.
+        const startOptions: Pick<PlaybackNavigationOptions, 'startAtSec' | 'autoplay' | 'quietLoadedToast'> = {
+            startAtSec: options.startAtSec,
+            autoplay: options.autoplay,
+            quietLoadedToast: options.quietLoadedToast,
+        };
         const providerId = getOnlineProviderIdForSong(song) ?? undefined;
 
         // A button of a failure may be pressed long after: where the queue follows the store, the main
@@ -608,11 +649,14 @@ export function usePlaybackQueueController({
         // quality, the stage and the queue of the moment they are pressed).
         const presentOnlineFailure = (shown: OnlineFailure) => {
             restoreFmModeIfNotLanded();
+            // Whatever is shown below, this play gave up: the song before it, still playing, is no longer
+            // overtaken (`onceShown` in currentSong.ts). Its own answer stays, for the countdown's skip and its cancel.
+            isLatestPlaybackRequest.abandon();
             setIsLyricsLoading(false);
             const said = onlineFailureToast(shown, t);
             const stopHere = () => {
                 shouldAutoPlayRef.current = false;
-                audioRef.current?.pause();
+                pauseWhatIsSounding(audioRef.current);
                 setPlayerState(PlayerState.IDLE);
                 setStatusMsg(withSignInAction(shown, said, t));
             };
@@ -683,10 +727,16 @@ export function usePlaybackQueueController({
                 console.error('[App] Failed to load replacement song before dialog:', error);
                 lookupFailure = onlineFailureOf({ operation: 'audio', providerId }, { error });
             }
-            if (!isLatestPlaybackRequest()) return;
+            if (!isLatestPlaybackRequest()) {
+                isLatestPlaybackRequest.abandon();
+                return;
+            }
 
             if (replacement?.song && !isSongUnavailable(replacement.song)) {
                 restoreFmModeIfNotLanded();
+                // The other version, if the listener takes it, is a play of its own: this one ends here,
+                // and the dialog closed leaves the song before it playing.
+                isLatestPlaybackRequest.abandon();
                 setStatusMsg(null);
                 setPendingUnavailableReplacement({
                     originalSong: song,
@@ -722,10 +772,14 @@ export function usePlaybackQueueController({
             const localData = (await getLocalSong(song.localRef.songId))
                 ?? localSongs.find(ls => ls.id === song.localRef.songId)
                 ?? null;
-            if (!isLatestPlaybackRequest()) return;
+            if (!isLatestPlaybackRequest()) {
+                isLatestPlaybackRequest.abandon();
+                return;
+            }
 
             if (!localData) {
                 restoreFmModeIfNotLanded();
+                isLatestPlaybackRequest.abandon();
                 setStatusMsg({ type: 'error', text: t('status.localFilePlaybackError') });
                 tellFailure(null, false);
                 return;
@@ -739,7 +793,11 @@ export function usePlaybackQueueController({
                 })
                 .filter((queuedSong): queuedSong is LocalSong => Boolean(queuedSong));
             fmModeBeforePendingPlayRef.current = null;
+            // Handed over: onPlayLocalSong takes a play of its own, and whether the song before it is
+            // overtaken is that play's to say now.
+            isLatestPlaybackRequest.abandon();
             await onPlayLocalSong(resolvedLocalData, localQueue, {
+                ...startOptions,
                 shouldNavigateToPlayer,
                 unifiedQueue: newQueue,
                 queueRewritten,
@@ -751,6 +809,7 @@ export function usePlaybackQueueController({
             const navidromeSong = resolveNavidromePlaybackCarrier(song);
             if (!navidromeSong) {
                 restoreFmModeIfNotLanded();
+                isLatestPlaybackRequest.abandon();
                 setStatusMsg({ type: 'error', text: t('status.playbackError') });
                 tellFailure(null, false);
                 return;
@@ -760,7 +819,10 @@ export function usePlaybackQueueController({
                 .map(queuedSong => resolveNavidromePlaybackCarrier(queuedSong))
                 .filter((queuedSong): queuedSong is NavidromeSong => Boolean(queuedSong));
             fmModeBeforePendingPlayRef.current = null;
+            // Handed over, as to onPlayLocalSong above.
+            isLatestPlaybackRequest.abandon();
             await onPlayNavidromeSong(navidromeSong, navidromeQueue, {
+                ...startOptions,
                 shouldNavigateToPlayer,
                 unifiedQueue: newQueue,
                 queueRewritten,
@@ -778,7 +840,10 @@ export function usePlaybackQueueController({
             ? null
             : await hasCachedSongAudio(song);
 
-        if (!isLatestPlaybackRequest()) return;
+        if (!isLatestPlaybackRequest()) {
+            isLatestPlaybackRequest.abandon();
+            return;
+        }
 
         if (!hasImmediatePrefetchedAudio && !hasCachedAudioBlob) {
             setStatusMsg({ type: 'info', text: t('status.loadingSong') });
@@ -799,6 +864,7 @@ export function usePlaybackQueueController({
             });
             if (!isLatestPlaybackRequest()) {
                 giveBackUnusedCopy();
+                isLatestPlaybackRequest.abandon();
                 return;
             }
 
@@ -809,7 +875,10 @@ export function usePlaybackQueueController({
                 return;
             }
         } catch (error) {
-            if (!isLatestPlaybackRequest()) return;
+            if (!isLatestPlaybackRequest()) {
+                isLatestPlaybackRequest.abandon();
+                return;
+            }
             console.error('[App] Failed to fetch song URL:', error);
             presentOnlineFailure(onlineFailureOf({ operation: 'audio', providerId }, { error }));
             return;
@@ -830,6 +899,7 @@ export function usePlaybackQueueController({
             // The play that overtook this one may end without asking for a song of its own.
             withdrawAsk(song);
             giveBackUnusedCopy();
+            isLatestPlaybackRequest.abandon();
             return;
         }
         // The song before may have failed while this one loaded (its countdown, its toast that stays):
@@ -950,10 +1020,10 @@ export function usePlaybackQueueController({
         // are those around this one in the new queue.
         if (queueRewritten()) {
             const live = usePlaybackStore.getState().playQueue;
-            if (live.length > 1) {
+            if (live.length > 0) {
                 prefetchNearbySongs(resolvedSong, live, audioQuality, userId);
             }
-        } else if (newQueue.length > 1) {
+        } else if (newQueue.length > 0) {
             prefetchNearbySongs(resolvedSong, resolvedQueue, audioQuality, userId);
         }
     }, [
@@ -1134,9 +1204,7 @@ export function usePlaybackQueueController({
         const queueWritesAtStart = wholeQueueWritesSoFar();
 
         const stopAtQueueEnd = () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-            }
+            pauseWhatIsSounding(audioRef.current);
             setPlayerState(PlayerState.IDLE);
         };
 
@@ -1281,7 +1349,7 @@ export function usePlaybackQueueController({
         // A refusal the listener can act on stops the song where it is: it was playing, so PAUSED.
         const stopHere = (stopped: OnlineFailure) => {
             shouldAutoPlayRef.current = false;
-            audioRef.current?.pause();
+            pauseWhatIsSounding(audioRef.current);
             setPlayerState(PlayerState.PAUSED);
             setStatusMsg(withSignInAction(stopped, said, t));
         };

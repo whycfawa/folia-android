@@ -3,6 +3,7 @@ import { importFoliumParams, snapshotFoliumParams } from '../../../../../mods/pa
 import { buildVisualSettingsConfig } from '../../../../../services/obs/visualSettingsConfig';
 import { isThemeGenerationSource, type ThemeGenerationSource } from '../../../../../services/themePreferences';
 import { useLibraryWallLookStore } from '../../../../../stores/useLibraryWallLookStore';
+import { usePlayerChromeSettingsStore } from '../../../../../stores/usePlayerChromeSettingsStore';
 import { useStageSettingsStore } from '../../../../../stores/useStageSettingsStore';
 import { useThemeSettingsStore } from '../../../../../stores/useThemeSettingsStore';
 import { useTypographySettingsStore } from '../../../../../stores/useTypographySettingsStore';
@@ -10,6 +11,7 @@ import { useVisualizerAssetStore } from '../../../../../stores/useVisualizerAsse
 import { useVisualizerSettingsStore } from '../../../../../stores/useVisualizerSettingsStore';
 import type { DualTheme, ThemeMode, UrlBackgroundItem } from '../../../../../types';
 import { decompressConfig, readSavedCustomTheme } from '../../../../../utils/appearanceCodec';
+import { parseSubtitleOverlayLayout } from '../../../../../utils/lyrics/subtitleOverlayLayout';
 import { ACTIVATE_CUSTOM_THEME_KEY, buildImportPlan, THEME_DARK_KEY, THEME_LIGHT_KEY, type ImportPlan } from '../../../../../utils/appearanceImportPlan';
 import { isFontFamilyAvailable } from '../../../../../utils/fontAvailability';
 import { isLibraryWallSeamStyle } from '../../../../../utils/libraryWallSeamStyle';
@@ -136,6 +138,9 @@ export const applyImportedConfig = (config: any, keys: string[], theme: ConfigTh
     if (has('visualizerOpacity')) {
         storeVisualizer.handleSetVisualizerOpacity(config.visualizerOpacity);
     }
+    if (has('playerHeaderBlur')) {
+        usePlayerChromeSettingsStore.getState().handleTogglePlayerHeaderBlur(Boolean(config.playerHeaderBlur));
+    }
     if (has('hidePlayerTranslationSubtitle')) {
         storeTypographySettings.handleToggleHidePlayerTranslationSubtitle(Boolean(config.hidePlayerTranslationSubtitle));
     }
@@ -148,6 +153,10 @@ export const applyImportedConfig = (config: any, keys: string[], theme: ConfigTh
             || config.subtitleContentMode === 'both'
             || config.subtitleContentMode === 'none')) {
         storeTypographySettings.handleSetSubtitleContentMode(config.subtitleContentMode);
+    }
+    const subtitleOverlayLayout = has('subtitleOverlayLayout') ? parseSubtitleOverlayLayout(config.subtitleOverlayLayout) : null;
+    if (subtitleOverlayLayout) {
+        storeTypographySettings.handleSetSubtitleOverlayLayout(subtitleOverlayLayout);
     }
     if (has('subtitleOverlayBackground')) {
         storeTypographySettings.handleToggleSubtitleOverlayBackground(Boolean(config.subtitleOverlayBackground));
@@ -314,6 +323,9 @@ export const applyImportedConfig = (config: any, keys: string[], theme: ConfigTh
     }
     if (has('stageTrackPillTimeoutSec') && Number.isFinite(Number(config.stageTrackPillTimeoutSec))) {
         storeStageSettings.handleSetStageTrackPillTimeoutSec(Number(config.stageTrackPillTimeoutSec));
+    }
+    if (has('stageTrackPillPosition')) {
+        storeStageSettings.handleSetStageTrackPillPosition(config.stageTrackPillPosition);
     }
     if (has('stageTrackPillOnHome')) {
         storeStageSettings.handleToggleStageTrackPillOnHome(Boolean(config.stageTrackPillOnHome));

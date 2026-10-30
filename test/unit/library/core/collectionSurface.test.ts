@@ -66,6 +66,7 @@ const everything = (declaredActions?: LibraryDeclaredActions): GridSurfaceParams
     canOrganizeSongInfo: true,
     canExportPlaylist: true,
     canEditEntity: true,
+    canSetCover: true,
     canEditPlaylist: true,
     canToggleSubscribe: true,
     toggleInfoPanel: vi.fn(),

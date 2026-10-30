@@ -49,7 +49,7 @@ vi.mock('@/services/hostExtensionHooks', () => ({ hasBeforePlayHook: () => false
 vi.mock('@/services/onlineMusic/omni', () => ({
     omni: { canPlaySong: () => true, getProviderLabel: (id: string) => id, getSongReplacement: vi.fn(async () => null) },
 }));
-vi.mock('@/services/onlineMusic/songAvailability', () => ({ isSongUnavailable: vi.fn(() => false) }));
+vi.mock('@/services/onlineMusic/songAvailability', () => ({ askPlayedSong: () => null, isSongUnavailable: vi.fn(() => false) }));
 vi.mock('@/services/onlineMusic/resourceCache', () => ({
     hasCachedSongAudio: async () => null,
     getCachedSongCoverUrl: vi.fn(async () => null),
@@ -82,6 +82,7 @@ const { askForSong, askedSongKeyRef, dropPlaysInFlight, startOfAskedSong } = awa
 const { mediaFailureOf, onlineFailureOf } = await import('@/services/onlineMusic/failure/onlineFailureCase');
 const { useLoginWindowStore } = await import('@/components/login/loginWindowStore');
 const { neteaseAnswerError } = await import('@/services/onlineMusic/netease/neteaseFailure');
+const { hifiTransport } = await import('@/services/hifi/hifiPlayback');
 const notified = vi.mocked(notifyPlaybackFailed);
 const getSongReplacement = vi.mocked(omni.getSongReplacement);
 
@@ -1067,5 +1068,62 @@ describe('reporting playback failures', () => {
         expect(notified).toHaveBeenLastCalledWith({ song: landed, reason: null, phase: 'mid-playback', willAutoSkip: true });
         expect(notified).toHaveBeenCalledTimes(2);
         expect(notified).not.toHaveBeenCalledWith(expect.objectContaining({ phase: 'play' }));
+    });
+});
+
+// On the HiFi route mpv sounds the song and the deck has no source: a stop that only paused the deck left
+// the previous HiFi song playing under a stopped player (findings #3, #12).
+describe('stops on the HiFi route', () => {
+    let hifiPause: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+        hifiPause = vi.spyOn(hifiTransport, 'pause').mockImplementation(async () => undefined);
+        usePlaybackStore.setState({ playbackRoute: 'hifi', audioSrc: null });
+    });
+    afterEach(() => {
+        usePlaybackStore.setState({ playbackRoute: 'web' });
+    });
+
+    it.each(['sign-in-needed', 'subscription-required', 'region-restricted', 'not-configured'] as const)(
+        'pauses mpv as well as the deck when a new online song is refused with %s',
+        async (caseId) => {
+            loader.mockResolvedValue(unavailable(caseId));
+            const queue = controller();
+            await queue.playSong(songs[1], songs);
+            expect(queue.pause).toHaveBeenCalledOnce();
+            expect(hifiPause).toHaveBeenCalledOnce();
+            expect(usePlaybackStore.getState().playerState).toBe(PlayerState.IDLE);
+        },
+    );
+
+    it('pauses mpv when a refusal mid-playback stops the song where it is', () => {
+        const queue = controller();
+        queue.skipAfterPlaybackFailure(failureOf('preview-only'), { failedSongKey: getPlaybackSongKey(songs[0]) });
+        expect(queue.pause).toHaveBeenCalledOnce();
+        expect(hifiPause).toHaveBeenCalledOnce();
+        expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PAUSED);
+    });
+
+    it('pauses mpv when the queue ends', async () => {
+        usePlaybackStore.setState({ playQueue: [] });
+        const queue = controller();
+        await queue.handleNextTrack({ allowStopOnMissing: true });
+        expect(queue.pause).toHaveBeenCalledOnce();
+        expect(hifiPause).toHaveBeenCalledOnce();
+        expect(usePlaybackStore.getState().playerState).toBe(PlayerState.IDLE);
+    });
+
+    it('leaves mpv alone on the web route', async () => {
+        usePlaybackStore.setState({ playbackRoute: 'web', audioSrc: 'https://cdn.example/1.mp3' });
+        loader.mockResolvedValue(unavailable('sign-in-needed'));
+        const queue = controller();
+        await queue.playSong(songs[1], songs);
+        expect(queue.pause).toHaveBeenCalledOnce();
+        expect(hifiPause).not.toHaveBeenCalled();
+    });
+
+    it('countdown failures do not pause anything', async () => {
+        loader.mockResolvedValue(unavailable('unreachable'));
+        await controller().playSong(songs[1], songs);
+        expect(hifiPause).not.toHaveBeenCalled();
     });
 });

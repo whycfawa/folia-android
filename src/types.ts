@@ -44,9 +44,21 @@ export interface LyricBackgroundVocal {
   alternateTexts?: LyricAlternateText[];
 }
 
-// 'both' stacks romanization above translation; only the shared bottom subtitle overlay renders both rows.
+// 'both' stacks romanization above translation.
 // Modes that lay translation out inside their own lyric layout (Monet, Pendolo, Lattice, Still) fall back to translation only.
+// The shared bottom subtitle overlay does not read this: it has its own rows (SubtitleOverlayLayout).
 export type SubtitleContentMode = 'translation' | 'romanization' | 'both' | 'none';
+
+// One row of the shared bottom subtitle overlay: the line on screen, the line after it, or the line on screen's translation / romanization.
+export type SubtitleOverlayRowSource = 'current' | 'next' | 'translation' | 'romanization';
+export type SubtitleOverlayFollowRow = Exclude<SubtitleOverlayRowSource, 'current'>;
+// The shared bottom subtitle overlay's rows, top to bottom, joined with '+' (stored and carried as this string).
+// One row is the current line, its translation or its romanization; two or three rows open with the current line,
+// and each row after it is the next line, the translation or the romanization.
+export type SubtitleOverlayLayout =
+  | Exclude<SubtitleOverlayRowSource, 'next'>
+  | `current+${SubtitleOverlayFollowRow}`
+  | `current+${SubtitleOverlayFollowRow}+${SubtitleOverlayFollowRow}`;
 
 export interface LyricAgent {
   id: string;
@@ -592,6 +604,11 @@ export const DEFAULT_SONNET_TUNING: SonnetTuning = {
 export interface BeatEffectSetting {
   on: boolean;
   strength: number;
+  /**
+   * An effect made of parts, each with its own slider (BeatEffectDef `parts`, 雾笺's 疏雨轻车): their
+   * strengths by part key, 0..2, a part never touched at 1. `strength` is then unused.
+   */
+  parts?: Record<string, number>;
 }
 
 /**
@@ -675,6 +692,12 @@ export interface TemperaTuning {
    * lyric end - continuous, but nothing is ever still. See temperaLayout for the measurements.
    */
   glyphSettleStretch: number;
+  /** 墨染奥行 景深, 0..2: the depth blur and the layers' parallax. Only while 墨染奥行 is on. */
+  depthOfField: number;
+  /** 墨染奥行 镜头平移, 0..2: how far each shot slides in and drifts. Only while 墨染奥行 is on. */
+  depthPan: number;
+  /** 墨染奥行 歌词远近, 0..2: how far small glyphs fade back and big ones lead. Only while 墨染奥行 is on. */
+  glyphDepth: number;
   /** duo derives blocks from theme hues; mono collapses to a grayscale ink/paper ladder. */
   colorMode: TemperaColorMode;
   showBlocks: boolean;
@@ -720,6 +743,9 @@ export const DEFAULT_TEMPERA_TUNING: TemperaTuning = {
   glyphMotion: 1,
   wholeLineLyrics: false,
   glyphSettleStretch: 0.5,
+  depthOfField: 1,
+  depthPan: 1,
+  glyphDepth: 1,
   colorMode: 'duo',
   showBlocks: true,
   showDecor: true,
@@ -1265,6 +1291,8 @@ export interface SongResult {
   /** Identity of the concrete bytes selected for playback; used to reject stale derived media. */
   playbackSourceRevision?: string;
   fee?: number;
+  // Its audio is a music video's, which may hold an intro, a scene or another mix: rows tag it MV.
+  isVideo?: boolean;
   noCopyrightRcmd?: NoCopyrightRecommendation | null;
   resourceState?: boolean;
   privilege?: SongPrivilege;
@@ -1445,7 +1473,7 @@ export interface UnifiedSong extends SongResult {
   navidromeData?: any;
 }
 
-export type ReplayGainMode = 'off' | 'track' | 'album';
+export type ReplayGainMode = 'off' | 'track' | 'album' | 'auto';
 
 // Audio Analysis Types
 import { MotionValue } from 'framer-motion';

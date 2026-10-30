@@ -29,6 +29,7 @@ import type { PonderHintVisibility } from '../../types/ponder';
 import type { LibraryWallLook } from '../../utils/libraryWallLook';
 import type { LibraryWallSeamStyle } from '../../utils/libraryWallSeamStyle';
 import type { LibraryWallSeamDirection } from '../../utils/libraryWallSeamDirection';
+import type { HifiInstallResult, HifiRuntimeStatus } from '../../types/hifi';
 
 // src/components/command-palette/types.ts
 // Shared command palette contracts used by the registry, hook, and UI shell.
@@ -206,6 +207,13 @@ export type CommandPalettePlaybackContext = {
     toggleCurrentSongPureMusicMark: () => Promise<boolean>;
     /** Whether the current song is a local song, the only kind the instrumental mark applies to. */
     canToggleCurrentSongPureMusicMark: boolean;
+    /**
+     * Whether the current song plays through the HiFi engine (mpv) rather than the Web engine.
+     * A getter: the route changes with each song, and the context is not rebuilt for it.
+     */
+    isHifiRoute: () => boolean;
+    /** Opens the HiFi signal-path panel (the same one the badge by the progress bar opens). */
+    openHifiSignalPath: () => void;
 };
 
 export type CommandPaletteNavigationContext = {
@@ -266,6 +274,11 @@ export type CommandPaletteSettingsContext = {
      * A function, because switching suites while the palette is open has to close the wall-look commands off.
      */
     isLibraryWallLookAvailable: () => boolean;
+    /**
+     * Same predicate the settings rows only the grid reads show themselves with (library/app/gridLibraryActive):
+     * the *active* suite is the grid. A function, for the same reason as the one above.
+     */
+    isGridLibraryActive: () => boolean;
     /** bravais wall transparency (useLibraryWallLookStore); read live. Not part of appearance import / export. */
     libraryWallLook: () => LibraryWallLook;
     setLibraryWallLook: (look: LibraryWallLook) => void;
@@ -284,7 +297,7 @@ export type CommandPaletteSettingsContext = {
     /** Lyrics / blur on the visualizer that shows through the bravais wall: flip the stored values. */
     toggleLibraryWallBackdropLyrics: () => void;
     toggleLibraryWallBackdropBlur: () => void;
-    /** Which way the bravais info strip opens (useLibraryWallLookStore.seamDirection: auto / vertical / horizontal); read live. */
+    /** Which way the bravais info strip opens (useLibraryWallLookStore.seamDirection: auto / auto-reverse / vertical / horizontal); read live. */
     libraryWallSeamDirection: () => LibraryWallSeamDirection;
     setLibraryWallSeamDirection: (direction: LibraryWallSeamDirection) => void;
     ponderHintVisibility: PonderHintVisibility;
@@ -315,6 +328,7 @@ export type CommandPaletteSettingsContext = {
     setLatticePosterTintIntensity: (intensity: number) => void;
     toggleAlwaysShowTrackSwitchButtons: () => void;
     toggleAlwaysShowMainWindowTitlebar: () => void;
+    togglePlayerHeaderBlur: () => void;
     toggleHideFullscreenButton: () => void;
     toggleNativeMacFullscreenButton: () => void;
     toggleAutoHideCursorWithPlayerChrome: () => void;
@@ -354,6 +368,8 @@ export type CommandPaletteSettingsContext = {
     toggleHideRemoteControlTitlebar: () => void;
     /** Remote control window: when idle, expand the cover into the large sleeve. */
     toggleRemoteControlExpandCover: () => void;
+    /** Remote control window, transparent background: a soft dark shade under the idle type. */
+    toggleRemoteControlTextShade: () => void;
     /** Turns remote control click-through off (the way back into a click-through window). */
     unlockRemoteControl: () => void;
     /** OBS browser source: keep the main window's heavy animation while an OBS client is connected. */
@@ -401,6 +417,38 @@ export type CommandPaletteSettingsContext = {
      * model" for the rest of the session.
      */
     canUseTransitionPerformance: () => boolean;
+    /**
+     * Whether this desktop build has the HiFi engine (window.electron.hifi). A getter like the
+     * other capability checks; the HiFi settings page gates its switch on the same answer.
+     */
+    isHifiSupported: () => boolean;
+    /** The HiFi switch as stored, read at the press. */
+    isHifiEnabled: () => boolean;
+    /**
+     * Whether the "output is at full volume" warning was accepted once. Until it is, turning HiFi
+     * on goes through the settings page, where the warning is asked.
+     */
+    isHifiVolumeConfirmed: () => boolean;
+    setHifiEnabled: (enabled: boolean) => void;
+    /** The three HiFi switches without a warning of their own, flipped from what is stored at the press. */
+    toggleHifiExclusive: () => void;
+    toggleHifiNavidrome: () => void;
+    toggleHifiSoftwareVolume: () => void;
+    /**
+     * Whether "Detect mpv again" is offered: the engine exists and no mpv download is running, the
+     * same answer the HiFi page enables its button by. A getter: a download starts and ends without
+     * rebuilding this context.
+     */
+    canRedetectHifiRuntime: () => boolean;
+    /** Looks for mpv again; null when the main process did not answer. */
+    redetectHifiRuntime: () => Promise<HifiRuntimeStatus | null>;
+    /**
+     * Whether the download (or update) of mpv is offered: the HiFi page's own test (runtimeState.ts),
+     * which is false on Linux, while a download runs, and when the newest build is installed.
+     */
+    canInstallHifiRuntime: () => boolean;
+    /** Downloads and installs the recommended mpv; resolves once it is done, failed or cancelled. */
+    installHifiRuntime: () => Promise<HifiInstallResult | null>;
 };
 
 /**

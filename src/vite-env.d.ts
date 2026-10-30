@@ -282,6 +282,7 @@ declare global {
     | { type: 'stop-export' }
     | { type: 'cancel-export' }
     | { type: 'toggle-like' }
+    | import('./types/remoteControl').RemoteQueueCommand
     | import('./types/remoteControl').RemoteActionActivation;
 
   type ElectronVideoExportStatus =
@@ -359,6 +360,9 @@ declare global {
     updatedAt: number;
     mainWindowWidth?: number;
     mainWindowHeight?: number;
+    queue?: readonly import('./types/remoteControl').RemoteQueueItem[];
+    queuePlayingKey?: string | null;
+    queueReadOnly?: boolean;
   }
 
   interface ElectronPlaybackSyncBridgeStatus {
@@ -880,7 +884,7 @@ declare global {
        */
       getBackgroundThrottlingState?: () => Promise<{ active: boolean; hidden: boolean }>;
       onBackgroundThrottlingChanged?: (callback: (state: { active: boolean; hidden: boolean }) => void) => () => void;
-      setAppLocale: (localeKey: 'en' | 'zh-CN' | 'zh-TW' | 'in') => Promise<string>;
+      setAppLocale: (localeKey: 'en' | 'zh-CN' | 'zh-TW' | 'in' | 'vi') => Promise<string>;
       getCacheDirectory: () => Promise<ElectronCacheDirectoryResult>;
       chooseCacheDirectory: () => Promise<ElectronCacheDirectoryResult>;
       resetCacheDirectory: () => Promise<ElectronCacheDirectoryResult>;
@@ -1018,11 +1022,12 @@ declare global {
       getRemoteControlAlwaysOnTop: () => Promise<boolean>;
       setRemoteControlAlwaysOnTop: (alwaysOnTop: boolean) => Promise<boolean>;
       /** alwaysOnTopSupported is false on native Wayland, where setAlwaysOnTop is silently ignored. */
-      getRemoteControlWindowSettings: () => Promise<{ hideTitlebar: boolean; clickThrough: boolean; expandCover?: boolean; alwaysOnTopSupported?: boolean }>;
-      onRemoteControlWindowSettingsChanged: (callback: (settings: { hideTitlebar: boolean; clickThrough: boolean; expandCover?: boolean; alwaysOnTopSupported?: boolean }) => void) => () => void;
+      getRemoteControlWindowSettings: () => Promise<{ hideTitlebar: boolean; clickThrough: boolean; expandCover?: boolean; textShade?: boolean; alwaysOnTopSupported?: boolean }>;
+      onRemoteControlWindowSettingsChanged: (callback: (settings: { hideTitlebar: boolean; clickThrough: boolean; expandCover?: boolean; textShade?: boolean; alwaysOnTopSupported?: boolean }) => void) => () => void;
       /** Null when the main process cannot tell (a Wayland session): the page then uses its own mouse events. */
       getRemoteControlPointerInside: () => Promise<boolean | null>;
       onRemoteControlPointerInside: (callback: (inside: boolean) => void) => () => void;
+      setRemoteControlQueueExpansion: (wantedHeight: number | null, options?: { preview?: boolean; direction?: 'down' | 'up' }) => Promise<import('./types/remoteControl').RemoteQueueExpansion | null>;
       publishRemoteControlSnapshot: (snapshot: ElectronRemoteControlSnapshot) => Promise<boolean>;
       getRemoteControlSnapshot: () => Promise<ElectronRemoteControlSnapshot | null>;
       sendRemoteControlCommand: (command: ElectronRemoteControlCommand) => Promise<boolean>;
@@ -1082,6 +1087,40 @@ declare global {
         onModLog: (callback: (entry: ModLogEntry) => void) => () => void;
         onModRpcMessage: (callback: (message: ModRpcMessage) => void) => () => void;
         onModSecretChanged: (callback: (change: ModSecretChange) => void) => () => void;
+      };
+      /** HiFi 原生直通后端（mpv 子进程）。只在桌面版存在。 */
+      hifi?: {
+        getRuntimeStatus: () => Promise<import('./types/hifi').HifiRuntimeStatus>;
+        detectRuntime: () => Promise<import('./types/hifi').HifiRuntimeStatus>;
+        /** 弹系统文件框选 mpv 可执行文件；取消时为 null。 */
+        pickRuntimePath: () => Promise<string | null>;
+        installRuntime: () => Promise<import('./types/hifi').HifiInstallResult>;
+        cancelInstall: () => Promise<void>;
+        configure: (config: import('./types/hifi').HifiEngineConfig) => Promise<void>;
+        listDevices: () => Promise<import('./types/hifi').HifiDevice[]>;
+        load: (request: import('./types/hifi').HifiLoadRequest) => Promise<import('./types/hifi').HifiLoadResult>;
+        play: () => Promise<void>;
+        pause: () => Promise<void>;
+        seek: (positionSec: number) => Promise<void>;
+        stop: () => Promise<void>;
+        setLoopFile: (loop: boolean) => Promise<void>;
+        preloadNext: (request: import('./types/hifi').HifiLoadRequest) => Promise<boolean>;
+        clearNext: () => Promise<void>;
+        getSnapshot: () => Promise<import('./types/hifi').HifiEngineState>;
+        /** Linux：用 pw-dump 读 mpv 那路流在 PipeWire 里的去向；不是 PipeWire、没有 pw-dump、找不到流时为 null。 */
+        probeOutput: () => Promise<import('./types/hifi').HifiOutputProbe | null>;
+        respondRead: (readId: string, response: import('./types/hifi').HifiReadResponse) => Promise<void>;
+        /** Linux：HiFi 在放时主进程登记的 MPRIS 的状态；active 为假时交还总线名。别的平台没有处理方。 */
+        setMprisState?: (state: import('./types/hifi').HifiMprisState) => Promise<void>;
+        setMprisArtwork?: (trackKey: string, artwork: import('./types/hifi').HifiMprisArtwork | null) => Promise<void>;
+        onMprisCommand?: (callback: (command: import('./types/hifi').HifiMprisCommand) => void) => () => void;
+        /** HiFi 在放时主进程登记 MPRIS 成没成（每次推送后报）；没成时页面退回静音保活。 */
+        onMprisStatus?: (callback: (status: import('./types/hifi').HifiMprisStatus) => void) => () => void;
+        onState: (callback: (state: import('./types/hifi').HifiEngineState) => void) => () => void;
+        onClock: (callback: (update: import('./types/hifi').HifiClockUpdate) => void) => () => void;
+        onError: (callback: (event: import('./types/hifi').HifiErrorEvent) => void) => () => void;
+        onInstallProgress: (callback: (progress: import('./types/hifi').HifiInstallProgress) => void) => () => void;
+        onReadRequest: (callback: (request: import('./types/hifi').HifiReadRequest) => void) => () => void;
       };
     };
   }

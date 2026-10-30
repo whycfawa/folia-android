@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { useNowPlayingCardPositioningEntry } from './now-playing-toast/useNowPlayingCardPositioningEntry';
+import { useNowPlayingCardLayoutStore } from './now-playing-toast/nowPlayingCardLayoutStore';
 import { currentTime, lyricCurrentTime } from '../../../stores/motionSignals';
 import { useAppViewStore } from '../../../stores/useAppViewStore';
 import { useAppChromeStore } from '../../../stores/useAppChromeStore';
@@ -33,6 +35,8 @@ const MEMORY_MONITOR_SHORTCUT_LABEL = 'Alt+Shift+M';
  */
 export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => {
     const { t } = useTranslation();
+    useNowPlayingCardPositioningEntry(deps.navigateToPlayer);
+    const cardPositioning = useNowPlayingCardLayoutStore(state => state.isPositioning);
     const currentView = useAppViewStore(state => state.view);
     const isPlayerChromeHidden = useAppChromeStore(state => state.isPlayerChromeHidden);
     // 联动控制：控制条、命令面板按钮与右侧面板按钮共用原版「自动隐藏播放控制条」的这一刻状态。
@@ -103,7 +107,8 @@ export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => 
         playQueue,
         isFmMode,
         coverUrl: displayCoverUrl,
-        stageTrackPillMode,
+        stageTrackPillMode: cardPositioning ? 'always' : stageTrackPillMode,
+        stageTrackPillOnScreen: deps.stageTrackPillOnScreen || (cardPositioning && currentView === 'player'),
         stageTrackPillTimeoutSec,
         noTrackText: t('ui.noTrack'),
         prevTrackLabel: t('ui.previousTrack'),
@@ -121,6 +126,7 @@ export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         ...Object.values(deps),
+        cardPositioning,
         currentView,
         isSearchOpen,
         isDaylight,

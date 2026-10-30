@@ -17,6 +17,8 @@ import { setIsDevDebugOverlayVisible, setIsMemoryMonitorVisible } from '../../..
 import { useAudioSettingsStore } from '../../../../stores/useAudioSettingsStore';
 import { currentTime } from '../../../../stores/motionSignals';
 import { errorFields } from '../../../../utils/errorText';
+import { hifiTransport, isHifiRoute } from '../../../../services/hifi/hifiPlayback';
+import { seekHifiRoute } from '../../../hifi/hifiRouteTransport';
 
 // src/components/app/playback/bridges/usePlaybackInteractionBridge.ts
 
@@ -148,6 +150,16 @@ export function usePlaybackInteractionBridge({
             return;
         }
 
+        // mpv plays this song: the deck below is silent and has no source. No fades on that route.
+        if (isHifiRoute()) {
+            if (hifiTransport.isPaused()) {
+                startPlaybackFromInteraction();
+            } else {
+                pausePlayback();
+            }
+            return;
+        }
+
         // The element is still playing while a pause fades out, so the check below would read it as
         // playing and pause again. A second press during the fade is a resume.
         if (playbackFade.isFadingOut()) {
@@ -261,7 +273,8 @@ export function usePlaybackInteractionBridge({
                     break;
                 }
                 case 'Space':
-                    if (currentSong && (audioSrc || isNowPlayingStageActive || (activePlaybackContext === 'stage' && stageActiveEntryKind === 'lyrics'))) {
+                    // On the HiFi route `audioSrc` is null: mpv has the song.
+                    if (currentSong && (audioSrc || isHifiRoute() || isNowPlayingStageActive || (activePlaybackContext === 'stage' && stageActiveEntryKind === 'lyrics'))) {
                         event.preventDefault();
                         if (isNowPlayingStageActive) {
                             return;
@@ -299,7 +312,7 @@ export function usePlaybackInteractionBridge({
                         // Off the motion value, not the element: during a blend that value is driven
                         // by the deck on screen, which is the track this key is meant to move.
                         const nextTime = Math.max(0, currentTime.get() - 5);
-                        if (!seekDuringTransition?.(nextTime) && audioRef.current) {
+                        if (!seekHifiRoute(nextTime) && !seekDuringTransition?.(nextTime) && audioRef.current) {
                             audioRef.current.currentTime = nextTime;
                         }
                     }
@@ -335,7 +348,7 @@ export function usePlaybackInteractionBridge({
                         // the element holds the ARRIVING track's length, and clamping this track's
                         // position against it lands past its end.
                         const nextTime = Math.min(duration || 0, currentTime.get() + 5);
-                        if (!seekDuringTransition?.(nextTime) && audioRef.current) {
+                        if (!seekHifiRoute(nextTime) && !seekDuringTransition?.(nextTime) && audioRef.current) {
                             audioRef.current.currentTime = nextTime;
                         }
                     }

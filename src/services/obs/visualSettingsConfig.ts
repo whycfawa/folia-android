@@ -8,6 +8,7 @@ import { useTypographySettingsStore } from '../../stores/useTypographySettingsSt
 import { useThemeSettingsStore } from '../../stores/useThemeSettingsStore';
 import { useStageSettingsStore } from '../../stores/useStageSettingsStore';
 import { useLibraryWallLookStore } from '../../stores/useLibraryWallLookStore';
+import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
 
 // src/services/obs/visualSettingsConfig.ts
 // Everything compressConfig serializes except the theme. Reads the live settings store, so both
@@ -49,6 +50,7 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     hidePlayerTranslationSubtitle: storeTypographySettings.hidePlayerTranslationSubtitle,
     showSubtitleTranslation: storeTypographySettings.showSubtitleTranslation,
     subtitleContentMode: storeTypographySettings.subtitleContentMode,
+    subtitleOverlayLayout: storeTypographySettings.subtitleOverlayLayout,
     subtitleOverlayBackground: storeTypographySettings.subtitleOverlayBackground,
     subtitleUpcomingLyricsBlur: storeTypographySettings.subtitleUpcomingLyricsBlur,
     subtitleOverlayOpacity: storeTypographySettings.subtitleOverlayOpacity,
@@ -101,6 +103,7 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     stageTrackPillMode: storeStageSettings.stageTrackPillMode,
     stageTrackPillTimeoutSec: storeStageSettings.stageTrackPillTimeoutSec,
     stageTrackPillOnHome: storeStageSettings.stageTrackPillOnHome,
+    stageTrackPillPosition: storeStageSettings.stageTrackPillPosition,
     // The bravais wall's collection stack edges (a tile look, so it travels with a shared look by the
     // settings rule). The wall's transparency and windows per block deliberately stay out — the user
     // decided so; see useLibraryWallLookStore.
@@ -115,6 +118,9 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     // Which way the info strip opens (a column split, a row split across the wall, or by the screen's
     // shape): part of the wall's look, no user exception.
     libraryWallSeamDirection: useLibraryWallLookStore.getState().seamDirection,
+    // The frosted bar behind the player page's titlebar: a look of the player page, no user exception.
+    // The OBS overlay draws no titlebar and ignores it; it rides along so a copied look keeps it.
+    playerHeaderBlur: usePlayerChromeSettingsStore.getState().playerHeaderBlur,
   };
 }
 

@@ -315,6 +315,31 @@ describe('the runtime log file and the session-log switch', () => {
         expect(written).toContain('[Main] three');
         expect(written).not.toContain('while it is off');
     });
+
+    it('keeps credential values out of the file and the panel, from main and from the page', () => {
+        const silent = vi.spyOn(console, 'info').mockImplementation(() => {});
+        const stored: Record<string, unknown> = { debug_runtime_log_enabled: true };
+        const handlers: Record<string, (event: unknown, payload?: unknown) => any> = {};
+        const host = createDebugHost({
+            app: { getPath: () => root, on: () => {}, getAppMetrics: () => [] },
+            ipcMain: { handle: (channel: string, run: any) => { handlers[channel] = run; }, on: (channel: string, run: any) => { handlers[channel] = run; } },
+            store: { get: (key: string) => stored[key], set: (key: string, value: unknown) => { stored[key] = value; } },
+            BrowserWindow: { getAllWindows: () => [] },
+        });
+        // The line the NetEase API package writes for every request, with the cookie the page put in the address.
+        console.info('[INFO]', 'Request Success: [eapi] /song/url/v1?id=1&cookie=MUSIC_U=secret-u; __csrf=secret-csrf; os=pc&level=lossless');
+        handlers['debug-runtime-lines']({}, [{ at: Date.now(), level: 'log', tag: 'Page', text: 'qq search {"cookie":"qqmusic_key=secret-q"}' }]);
+        let panel: Array<{ text: string }> = [];
+        handlers['debug-main-lines-ready']({ sender: { isDestroyed: () => false, isCrashed: () => false, send: (_channel: string, sent: typeof panel) => { panel = sent; } } });
+        host.stop();
+        silent.mockRestore();
+
+        const written = fs.readdirSync(path.join(root, 'logs', 'runtime')).map(name => fs.readFileSync(path.join(root, 'logs', 'runtime', name), 'utf-8')).join('');
+        expect(written).toContain('/song/url/v1?id=1&cookie=<redacted>&level=lossless');
+        expect(written).toContain('qq search {"cookie":"<redacted>"}');
+        expect(written).not.toMatch(/secret/);
+        expect(panel.map(line => line.text).join('\n')).not.toMatch(/secret/);
+    });
 });
 
 describe('the split memory log switch', () => {
@@ -511,5 +536,7 @@ describe('the main-process lines for the log panel', () => {
         expect(consoleText(['[Ytm] plan', { route: 'web' }, 12])).toBe('[Ytm] plan {"route":"web"} 12');
         expect(consoleText(['[Ytm] kept', circular, 10n])).toBe('[Ytm] kept [object Object] 10');
         expect(consoleText([new Error('broke')])).toMatch(/^Error: broke\n\s+at /);
+        // An error inside an object: JSON.stringify alone writes it as {}.
+        expect(consoleText(['[App] failed', { error: new TypeError('no sink') }])).toBe('[App] failed {"error":"TypeError: no sink"}');
     });
 });

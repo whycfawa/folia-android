@@ -91,6 +91,8 @@ P5 收尾后，首页、集合与歌手业务的真源统一为 core 资源、�
 
 在线曲目缓存沿用 main 的 schema 7，保留原始 `nextOffset`、`hasMore` 与 `total`。混合分页的可见歌曲数可能少于上游位置，不能按行数恢复；旧快照缺少安全游标时重新读取，已完成快照也不按集合估计总数继续补页。日推卡片由首页 feed 的 provider 能力决定，空结果与不支持分别表达。
 
+没有可靠更新时间的歌单与专辑，已读取的资源在现有有界 LRU 中最多复用 5 分钟（从首页成功读取时算起，不因再次打开延长），不把无版本磁盘快照视为有效。此类资源按账号隔离；歌曲数变化、手动刷新、删除曲目或超时后重新读取，不对每日推荐与私人 FM 启用此兜底。QQ 自建歌单使用 `/user/playlist` 的秒级 `updateTime` 转成毫秒作为版本，缓存回读保留毫秒值；空的“我喜欢”实测该值随读取变化，不采用它的版本。
+
 ## 一次「打开歌单并删一首歌」是怎么走的
 
 1. 用户在首页点开一个歌单。首页只调用 `onOpenGridView(歌单描述)`，导航 store 记下「现在打开的是它」。
@@ -275,6 +277,7 @@ suite 自己的外观操作（bravais 的缝等级、打开面板、定位正在
 | `resync-folder` / `resync-all-folders` | 重新扫描文件夹 | 可选 | `mutations.resyncFolder` / `resyncAllFolders` |
 | `export-playlist` | 导出本地歌单 | 可选 | `mutations.exportPlaylist` |
 | `edit-entity` / `organize-song-info` / `match-song` | 打开宿主的编辑 / 整理 / 匹配对话框 | 可选，几乎零成本（对话框由宿主提供） | `mutations.editEntity` / `organizeSongInfo` / `matchSong` |
+| `set-cover` | 打开宿主的集合封面对话框（本地文件夹 / 专辑 / 歌单的自定义封面：poster.png、上传、选一首歌的封面，或恢复默认） | 可选，几乎零成本（对话框由宿主提供） | `mutations.setCover`；能力 `capabilities.setCover`。封面本身由 core 解析好（首页分组、集合描述的 `coverUrl`、本地歌手页的专辑），suite 不必自己查；画曲目本身时用描述的 `automaticCoverUrl` |
 | `daily-date` | 切换每日推荐的历史日期 | 可选 | `mutations.setDailyDate` |
 | `add-to-playlist` / `create-playlist` | 加入 / 新建 Navidrome 歌单 | 可选，需要歌单选择器 | `mutations.addToPlaylist` / `createPlaylist` |
 | `open-album` / `open-artist` | 打开曲目上的专辑 / 歌手（嵌套压栈） | 推荐 | `resolveTrackAlbumLink` / `resolveTrackArtistLinks`（`core/shared/trackLinks`，在线曲目注入 `canResolveSongCatalogRef`）→ `onOpenAlbum` / `onOpenArtist` |
@@ -453,7 +456,7 @@ account surface 只在 `pendingSwitch` 非空时渲染内容。它不是一页�
 
 **stage 与 surface 的分工**
 
-- `BravaisStage`（manifest 的 `stage`）拥有画面：墙（虚拟化的磁贴，最多约 400 张）、相机、缝（信息条 / 书脊 / 折叠三级开口，只开在 12×8 块的边界上；设置「信息条方向」为横向、或自动且屏幕竖着时开在块行之间）、翻牌、聚焦卡、键盘焦点、列表 / 目录树面板、表单态，以及外观动作的注册。
+- `BravaisStage`（manifest 的 `stage`）拥有画面：墙（虚拟化的磁贴，最多约 400 张）、相机、缝（信息条 / 书脊 / 折叠三级开口，只开在 12×8 块的边界上；设置「信息条方向」为横向、自动且屏幕竖着、或自动（反向）且屏幕横着时开在块行之间）、翻牌、聚焦卡、键盘焦点、列表 / 目录树面板、表单态，以及外观动作的注册。
 - `BravaisHome` / `BravaisCollection` / `BravaisArtist` 订阅 core 的 binding，把数据投影成**层描述**（`BravaisLayer`：已投影的展示数据 + 身份稳定的回调，不放资源对象），经 `useBravaisLayerRegistration` 推进 suite 内的 `bravaisStageStore`（首页一个位、顶层一个位）；照常注册命令面板；自己只渲染不接指针的锚点（`data-ponder-page-scope="bravais-wall"`）。
 - bravais 不声明 account surface：切换确认回退到 grid 的确认框，登录在共用的登录窗口里。首页在线页签窄缝的账户入口（`BravaisSeamAccountSwitcher`）是一个按钮，点了打开登录窗口（已登录时开在当前平台上）。
 - stage 按导航快照的 `depth` 与上次显示时记下的深度决定换层种类：变深 = push（被点的磁贴成为起点，排序从它向外展开）、变浅 = back（按布局记忆恢复相机、缝的锚点、起点与焦点）、同深度换层 = replace（首页换页签，整墙出场 / 入场）、`origin` 为 search / player 时 0 ↔ ≥1 是整墙 enter / exit。栈里有重复的集合时，「同键不同深度且正是栈顶」也算换层。stage 根节点的 `data-bravais-shift` / `-seq` 记下每次换层。
@@ -493,7 +496,7 @@ account surface 只在 `pendingSwitch` 非空时渲染内容。它不是一页�
 **透光与遮挡播放页**
 
 - 三档：实色（默认；2026-10-08 起，此前默认部分透明，已存的选择不迁移）/ 部分透明（每块 12 个 slot 里固定 k 个是透明的「窗」，k = 1–6，默认 3）/ 全透明（墙上的磁贴只画标题，聚焦卡照常画封面）。窗是 wall 引擎的保留位（`blockReservedSlots`），rank→slot 跳过它们，不可聚焦、不可点。
-- 偏好是 app 层的 `src/stores/useLibraryWallLookStore.ts`（`look`、`windowsPerBlock`，localStorage `library_wall_look` / `library_wall_windows_per_block`）——设置 UI 不能 import suite，所以不放在 suite 里。设置在界面设置「Bravais 墙面」分组（`BravaisSettingsSection`，紧跟「资料库界面」，只在生效 suite 是 bravais 时显示；bravais 独有的设置都放这里）里的 `LibraryWallLookSettings`，命令面板有 `library-wall-look-picker` 与 `library-wall-windows-picker`（窗数只在部分透明时可用），外观动作 `wall-look` / `more-windows` / `fewer-windows` 写同一个 store。**不进外观配置的导入导出**（用户决定，是 `skills/settings-feature-integration` 视觉设置规则的明确例外，store 的 `@note` 写明）。同一 store 的集合叠页边开关 `collectionStackEdges`（`library_wall_stack_edges`）没有这个例外，进导入导出（`libraryWallStackEdges` / 短码 `lwse`）；命令 `library-wall-stack-edges-toggle`，分组锚点命令 `settings-bravais`。信息条的材质与墙后的画面（2026-10-09）同样没有例外、同样进导入导出：`seamClear`（信息条始终透明，`library_wall_seam_clear`，`libraryWallSeamClear` / `lwsc`）、`seamStyle`（实色模式的 8 个预设，`library_wall_seam_style`，`libraryWallSeamStyle` / `lwss`，材质定义在 `utils/libraryWallSeamStyle.ts`）、`backdropLyrics` / `backdropBlur`（`library_wall_backdrop_lyrics` / `_blur`，`lwbl` / `lwbb`）；命令 `library-wall-seam-clear-toggle`、`library-wall-seam-style-picker`（透明开着时不可用）、`library-wall-backdrop-lyrics-toggle`、`library-wall-backdrop-blur-toggle`。信息条方向 `seamDirection`（自动 / 竖向 / 横向，默认自动；`library_wall_seam_direction`，`libraryWallSeamDirection` / `lwsd`，命令 `library-wall-seam-direction-picker`，规则在 `utils/libraryWallSeamDirection.ts`）同样进导入导出。自动只看视口形状：高至少是宽的 1.1 倍时算竖屏、用横向，转屏时缝合上再换方向张开。横向时首页窄缝 / 书脊、集合与歌手页的信息条 / 书脊和首页搜索框从块行之间的横向缝隙裂开（锚点是块行边界的世界 y，墙上下分开，`bravaisAnchor`、`BravaisSeamRow` / `BravaisSeamHomeRow`、`bravaisSeamRow.css`）；列表 / 目录面板、表单与歌手 / 专辑海报仍是竖的，换方向时缝先合上再在另一个方向张开（`useBravaisSeam`）。折叠标签仍在左右侧边。
+- 偏好是 app 层的 `src/stores/useLibraryWallLookStore.ts`（`look`、`windowsPerBlock`，localStorage `library_wall_look` / `library_wall_windows_per_block`）——设置 UI 不能 import suite，所以不放在 suite 里。设置在界面设置「Bravais 墙面」分组（`BravaisSettingsSection`，紧跟「资料库界面」，只在生效 suite 是 bravais 时显示；bravais 独有的设置都放这里）里的 `LibraryWallLookSettings`，命令面板有 `library-wall-look-picker` 与 `library-wall-windows-picker`（窗数只在部分透明时可用），外观动作 `wall-look` / `more-windows` / `fewer-windows` 写同一个 store。**不进外观配置的导入导出**（用户决定，是 `skills/settings-feature-integration` 视觉设置规则的明确例外，store 的 `@note` 写明）。同一 store 的集合叠页边开关 `collectionStackEdges`（`library_wall_stack_edges`）没有这个例外，进导入导出（`libraryWallStackEdges` / 短码 `lwse`）；命令 `library-wall-stack-edges-toggle`，分组锚点命令 `settings-bravais`。信息条的材质与墙后的画面（2026-10-09）同样没有例外、同样进导入导出：`seamClear`（信息条始终透明，`library_wall_seam_clear`，`libraryWallSeamClear` / `lwsc`）、`seamStyle`（实色模式的 8 个预设，`library_wall_seam_style`，`libraryWallSeamStyle` / `lwss`，材质定义在 `utils/libraryWallSeamStyle.ts`）、`backdropLyrics` / `backdropBlur`（`library_wall_backdrop_lyrics` / `_blur`，`lwbl` / `lwbb`）；命令 `library-wall-seam-clear-toggle`、`library-wall-seam-style-picker`（透明开着时不可用）、`library-wall-backdrop-lyrics-toggle`、`library-wall-backdrop-blur-toggle`。信息条方向 `seamDirection`（自动 / 自动（反向）/ 竖向 / 横向，默认自动；`library_wall_seam_direction`，`libraryWallSeamDirection` / `lwsd`，命令 `library-wall-seam-direction-picker`，规则在 `utils/libraryWallSeamDirection.ts`）同样进导入导出。自动只看视口形状：高至少是宽的 1.1 倍时算竖屏、用横向；自动（反向）同一个判断、结果反过来（竖屏用竖向，横屏用横向）；转屏时缝合上再换方向张开。横向时首页窄缝 / 书脊、集合与歌手页的信息条 / 书脊和首页搜索框从块行之间的横向缝隙裂开（锚点是块行边界的世界 y，墙上下分开，`bravaisAnchor`、`BravaisSeamRow` / `BravaisSeamHomeRow`、`bravaisSeamRow.css`）；列表 / 目录面板、表单与歌手 / 专辑海报仍是竖的，换方向时缝先合上再在另一个方向张开（`useBravaisSeam`）。折叠标签仍在左右侧边。
 - 叠色与熄灯（`useLatticeSettingsStore`，与 Lattice 共用）也作用到缝与集合的叠页边（设计稿 §7.5「缝（信息条）也受叠色与熄灯影响」、§7.7），样式在 `bravaisAppearance.css` / `bravaisTileKinds.css`，共享的 `wall.css` 不动。
 - 两个透明档下，墙面由按块的实色底板铺（每个已挂载的 12×8 块一张内联 SVG，只在窗位挖洞，随相机平移；聚焦卡让位时只逐帧重画那一块），详见设计稿 §11。
 - 实色档、且信息条不是「始终透明」时 stage `reportPlayerOcclusion(true)`，首页停稳后 visualizer 卸载（与 Lattice 一致）；其余情况（透光档，或透明的缝）报 `false`，visualizer 照常在墙下渲染。墙后画面的歌词 / 模糊经 `reportPlayerBackdrop` 报给宿主（只在透着时为真）。
