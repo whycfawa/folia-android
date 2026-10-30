@@ -6,6 +6,7 @@ import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import type { VisualizerSharedProps } from '../definition';
 import { useVisualizerRuntime } from '../runtime';
 import { useVisualizerSongCommit } from '../songHandover';
+import { ARRIVING_MARK } from '../preview/frozenPicture';
 import { useFirstFrameDrawn } from '../styleTransition/firstFrame';
 import { resolveSubtitleFontSizes } from '../subtitleFontSizes';
 import VisualizerShell from '../VisualizerShell';
@@ -34,6 +35,8 @@ const VisualizerNebbia: React.FC<Props> = (props) => {
     const [failed, setFailed] = useState(false);
     // WebGL 上下文丢了又回来时加一，重建运行时
     const [generation, setGeneration] = useState(0);
+    // 着色器在后台编，第一帧之前画布是空的：拿这一刻做小图的（frozenPicture.ts）等它画出来
+    const [drawn, setDrawn] = useState(false);
     const firstFrameDrawn = useFirstFrameDrawn();
 
     // 真正在画的歌：切歌时滞后于 props，免得对着还没到的歌词排版（songHandover.ts）
@@ -57,8 +60,8 @@ const VisualizerNebbia: React.FC<Props> = (props) => {
                 host,
                 currentTime,
                 vocal: audioBands.vocal,
-                onFirstFrame: () => latest.current.firstFrameDrawn(),
-                onFailed: () => { setFailed(true); latest.current.firstFrameDrawn(); },
+                onFirstFrame: () => { setDrawn(true); latest.current.firstFrameDrawn(); },
+                onFailed: () => { setFailed(true); setDrawn(true); latest.current.firstFrameDrawn(); },
                 onRestored: () => setGeneration(value => value + 1),
             }, l.theme, l.tuning);
             runtime.setFontScale(l.lyricsFontScale);
@@ -68,6 +71,7 @@ const VisualizerNebbia: React.FC<Props> = (props) => {
         } catch (error) {
             console.warn('[Nebbia] runtime failed to start', error);
             setFailed(true);
+            setDrawn(true);
             latest.current.firstFrameDrawn();
             return undefined;
         }
@@ -98,7 +102,7 @@ const VisualizerNebbia: React.FC<Props> = (props) => {
     return (
         <VisualizerShell theme={theme} audioPower={audioPower} audioBands={audioBands} sharedProps={props} renderBackground={false}>
             <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" style={{ background: '#05070a' }}>
-                <div ref={hostRef} className="absolute inset-0" aria-hidden="true" />
+                <div ref={hostRef} className="absolute inset-0" aria-hidden="true" {...(drawn ? {} : { [ARRIVING_MARK]: '' })} />
                 {failed && (
                     <div
                         className="absolute inset-0 flex items-center justify-center px-10 text-center"

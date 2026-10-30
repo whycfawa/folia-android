@@ -2,91 +2,45 @@ import { clamp, NEBBIA_FIXED, MASK_SCALE, smooth } from './nebbiaConstants';
 import { windDrift, type NebbiaGlassMotion } from './nebbiaDrops';
 import { type Drip, type LaidChar } from './nebbiaScene';
 import { pointAt, type GlyphStroke } from './nebbiaGlyphs';
+import type { NebbiaSegments } from './nebbiaSegments';
 
 // src/components/visualizer/nebbia/nebbiaInk.ts
-// 在擦痕遮罩（2D 画布，半分辨率，亮 = 擦开）上画手指写的字：按演唱时长一笔一笔写，笔尖前推着一颗收笔水珠，
+// 在擦痕遮罩（半分辨率，亮 = 擦开；线段先收进 nebbiaSegments.ts，再由 nebbiaMaskGl.ts 在 GPU 上画）上画手指写的字：按演唱时长一笔一笔写，笔尖前推着一颗收笔水珠，
 // 擦痕边凝出小水珠，少数笔画写完后淌下一颗水珠、留下水痕。着色器再按噪声给遮罩取阈值，边缘毛糙。
 
 export interface InkContext {
-    ctx: CanvasRenderingContext2D;
+    ctx: NebbiaSegments;
     motion: NebbiaGlassMotion;
     strokeWidth: number;
     writeSpeed: number;
     busSpeed: number;
 }
 
-/** 一条手指擦痕：三层由宽到窄、由暗到亮，叠成边缘渐变。 */
-export const strokePath = (ctx: CanvasRenderingContext2D, path: Path2D, width: number, v: number) => {
-    strokePathWithLayers(ctx, path, width, v, 3);
-};
-
-const strokePathWithLayers = (ctx: CanvasRenderingContext2D, path: Path2D, width: number, v: number, layers: 1 | 2 | 3) => {
-    const passes = layers === 1
-        ? [[1.0, 0.9]] as const
-        : layers === 3
-            ? [[1.3, 0.38], [1.0, 0.72], [0.62, 1]] as const
-            : [[1.0, 0.72], [0.62, 1]] as const;
-    for (const [wk, vk] of passes) {
-        const c = Math.round(255 * v * vk);
-        ctx.strokeStyle = `rgb(${c},${c},${c})`;
-        ctx.lineWidth = width * wk;
-        ctx.stroke(path);
-    }
-};
-
-/** 和 strokePath 同一组三层描边，但描的是当前 Canvas 路径，省掉每帧的 Path2D 分配。 */
-export const strokeCurrentPath = (ctx: CanvasRenderingContext2D, width: number, v: number, layers: 1 | 2 | 3 = 2) => {
-    const passes = layers === 1
-        ? [[1.0, 0.9]] as const
-        : layers === 3
-            ? [[1.3, 0.38], [1.0, 0.72], [0.62, 1]] as const
-            : [[1.0, 0.72], [0.62, 1]] as const;
-    for (const [wk, vk] of passes) {
-        const c = Math.round(255 * v * vk);
-        ctx.strokeStyle = `rgb(${c},${c},${c})`;
-        ctx.lineWidth = width * wk;
-        ctx.stroke();
-    }
-};
 
 /** 水珠流下来的水痕：宽度接近水珠本身，边缘起伏，越往上越细；wob(y) 是 y 处的横向偏移，和水珠头同一条。 */
-export const strokeTrail = (ctx: CanvasRenderingContext2D, x: number, y0: number, y1: number, width: number, v: number, seed: number, wob: (y: number) => number) => {
+export const strokeTrail = (ctx: NebbiaSegments, x: number, y0: number, y1: number, width: number, v: number, seed: number, wob: (y: number) => number) => {
     if (y1 - y0 < 2) return;
-    for (let y = y0; y < y1; y += 8) {
-        const ye = Math.min(y1, y + 9);
+    for (let y = y0; y < y1; y += 4) {
+        const ye = Math.min(y1, y + 5);
         const along = (y - y0) / Math.max(1, y1 - y0);
         const w = width * (0.72 + 0.28 * along) * (0.85 + 0.3 * (0.5 + 0.5 * Math.sin(y * 0.19 + seed * 3)));
-        ctx.beginPath();
         ctx.moveTo(x + wob(y), y);
         ctx.lineTo(x + wob(ye), ye);
-        strokeCurrentPath(ctx, w, v, 1);
+        ctx.stroke(w, v);
     }
 };
 
-// 写完的笔画缓存整条路径：大多数屏上的字已经写完，每帧只需要 stroke，不再重建路径。
-const fullStrokePaths = new WeakMap<GlyphStroke, Path2D>();
-const fullStrokePath = (st: GlyphStroke): Path2D => {
-    const cached = fullStrokePaths.get(st);
-    if (cached) return cached;
-    const p = new Path2D(), { pts } = st;
-    p.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i += 1) p.lineTo(pts[i][0], pts[i][1]);
-    fullStrokePaths.set(st, p);
-    return p;
-};
-
-// 某一笔在 [0, len] 上画到 l 的部分，直接画进当前 Canvas 路径
-const tracePartialPath = (ctx: CanvasRenderingContext2D, st: GlyphStroke, l: number) => {
+// 某一笔在 [0, len] 上画到 l 的部分，放进 p 的当前路径
+const partialPath = (p: NebbiaSegments, st: GlyphStroke, l: number) => {
     const { pts, cum } = st;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
+    p.moveTo(pts[0][0], pts[0][1]);
     for (let i = 1; i < pts.length; i += 1) {
         if (cum[i] >= l) {
             const k = (l - cum[i - 1]) / Math.max(1e-6, cum[i] - cum[i - 1]);
-            ctx.lineTo(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k);
+            p.lineTo(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k);
             return;
         }
-        ctx.lineTo(pts[i][0], pts[i][1]);
+        p.lineTo(pts[i][0], pts[i][1]);
     }
 };
 
@@ -137,10 +91,7 @@ export const drawChar = (ink: InkContext, c: LaidChar, T: number, clarityIn: num
         if (local <= 0) return;
         const p = dur > 0 ? clamp(local / dur) : 1;
         const drawn = (p * 0.4 + smooth(p) * 0.6) * st.len;
-        if (clarity > 0.002) {
-            if (drawn >= st.len) strokePathWithLayers(ctx, fullStrokePath(st), width, clarity, 2);
-            else { tracePartialPath(ctx, st, drawn); strokeCurrentPath(ctx, width, clarity, 2); }
-        }
+        if (clarity > 0.002) { partialPath(ctx, st, drawn); ctx.stroke(width, clarity); }
         if (!fadeIn) {
             for (const b of c.beads[si]) {
                 if (b.s > drawn) break;

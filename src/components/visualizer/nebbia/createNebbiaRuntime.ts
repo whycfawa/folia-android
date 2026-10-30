@@ -24,7 +24,7 @@ import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
 // src/components/visualizer/nebbia/createNebbiaRuntime.ts
 // 雾笺的运行时：一块画布、一个 WebGL2 上下文，自己的 rAF 循环。React 外壳把歌、tuning、主题、暂停推进来，
 // 每帧的播放时间和人声能量只在循环里读，不进 React state。暂停时不跑循环，只在需要时补画一帧；
-// 静态模式照常跟着歌词写字，窗外按车速匀速走，但不颠簸、没有小雨点。
+// 静态模式照常跟着歌词写字，窗外按车速匀速走，但不颠簸、没有小雨点。着色器在后台编（nebbiaPrograms.ts），编好之前循环空转、不画。
 
 // 改了要重排整首的 tuning 项
 const LAYOUT_KEYS: (keyof NebbiaTuning)[] = ['appear', 'fade', 'layouts', 'credits', 'jitter', 'warp', 'hold', 'refog', 'writeSpeed', 'doodle'];
@@ -62,6 +62,9 @@ export class NebbiaRuntime {
     private dead = false;
     /** 主题字体上次看时是否已加载：从没加载变成加载了，骨架才要重追。 */
     private fontReady = true;
+    /** 建运行时的时刻和着色器编好是否已记日志：看预热有没有命中缓存。 */
+    private readonly startedAt = performance.now();
+    private shadersLogged = false;
 
     constructor(private readonly input: NebbiaRuntimeInput, theme: Theme, tuning: NebbiaTuning) {
         this.theme = theme;
@@ -216,10 +219,31 @@ export class NebbiaRuntime {
         this.hits.buildBig(this.laid, this.words, this.W, this.H, this.vocalEnv);
     }
 
+    // 着色器编好了没有：没编好下一帧再问（暂停时也问，编好补画第一帧）；编不过就和上下文丢了一样，外壳退回只显示当前这句
+    private shadersReady(): boolean {
+        try {
+            if (this.gl.ready) {
+                if (!this.shadersLogged) {
+                    this.shadersLogged = true;
+                    console.info(`[Nebbia] shaders ready ${Math.round(performance.now() - this.startedAt)} ms after start`);
+                }
+                return true;
+            }
+        } catch (error) {
+            console.warn('[Nebbia] shaders failed to build', error);
+            this.dead = true;
+            this.input.onFailed();
+            return false;
+        }
+        this.raf = requestAnimationFrame(this.frame);
+        return false;
+    }
+
     private frame = () => {
         this.raf = 0;
+        if (this.dead || this.gl.isContextLost || !this.shadersReady()) return;
         // 宿主还没尺寸（隐藏、0 大小）时不画，也不报首帧；有尺寸后 resize 会补一帧
-        if (this.dead || this.gl.isContextLost || !this.W || !this.H) return;
+        if (!this.W || !this.H) return;
         const now = performance.now() / 1000;
         const frozen = this.paused || this.still;
         const dt = this.clock.tick(now, this.paused);
@@ -237,7 +261,7 @@ export class NebbiaRuntime {
         this.hits.advance(T, e, this.still ? 0 : t.rainHit * vocalStrength, NebbiaHits.lifeOf(t.refog, NEBBIA_FIXED.beadHold), this.W, this.H);
         this.mask.draw(this.laid, T, now, t, this.motion, this.hits, t.rainBig * vocalStrength);
         this.spot.update(this.laid, T, dt);
-        this.gl.render(this.mask.canvas, this.mask.breath.active ? this.mask.breath.canvas : null, this.motion.drops, this.motion.fieldInstances(this.fieldInst, t.busSpeed),
+        this.gl.render(this.mask.ctx, this.mask.breath.active ? this.mask.breath.canvas : null, this.motion.drops, this.motion.fieldInstances(this.fieldInst, t.busSpeed),
             nebbiaFrameUniforms(t, this.motion.shake(), this.spot, this.W, this.H, this.clock.time));
         if (!this.firstDrawn) { this.firstDrawn = true; this.input.onFirstFrame(); }
         if (!this.paused) this.raf = requestAnimationFrame(this.frame);

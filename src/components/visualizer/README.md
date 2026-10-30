@@ -54,6 +54,10 @@ App / ThemePark / VisPlayground / OBS source
 4. 文案，三份语言文件 `src/i18n/locales/en.ts`、`zh-CN.ts`、`in.ts` 都加：`ui.visualizerFoo`，和 `commandPalette.commands.visualizer-foo` 的 `title`、`description`。缺一份 `test/unit/command-palette/commandRegistryContract.test.ts` 就失败；关键词写英文和中文，不要手写拼音（同一个测试会拦）。这个测试的命令顺序快照会多一条，确认只多了 `visualizer-foo` 后更新快照。
 5. 性能测量：`dev/perf/scenarios.mjs` 的 `STYLES` 加一行 `[id, 显示名, 怎么画]`，就有了测量场景 `style-foo` 和换歌的比对图 `songchange-foo`（见 `dev/perf/README.md` 的 Adding a scenario）。
 
+### 启动慢时
+
+要编很久的着色器之类：在 `entry.tsx` 写 `prewarm`，保存的样式是它时主窗口一启动就调（`prewarmVisualizers.ts`），趁首屏加载遮罩还在先准备。再写 `prewarmWhenIdle: true`，不是保存的样式时也在首屏出来、页面空闲后准备一次，第一次切过去就不用现等；这一项每次启动都要花一点，只给第一次切换会明显卡的样式。`prewarm` 不能长时间占主线程，代码用动态 import 拉（entry 在启动时全部加载），照 `nebbia/entry.tsx`。第一次挂上时的等待用 `styleTransition/firstFrame.ts` 的 `useFirstFrameDrawn()` 告诉换样式的过渡。
+
 ### 背景和默认的不一样时
 
 样式默认画在用户选的背景上，`entry.tsx` 什么都不用写。背景由 `VisualizerBackdrop` 画，要改它写在 entry 的 `background` 字段上（`definition.ts`）：
@@ -233,7 +237,9 @@ Visualizer 消费已解析的 `LyricData` / `Line` / `Word`，不负责解析 `.
 雾笺：下雨天公交车起雾的车窗上，手指一笔一笔写歌词，写过的地方透出窗外的雨夜街景，过一会儿重新起雾。原型在 `feat/fog-write-prototype` 分支的 `dev/prototypes/fog-write/`（独立 HTML，参数可调），这里是接入版。快速定位：
 
 - `nebbia/VisualizerNebbia.tsx`：React shell / subtitle；`createNebbiaRuntime.ts`：运行时（WebGL2，建一次，换歌、tuning、主题就地推进去；暂停时停循环、拖进度补一帧；静态模式照常写字，窗外匀速走，不颠簸、没有小雨点）；`nebbiaSceneClock.ts`：窗外时钟（float32 精度：走过 1000 秒后换歌时归零，一首连放满 3600 秒才硬回绕）；`nebbiaFrameUniforms.ts`：主着色器每帧的 uniform
-- `nebbiaGl.ts`（`nebbiaGlUtils.ts`：编译链接、建纹理）+ `nebbiaShaders.ts` + `nebbiaSceneGlsl.ts`：一个全屏着色器。窗外夜景（楼群、霓虹、路灯、倒影、车灯、雨）两层模糊版本先在 1/4 分辨率的 RGBA16F 上算好（雾的预渲染，没有 `EXT_color_buffer_float` 或那个 FBO 拼不完整时主画面自己算），主画面合成雾、擦痕、水珠折射；水珠是 raindrop-fx（MIT）的法线精灵，实例化画进两张水珠纹理
+- `nebbiaGl.ts`（`nebbiaGlUtils.ts`：编译链接、建纹理）+ `nebbiaShaders.ts` + `nebbiaSceneGlsl.ts`（`nebbiaSpotGlsl.ts`：聚光灯光柱）：雾的预渲染和主画面两个全屏着色器程序。窗外夜景（楼群、霓虹、路灯、倒影、车灯、雨）两层模糊版本先由雾的预渲染程序在 1/4、1/8 分辨率的 RGBA16F 上各画一次（`nebbiaFogGl.ts`；没有 `EXT_color_buffer_float` 或那个 FBO 拼不完整时不编它，改编主画面自己算雾的那一版），主画面合成雾、擦痕、水珠折射；擦痕边、起雾大块和闪点的静态噪声改尺寸时算进一张纹理（`nebbiaNoiseTex.ts`，自己的小程序）；水珠是 raindrop-fx（MIT）的法线精灵，实例化画进两张水珠纹理。两个程序各只有一个输出：合成一个程序时 D3D11 上冷编要 6 秒多
+- `nebbiaBuildingCache.ts`：窗外楼群的缓存（远近两层 × 三档模糊各一张横向环形纹理，采样单元 9–14），车往前开时每帧只用补画程序补新露出来的几列；开始、改尺寸、换配色、车速突变时整张重画（一帧一档），没画好的那档和水珠透镜照旧现算
+- `nebbiaPrograms.ts`：六个程序（雾的预渲染、主画面、水珠精灵、擦痕遮罩、楼群缓存的补画、静态噪声纹理）在后台编（`KHR_parallel_shader_compile`，每帧问一次，编好前不画）；`nebbiaShaderWarmup.ts`：按同样的编法先编一遍（`entry.tsx` 的 `prewarm`；保存的样式是雾笺时启动就编，否则首屏出来后空闲时编），GPU 进程的程序缓存命中，挂上时不再等冷编
 - `nebbiaChars.ts`：`Line` → 逐字 `{ ch, t, d }`（`buildLineGraphemeTimeline`），emoji 换成 lucide 图标，词分组走 `segmentLyricWords`（所以 `usesWordSegmentation`）；句尾随手画的图标取主题 `lyricsIcons`
 - `nebbiaBlocks.ts` + `nebbiaCompositions.ts` + `nebbiaLayout.ts`：照商籁的主词 / 副主词 / 虚词和横条、十字、竖柱、刊头等构图排整首，避开这句出现时还没消失的句子；用户字号是排版字号的倍数
 - `nebbiaScene.ts`：每个字的位置、手写变形、水珠，出现方式（快的句子慢慢显现），让位（后一句要写到这句位置时这句提前起雾）；`nebbiaWipe.ts`：手指抹掉
@@ -241,7 +247,7 @@ Visualizer 消费已解析的 `LyricData` / `Line` / `Word`，不负责解析 `.
 - `nebbiaGlyphs.ts`：字形来源依次是 lucide 图标、AnimCJK 笔顺（`nebbiaStrokes.ts`）、主题字体的骨架追踪（`nebbiaSkeleton.ts`）。笔顺数据是 Arphic Public License（AnimCJK 的 graphics 文本文件只给了 APL），不进仓库：构建时 `dev/nebbia/nebbiaStrokesPlugin.mjs` 从钉死 commit 的 AnimCJK 下载，生成产物根目录的 `nebbia-strokes.json`，授权文本放 `licenses/nebbia-strokes/`；开发服务器第一次请求时才生成，缓存在 `node_modules/.cache/folia-nebbia-strokes/`。下载失败（或设 `FOLIA_NEBBIA_STROKES=off`）时没有这个文件，中日文也走骨架，笔顺是估的
 - `nebbiaHits.ts`：雨点打窗，每 20 ms 一格、格内随机只由歌和格号决定。智能动感模式的「疏雨轻车」（`entry.tsx` 的 `beatEffects`，`source: 'stems'`，两个分项各一条滑杆）开着、这首歌分析过时，雨点跟人声：跟 HTDemucs 分出的人声轨走（`services/analysis/vocalEnvelope.ts`，每帧按 `getBeatFxHeard().key` 取），小雨点按逐帧响度在 ±1.5 秒内的范围归一后的能量落，大雨点砸在起音上，和原型一样；雨点强度乘小雨点密度和大雨点大小（大雨点按 1 倍排好，画的时候才乘，拖滑杆不重排），拉到 0 不下雨。否则退回播放器的人声频段（`audioBands.vocal`，自适应归一），大雨点在六成的词开唱时砸
 - `nebbiaDrizzleRide.ts`：疏雨轻车每帧读的那份（开关、两条强度、人声轨包络，推着鼓点颠簸）。`nebbiaDrumBumps.ts`：疏雨轻车的鼓点颠簸。这首歌有鼓点（`getDrumHits`，同一趟分离）时车只在底鼓上颠（力度 ≥ 0.35，至少隔 0.3 秒，幅度随力度，乘这一项的强度和 tuning 的颠簸），不再随机颠；拖进度只挪游标不补颠。没鼓、没分析完时照旧随机颠
-- `nebbiaSpot.ts`：两盏聚光灯追正在唱的字（目标沿字连续移动 + 临界阻尼弹簧 + 平滑时钟，避免一抽一抽）
+- `nebbiaSpot.ts`：两盏聚光灯追正在写的字（按书写时刻 `wt`，慢慢显现的按演唱时刻）（目标沿字连续移动 + 临界阻尼弹簧 + 平滑时钟，避免一抽一抽）
 - `nebbiaPalette.ts`：主题 → 窗外配色（背景压成夜色，强调色是聚光灯和霓虹）
 - 歌词字号由排版决定，通用字号设置作为倍数；不画共用背景（`background: false`）
 
