@@ -32,7 +32,7 @@ export const NEBBIA_FIXED = {
 } as const;
 
 /** 擦痕遮罩相对 CSS 像素的分辨率。 */
-export const MASK_SCALE = 0.5;
+export const MASK_SCALE = 0.42;
 /** 雾的预渲染相对画布的缩小倍数。 */
 export const FOG_DIV = 4;
 

@@ -57,9 +57,6 @@ export class NebbiaRuntime {
     private still = false;
     private W = 0; private H = 0;
     private raf = 0;
-    /** 安卓壳限帧：上一帧真正画出的时刻（秒）；backup 补帧时绕过。 */
-    private lastFrameAt = 0;
-    private forceFrame = false;
     private buildToken = 0;
     private firstDrawn = false;
     private dead = false;
@@ -136,8 +133,6 @@ export class NebbiaRuntime {
 
     /** 补画一帧（暂停时拖进度）；在跑循环时什么都不做。 */
     requestFrame() {
-        // 暂停拖进度、设置变化时这一帧必须画，绕过安卓的 30fps 节流。
-        this.forceFrame = true;
         if (!this.raf && !this.dead) this.raf = requestAnimationFrame(this.frame);
     }
 
@@ -186,9 +181,9 @@ export class NebbiaRuntime {
         const sized = Math.round(rect.width) !== this.W || Math.round(rect.height) !== this.H;
         this.W = Math.round(rect.width);
         this.H = Math.round(rect.height);
-        // 安卓 WebView 上全屏雾/玻璃着色器在高 DPI 下明显吃 GPU：把默认像素比压到约 0.65 倍，
-        // 仍高于 1x CSS，雾和玻璃看不出糊；用户把「渲染分辨率」调高时仍可到 2x 上限。
-        const androidScale = IS_ANDROID_WEBVIEW ? 0.65 : 1;
+        // 安卓 WebView 上全屏雾/玻璃着色器在高 DPI 下明显吃 GPU：默认像素比压到约 0.5 倍，
+        // 仍高于 1x CSS，雾/玻璃看不出糊；用户把「渲染分辨率」调高时仍可到 2x 上限。
+        const androidScale = IS_ANDROID_WEBVIEW ? 0.5 : 1;
         const dpr = Math.min(2, Math.max(0.5, (window.devicePixelRatio || 1) * this.tuning.resolution * androidScale));
         this.gl.resize(this.W, this.H, dpr);
         this.mask.resize(this.W, this.H);
@@ -226,14 +221,6 @@ export class NebbiaRuntime {
         // 宿主还没尺寸（隐藏、0 大小）时不画，也不报首帧；有尺寸后 resize 会补一帧
         if (this.dead || this.gl.isContextLost || !this.W || !this.H) return;
         const now = performance.now() / 1000;
-        // 安卓壳只画 30fps：雾笺每帧是全屏片元着色器 + 两只水珠纹理 + 遮罩重绘，
-        // 60fps 在手机上往往只是把 GPU 占满再掉帧，稳定的 30fps 反而更顺。
-        if (IS_ANDROID_WEBVIEW && !this.forceFrame && this.lastFrameAt > 0 && now - this.lastFrameAt < 1 / 30) {
-            this.raf = requestAnimationFrame(this.frame);
-            return;
-        }
-        this.forceFrame = false;
-        this.lastFrameAt = now;
         const frozen = this.paused || this.still;
         const dt = this.clock.tick(now, this.paused);
         const T = this.input.currentTime.get();

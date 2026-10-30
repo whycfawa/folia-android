@@ -90,7 +90,7 @@ export class NebbiaMask {
             ctx.moveTo(pts[0][0], pts[0][1]);
             for (let k = 1; k <= Math.min(i, n); k += 1) ctx.lineTo(pts[k][0], pts[k][1]);
             if (i < n) { const a = pts[i], b = pts[i + 1], r = f - i; ctx.lineTo(a[0] + (b[0] - a[0]) * r, a[1] + (b[1] - a[1]) * r); }
-            strokeCurrentPath(ctx, st.w, vw);
+            strokeCurrentPath(ctx, st.w, vw, 1);
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         if (ue >= 1) for (const b of w.beads) ink.motion.put(b.x, b.y, b.r * (0.55 + 0.45 * vbw), vbw);
@@ -109,7 +109,7 @@ export class NebbiaMask {
             ctx.beginPath();
             ctx.moveTo(m.x + m.ax, m.y + m.ay);
             ctx.lineTo(m.x + m.bx, m.y + m.by);
-            strokeCurrentPath(ctx, m.w * 0.14, v * 0.9);
+            strokeCurrentPath(ctx, m.w * 0.14, v * 0.9, 1);
         }
         const trails = motion.trails;
         for (let i = trails.length - 1; i >= 0; i -= 1) {

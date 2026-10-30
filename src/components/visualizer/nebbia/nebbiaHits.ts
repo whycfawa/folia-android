@@ -183,7 +183,7 @@ export class NebbiaHits {
                     ctx.moveTo(x, y);
                     ctx.lineTo(x + 0.1, y);
                 }
-                strokeCurrentPath(ctx, R * 1.3, v);
+                strokeCurrentPath(ctx, R * 1.3, v, 1);
             }
             if (bv > 0.01) {
                 // 刚砸上时拍扁、横向摊开，0.12 秒内回弹
