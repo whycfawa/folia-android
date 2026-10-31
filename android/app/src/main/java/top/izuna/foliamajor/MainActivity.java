@@ -40,6 +40,7 @@ public class MainActivity extends BridgeActivity {
         CrashDiagnostics.install(getApplicationContext());
         clearWebViewCachesAfterAppUpdate();
         registerPlugin(FoliaNativePlugin.class);
+        registerPlugin(FoliaQishuiAudioPlugin.class);
         registerPlugin(top.izuna.foliamajor.coloros.FoliaColorOsLyricsPlugin.class);
         super.onCreate(savedInstanceState);
         CrashDiagnostics.recordText(

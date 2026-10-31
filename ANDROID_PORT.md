@@ -397,3 +397,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 合并上游 v0.7.25：雾笺擦痕遮罩改 WebGL2、楼群缓存、雾 1/8 预渲染、静态噪声纹理、着色器拆分与预热等。
 - 采用上游的 `NebbiaSegments` 遮罩实现，移除本分支临时的 Canvas 描边优化。
 - 保留安卓适配与之前的酷狗/布局修复。
+
+### 0.7.25-android.286：汽水加密音频解密代理
+
+- 移植 sonnet 分支的 `QishuiAudioDecryptor` / `QishuiAudioServer`：spade_a 还原、AES-CTR、mp4/flac 解包，按 Range 本地回环输出。
+- 新增 `FoliaQishuiAudio` 插件；汽水 `audio` 解析遇到带 spade_a/PlayAuth 的加密完整音源时，先尝试解密代理，失败再退回试听片段。
+- 不改变免费/明文音源的原有路径。

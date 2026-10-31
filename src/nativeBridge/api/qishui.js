@@ -886,6 +886,21 @@ function createLibrary(client) {
 const LEVELS = { medium: 'standard', higher: 'high', highest: 'high', lossless: 'lossless', hi_res: 'hires' };
 const rank = value => ['standard', 'high', 'lossless', 'hires'].indexOf(value);
 const encrypted = item => Boolean(item.encrypt_info?.encrypt || item.encrypt_info?.spade_a || item.PlayAuth || Number(item.Encrypt || 0));
+const encryptedAuth = item => String(
+  item?.encrypt_info?.spade_a || item?.encrypt_info?.SpadeA
+  || item?.PlayAuth || item?.play_auth || item?.spade_a || item?.SpadeA || '',
+).trim();
+const proxyEncryptedAudio = async (url, auth) => {
+  const plugin = typeof window !== 'undefined' ? window.Capacitor?.Plugins?.FoliaQishuiAudio : null;
+  if (!plugin || typeof plugin.proxy !== 'function' || !auth) return '';
+  try {
+    const result = await plugin.proxy({ url, auth });
+    return result && result.url ? String(result.url) : '';
+  } catch (error) {
+    console.warn('[Qishui] encrypted audio proxy failed', error);
+    return '';
+  }
+};
 
 async function resolveAudio(client, track, requested) {
   const player = track.player_info;
@@ -901,18 +916,30 @@ async function resolveAudio(client, track, requested) {
     const info = player[variant]?.video_model_info;
     if (!info) continue;
     const candidates = [];
+    let encryptedCandidate = null;
     let skipped = false;
     const add = (raw, quality, bitrate) => {
       const url = trusted(raw);
       if (url) candidates.push({ url, quality: LEVELS[quality] || 'standard', bitrate: Number(bitrate || 0) });
       else skipped = true;
     };
+    const addEncrypted = (raw, item, quality, bitrate) => {
+      if (encryptedCandidate) return;
+      const auth = encryptedAuth(item);
+      if (!auth) return;
+      const url = trusted(raw);
+      if (url) encryptedCandidate = { url, auth, quality: LEVELS[quality] || 'standard', bitrate: Number(bitrate || 0) };
+    };
     if (info.video_model) {
       let model;
       try { model = typeof info.video_model === 'string' ? JSON.parse(info.video_model) : info.video_model; }
       catch { throw new QishuiError('invalid-response', 'Invalid Qishui player model'); }
       for (const item of model.video_list || []) {
-        if (encrypted(item) || !item.main_url) continue;
+        if (!item.main_url) continue;
+        if (encrypted(item)) {
+          addEncrypted(item.main_url, item, item.video_meta?.quality, item.video_meta?.bitrate);
+          continue;
+        }
         add(item.main_url, item.video_meta?.quality, item.video_meta?.bitrate);
       }
     }
@@ -923,12 +950,29 @@ async function resolveAudio(client, track, requested) {
         const list = data.Result?.Data?.PlayInfoList || data.data?.PlayInfoList || data.PlayInfoList;
         if (!Array.isArray(list)) throw new QishuiError('invalid-response', 'Qishui PlayInfoList is missing');
         for (const item of list) {
-          if (encrypted(item) || !item.MainPlayUrl) continue;
+          if (!item.MainPlayUrl) continue;
+          if (encrypted(item)) {
+            addEncrypted(item.MainPlayUrl, item, item.Quality, item.Bitrate);
+            continue;
+          }
           add(item.MainPlayUrl, item.Quality, item.Bitrate);
         }
       } else skipped = true;
     }
     if (!candidates.length) {
+      if (variant === 'full' && encryptedCandidate) {
+        const proxyUrl = await proxyEncryptedAudio(encryptedCandidate.url, encryptedCandidate.auth);
+        if (proxyUrl) {
+          (client.log || console.info)(`[Qishui] Decrypted audio issued: quality=${encryptedCandidate.quality}`);
+          return {
+            url: proxyUrl,
+            quality: encryptedCandidate.quality,
+            fetchedAt: Date.now(),
+            preview: false,
+            decrypted: true,
+          };
+        }
+      }
       if (skipped) { report(); throw new QishuiError('invalid-response', 'Untrusted Qishui media host'); }
       continue;
     }
