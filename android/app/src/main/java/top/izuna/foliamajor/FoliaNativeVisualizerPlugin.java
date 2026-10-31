@@ -2,7 +2,6 @@ package top.izuna.foliamajor;
 
 import android.app.Activity;
 import android.graphics.Color;
-import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 
@@ -12,7 +11,6 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import org.json.JSONArray;
 
 // 当前文件：原生可视化器插件（试验）。
 //
@@ -98,10 +96,10 @@ public class FoliaNativeVisualizerPlugin extends Plugin {
         float[] parsed = null;
         if (bands != null) {
             try {
-                final JSONArray array = bands.toJSONArray();
-                parsed = new float[array.length()];
-                for (int i = 0; i < array.length(); i++) {
-                    parsed[i] = (float) array.optDouble(i, 0d);
+                // JSArray 本身就是 JSONArray（见 FoliaNativePlugin 里 entries.optJSONObject 的用法）。
+                parsed = new float[bands.length()];
+                for (int i = 0; i < bands.length(); i++) {
+                    parsed[i] = (float) bands.optDouble(i, 0d);
                 }
             } catch (Exception ignored) {
                 parsed = null;
