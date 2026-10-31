@@ -18,6 +18,8 @@ const readDevicePixelRatio = (): number => {
  * 可视化器 canvas 的绘制倍率：钳在 [1, 2]。
  * 传 `devicePixelRatio` 时不读 window，方便纯函数测试与截图探针。
  */
-export const resolveVisualizerPixelRatio = (devicePixelRatio: number = readDevicePixelRatio()): number => (
-    Math.min(MAX_MOBILE_PIXEL_RATIO, Math.max(1, devicePixelRatio))
-);
+export const resolveVisualizerPixelRatio = (devicePixelRatio: number = readDevicePixelRatio()): number => {
+    // NaN 会污染整条 canvas 尺寸计算（Math.max(1, NaN) 还是 NaN），先归一到 1。
+    const ratio = Number.isNaN(devicePixelRatio) ? 1 : devicePixelRatio;
+    return Math.min(MAX_MOBILE_PIXEL_RATIO, Math.max(1, ratio));
+};
