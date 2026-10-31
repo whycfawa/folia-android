@@ -52,7 +52,7 @@ const NATIVE_STYLE_BY_MODE: Record<string, number> = {
 };
 
 const styleForMode = (mode: string | null | undefined): number => (
-    (mode && NATIVE_STYLE_BY_MODE[mode]) ?? 0
+    (mode ? NATIVE_STYLE_BY_MODE[mode] : 0) ?? 0
 );
 
 let enabledSnapshot = typeof window === 'undefined' ? false : readEnabledFlag();
