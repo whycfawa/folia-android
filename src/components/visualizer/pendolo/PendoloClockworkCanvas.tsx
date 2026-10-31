@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import type { MotionValue } from 'framer-motion';
 import { colorWithAlpha } from '../colorMix';
+import { resolveVisualizerPixelRatio } from '../../../utils/renderPixelRatio';
 import { drawPendoloClockwork2d } from './pendoloClockworkDraw2d';
 import {
     createPendoloBeatCounter,
@@ -322,7 +323,7 @@ const PendoloClockworkCanvas: React.FC<PendoloClockworkCanvasProps> = ({
                 animationFrameId = window.requestAnimationFrame(render);
                 return;
             }
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = resolveVisualizerPixelRatio();
 
             const renderer = rendererRef.current;
             if (useWebglRef.current && !renderer?.isReady) useWebglRef.current = false;
