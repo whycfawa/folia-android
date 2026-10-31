@@ -1,10 +1,10 @@
 // src/components/wall/useWallPointerPan.ts
 
-import { animate } from 'framer-motion';
 import { useCallback, useEffect, useRef, type MutableRefObject, type PointerEvent, type MouseEvent, type RefObject } from 'react';
 import type { Bounds } from './layout';
 import type { LatticeCamera } from './useWallCameraPan';
 import { createWallWheelClassifier, stepWallWheel, wallWheelDelta, WALL_PAN_INERTIA } from './wallPanMotion';
+import { cancelUncappedAnimationFrame, requestUncappedAnimationFrame } from '../../utils/frameRateLimiter';
 
 // Drag and wheel panning. Camera writes bypass React state; only the cull bounds are published.
 // 鼠标滚轮平滑、触控板直接跟手（判别与参数见 wallPanMotion.ts）。平滑滚动占用共享的 animationRef，
@@ -112,11 +112,35 @@ export const useWallPointerPan = ({
         if (speed < WALL_PAN_INERTIA.minSpeed) return;
         const from = cameraRef.current;
         const velocity = Math.min(speed, WALL_PAN_INERTIA.maxSpeed);
-        animationRef.current = animate(0, velocity * WALL_PAN_INERTIA.power, {
-            type: 'inertia', velocity, power: WALL_PAN_INERTIA.power, timeConstant: WALL_PAN_INERTIA.timeConstant,
-            restDelta: WALL_PAN_INERTIA.restDelta,
-            onUpdate: distance => updateCamera(from.x + distance * pointer.vx / speed, from.y + distance * pointer.vy / speed),
-        });
+        // 滑行不用 framer 的 animate：它跑在 window.requestAnimationFrame 上，而那个入口被可视化器的
+        // 帧率门闸接管过（默认 30fps），于是手指拖动（走 pointermove，不受门闸影响）顺滑、一松手滑行就
+        // 掉到门闸帧率。这里用未被节流的原生 rAF，按同一个 timeConstant 做指数衰减。
+        const dirX = pointer.vx / speed;
+        const dirY = pointer.vy / speed;
+        const tau = WALL_PAN_INERTIA.timeConstant;
+        const amplitude = velocity * tau / 1000;
+        const startedAt = performance.now();
+        let frame = 0;
+        let stopped = false;
+        const step = (now: number) => {
+            if (stopped) return;
+            const elapsed = now - startedAt;
+            const travelled = amplitude * (1 - Math.exp(-elapsed / tau));
+            updateCamera(from.x + travelled * dirX, from.y + travelled * dirY);
+            if (amplitude - travelled > WALL_PAN_INERTIA.restDelta) {
+                frame = requestUncappedAnimationFrame(step);
+            } else {
+                animationRef.current = null;
+            }
+        };
+        frame = requestUncappedAnimationFrame(step);
+        animationRef.current = {
+            stop: () => {
+                stopped = true;
+                if (frame) cancelUncappedAnimationFrame(frame);
+                animationRef.current = null;
+            },
+        };
     }, [animationRef, cameraRef, reducedMotion, updateCamera]);
 
     const onPointerCancel = useCallback((event: PointerEvent<HTMLDivElement>) => {
@@ -149,7 +173,7 @@ export const useWallPointerPan = ({
         const stopWheel = () => {
             const wheel = wheelRef.current;
             if (!wheel) return;
-            if (wheel.frame !== null) cancelAnimationFrame(wheel.frame);
+            if (wheel.frame !== null) cancelUncappedAnimationFrame(wheel.frame);
             wheelRef.current = null;
             if (animationRef.current === wheel.handle) animationRef.current = null;
         };
@@ -177,7 +201,7 @@ export const useWallPointerPan = ({
                 stopWheel();
                 return;
             }
-            wheel.frame = requestAnimationFrame(tick);
+            wheel.frame = requestUncappedAnimationFrame(tick);
         };
         // 一次滚动手势锁定在墙上：触控板双指平移时光标不动、墙在动，叠在墙上的东西（bravais 的海报缝）会滑到光标下面，
         // 之后的 wheel 落到它身上、不再经过墙——上一下 wheel 不久之前还在推墙，就接着算墙的（同浏览器原生滚动的锁定）。
@@ -240,7 +264,7 @@ export const useWallPointerPan = ({
                 animationRef.current = next.handle;
             }
             wheel.pending = { x: wheel.pending.x - dx, y: wheel.pending.y - dy };
-            if (wheel.frame === null) wheel.frame = requestAnimationFrame(tick);
+            if (wheel.frame === null) wheel.frame = requestUncappedAnimationFrame(tick);
         };
         const cancel = () => { pointerRef.current = null; interrupt(); };
         // 只按修饰键（按住 Shift 横向滚动时 Shift 会自动重复 keydown）不算键盘输入，不打断平滑滚动。
