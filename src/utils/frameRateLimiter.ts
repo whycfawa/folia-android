@@ -200,7 +200,7 @@ export const ANDROID_MAX_VISUALIZER_FRAME_RATE = 60;
 export const clampVisualizerFrameRate = (frameRate: VisualizerFrameRate): VisualizerFrameRate => {
     if (!IS_ANDROID_WEBVIEW) return frameRate;
     if (frameRate === 'off') return ANDROID_MAX_VISUALIZER_FRAME_RATE;
-    return Math.min(frameRate, ANDROID_MAX_VISUALIZER_FRAME_RATE);
+    return Math.min(frameRate, ANDROID_MAX_VISUALIZER_FRAME_RATE) as VisualizerFrameRate;
 };
 
 export const installGlobalVisualizerFrameRateLimiter = (overrideFrameRate?: VisualizerFrameRate) => {
