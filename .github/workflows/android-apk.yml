@@ -51,8 +51,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # 仓库里的 package-lock.json 与 package.json 不同步（缺 @capacitor/* 8.6.0 等条目），
+      # npm ci 会直接 EUSAGE 退出；和作者本机一致，用 npm install。
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
