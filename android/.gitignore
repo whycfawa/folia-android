@@ -56,6 +56,8 @@ captures/
 keystore.properties
 *.jks
 *.keystore
+# 例外：自用测试版的固定签名要进仓库，测试包之间才能覆盖安装（口令见 app/build.gradle）。
+!keystore/folia-perf.jks
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
