@@ -14,6 +14,7 @@ import {
 import { resolveLucideIconNames } from '../../../services/lucideIconResolver';
 import { beatImpact, downbeatImpact } from '../../../stores/motionSignals';
 import { loadPixi } from '../pixi/loadPixi';
+import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
 import { linkPixiPrograms } from '../pixi/pixiProgramLinks';
 import { makePixiContext } from '../pixi/pixiWebGLContext';
 import { destroyPixiContainerChildren } from '../pixi/pixiDisplayResources';
@@ -296,8 +297,12 @@ export class HanabiPixiRuntime {
         this.retiredTextures.splice(0).forEach(textures => textures.destroy());
     }
 
+    /** 最近若干帧的 JS 侧耗时（毫秒）：用来区分「主线程算不完」还是「合成阶段慢」。 */
+    private readonly frameCosts: number[] = [];
+
     private renderFrame = () => {
         if (this.destroyed) return;
+        const frameStartedAt = performance.now();
         const time = this.options.currentTime.get();
         this.songSwap.advance();
         if (this.rebuildDue) {
@@ -353,7 +358,8 @@ export class HanabiPixiRuntime {
 
         const lyricAlpha = creditsFrame.active ? creditsFrame.lyricAlpha : 1;
         const lyricBlur = creditsFrame.active ? creditsFrame.lyricBlur : 0;
-        const blurResolution = this.renderResolution * 0.5;
+        // 安卓上模糊层再降一档分辨率：模糊本来就是低频内容，肉眼差别小，但带宽与采样次数按平方降。
+        const blurResolution = this.renderResolution * (IS_ANDROID_WEBVIEW ? 0.35 : 0.5);
         const spinTurn = tuning.textOnly ? 0 : tuning.spin * hanabiSpinDirection(program.seed);
         this.sceneCache.forEach((entry, index) => {
             const layer = frames.layers.find(candidate => candidate.index === index);
@@ -371,6 +377,16 @@ export class HanabiPixiRuntime {
             }, { width: this.width, height: this.height }, blurResolution);
         });
         this.credits.update(time, creditsFrame, this.width, this.height);
+
+        // 每 240 帧汇总一次：p50/p95 是 JS 侧的真实开销，和掉帧率对照就能判断瓶颈在哪一侧。
+        this.frameCosts.push(performance.now() - frameStartedAt);
+        if (this.frameCosts.length >= 240) {
+            const sorted = [...this.frameCosts].sort((a, b) => a - b);
+            const p50 = sorted[Math.floor(sorted.length * 0.5)] ?? 0;
+            const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+            console.log(`[Hanabi] js-frame p50=${p50.toFixed(2)}ms p95=${p95.toFixed(2)}ms`);
+            this.frameCosts.length = 0;
+        }
     };
 
     /** 缓存里的场景（当前段与预建好的下一段）谁有马上要出场的镜头就备一个；做了返回 true。 */
