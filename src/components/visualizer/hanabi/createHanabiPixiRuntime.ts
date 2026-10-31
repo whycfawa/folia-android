@@ -67,7 +67,9 @@ const REBUILD_DEBOUNCE_MS = 220;
 const MIN_WIDTH = 320;
 const MIN_HEIGHT = 240;
 /** 渲染倍率上限：烟花是成千上万的小精灵，3 倍屏上满分辨率只换来更贵的填充。 */
-const MAX_RESOLUTION = 2;
+// 安卓上整块画布每帧都要被合成器上传一次：2× 在 6.8MP 的屏上是 3.6MP/帧 ≈ 14MB，
+// 60fps 就是 860MB/s。1.5× 把这块降到 2MP/帧，肉眼几乎看不出，带宽少 45%。
+const MAX_RESOLUTION = IS_ANDROID_WEBVIEW ? 1.5 : 2;
 /** 夜空不透明度到这里以上，配色按深色底算（纸白字、亮色描边）。 */
 const DARK_SKY = 0.5;
 const NIGHT_BACKGROUND = '#0b0d24';
@@ -419,9 +421,10 @@ export class HanabiPixiRuntime {
         }
         if (!this.screenBloom) {
             // 亮部才进 bloom（字的白、烟花、贴纸的白边），阈值比烟花层自己的辉光高，画面不至于整片发灰。
-            this.screenBloom = createBloomFilter(this.pixi, { strength, threshold: 0.5, knee: 0.3, levels: 5, spread: 0.85, tint: [1, 0.95, 0.98], padding: 0 });
+            // 全屏 bloom 的级数就是每帧要跑的全屏 pass 数：安卓上 5 级降到 3 级，再让它按半分辨率取样。
+            this.screenBloom = createBloomFilter(this.pixi, { strength, threshold: 0.5, knee: 0.3, levels: IS_ANDROID_WEBVIEW ? 3 : 5, spread: 0.85, tint: [1, 0.95, 0.98], padding: 0 });
             // 满分辨率：默认 1 时 1.5× / 2× 屏上整层字会先画成 1× 再拉伸，开着辉光时字会糊。
-            this.screenBloom.resolution = 'inherit';
+            this.screenBloom.resolution = IS_ANDROID_WEBVIEW ? 0.5 : 'inherit';
             this.screenBloomArea = new this.pixi.Rectangle();
         }
         this.screenBloom.options.strength = strength;
