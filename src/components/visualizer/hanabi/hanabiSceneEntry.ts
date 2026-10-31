@@ -6,6 +6,7 @@ import type { HanabiProgram } from './hanabiProgram';
 import { resolveShotProfile, shotLine } from './program';
 import { createHanabiScene, type HanabiScene, type HanabiSceneShot } from './scene';
 import type { HanabiTextures, HanabiTuning, PixiModule } from './types';
+import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
 
 // src/components/visualizer/hanabi/hanabiSceneEntry.ts
 // 运行时缓存里的一个段落场景：编译出的段落 → createHanabiScene 的参数（对应 lumisynth 花火 adapter 的 buildUnit），
@@ -109,7 +110,9 @@ export const applyHanabiLayerFrame = (
     if (frame.blur > BLUR_EPSILON) {
         if (!entry.blur) {
             // 模糊的内容不需要满分辨率：半分辨率跑模糊，开销是整屏的四分之一。
-            entry.blur = new pixi.BlurFilter({ strength: frame.blur, quality: 3, resolution: blurResolution });
+            // 安卓上少做两趟模糊：烟花每帧都有若干层带模糊的场景，quality 3 在移动 GPU 上
+            // 会把 GPU 进程的一个核占满（现场：两颗大核busy、GPU 利用率却不高）。
+            entry.blur = new pixi.BlurFilter({ strength: frame.blur, quality: IS_ANDROID_WEBVIEW ? 1 : 3, resolution: blurResolution });
         }
         entry.blur.strength = frame.blur;
         if (!entry.holder.filters?.includes(entry.blur)) {
