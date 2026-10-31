@@ -109,6 +109,18 @@ public class FoliaNativeVisualizerPlugin extends Plugin {
         call.resolve();
     }
 
+    /** 换行时推一次：原生层把这两行画成纹理。 */
+    @PluginMethod
+    public void pushLyric(PluginCall call) {
+        final NativeVisualizerView target = view;
+        if (target == null) {
+            call.resolve();
+            return;
+        }
+        target.setLyrics(call.getString("current", ""), call.getString("next", ""));
+        call.resolve();
+    }
+
     private static float readFloat(PluginCall call, String key) {
         final Double value = call.getDouble(key);
         return value == null ? 0f : value.floatValue();

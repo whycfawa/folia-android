@@ -9,6 +9,7 @@
 // 这次不生效（页面保持原样），不会抛到调用方。
 
 import { audioPower, spectrum } from '../stores/motionSignals';
+import { selectDisplayLyrics, usePlaybackStore } from '../stores/usePlaybackStore';
 
 export const NATIVE_VISUALIZER_STORAGE_KEY = 'folia_native_visualizer';
 
@@ -16,14 +17,45 @@ type NativeVisualizerPlugin = {
     start?: () => Promise<unknown>;
     stop?: () => Promise<unknown>;
     push?: (options: { bands: number[]; power: number; primary: number; accent: number }) => Promise<unknown>;
+    pushLyric?: (options: { current: string; next: string }) => Promise<unknown>;
 };
 
 const BAND_COUNT = 32;
 /** JS 推参数的频率：20Hz 足够，避免每帧过桥。 */
 const PUSH_INTERVAL_MS = 50;
 
+const listeners = new Set<() => void>();
+
+const readEnabledFlag = (): boolean => {
+    try {
+        return localStorage.getItem(NATIVE_VISUALIZER_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+};
+
+let enabledSnapshot = typeof window === 'undefined' ? false : readEnabledFlag();
+
+/** App 用它决定要不要卸载 WebView 里的可视化器（挂原生层时不挂两边）。 */
+export const getNativeVisualizerEnabled = (): boolean => enabledSnapshot;
+
+export const subscribeNativeVisualizer = (listener: () => void): (() => void) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+const publishEnabled = (next: boolean) => {
+    if (enabledSnapshot === next) return;
+    enabledSnapshot = next;
+    listeners.forEach(listener => listener());
+};
+
 let timer: number | null = null;
 let running = false;
+let unsubscribeLyrics: (() => void) | null = null;
+let lastLyricKey = '';
 
 const getPlugin = (): NativeVisualizerPlugin | null => {
     if (typeof window === 'undefined') return null;
@@ -66,6 +98,20 @@ const buildBands = (): number[] => {
     return bands;
 };
 
+/** 舞台的歌词只在换行时变：把当前句与下一句推过去，原生层自己贴图。 */
+const pushLyric = (plugin: NativeVisualizerPlugin) => {
+    const state = usePlaybackStore.getState();
+    const lyrics = selectDisplayLyrics(state);
+    const lines = lyrics?.lines ?? [];
+    const index = state.currentLineIndex;
+    const current = lines[index]?.fullText ?? '';
+    const next = lines[index + 1]?.fullText ?? '';
+    const key = `${current}\n${next}`;
+    if (key === lastLyricKey) return;
+    lastLyricKey = key;
+    void plugin.pushLyric?.({ current, next })?.catch?.(() => undefined);
+};
+
 const pushOnce = (plugin: NativeVisualizerPlugin) => {
     const colors = readThemeColors();
     void plugin.push?.({
@@ -87,6 +133,8 @@ export const startNativeVisualizer = async (): Promise<boolean> => {
         running = true;
         document.documentElement.setAttribute('data-native-visualizer', 'on');
         timer = window.setInterval(() => pushOnce(plugin), PUSH_INTERVAL_MS);
+        pushLyric(plugin);
+        unsubscribeLyrics = usePlaybackStore.subscribe(() => pushLyric(plugin));
         return true;
     } catch {
         return false;
@@ -99,6 +147,11 @@ export const stopNativeVisualizer = async (): Promise<void> => {
         window.clearInterval(timer);
         timer = null;
     }
+    if (unsubscribeLyrics) {
+        unsubscribeLyrics();
+        unsubscribeLyrics = null;
+    }
+    lastLyricKey = '';
     document.documentElement.removeAttribute('data-native-visualizer');
     if (!running) return;
     running = false;
@@ -109,14 +162,9 @@ export const stopNativeVisualizer = async (): Promise<void> => {
     }
 };
 
-export const isNativeVisualizerEnabled = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    try {
-        return localStorage.getItem(NATIVE_VISUALIZER_STORAGE_KEY) === 'true';
-    } catch {
-        return false;
-    }
-};
+export const isNativeVisualizerEnabled = (): boolean => (
+    typeof window === 'undefined' ? false : readEnabledFlag()
+);
 
 export const setNativeVisualizerEnabled = async (enabled: boolean): Promise<boolean> => {
     try {
@@ -126,7 +174,10 @@ export const setNativeVisualizerEnabled = async (enabled: boolean): Promise<bool
     }
     if (!enabled) {
         await stopNativeVisualizer();
+        publishEnabled(false);
         return true;
     }
-    return startNativeVisualizer();
+    const started = await startNativeVisualizer();
+    publishEnabled(started);
+    return started;
 };

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, useMotionValueEvent } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import AddToPlaylistHost from './components/app/AddToPlaylistHost';
 import { useCommandPalette } from './components/command-palette/useCommandPalette';
 import { useCommandPaletteContext } from './hooks/useCommandPaletteContext';
 import { useReducedMotionFor } from './hooks/useReducedMotionFor';
+import { getNativeVisualizerEnabled, subscribeNativeVisualizer } from './services/nativeVisualizer';
 import AppShell from './components/app/AppShell';
 import Home from './components/app/Home';
 import PlayerPanel from './components/app/PlayerPanel';
@@ -2453,6 +2454,9 @@ export default function App() {
     // 首页一被面板盖住 / 离开就立即重挂；设置弹窗盖着时首页仍显示在遮罩下面，不重挂。App 只认报告，不认识 suite。
     const libraryOccludesPlayer = useLibraryPlayerOcclusionStore(selectLibraryOccludesPlayer);
     const hasLibraryOcclusionSettled = useLibraryOcclusionSettled(shouldRevealHomeSurface && libraryOccludesPlayer);
+    // 原生渲染层开着时，这一层画面由原生 Surface 画（见 services/nativeVisualizer），
+    // WebView 里的可视化器必须卸载：两边同时画既浪费又互相遮挡。
+    const nativeStageOn = useSyncExternalStore(subscribeNativeVisualizer, getNativeVisualizerEnabled, getNativeVisualizerEnabled);
     const shouldMountVisualizer = shouldMountPlayerVisualizer({
         currentView,
         // Around a wall, the visualizer is taken down and put back by wallLayer.ts's rule.
@@ -2907,7 +2911,7 @@ export default function App() {
                 onClick={handleContainerClick}
             >
                 <PlayerBottomBarLayoutContext.Provider value={currentView === 'player'}>
-                    {shouldMountVisualizer && <VisualizerRenderer {...visualizerRendererModel} animateStyleSwitch />}
+                    {shouldMountVisualizer && !nativeStageOn && <VisualizerRenderer {...visualizerRendererModel} animateStyleSwitch />}
                 </PlayerBottomBarLayoutContext.Provider>
             </div>
 
