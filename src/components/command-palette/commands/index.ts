@@ -12,6 +12,7 @@ import { navigationCommands } from './navigationCommands';
 import { panelCommands } from './panelCommands';
 import { modsCommands } from './modsCommands';
 import { visualizerCommands } from './visualizerCommands';
+import { nativeVisualizerCommands } from './nativeVisualizerCommands';
 
 // src/components/command-palette/commands/index.ts
 // The one place that decides cross-group ordering; each group file owns its internal order.
@@ -89,6 +90,7 @@ export const ALL_COMMAND_PALETTE_COMMANDS: CommandPaletteCommand[] = assertExecu
     ...panelCommands,
     ...modsCommands,
     ...visualizerCommands,
+    ...nativeVisualizerCommands,
 ])));
 
 export const OPEN_HOTKEY_INDEX = buildOpenHotkeyIndex(ALL_COMMAND_PALETTE_COMMANDS);

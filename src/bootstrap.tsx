@@ -17,6 +17,7 @@ import { installLibrarySuiteChromeCommands } from './library/app/installLibraryS
 import { noteFoliumFirstScreenMounted, startFoliumForMainWindow } from './mods/runtime/mainWindowStart';
 import { installNativeDragGuard } from './utils/nativeDragGuard';
 import { prewarmSavedVisualizer, prewarmVisualizersWhenIdle, warmVisualizerChunksWhenIdle } from './components/visualizer/prewarmVisualizers';
+import { isNativeVisualizerEnabled, startNativeVisualizer } from './services/nativeVisualizer';
 import { bootNavidromeServerPreset } from './services/navidromeServerPreset';
 import { isNavidromeEnabled } from './services/navidromeService';
 import { setNavidromeEnabledState } from './stores/useLibraryStore';
@@ -70,6 +71,8 @@ const FirstScreenMounted: React.FC<{ children: React.ReactNode }> = ({ children 
         noteFoliumFirstScreenMounted();
         prewarmVisualizersWhenIdle();
         warmVisualizerChunksWhenIdle();
+        // 上一次开着原生渲染层的话，首屏出来后再拉起（失败只是不生效）。
+        if (isNativeVisualizerEnabled()) void startNativeVisualizer();
     }, []);
     return <>{children}</>;
 };
