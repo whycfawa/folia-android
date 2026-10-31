@@ -21,7 +21,9 @@ android {
         }
     }
     defaultConfig {
-        applicationId "top.izuna.foliamajor"
+        // 性能实验版用独立包名，和原版可并排安装、各自独立的 WebView 存储与登录态。
+        // namespace 保持 top.izuna.foliamajor：Java 包名不动，只有安装身份变了。
+        applicationId "top.izuna.foliamajor.perf"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 323
