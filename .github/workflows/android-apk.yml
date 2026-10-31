@@ -75,6 +75,23 @@ jobs:
             android/gradle/wrapper/gradle-wrapper.properties
           grep distributionUrl android/gradle/wrapper/gradle-wrapper.properties
 
+      # 固定测试签名：优先用仓库里的 android/keystore/folia-perf.jks；
+      # 没有文件但有 FOLIA_TEST_KEYSTORE_BASE64 这个 secret 时，在构建机上还原。
+      # 两者都没有就退回默认 debug 密钥——那样的包不能覆盖安装上一次的包。
+      - name: Materialize test signing key
+        env:
+          TEST_KEYSTORE_BASE64: ${{ secrets.FOLIA_TEST_KEYSTORE_BASE64 }}
+        run: |
+          if [ -f android/keystore/folia-perf.jks ]; then
+            echo "使用仓库内的固定测试签名"
+          elif [ -n "${TEST_KEYSTORE_BASE64:-}" ]; then
+            mkdir -p android/keystore
+            printf '%s' "$TEST_KEYSTORE_BASE64" | base64 -d > android/keystore/folia-perf.jks
+            echo "已从 secret 还原固定测试签名"
+          else
+            echo "::warning::没有固定测试签名文件，本次用默认 debug 密钥，无法覆盖安装上一次的包"
+          fi
+
       # gradle.properties 里作者写死了本机 Windows 的 JDK 路径（org.gradle.java.home），
       # 在 Linux runner 上无效；命令行 -D 的系统属性优先于 gradle.properties。
       - name: Assemble debug APK
@@ -85,6 +102,17 @@ jobs:
 
       - name: Show APK
         run: ls -lh android/app/build/outputs/apk/debug/
+
+      # 把签名证书指纹打进日志：连续两次构建的 SHA-256 相同，才说明可以覆盖安装。
+      - name: Print signing certificate
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -n "$APKSIGNER" ]; then
+            "$APKSIGNER" verify --print-certs "$APK" | grep -E "certificate (DN|SHA-256) digest" || true
+          else
+            echo "apksigner 未找到，跳过指纹输出"
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

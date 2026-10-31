@@ -13,6 +13,10 @@ if (hasReleaseKeystore) {
     keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
 }
 
+// 固定的测试签名（见下方 signingConfigs.perfTest）。仓库里没有这个文件时，debug 包沿用默认 debug 密钥。
+def testKeystoreFile = rootProject.file('keystore/folia-perf.jks')
+def hasTestKeystore = testKeystoreFile.exists()
+
 android {
     namespace = "top.izuna.foliamajor"
     compileSdk {
@@ -36,6 +40,18 @@ android {
         }
     }
     signingConfigs {
+        // 测试版固定签名：CI 每次都是新机器，默认 debug keystore 会每次现生成一把新密钥，
+        // 于是新包装不上旧包（INSTALL_FAILED_UPDATE_INCOMPATIBLE）。这里用仓库里固定的一把测试密钥，
+        // 所有测试版签名一致、可以直接覆盖安装。它不是发布密钥，不用于任何对外发布。
+        // 密钥文件由仓库的 android/keystore/folia-perf.jks 提供，缺失时回退到默认 debug 签名。
+        if (hasTestKeystore) {
+            perfTest {
+                storeFile testKeystoreFile
+                storePassword System.getenv('FOLIA_TEST_KEYSTORE_PASSWORD') ?: 'folia-perf-test'
+                keyAlias System.getenv('FOLIA_TEST_KEY_ALIAS') ?: 'folia-perf'
+                keyPassword System.getenv('FOLIA_TEST_KEY_PASSWORD') ?: 'folia-perf-test'
+            }
+        }
         if (hasReleaseKeystore) {
             release {
                 storeFile file(keystoreProperties['storeFile'])
@@ -46,6 +62,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            if (hasTestKeystore) signingConfig signingConfigs.perfTest
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
