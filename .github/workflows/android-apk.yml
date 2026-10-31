@@ -117,15 +117,15 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.java.home="$JAVA_HOME"
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace -Dorg.gradle.java.home="$JAVA_HOME"
 
       - name: Show APK
-        run: ls -lh android/app/build/outputs/apk/debug/
+        run: ls -lh android/app/build/outputs/apk/debug/ android/app/build/outputs/apk/release/
 
       # 把签名证书指纹打进日志：连续两次构建的 SHA-256 相同，才说明可以覆盖安装。
       - name: Print signing certificate
         run: |
-          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          APK=android/app/build/outputs/apk/release/app-release.apk
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
           if [ -n "$APKSIGNER" ]; then
             "$APKSIGNER" verify --print-certs "$APK" | grep -E "certificate (DN|SHA-256) digest" || true
@@ -136,7 +136,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: folia-perf-debug-${{ github.sha }}
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: folia-android-debug-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30

@@ -25,12 +25,10 @@ android {
         }
     }
     defaultConfig {
-        // 性能实验版用独立包名，和原版可并排安装、各自独立的 WebView 存储与登录态。
-        // namespace 保持 top.izuna.foliamajor：Java 包名不动，只有安装身份变了。
-        applicationId "top.izuna.foliamajor.perf"
+        applicationId "top.izuna.foliamajor"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 323
+        versionCode 324
         versionName packageJson.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -70,6 +68,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasReleaseKeystore) {
                 signingConfig signingConfigs.release
+            } else if (hasTestKeystore) {
+                // 仓库里没有发布密钥时，正式包用固定测试签名：能装、能覆盖升级，但不是上架签名。
+                signingConfig signingConfigs.perfTest
             }
         }
     }
