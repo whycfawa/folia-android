@@ -43,6 +43,11 @@ public class NativeVisualizerView extends GLSurfaceView {
         renderer.pushFrame(bands, power, primaryColor, accentColor);
     }
 
+    /** 0=频谱条 1=环形 2=波形；JS 按当前歌词效果映射过来。 */
+    public void setStyle(int style) {
+        renderer.setStyle(style);
+    }
+
     /** 换行时才调：把两句歌词画成位图交给 GL 线程。 */
     public void setLyrics(String current, String next) {
         final Bitmap currentBitmap = current == null || current.isEmpty()
@@ -126,13 +131,17 @@ public class NativeVisualizerView extends GLSurfaceView {
 
         private FloatBuffer quadBuffer;
         private FloatBuffer textBuffer;
+        /** 环形 / 波形用的段数，比频谱条多，缓冲统一按它分配。 */
+        private static final int SEGMENTS = 64;
         private final FloatBuffer barBuffer = ByteBuffer
-            .allocateDirect(BAR_COUNT * 6 * 2 * 4)
+            .allocateDirect(SEGMENTS * 6 * 2 * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer();
 
-        private final float[] targetBands = new float[BAR_COUNT];
-        private final float[] shownBands = new float[BAR_COUNT];
+        private final float[] targetBands = new float[SEGMENTS];
+        private final float[] shownBands = new float[SEGMENTS];
+        private volatile int style = 0;
+        private float clock = 0f;
         private volatile float targetPower = 0f;
         private volatile float shownPower = 0f;
         private volatile int primary = 0xFF74EFD0;
@@ -149,14 +158,18 @@ public class NativeVisualizerView extends GLSurfaceView {
 
         void pushFrame(float[] bands, float power, int primaryColor, int accentColor) {
             if (bands != null && bands.length > 0) {
-                for (int i = 0; i < BAR_COUNT; i++) {
-                    final int source = Math.min(bands.length - 1, i * bands.length / BAR_COUNT);
+                for (int i = 0; i < SEGMENTS; i++) {
+                    final int source = Math.min(bands.length - 1, i * bands.length / SEGMENTS);
                     targetBands[i] = Math.max(0f, Math.min(1f, bands[source] / 255f));
                 }
             }
             targetPower = Math.max(0f, Math.min(1f, power / 255f));
             primary = primaryColor;
             accent = accentColor;
+        }
+
+        void setStyle(int next) {
+            style = next;
         }
 
         void setLyricBitmaps(Bitmap current, Bitmap next) {
@@ -195,14 +208,21 @@ public class NativeVisualizerView extends GLSurfaceView {
 
         @Override
         public void onDrawFrame(GL10 unused) {
-            for (int i = 0; i < BAR_COUNT; i++) {
+            for (int i = 0; i < SEGMENTS; i++) {
                 shownBands[i] += (targetBands[i] - shownBands[i]) * 0.18f;
             }
             shownPower += (targetPower - shownPower) * 0.12f;
+            clock += 0.016f;
 
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
             drawGradient();
-            drawBars();
+            if (style == 1) {
+                drawRing();
+            } else if (style == 2) {
+                drawWave();
+            } else {
+                drawBars();
+            }
             uploadPendingTextures();
             drawLyrics();
         }
@@ -261,12 +281,13 @@ public class NativeVisualizerView extends GLSurfaceView {
             GLES20.glEnable(GLES20.GL_BLEND);
             GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE);
 
-            final float slot = 2f / BAR_COUNT;
+            final int bars = 32;
+            final float slot = 2f / bars;
             final float barWidth = slot * 0.55f;
             barBuffer.clear();
-            for (int i = 0; i < BAR_COUNT; i++) {
+            for (int i = 0; i < bars; i++) {
                 final float x = -1f + slot * i + (slot - barWidth) / 2f;
-                final float height = 0.05f + shownBands[i] * 0.55f * (0.6f + shownPower * 0.8f);
+                final float height = 0.05f + shownBands[i * 2] * 0.55f * (0.6f + shownPower * 0.8f);
                 final float top = Math.min(-1f + height, 1f);
                 barBuffer.put(x).put(-1f);
                 barBuffer.put(x + barWidth).put(-1f);
@@ -286,7 +307,98 @@ public class NativeVisualizerView extends GLSurfaceView {
             );
             GLES20.glEnableVertexAttribArray(solidPosAttr);
             GLES20.glVertexAttribPointer(solidPosAttr, 2, GLES20.GL_FLOAT, false, 0, barBuffer);
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, BAR_COUNT * 6);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, bars * 6);
+            GLES20.glDisableVertexAttribArray(solidPosAttr);
+            GLES20.glDisable(GLES20.GL_BLEND);
+        }
+
+
+        /** 环形：绕着屏幕中心的一圈频谱，半径随能量呼吸，缓慢旋转。 */
+        private void drawRing() {
+            GLES20.glUseProgram(solidProgram);
+            GLES20.glEnable(GLES20.GL_BLEND);
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE);
+
+            final float aspect = viewportWidth / (float) viewportHeight;
+            final float baseRadius = 0.26f + shownPower * 0.12f;
+            final float rotation = clock * 0.35f;
+            barBuffer.clear();
+            for (int i = 0; i < SEGMENTS; i++) {
+                final float angle = (float) (Math.PI * 2 * i / SEGMENTS) + rotation;
+                final float band = shownBands[i];
+                final float inner = baseRadius;
+                final float outer = baseRadius + 0.05f + band * 0.36f;
+                final float thickness = 0.010f + 0.010f * band;
+                final float cos = (float) Math.cos(angle);
+                final float sin = (float) Math.sin(angle);
+                final float nx = -sin * thickness;
+                final float ny = cos * thickness * aspect;
+
+                final float ix = cos * inner;
+                final float iy = sin * inner * aspect;
+                final float ox = cos * outer;
+                final float oy = sin * outer * aspect;
+
+                barBuffer.put(ix - nx).put(iy - ny);
+                barBuffer.put(ix + nx).put(iy + ny);
+                barBuffer.put(ox - nx).put(oy - ny);
+                barBuffer.put(ox - nx).put(oy - ny);
+                barBuffer.put(ix + nx).put(iy + ny);
+                barBuffer.put(ox + nx).put(oy + ny);
+            }
+            barBuffer.position(0);
+
+            GLES20.glUniform4f(
+                solidColorUniform,
+                Color.red(accent) / 255f,
+                Color.green(accent) / 255f,
+                Color.blue(accent) / 255f,
+                0.55f
+            );
+            GLES20.glEnableVertexAttribArray(solidPosAttr);
+            GLES20.glVertexAttribPointer(solidPosAttr, 2, GLES20.GL_FLOAT, false, 0, barBuffer);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, SEGMENTS * 6);
+            GLES20.glDisableVertexAttribArray(solidPosAttr);
+            GLES20.glDisable(GLES20.GL_BLEND);
+        }
+
+        /** 波形：屏幕下部一条起伏的带子，左右铺满。 */
+        private void drawWave() {
+            GLES20.glUseProgram(solidProgram);
+            GLES20.glEnable(GLES20.GL_BLEND);
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE);
+
+            final float left = -0.9f;
+            final float right = 0.9f;
+            final float step = (right - left) / (SEGMENTS - 1);
+            final float baseline = -0.45f;
+            barBuffer.clear();
+            for (int i = 0; i < SEGMENTS - 1; i++) {
+                final float x0 = left + step * i;
+                final float x1 = x0 + step;
+                final float y0 = baseline + shownBands[i] * 0.45f;
+                final float y1 = baseline + shownBands[i + 1] * 0.45f;
+                final float thickness = 0.008f + shownPower * 0.012f;
+
+                barBuffer.put(x0).put(y0 - thickness);
+                barBuffer.put(x1).put(y1 - thickness);
+                barBuffer.put(x0).put(y0 + thickness);
+                barBuffer.put(x0).put(y0 + thickness);
+                barBuffer.put(x1).put(y1 - thickness);
+                barBuffer.put(x1).put(y1 + thickness);
+            }
+            barBuffer.position(0);
+
+            GLES20.glUniform4f(
+                solidColorUniform,
+                Color.red(primary) / 255f,
+                Color.green(primary) / 255f,
+                Color.blue(primary) / 255f,
+                0.75f
+            );
+            GLES20.glEnableVertexAttribArray(solidPosAttr);
+            GLES20.glVertexAttribPointer(solidPosAttr, 2, GLES20.GL_FLOAT, false, 0, barBuffer);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, (SEGMENTS - 1) * 6);
             GLES20.glDisableVertexAttribArray(solidPosAttr);
             GLES20.glDisable(GLES20.GL_BLEND);
         }

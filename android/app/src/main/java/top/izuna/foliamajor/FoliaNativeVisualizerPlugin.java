@@ -109,6 +109,16 @@ public class FoliaNativeVisualizerPlugin extends Plugin {
         call.resolve();
     }
 
+    /** 切换歌词效果时推一次：原生层换一种画法（0 频谱条 / 1 环形 / 2 波形）。 */
+    @PluginMethod
+    public void setStyle(PluginCall call) {
+        final NativeVisualizerView target = view;
+        if (target != null) {
+            target.setStyle(call.getInt("style", 0));
+        }
+        call.resolve();
+    }
+
     /** 换行时推一次：原生层把这两行画成纹理。 */
     @PluginMethod
     public void pushLyric(PluginCall call) {

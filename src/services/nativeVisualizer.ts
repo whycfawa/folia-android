@@ -10,6 +10,8 @@
 
 import { audioPower, spectrum } from '../stores/motionSignals';
 import { selectDisplayLyrics, usePlaybackStore } from '../stores/usePlaybackStore';
+import { useVisualizerSettingsStore } from '../stores/useVisualizerSettingsStore';
+import { IS_ANDROID_WEBVIEW } from '../utils/platform';
 
 export const NATIVE_VISUALIZER_STORAGE_KEY = 'folia_native_visualizer';
 
@@ -18,6 +20,7 @@ type NativeVisualizerPlugin = {
     stop?: () => Promise<unknown>;
     push?: (options: { bands: number[]; power: number; primary: number; accent: number }) => Promise<unknown>;
     pushLyric?: (options: { current: string; next: string }) => Promise<unknown>;
+    setStyle?: (options: { style: number }) => Promise<unknown>;
 };
 
 const BAND_COUNT = 32;
@@ -28,11 +31,29 @@ const listeners = new Set<() => void>();
 
 const readEnabledFlag = (): boolean => {
     try {
-        return localStorage.getItem(NATIVE_VISUALIZER_STORAGE_KEY) === 'true';
+        const stored = localStorage.getItem(NATIVE_VISUALIZER_STORAGE_KEY);
+        // 没设置过时：安卓壳里默认开启（用户要求原生层常驻），其它运行时保持关闭。
+        if (stored === null) return IS_ANDROID_WEBVIEW;
+        return stored === 'true';
     } catch {
         return false;
     }
 };
+
+/**
+ * 歌词效果 → 原生画法。24 个效果不可能逐个用 GLSL 重写，这里把它们归到三种画法，
+ * 切换效果时画面确实会变（而不是永远同一套频谱条）。
+ * 0 = 频谱条，1 = 环形，2 = 波形。
+ */
+const NATIVE_STYLE_BY_MODE: Record<string, number> = {
+    classic: 0, cappella: 0, cadenza: 0, partita: 0, sonnet: 0, tempera: 0, still: 0,
+    lumiere: 1, claddagh: 1, pendolo: 1, tilt: 1, monet: 1, machi: 1,
+    fume: 2, hanabi: 2, diorama: 2, nebbia: 2,
+};
+
+const styleForMode = (mode: string | null | undefined): number => (
+    (mode && NATIVE_STYLE_BY_MODE[mode]) ?? 0
+);
 
 let enabledSnapshot = typeof window === 'undefined' ? false : readEnabledFlag();
 
@@ -55,6 +76,7 @@ const publishEnabled = (next: boolean) => {
 let timer: number | null = null;
 let running = false;
 let unsubscribeLyrics: (() => void) | null = null;
+let unsubscribeMode: (() => void) | null = null;
 let lastLyricKey = '';
 
 const getPlugin = (): NativeVisualizerPlugin | null => {
@@ -132,11 +154,18 @@ export const startNativeVisualizer = async (): Promise<boolean> => {
         await plugin.start();
         running = true;
         document.documentElement.setAttribute('data-native-visualizer', 'on');
+        const pushStyle = () => {
+            void plugin.setStyle?.({ style: styleForMode(useVisualizerSettingsStore.getState().visualizerMode) })?.catch?.(() => undefined);
+        };
+        pushStyle();
+        unsubscribeMode = useVisualizerSettingsStore.subscribe(pushStyle);
+        publishEnabled(true);
         timer = window.setInterval(() => pushOnce(plugin), PUSH_INTERVAL_MS);
         pushLyric(plugin);
         unsubscribeLyrics = usePlaybackStore.subscribe(() => pushLyric(plugin));
         return true;
     } catch {
+        publishEnabled(false);
         return false;
     }
 };
@@ -150,6 +179,10 @@ export const stopNativeVisualizer = async (): Promise<void> => {
     if (unsubscribeLyrics) {
         unsubscribeLyrics();
         unsubscribeLyrics = null;
+    }
+    if (unsubscribeMode) {
+        unsubscribeMode();
+        unsubscribeMode = null;
     }
     lastLyricKey = '';
     document.documentElement.removeAttribute('data-native-visualizer');

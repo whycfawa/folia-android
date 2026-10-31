@@ -166,7 +166,9 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     const phoneFitOrientation = useAndroidLayoutSettingsStore(state => state.phoneFitOrientation);
     const phoneFitFixedExpanded = phoneFitEnabled && phoneFitOrientation === 'portrait';
     // 定位模式强制展开：用户要看到的是最终形态的胶囊，而不是一条细进度条。
-    const showExpanded = phoneFitFixedExpanded
+    // 控制栏常驻展开（用户要求）：不再随触摸/悬挂计时器收起成只露播放键的小胶囊。
+    const forceAlwaysExpanded = true;
+    const showExpanded = forceAlwaysExpanded || phoneFitFixedExpanded
         || isPositioning
         || isHovered
         || isTouchExpanded
