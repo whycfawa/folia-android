@@ -75,11 +75,13 @@ jobs:
             android/gradle/wrapper/gradle-wrapper.properties
           grep distributionUrl android/gradle/wrapper/gradle-wrapper.properties
 
+      # gradle.properties 里作者写死了本机 Windows 的 JDK 路径（org.gradle.java.home），
+      # 在 Linux runner 上无效；命令行 -D 的系统属性优先于 gradle.properties。
       - name: Assemble debug APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.java.home="$JAVA_HOME"
 
       - name: Show APK
         run: ls -lh android/app/build/outputs/apk/debug/
