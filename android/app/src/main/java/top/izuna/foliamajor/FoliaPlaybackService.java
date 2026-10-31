@@ -21,7 +21,6 @@ import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
 
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -47,6 +46,8 @@ public class FoliaPlaybackService extends Service {
     // 通知栏封面按原图解码（现场 1376x1376 ≈ 7.6MB/张）。缓存必须有上限：长会话切几十首就会把
     // 几十张原图钉在 native heap 里，这是「用久了内存高 / 被系统杀」最直接的来源之一。
     private static final int ARTWORK_CACHE_LIMIT = 6;
+    /** 封面解码的长边上限：通知栏大图标与锁屏都用不到更大的尺寸。 */
+    private static final int ARTWORK_MAX_EDGE_PX = 768;
     private final Map<String, Bitmap> artworkCache = Collections.synchronizedMap(
         new LinkedHashMap<String, Bitmap>(16, 0.75f, true) {
             @Override
@@ -363,9 +364,9 @@ public class FoliaPlaybackService extends Service {
                 .build()).execute()) {
                 ResponseBody body = response.body();
                 if (response.isSuccessful() && body != null) {
-                    try (InputStream input = body.byteStream()) {
-                        bitmap = BitmapFactory.decodeStream(input);
-                    }
+                    // 网易云原图能到 3125x3125（ARGB_8888 ≈ 39MB/张）。通知栏大图标按 768px 解码就够，
+                    // 不采样等于每次切歌都多占几十 MB native heap，还会和渲染抢内存带宽。
+                    bitmap = decodeSampled(body.bytes(), ARTWORK_MAX_EDGE_PX);
                     if (bitmap == null) failure = "decode-failed";
                 } else {
                     failure = "http-" + response.code();
@@ -392,6 +393,27 @@ public class FoliaPlaybackService extends Service {
                 FoliaNativePlugin.notePlaybackArtwork(value, "error", failure.isEmpty() ? "unknown" : failure);
             }
         });
+    }
+
+    /**
+     * 按长边上限采样解码：先读尺寸算 inSampleSize，再真正解码。
+     * 3125x3125 的原图按 4 倍采样后是 781x781，占用从 ~39MB 降到 ~2.4MB，通知栏与锁屏看不出差别。
+     */
+    private static Bitmap decodeSampled(byte[] bytes, int maxEdgePx) {
+        if (bytes == null || bytes.length == 0) return null;
+        final BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+        int sampleSize = 1;
+        while (Math.max(bounds.outWidth, bounds.outHeight) / (sampleSize * 2) >= maxEdgePx) {
+            sampleSize *= 2;
+        }
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sampleSize;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
     }
 
     private interface ArtworkCallback {

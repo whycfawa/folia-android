@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { MotionValue } from 'framer-motion';
 import ProgressBar from './ProgressBar';
 import { PlayerState, LyricData, Theme } from '../types';
@@ -504,6 +504,34 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 /** 展开视图里进度那一行在网格中的位置；HiFi 路线和 Web 路线共用。 */
 const PROGRESS_ROW_CLASS = 'col-span-3 row-start-3 w-full px-2 sm:col-start-2 sm:col-span-1 sm:row-start-2';
 
+/** 播放键两侧的上一首 / 下一首。图标与配色沿用现有播放键与槽位按钮，不新增素材。 */
+const TransportSkipButton: React.FC<{
+    direction: 'prev' | 'next';
+    disabled: boolean;
+    primaryColor: string;
+    label: string;
+    onClick: () => void;
+}> = ({ direction, disabled, primaryColor, label, onClick }) => {
+    const Icon = direction === 'prev' ? SkipBack : SkipForward;
+    return (
+        <button
+            type="button"
+            data-folia-player-bar-skip={direction}
+            aria-label={label}
+            title={label}
+            disabled={disabled}
+            onClick={(event) => {
+                event.stopPropagation();
+                onClick();
+            }}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-none bg-transparent transition-transform ${disabled ? 'cursor-not-allowed opacity-30' : 'hover:scale-110 active:scale-95'}`}
+            style={{ color: primaryColor }}
+        >
+            <Icon size={18} fill="currentColor" />
+        </button>
+    );
+};
+
 // 展开视图组件
 interface ExpandedViewProps {
     currentSong: { name: string; } | null;
@@ -547,6 +575,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
     slotContext,
 }) => {
     const isHifiRoute = useIsHifiRoute();
+    const { t } = useTranslation();
     const progressBar = (
         <ProgressBar
             currentTime={currentTime}
@@ -594,23 +623,40 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({
                 )}
             </div>
 
-            {/* Row 3: Loop Button, Play Button, Lyrics Button */}
-            <button
-                data-folia-player-bar-play="true"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePlay();
-                }}
-                disabled={!canTogglePlay || controlsDisabled}
-                className={`col-start-2 row-start-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform sm:col-start-1 sm:row-start-1 sm:row-span-2 ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'hover:scale-105'}`}
-                style={{ backgroundColor: primaryColor, color: 'var(--bg-color)' }}
-            >
-                {playerState === PlayerState.PLAYING ? (
-                    <Pause size={20} fill="currentColor" />
-                ) : (
-                    <Play size={20} fill="currentColor" className="ml-1" />
-                )}
-            </button>
+            {/* Row 3: 上一首 / 播放 / 下一首，两侧是两个可自定义槽位。
+                圈选的播放键保持原来位置，前后各加一个跳过键：手机上正好是「⏮ ▶ ⏭」。 */}
+            <div className="col-start-2 row-start-2 flex items-center justify-center gap-2 sm:col-start-1 sm:row-start-1 sm:row-span-2">
+                <TransportSkipButton
+                    direction="prev"
+                    disabled={controlsDisabled || !slotContext.canPrev}
+                    primaryColor={primaryColor}
+                    label={t('options.playerControlSlotAction_prev')}
+                    onClick={() => slotContext.onPrev()}
+                />
+                <button
+                    data-folia-player-bar-play="true"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePlay();
+                    }}
+                    disabled={!canTogglePlay || controlsDisabled}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-none bg-(--text-primary) text-black shadow-lg transition-transform ${controlsDisabled ? 'cursor-not-allowed opacity-45' : 'hover:scale-105'}`}
+                    style={{ backgroundColor: primaryColor, color: 'var(--bg-color)' }}
+                >
+                    {playerState === PlayerState.PLAYING ? (
+                        <Pause size={20} fill="currentColor" />
+                    ) : (
+                        <Play size={20} fill="currentColor" className="ml-1" />
+                    )}
+                </button>
+                <TransportSkipButton
+                    direction="next"
+                    disabled={controlsDisabled || !slotContext.canNext}
+                    primaryColor={primaryColor}
+                    label={t('options.playerControlSlotAction_next')}
+                    onClick={() => slotContext.onNext()}
+                />
+            </div>
 
             {/* 两个可自定义槽位。默认仍是循环模式 + 歌词时间轴，和改动前一致。 */}
             <div
