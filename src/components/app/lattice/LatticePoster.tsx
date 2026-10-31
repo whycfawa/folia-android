@@ -9,6 +9,7 @@ import type { LatticeTile } from './latticeModel';
 import { useLatticeChromeDisclosure } from './useLatticeChromeDisclosure';
 import LatticePlaybackControls from './LatticePlaybackControls';
 import { useLatticeExpansionSettled } from './useLatticeExpansionSettled';
+import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
 import { prewarmLatticeLyrics } from './lyrics/prewarmLatticeLyrics';
 import { prewarmWallPosterArtwork, useWallPosterArtwork } from '../../wall/useWallPosterArtwork';
 import { countRender } from '../../../dev/renderCount';
@@ -292,6 +293,10 @@ function LatticePoster({
             transition={{
                 ...baseTransition,
                 rotateY: flipTransition,
+                // 安卓：尺寸本身不做补间。宽高每帧变一次就要重新布局 + 把封面位图按新尺寸重栅格化，
+                // 展开一个板块时全场几十张海报同时这样跑，就是「点开板块卡一下」的主因。
+                // 位置仍用 transform 补间（合成器完成），尺寸直接落到目标值。
+                ...(IS_ANDROID_WEBVIEW ? { width: { duration: 0 }, height: { duration: 0 } } : null),
             }}
             style={{
                 backgroundImage: coverUrl ? `url("${coverUrl}")` : fallbackBackground(tile.id),
