@@ -997,10 +997,10 @@ export const omni = {
             // without one the very error goes on, for the caller to sort (failure/onlineFailureCase.ts).
             const fromHook = await applyOmniAudioHook(song, null);
             if (fromHook?.url) {
-                noteOnlinePlaybackOutcome({ stage: 'resolve', outcome: 'ok', providerId: provider.id, quality: level, kind: 'hook-rescued', elapsedMs: Date.now() - resolveStartedAt });
+                noteOnlinePlaybackOutcome({ stage: 'resolve', outcome: 'ok', providerId: provider.id, songTitle: song.name, songArtist: (song.artists || []).map(a => a?.name).filter(Boolean).join(' / '), quality: level, kind: 'hook-rescued', elapsedMs: Date.now() - resolveStartedAt });
                 return fromHook;
             }
-            noteOnlinePlaybackError({ stage: 'resolve', providerId: provider.id, quality: level, elapsedMs: Date.now() - resolveStartedAt, error });
+            noteOnlinePlaybackError({ stage: 'resolve', providerId: provider.id, songTitle: song.name, songArtist: (song.artists || []).map(a => a?.name).filter(Boolean).join(' / '), quality: level, elapsedMs: Date.now() - resolveStartedAt, error });
             throw error;
         }
         // Written here rather than at either caller because this is the only moment a provider ever
@@ -1037,6 +1037,8 @@ export const omni = {
             stage: 'resolve',
             outcome: resolved?.url ? 'ok' : 'no-source',
             providerId: provider.id,
+            songTitle: song.name,
+            songArtist: (song.artists || []).map(a => a?.name).filter(Boolean).join(' / '),
             quality: level,
             kind: resolved?.url ? '' : 'empty-url',
             detail: resolved?.url ? this.describeResolvedAudioUrl(resolved.url) : 'provider returned no playable url',

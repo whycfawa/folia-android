@@ -18,6 +18,9 @@ export type OnlinePlaybackRecord = {
     stage: OnlinePlaybackStage;
     outcome: OnlinePlaybackOutcome;
     providerId: string;
+    /** 歌曲标题与歌手：只写进诊断，方便定位是哪一首，不含账号信息。 */
+    songTitle: string;
+    songArtist: string;
     mediaId: string;
     quality: string;
     kind: string;
@@ -62,6 +65,8 @@ export const noteOnlinePlaybackOutcome = (input: {
     stage?: OnlinePlaybackStage;
     outcome: OnlinePlaybackOutcome;
     providerId: string;
+    songTitle?: string;
+    songArtist?: string;
     mediaId?: string | number;
     quality?: string;
     kind?: string;
@@ -76,6 +81,8 @@ export const noteOnlinePlaybackOutcome = (input: {
         stage: input.stage ?? 'resolve',
         outcome: input.outcome,
         providerId: text(input.providerId, 'unknown').slice(0, 24),
+        songTitle: text(input.songTitle).slice(0, 80),
+        songArtist: text(input.songArtist).slice(0, 80),
         mediaId: text(input.mediaId).slice(0, 80),
         quality: text(input.quality, '-').slice(0, 24),
         kind: text(input.kind).slice(0, 40),
@@ -90,6 +97,8 @@ export const noteOnlinePlaybackOutcome = (input: {
 export const noteOnlinePlaybackError = (input: {
     stage?: OnlinePlaybackStage;
     providerId: string;
+    songTitle?: string;
+    songArtist?: string;
     mediaId?: string | number;
     quality?: string;
     elapsedMs?: number;
@@ -100,6 +109,8 @@ export const noteOnlinePlaybackError = (input: {
         stage: input.stage ?? 'resolve',
         outcome: 'error',
         providerId: input.providerId,
+        songTitle: input.songTitle,
+        songArtist: input.songArtist,
         mediaId: input.mediaId,
         quality: input.quality,
         kind: described.kind,
@@ -115,6 +126,7 @@ export const getOnlinePlaybackDiagnosticLines = (): string[] => {
     return records.map((record) => (
         `playback +${Math.max(0, at - record.at)}ms ago stage=${record.stage}`
         + ` outcome=${record.outcome} provider=${record.providerId}`
+        + (record.songTitle ? ` song=${record.songTitle}${record.songArtist ? ' - ' + record.songArtist : ''}` : '')
         + ` mediaId=${record.mediaId || '(none)'} quality=${record.quality}`
         + (record.kind ? ` kind=${record.kind}` : '')
         + (record.code ? ` code=${record.code}` : '')

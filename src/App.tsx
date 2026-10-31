@@ -2695,6 +2695,8 @@ export default function App() {
                     noteOnlinePlaybackOutcome({
                         stage: 'media', outcome: 'error',
                         providerId: currentSong?.sourceRef?.kind === 'online' ? currentSong.sourceRef.providerId : 'local',
+                        songTitle: currentSong?.name,
+                        songArtist: (currentSong?.artists || []).map(artist => artist?.name).filter(Boolean).join(' / '),
                         mediaId: currentSong?.id,
                         kind: `media-error-${audioElement.error?.code ?? 'none'}`,
                         code: audioElement.networkState,

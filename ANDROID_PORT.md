@@ -403,3 +403,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 移植 sonnet 分支的 `QishuiAudioDecryptor` / `QishuiAudioServer`：spade_a 还原、AES-CTR、mp4/flac 解包，按 Range 本地回环输出。
 - 新增 `FoliaQishuiAudio` 插件；汽水 `audio` 解析遇到带 spade_a/PlayAuth 的加密完整音源时，先尝试解密代理，失败再退回试听片段。
 - 不改变免费/明文音源的原有路径。
+
+### 0.7.25-android.287：播放诊断补歌名
+
+- `online playback trace` 每条记录新增 `song=标题 - 歌手`，覆盖取流失败、媒体失败、omni 解析与代理失败。
+- 反馈时能直接看到失败/成功的是哪首歌，不用再猜。

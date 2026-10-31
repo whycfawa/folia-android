@@ -47,6 +47,8 @@ export const handleOnlineMediaFailure = async ({
     noteOnlinePlaybackOutcome({
         stage: 'media', outcome: 'error',
         providerId: getOnlineProviderIdForSong(song) ?? 'unknown',
+        songTitle: song.name,
+        songArtist: (song.artists || []).map(artist => artist?.name).filter(Boolean).join(' / '),
         mediaId: failedSongKey, quality: '-',
         kind: mediaFailure.case, code: mediaError?.code,
         detail: failedSrc ? 'src=' + failedSrc.slice(0, 60) : '',

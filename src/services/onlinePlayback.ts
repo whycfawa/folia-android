@@ -148,6 +148,12 @@ const sleepBeforeRetry = (ms: number): Promise<void> => new Promise(resolve => {
     globalThis.setTimeout(resolve, ms);
 });
 
+/** 诊断用的一行歌曲身份：标题 + 歌手，不含账号信息。 */
+const songDiagnosticIdentity = (song: SongResult): { songTitle: string; songArtist: string } => ({
+    songTitle: String(song.name || '').slice(0, 80),
+    songArtist: (song.artists || []).map(artist => artist?.name).filter(Boolean).join(' / ').slice(0, 80),
+});
+
 export async function loadOnlineSongAudioSource(
     song: SongResult,
     audioQuality: AudioQualityPreference,
@@ -234,6 +240,7 @@ export async function loadOnlineSongAudioSource(
             // 冷却期内不会发起取流：单独留痕，否则报告里既没有请求也没有失败。
             noteOnlinePlaybackOutcome({
                 stage: 'resolve', outcome: 'error', providerId: providerId ?? 'unknown',
+                ...songDiagnosticIdentity(song),
                 mediaId: getPlaybackSongKey(song), quality: audioQuality,
                 kind: 'rate-limited(cooldown)', code: cooldown.remainingMs,
                 detail: 'provider cooldown: request skipped', elapsedMs: 0,
@@ -271,6 +278,7 @@ export async function loadOnlineSongAudioSource(
         // 记下来，否则报告里只有一条 ok 记录、对不上。
         noteOnlinePlaybackOutcome({
             stage: 'resolve', outcome: 'error', providerId: providerId ?? 'unknown',
+            ...songDiagnosticIdentity(song),
             mediaId: getPlaybackSongKey(song), quality: audioQuality,
             kind: failure.case,
             code: failure.facts?.upstreamCode ?? failure.facts?.httpStatus,
