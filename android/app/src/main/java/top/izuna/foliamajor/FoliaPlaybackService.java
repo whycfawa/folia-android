@@ -22,8 +22,9 @@ import android.os.SystemClock;
 import androidx.annotation.Nullable;
 
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -43,7 +44,17 @@ public class FoliaPlaybackService extends Service {
     private MediaSession mediaSession;
     private final ExecutorService artworkExecutor = Executors.newSingleThreadExecutor();
     private final OkHttpClient artworkClient = new OkHttpClient();
-    private final Map<String, Bitmap> artworkCache = new ConcurrentHashMap<>();
+    // 通知栏封面按原图解码（现场 1376x1376 ≈ 7.6MB/张）。缓存必须有上限：长会话切几十首就会把
+    // 几十张原图钉在 native heap 里，这是「用久了内存高 / 被系统杀」最直接的来源之一。
+    private static final int ARTWORK_CACHE_LIMIT = 6;
+    private final Map<String, Bitmap> artworkCache = Collections.synchronizedMap(
+        new LinkedHashMap<String, Bitmap>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Bitmap> eldest) {
+                return size() > ARTWORK_CACHE_LIMIT;
+            }
+        }
+    );
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private volatile String currentArtworkUrl = "";
     private volatile String appliedArtworkUrl = "";
@@ -482,6 +493,9 @@ public class FoliaPlaybackService extends Service {
         mainHandler.removeCallbacks(serviceHeartbeatRunnable);
         updatePlaybackLocks(false);
         artworkExecutor.shutdownNow();
+        // 服务销毁时把封面位图交还给 GC：缓存本来是「进程内加速」，进程要走了就不该再占着 native heap。
+        artworkCache.clear();
+        appliedArtworkBitmap = null;
         if (mediaSession != null) {
             mediaSession.setActive(false);
             mediaSession.release();

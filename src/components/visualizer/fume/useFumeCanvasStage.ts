@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { drawFumeBackground } from './FumeBackground';
 import { isGlowBlurQuantized } from '../../../utils/glowBlurQuantize';
+import { resolveVisualizerPixelRatio } from '../../../utils/renderPixelRatio';
 import type { StaticBlockSnapshot } from './fumeTypes';
 import { resolveFumeBackgroundView, stepFumeCamera, syncFumeCameraToArticle } from './fumeCameraStep';
 import { isFumeBlockOnScreen, resolveFumeBlockTiming, resolveFumeGlowBases, resolveFumeStaticLayers, type FumeStaticLayerInput } from './fumeBlockFrame';
@@ -72,7 +73,7 @@ export const useFumeCanvasStage = (
 
         const width = Math.max(Math.floor(viewport.width), 1);
         const height = Math.max(Math.floor(viewport.height), 1);
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = resolveVisualizerPixelRatio();
 
         if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
             canvas.width = Math.floor(width * dpr);
@@ -97,7 +98,7 @@ export const useFumeCanvasStage = (
 
             const currentWidth = Math.max(Math.floor(viewport.width), 1);
             const currentHeight = Math.max(Math.floor(viewport.height), 1);
-            const currentDpr = window.devicePixelRatio || 1;
+            const currentDpr = resolveVisualizerPixelRatio();
 
             if (canvas.width !== Math.floor(currentWidth * currentDpr) || canvas.height !== Math.floor(currentHeight * currentDpr)) {
                 canvas.width = Math.floor(currentWidth * currentDpr);
@@ -204,14 +205,14 @@ export const useFumeCanvasStage = (
                 passedGlowBase,
                 passedFadeDuration,
                 overviewTextRestoreProgress,
-                snapshotScale: clamp(window.devicePixelRatio || 1, 1, 2),
+                snapshotScale: resolveVisualizerPixelRatio(),
             };
 
             const rasterLive = isGlowBlurQuantized();
             // A little margin so glyphs entering the screen are already drawn.
             const margin = 32 / screenScale;
             const liveFrame = {
-                deviceScale: screenScale * (window.devicePixelRatio || 1),
+                deviceScale: screenScale * resolveVisualizerPixelRatio(),
                 visible: {
                     left: camera.x - viewportCenterX / screenScale - margin,
                     top: camera.y - viewportCenterY / screenScale - margin,
