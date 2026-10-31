@@ -1,7 +1,6 @@
 // src/utils/frameRateLimiter.ts
 // Shared helpers and global RAF gate for optional visualizer frame throttling.
 
-import { IS_ANDROID_WEBVIEW } from './platform';
 import type { VisualizerFrameRate } from '../types';
 
 type AnimationFrameCallback = FrameRequestCallback;
@@ -144,18 +143,17 @@ export const setGlobalVisualizerFrameRate = (frameRate: VisualizerFrameRate) => 
         return;
     }
 
-    const clamped = clampVisualizerFrameRate(frameRate);
-    if (clamped === 'off') {
+    if (frameRate === 'off') {
         restoreGlobalVisualizerFrameRateLimiter();
         return;
     }
 
     if (!installedLimiter) {
-        installGlobalVisualizerFrameRateLimiter(clamped);
+        installGlobalVisualizerFrameRateLimiter(frameRate);
         return;
     }
 
-    installedLimiter.setFrameRate(clamped);
+    installedLimiter.setFrameRate(frameRate);
 };
 
 // Asks for the display's next frame, past the cap. For work that has to land in the same frame as
@@ -187,22 +185,6 @@ export const restoreGlobalVisualizerFrameRateLimiter = () => {
     installedLimiter = null;
 };
 
-/**
- * 安卓上可视化器的帧率上限。
- *
- * 现场：播放页歌词卡住时 CPU/GPU 占用都不高，内存频率却一直顶格——这是显存/内存带宽打满、
- * 计算单元在等数据的典型特征。6.8MP 的表面在 120Hz 下全屏绘制，每秒要搬几十 GB，
- * 8 Gen 2 级的内存带宽扛不住。60fps 对歌词动画和跟手感都够用，带宽直接减半。
- */
-export const ANDROID_MAX_VISUALIZER_FRAME_RATE = 60;
-
-/** 把任意帧率设置钳到平台上限：安卓上「不限制」与 90/120 都按 60 处理。 */
-export const clampVisualizerFrameRate = (frameRate: VisualizerFrameRate): VisualizerFrameRate => {
-    if (!IS_ANDROID_WEBVIEW) return frameRate;
-    if (frameRate === 'off') return ANDROID_MAX_VISUALIZER_FRAME_RATE;
-    return Math.min(frameRate, ANDROID_MAX_VISUALIZER_FRAME_RATE) as VisualizerFrameRate;
-};
-
 export const installGlobalVisualizerFrameRateLimiter = (overrideFrameRate?: VisualizerFrameRate) => {
     if (typeof window === 'undefined') {
         return;
@@ -210,18 +192,9 @@ export const installGlobalVisualizerFrameRateLimiter = (overrideFrameRate?: Visu
 
     const initialFrameRate = overrideFrameRate
         ?? parseVisualizerFrameRate(window.localStorage.getItem(VISUALIZER_FRAME_RATE_STORAGE_KEY));
-    // 安卓手机 WebView 上，用户**从未手动设置过**帧率时默认 30FPS：把可视化器/背景动画的 GPU
-    // 绘制次数减半，明显降低发热与耗电；30fps 对音乐律动依然顺滑。这只是默认值 —— 设置里仍有
-    // 30/60/90/120/不限制，用户一旦手动选过（storage 里有值）就永远以他的选择为准。
-    const storedFrameRateRaw = window.localStorage.getItem(VISUALIZER_FRAME_RATE_STORAGE_KEY);
-    // 安卓上从未设置过时默认 60（以前是 30：30fps 的歌词动画明显发涩，而 60 已经把带宽砍半）。
-    const requestedFrameRate = initialFrameRate === 'off'
-        && !overrideFrameRate
-        && storedFrameRateRaw === null
-        && IS_ANDROID_WEBVIEW
-        ? ANDROID_MAX_VISUALIZER_FRAME_RATE
-        : initialFrameRate;
-    const effectiveFrameRate = clampVisualizerFrameRate(requestedFrameRate);
+    // 不做平台钳制，也不改默认值：未设置或选「不限制」时交回原生 rAF，由垂直同步决定帧率
+    // （用户要求「放开帧率限制、保留垂直同步」）。设置里的 30/60/90/120 仍然按用户选择生效。
+    const effectiveFrameRate = initialFrameRate;
     if (effectiveFrameRate === 'off') {
         restoreGlobalVisualizerFrameRateLimiter();
         return;
