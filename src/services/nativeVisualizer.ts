@@ -11,7 +11,6 @@
 import { audioPower, spectrum } from '../stores/motionSignals';
 import { selectDisplayLyrics, usePlaybackStore } from '../stores/usePlaybackStore';
 import { useVisualizerSettingsStore } from '../stores/useVisualizerSettingsStore';
-import { IS_ANDROID_WEBVIEW } from '../utils/platform';
 
 export const NATIVE_VISUALIZER_STORAGE_KEY = 'folia_native_visualizer';
 
@@ -32,8 +31,7 @@ const listeners = new Set<() => void>();
 const readEnabledFlag = (): boolean => {
     try {
         const stored = localStorage.getItem(NATIVE_VISUALIZER_STORAGE_KEY);
-        // 没设置过时：安卓壳里默认开启（用户要求原生层常驻），其它运行时保持关闭。
-        if (stored === null) return IS_ANDROID_WEBVIEW;
+        // 默认关闭：原生层还没做到「挂不上也能看」，先保证普通用户拿到的是可用的播放页。
         return stored === 'true';
     } catch {
         return false;

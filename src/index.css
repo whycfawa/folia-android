@@ -462,19 +462,3 @@ html[data-click-through='active'] body .click-through-interactive * {
     animation: none;
     opacity: 0.9;
 }
-
-/* ---------- 原生渲染层（试验，data-native-visualizer 由 services/nativeVisualizer.ts 挂上） ---------- */
-/*
- * WebView 被设为透明后，页面自己的底色会挡住下面原生 GL 画的那一层：这里把页面底色让开，
- * 并把可视化器自己的画布藏起来（歌词在它上层，仍然是 WebView 画的，所以照常可见）。
- * 只影响挂了这个属性的会话；关掉开关就完全恢复。
- */
-html[data-native-visualizer] body,
-html[data-native-visualizer] #root,
-html[data-native-visualizer] [data-testid='player-visual-surface'] {
-    background: transparent !important;
-}
-
-html[data-native-visualizer] [data-testid='player-visual-surface'] canvas {
-    visibility: hidden;
-}
