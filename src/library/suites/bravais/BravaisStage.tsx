@@ -43,6 +43,7 @@ import { seamPointOf } from './bravaisAnchor';
 import { setBravaisFilterEditing, useBravaisUiStore } from './bravaisUiStore';
 import type { BravaisPanelActions } from './BravaisListPanel';
 import { useBravaisWallLook } from './useBravaisWallLook';
+import { useWallMotionState } from '../../../components/wall/useWallMotionState';
 import { opensBackdropFor } from './bravaisLook';
 import { libraryWallSeamStyleVars } from '../../../utils/libraryWallSeamStyle';
 import { setBravaisSearchOpen, useBravaisHomeUiStore } from './bravaisHomeUiStore';
@@ -135,7 +136,31 @@ const BravaisStage: React.FC<LibrarySuiteStageProps> = ({
     const tabRef = useRef<HTMLButtonElement>(null);
     const hintRef = useRef<HTMLDivElement>(null);
     const frameRefs = useMemo(() => ({ left: leftRef, right: rightRef, seam: seamRef, seamContent: seamContentRef, tab: tabRef, hint: hintRef }), []);
-    const { stateRef: frameRef, renderFrame } = useBravaisFrame(frameRefs);
+    const { stateRef: frameRef, renderFrame: renderBravaisFrame } = useBravaisFrame(frameRefs);
+    // 滑动 / 拖动性能态：墙每帧真的在动时（相机、缝的开口、倾斜）给根节点挂 data-wall-scrolling，停下约 150ms 撤掉。
+    // 只在这一层包 markMoving，所有逐帧路径（拖动、滚轮、惯性、补间、缝与倾斜）都自然经过；React 不参与。
+    const markWallMoving = useWallMotionState(rootRef);
+    const lastFrameInputRef = useRef<{ x: number; y: number; open: number; tilt: number } | null>(null);
+    const renderFrame = useCallback(() => {
+        const state = frameRef.current;
+        if (state.view) {
+            const previous = lastFrameInputRef.current;
+            const { x, y } = state.center;
+            if (previous) {
+                if (previous.x !== x || previous.y !== y || previous.open !== state.openWidth || previous.tilt !== state.tiltDeg) {
+                    markWallMoving();
+                }
+                previous.x = x;
+                previous.y = y;
+                previous.open = state.openWidth;
+                previous.tilt = state.tiltDeg;
+            } else {
+                // 首帧（量到视口后落到真中心）只记基线，不算「在动」：挂载后的静态样子不能变。
+                lastFrameInputRef.current = { x, y, open: state.openWidth, tilt: state.tiltDeg };
+            }
+        }
+        renderBravaisFrame();
+    }, [frameRef, markWallMoving, renderBravaisFrame]);
     const { wallLook, seamLook } = useBravaisWallLook(reportPlayerOcclusion, reportPlayerBackdrop);
     const view = useBravaisViewport(rootRef);
     const reducedMotion = useReducedMotionFor('lattice');
