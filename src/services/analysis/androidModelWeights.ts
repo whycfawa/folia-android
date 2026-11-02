@@ -20,6 +20,7 @@ interface FoliaAnalysisModelsPlugin {
     download(options: { model: string; force?: boolean }): Promise<{ downloaded?: boolean; bytes?: number }>;
     delete(options: { model: string }): Promise<{ deleted?: boolean }>;
     verify(options: { model: string }): Promise<{ installed?: boolean; valid?: boolean; bytes?: number }>;
+    status(): Promise<Record<string, { downloading?: boolean; percent?: number; bytes?: number; total?: number } | undefined>>;
     addListener(
         eventName: 'downloadProgress',
         listener: (progress: AndroidModelProgress) => void,
@@ -28,8 +29,36 @@ interface FoliaAnalysisModelsPlugin {
 
 const FoliaAnalysisModels = registerPlugin<FoliaAnalysisModelsPlugin>('FoliaAnalysisModels');
 
+export type AndroidModelDownloadState = {
+    downloading: boolean;
+    percent: number;
+    bytes: number;
+    total: number;
+};
+
 /** 这个运行时有没有模型桥（不代表权重一定在，present 才是那个答案）。 */
 export const hasAndroidModelBridge = (): boolean => isCapacitorAndroid();
+
+export const readAndroidModelDownloadStatus = async (): Promise<Record<string, AndroidModelDownloadState> | null> => {
+    if (!isCapacitorAndroid()) return null;
+    try {
+        const answer = await FoliaAnalysisModels.status();
+        const result: Record<string, AndroidModelDownloadState> = {};
+        for (const [model, state] of Object.entries(answer || {})) {
+            if (!state) continue;
+            result[model] = {
+                downloading: state.downloading === true,
+                percent: Number(state.percent ?? 0),
+                bytes: Number(state.bytes ?? 0),
+                total: Number(state.total ?? 0),
+            };
+        }
+        return result;
+    } catch (error) {
+        console.warn('[Analysis] could not read the Android model download status', error);
+        return null;
+    }
+};
 
 export const downloadAndroidModel = async (model: AndroidModelName, force = false): Promise<boolean> => {
     if (!isCapacitorAndroid()) return false;

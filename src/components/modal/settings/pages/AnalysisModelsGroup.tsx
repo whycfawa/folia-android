@@ -5,7 +5,7 @@ import {
     modelsPresent, refreshModelAvailability, subscribeModelAvailability,
 } from '../../../../services/analysis/modelAvailability';
 import {
-    downloadAndroidModel, onAndroidModelProgress, verifyAndroidModel,
+    downloadAndroidModel, onAndroidModelProgress, readAndroidModelDownloadStatus, verifyAndroidModel,
 } from '../../../../services/analysis/androidModelWeights';
 
 // src/components/modal/settings/pages/AnalysisModelsGroup.tsx
@@ -28,6 +28,45 @@ const AnalysisModelsGroup: React.FC = () => {
     React.useEffect(() => onAndroidModelProgress((event) => {
         setProgress(current => ({ ...current, [event.model]: event.percent }));
     }), []);
+
+    // 页面切走再回来：原生下载还在跑，按 status 恢复 busy 与百分比，别显示成“重新下载”。
+    React.useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            const status = await readAndroidModelDownloadStatus();
+            if (!cancelled && status) {
+                const active = MODELS.find(model => status[model]?.downloading);
+                if (active) {
+                    busyRef.current = true;
+                    setBusy(active);
+                    setProgress(current => ({ ...current, [active]: status[active]?.percent ?? 0 }));
+                }
+            }
+            await refreshModelAvailability();
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    // 恢复出来的下载没有本组件的 Promise 可等：轮询 status，结束后刷新模型可用性。
+    React.useEffect(() => {
+        if (!busy) return;
+        let cancelled = false;
+        const tick = async () => {
+            const status = await readAndroidModelDownloadStatus();
+            if (cancelled) return;
+            const current = status?.[busy];
+            if (current?.downloading) {
+                setProgress(progressNow => ({ ...progressNow, [busy]: current.percent }));
+                return;
+            }
+            busyRef.current = false;
+            setBusy(null);
+            setProgress({});
+            await refreshModelAvailability();
+        };
+        const timer = window.setInterval(() => void tick(), 800);
+        return () => { cancelled = true; window.clearInterval(timer); };
+    }, [busy]);
 
     const installedOf = (model: ModelKey) => model === 'beat_this' ? present.beat_this : present.htdemucs;
     const allInstalled = installedOf('beat_this') && installedOf('htdemucs');

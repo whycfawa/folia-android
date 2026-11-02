@@ -10,6 +10,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -25,8 +26,15 @@ import java.util.concurrent.Executors;
 public class FoliaAnalysisModelsPlugin extends Plugin {
     private static final String TAG = "FoliaAnalysisModels";
 
+    private static final class DownloadState {
+        volatile long bytes;
+        volatile long total;
+        volatile int percent;
+    }
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Set<String> downloading = ConcurrentHashMap.newKeySet();
+    private final Map<String, DownloadState> states = new ConcurrentHashMap<>();
     private AnalysisModelServer server;
 
     private AnalysisModelServer server() {
@@ -91,6 +99,22 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
         });
     }
 
+    /** 当前下载状态；页面切走再回来时用它恢复进度，而不是误显示“重新下载”。 */
+    @PluginMethod
+    public void status(PluginCall call) {
+        JSObject result = new JSObject();
+        for (String model : new String[]{"beat_this", "htdemucs"}) {
+            DownloadState state = states.get(model);
+            JSObject item = new JSObject();
+            item.put("downloading", state != null);
+            item.put("bytes", state == null ? 0 : state.bytes);
+            item.put("total", state == null ? 0 : state.total);
+            item.put("percent", state == null ? 0 : state.percent);
+            result.put(model, item);
+        }
+        call.resolve(result);
+    }
+
     /** 下载一个模型；进度经 downloadProgress 事件回传（节流到约 1% 一次）。 */
     @PluginMethod
     public void download(PluginCall call) {
@@ -104,6 +128,8 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
             return;
         }
         final boolean force = Boolean.TRUE.equals(call.getBoolean("force", false));
+        final DownloadState state = new DownloadState();
+        states.put(model, state);
         executor.execute(() -> {
             try {
                 final long[] lastAt = {0L};
@@ -115,6 +141,9 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
                     if (now - lastAt[0] < 250 && percent < 100) return;
                     lastAt[0] = now;
                     lastPercent[0] = percent;
+                    state.bytes = done;
+                    state.total = total;
+                    state.percent = percent;
                     JSObject progress = new JSObject();
                     progress.put("model", model);
                     progress.put("bytes", done);
@@ -132,6 +161,7 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
                 call.reject(error.getMessage() == null ? "model download failed" : error.getMessage(), error);
             } finally {
                 downloading.remove(model);
+                states.remove(model);
             }
         });
     }
