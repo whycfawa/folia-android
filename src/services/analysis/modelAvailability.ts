@@ -16,8 +16,11 @@
 // in a packaged build every answer is true; false is a checkout without the files, or an install
 // missing one. The download history above is why the question is still asked rather than assumed.
 //
-// A leaf on purpose - it imports nothing from the app. beatThis.ts and stems.ts both read it, and
-// stems.ts already imports beatThis.ts, so anything shared between them has to sit below both.
+// A leaf on purpose - it imports almost nothing from the app. beatThis.ts and stems.ts both read it,
+// and stems.ts already imports beatThis.ts, so anything shared between them has to sit below both.
+// The one exception is the Android model bridge, which is a platform fact rather than a feature.
+import { isCapacitorAndroid } from '../../platform/runtime';
+import { readAndroidModelsPresent } from './androidModelWeights';
 
 /** htdemucs_gpu: htdemucs' WebGPU export, the drum stem of 智能动感模式 (electron/analysis/modelPaths.cjs). */
 export type AutomixModelName = 'beat_this' | 'htdemucs' | 'htdemucs_gpu';
@@ -75,13 +78,17 @@ export const modelCanRun = (name: AutomixModelName): boolean => present[name];
  */
 export const refreshModelAvailability = async (): Promise<AutomixModelsPresent> => {
     const ask = typeof window !== 'undefined' ? window.electron?.getAutomixModelsPresent : undefined;
-    if (typeof ask !== 'function') return present;
-
     let answer: { beat_this: boolean; htdemucs: boolean; htdemucs_gpu?: boolean } | null = null;
-    try {
-        answer = await ask();
-    } catch (error) {
-        console.warn('[Analysis] could not check which models are installed', error);
+    if (typeof ask === 'function') {
+        try {
+            answer = await ask();
+        } catch (error) {
+            console.warn('[Analysis] could not check which models are installed', error);
+            return present;
+        }
+    } else if (isCapacitorAndroid()) {
+        answer = await readAndroidModelsPresent();
+    } else {
         return present;
     }
     if (!answer) return present;

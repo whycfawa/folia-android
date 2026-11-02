@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { probeBeatThisGpu } from '../services/analysis/beatThisGpu';
+import { isCapacitorAndroid } from '../platform/runtime';
 import type { SmartBeatMode } from '../types';
 
 // src/hooks/useSmartBeatAvailability.ts
@@ -14,7 +15,8 @@ import type { SmartBeatMode } from '../types';
 
 export type SmartBeatAvailability = 'ready' | 'desktopOnly' | 'noGpu';
 
-const hasBeatThisBridge = () => typeof window !== 'undefined' && typeof window.electron?.getBeatThisGpuWeights === 'function';
+const hasBeatThisBridge = () => isCapacitorAndroid()
+    || (typeof window !== 'undefined' && typeof window.electron?.getBeatThisGpuWeights === 'function');
 
 /**
  * The GPU is probed only under `on`. Off, nothing is probed (no adapter request) and the answer is

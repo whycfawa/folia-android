@@ -11,6 +11,7 @@ import { canRunBeatThis } from '../analysis/beatThis';
 import { modelCanRun, noteModelFailed } from '../analysis/modelAvailability';
 import { profilesSettled } from './profileService';
 import { estimateGpuFinish, gpuStemsUsable } from '../analysis/beatThisGpu';
+import { isCapacitorAndroid } from '../../platform/runtime';
 import { chooseCpuThreads, chooseExecutor, cpuThreads, EWMA, type Executor } from '../analysis/scheduler';
 import { forgetStemRange, segmentsOver, separateStemRange, stemRangeSpan, wantStemRange } from '../analysis/stemRange';
 // The one edge back the other way is `import type`, so it is erased and this is not a cycle.
@@ -217,7 +218,7 @@ const canSeparateStemsOnCpu = (): boolean =>
 const canSeparateStemsOnGpu = (): boolean =>
     gpuStemsUsable()
     && typeof window !== 'undefined'
-    && typeof window.electron?.getHtdemucsGpuWeights === 'function'
+    && (typeof window.electron?.getHtdemucsGpuWeights === 'function' || isCapacitorAndroid())
     && typeof navigator !== 'undefined' && 'gpu' in navigator
     && modelCanRun('htdemucs_gpu');
 

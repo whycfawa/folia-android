@@ -13,6 +13,7 @@ import { runTrackStems, setWantedStemTrack, stemTrackWanted, type StemTask } fro
 import { dropStemDrums, setStemDrumsKeptListener } from './stemRange';
 import { HTDEMUCS_GPU_SEGMENT } from './beatThisGpu';
 import { modelCanRun } from './modelAvailability';
+import { isCapacitorAndroid } from '../../platform/runtime';
 
 // src/services/analysis/drumHits.ts
 // A whole track's drum hits, read off htdemucs' drum stem (drumStem.ts, the renderer's GPU) and kept:
@@ -61,7 +62,7 @@ export const DRUM_HITS_TASK = 'drum hits';
 /** Whether the GPU drum stem can run here: htdemucs_gpu installed and a WebGPU to run it on. */
 export const canRunDrumStem = (): boolean =>
     typeof window !== 'undefined'
-    && typeof window.electron?.getHtdemucsGpuWeights === 'function'
+    && (typeof window.electron?.getHtdemucsGpuWeights === 'function' || isCapacitorAndroid())
     && typeof navigator !== 'undefined' && 'gpu' in navigator
     && modelCanRun('htdemucs_gpu');
 

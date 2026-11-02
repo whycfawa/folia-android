@@ -408,3 +408,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - `online playback trace` 每条记录新增 `song=标题 - 歌手`，覆盖取流失败、媒体失败、omni 解析与代理失败。
 - 反馈时能直接看到失败/成功的是哪首歌，不用再猜。
+
+### 0.7.25-android.288：安卓端 Beat This! / HTDemucs 模型
+
+- 模型权重（beat_this-wgsl.bin、htdemucs-wgsl.bin）随 APK 打包，构建时从根 models/ 复制。
+- 新增 FoliaAnalysisModels 插件与本地回环模型服务，供 WebGPU 运行时读取。
+- modelAvailability、智能动感可用性、鼓点/分轨检查接入安卓模型桥。

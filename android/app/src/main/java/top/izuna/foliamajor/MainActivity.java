@@ -41,6 +41,7 @@ public class MainActivity extends BridgeActivity {
         clearWebViewCachesAfterAppUpdate();
         registerPlugin(FoliaNativePlugin.class);
         registerPlugin(FoliaQishuiAudioPlugin.class);
+        registerPlugin(FoliaAnalysisModelsPlugin.class);
         registerPlugin(top.izuna.foliamajor.coloros.FoliaColorOsLyricsPlugin.class);
         super.onCreate(savedInstanceState);
         CrashDiagnostics.recordText(
