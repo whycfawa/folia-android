@@ -95,11 +95,21 @@ final class AnalysisModelDownloader {
 
     /** 下载一个模型；成功返回落盘文件，失败抛 IOException（调用方把原因带回界面）。 */
     static File download(Context context, String model, Progress progress) throws IOException {
+        return download(context, model, progress, false);
+    }
+
+    /** force：忽略已存在的文件重新下载（重试损坏的模型）。 */
+    static File download(Context context, String model, Progress progress, boolean force) throws IOException {
         Spec spec = spec(model);
         if (spec == null) throw new IOException("Unknown analysis model: " + model);
         File target = target(context, spec.file);
         if (target == null) throw new IOException("The app's model directory is unavailable");
-        if (installed(context, spec.file)) return target;
+        if (force) {
+            //noinspection ResultOfMethodCallIgnored
+            target.delete();
+        } else if (installed(context, spec.file)) {
+            return target;
+        }
 
         File partial = new File(target.getParentFile(), spec.file + ".part");
         IOException last = null;
@@ -151,7 +161,16 @@ final class AnalysisModelDownloader {
         }
     }
 
-    private static String sha256(File file) throws IOException {
+    /** 已下载文件是否与清单里的字节数和 SHA-256 一致；不存在或损坏都返回 false。 */
+    static boolean verify(Context context, String model) throws IOException {
+        Spec spec = spec(model);
+        if (spec == null) return false;
+        File target = target(context, spec.file);
+        if (target == null || !target.isFile()) return false;
+        return target.length() == spec.bytes && sha256(target).equalsIgnoreCase(spec.sha256);
+    }
+
+    static String sha256(File file) throws IOException {
         try (InputStream input = new java.io.FileInputStream(file)) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] buffer = new byte[64 * 1024];

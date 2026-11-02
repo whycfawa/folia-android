@@ -10,6 +10,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +26,7 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
     private static final String TAG = "FoliaAnalysisModels";
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Set<String> downloading = ConcurrentHashMap.newKeySet();
     private AnalysisModelServer server;
 
     private AnalysisModelServer server() {
@@ -63,6 +66,31 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
         call.resolve(result);
     }
 
+    /** 检测已下载文件的字节数与 SHA-256，不改动文件。 */
+    @PluginMethod
+    public void verify(PluginCall call) {
+        String model = call.getString("model", "");
+        if (AnalysisModelDownloader.spec(model) == null) {
+            call.reject("Unknown analysis model: " + model);
+            return;
+        }
+        executor.execute(() -> {
+            try {
+                String file = fileOf(model);
+                File target = AnalysisModelDownloader.target(getContext(), file);
+                boolean installed = target != null && target.isFile();
+                boolean valid = AnalysisModelDownloader.verify(getContext(), model);
+                JSObject result = new JSObject();
+                result.put("installed", installed);
+                result.put("valid", valid);
+                result.put("bytes", target != null && target.isFile() ? target.length() : 0);
+                call.resolve(result);
+            } catch (Exception error) {
+                call.reject(error.getMessage() == null ? "model check failed" : error.getMessage(), error);
+            }
+        });
+    }
+
     /** 下载一个模型；进度经 downloadProgress 事件回传（节流到约 1% 一次）。 */
     @PluginMethod
     public void download(PluginCall call) {
@@ -71,6 +99,11 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
             call.reject("Unknown analysis model: " + model);
             return;
         }
+        if (!downloading.add(model)) {
+            call.reject("download-in-progress", "This model is already downloading");
+            return;
+        }
+        final boolean force = Boolean.TRUE.equals(call.getBoolean("force", false));
         executor.execute(() -> {
             try {
                 final long[] lastAt = {0L};
@@ -88,7 +121,7 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
                     progress.put("total", total);
                     progress.put("percent", percent);
                     notifyListeners("downloadProgress", progress);
-                });
+                }, force);
                 JSObject result = new JSObject();
                 result.put("downloaded", true);
                 result.put("model", model);
@@ -97,6 +130,8 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
             } catch (Exception error) {
                 Log.w(TAG, "download failed: " + model, error);
                 call.reject(error.getMessage() == null ? "model download failed" : error.getMessage(), error);
+            } finally {
+                downloading.remove(model);
             }
         });
     }

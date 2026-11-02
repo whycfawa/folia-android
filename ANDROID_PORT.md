@@ -425,3 +425,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - hf-mirror / huggingface / AZURE 对这两个文件已 404/超时；改为 ghproxy.net → gh-proxy.com → GitHub 直连。
 - 第一个镜像先用 Range 验证，再整份下载并校验 SHA-256。
+
+### 0.7.25-android.291：模型检测与重试
+
+- 模型行增加「检测」：校验字节数与 SHA-256，显示通过/文件不完整。
+- 下载失败后按钮变「重试」；重试强制重新下载。
+- UI busy 与原生 downloading 集合双重防重复下载。

@@ -17,8 +17,9 @@ export type AndroidModelProgress = {
 interface FoliaAnalysisModelsPlugin {
     present(): Promise<{ beat_this?: boolean; htdemucs?: boolean; htdemucs_gpu?: boolean }>;
     url(options: { model: string }): Promise<{ url?: string }>;
-    download(options: { model: string }): Promise<{ downloaded?: boolean; bytes?: number }>;
+    download(options: { model: string; force?: boolean }): Promise<{ downloaded?: boolean; bytes?: number }>;
     delete(options: { model: string }): Promise<{ deleted?: boolean }>;
+    verify(options: { model: string }): Promise<{ installed?: boolean; valid?: boolean; bytes?: number }>;
     addListener(
         eventName: 'downloadProgress',
         listener: (progress: AndroidModelProgress) => void,
@@ -30,14 +31,33 @@ const FoliaAnalysisModels = registerPlugin<FoliaAnalysisModelsPlugin>('FoliaAnal
 /** 这个运行时有没有模型桥（不代表权重一定在，present 才是那个答案）。 */
 export const hasAndroidModelBridge = (): boolean => isCapacitorAndroid();
 
-export const downloadAndroidModel = async (model: AndroidModelName): Promise<boolean> => {
+export const downloadAndroidModel = async (model: AndroidModelName, force = false): Promise<boolean> => {
     if (!isCapacitorAndroid()) return false;
     try {
-        const answer = await FoliaAnalysisModels.download({ model });
+        const answer = await FoliaAnalysisModels.download({ model, force });
         return answer?.downloaded === true;
     } catch (error) {
         console.warn('[Analysis] could not download the Android model', error);
         return false;
+    }
+};
+
+export const verifyAndroidModel = async (model: AndroidModelName): Promise<{
+    installed: boolean;
+    valid: boolean;
+    bytes: number;
+} | null> => {
+    if (!isCapacitorAndroid()) return null;
+    try {
+        const answer = await FoliaAnalysisModels.verify({ model });
+        return {
+            installed: answer?.installed === true,
+            valid: answer?.valid === true,
+            bytes: Number(answer?.bytes ?? 0),
+        };
+    } catch (error) {
+        console.warn('[Analysis] could not verify the Android model', error);
+        return null;
     }
 };
 
