@@ -4,14 +4,6 @@ import groovy.json.JsonSlurper
 
 apply plugin: 'com.android.application'
 
-// 分析模型权重不放进 git（见根目录 models/）；构建时从那里复制进 assets，APK 才会带模型。
-tasks.register('copyAnalysisModels', Copy) {
-    from rootProject.file('../models')
-    include 'beat_this-wgsl.bin', 'htdemucs-wgsl.bin'
-    into file('src/main/assets/models')
-}
-tasks.named('preBuild').configure { dependsOn 'copyAnalysisModels' }
-
 def packageJson = new JsonSlurper().parseText(file('../../package.json').text)
 def keystorePropertiesFile = rootProject.file('keystore.properties')
 def keystoreProperties = new Properties()
@@ -32,7 +24,7 @@ android {
         applicationId "top.izuna.foliamajor"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 326
+        versionCode 327
         versionName packageJson.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

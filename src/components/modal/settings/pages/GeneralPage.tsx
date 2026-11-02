@@ -11,6 +11,7 @@ import { selectPonderSettingsSnapshot, usePonderStore } from '../../../../stores
 import { useSettingsModalStore } from '../../../../stores/useSettingsModalStore';
 import { Button, Group, Reveal, Row, Segmented, Select, Toggle, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { FoundUpdateRow } from './FoundUpdateRow';
+import AnalysisModelsGroup from './AnalysisModelsGroup';
 import { useSettingsPage } from './settingsPageContext';
 
 // src/components/modal/settings/pages/GeneralPage.tsx
@@ -155,7 +156,8 @@ const GeneralPage: React.FC = () => {
                             checked={autoHideCommandPaletteButton}
                             onChange={handleToggleAutoHideCommandPaletteButton}
                         />
-                    </Row>                    {phoneFitEnabled && (
+                    </Row>                    <AnalysisModelsGroup />
+                    {phoneFitEnabled && (
                         <Row option={O.androidOrientation} hint={t('options.orientationFitDesc')}>
                             <Segmented
                                 value={phoneFitOrientation}

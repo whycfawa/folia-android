@@ -414,3 +414,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 模型权重（beat_this-wgsl.bin、htdemucs-wgsl.bin）随 APK 打包，构建时从根 models/ 复制。
 - 新增 FoliaAnalysisModels 插件与本地回环模型服务，供 WebGPU 运行时读取。
 - modelAvailability、智能动感可用性、鼓点/分轨检查接入安卓模型桥。
+
+### 0.7.25-android.289：模型改为按需下载
+
+- APK 不再内置 Beat This! / HTDemucs 权重，体积回到约 27MB。
+- 设置 → 通用 → 安卓外壳新增模型管理：下载、进度、删除；镜像优先，GitHub 最后。
+- 下载完成校验 SHA-256；模型落在私有目录，运行时经本地回环读取。

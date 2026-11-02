@@ -168,6 +168,9 @@ final class AnalysisModelServer {
     }
 
     private File materialize(String name) {
+        // 按需下载落在私有目录 models/；旧安装包里自带的 assets 仍然作为后备。
+        File installed = AnalysisModelDownloader.target(context, name);
+        if (installed != null && installed.isFile() && installed.length() > 0) return installed;
         try {
             File dir = new File(context.getCacheDir(), "analysis-models/" + versionTag());
             if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) return null;
