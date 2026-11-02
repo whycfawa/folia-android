@@ -358,18 +358,19 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
     return (
         <>
             {/*
-                定位层和动画层必须分开。这一层用 Tailwind 的 `-translate-x-1/2` 做水平居中，
-                而下面那层的 animate 会写 y/scale —— framer-motion 生成的 transform 会整个
-                盖掉同一节点上的 Tailwind transform，合并两层会让胶囊丢失居中、向右偏出去。
+                定位层和动画层必须分开。这一层用内联 transform 做水平居中：Tailwind v4 的
+                `-translate-x-1/2` 编译成独立的 `translate` 属性，Chrome 99 的旧 WebView 不认，
+                胶囊会从 50% 处开始、整条偏到屏幕右侧（个别旧设备反馈的错位）。
+                下面那层的 animate 会写 y/scale，transform 不能挂在同一节点上，否则会互相覆盖。
                 bottom 走共享 MotionValue（默认 32，即原来的 bottom-8），不是 transform 属性，
                 所以挂在这一层不会干扰居中。
             */}
             <motion.div
-                className={`absolute left-1/2 -translate-x-1/2 z-60 w-full flex justify-center pointer-events-none
+                className={`absolute left-1/2 z-60 w-full flex justify-center pointer-events-none
                     ${currentView === 'home'
                         ? 'max-w-[calc(100vw-120px)] md:max-w-[min(calc(32rem_+_var(--folium-player-bar-extra,0px)),calc(100vw-120px))]'
                         : 'max-w-[min(calc(32rem_+_var(--folium-player-bar-extra,0px)),100vw)] px-4'}`}
-                style={{ bottom: bottomBarBottomPx }}
+                style={{ bottom: bottomBarBottomPx, transform: 'translateX(-50%)' }}
                 onUpdate={invalidateLayout}
             >
             <motion.div

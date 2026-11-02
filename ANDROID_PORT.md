@@ -450,3 +450,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 「嵌入背景」可上传一张本地静态图片，压到最长边 1920px 的 JPEG 后存 localStorage。
 - 图片作为独立条目参与选择；重复上传只保留一张，可在网页与图片之间切换。
+
+### 0.7.25-android.296：旧 WebView 底栏居中修复
+
+- Tailwind v4 的 -translate-x-1/2 编译成独立 translate 属性，Chrome 99 不认，底栏偏右。
+- 底栏定位层改内联 transform: translateX(-50%)。
