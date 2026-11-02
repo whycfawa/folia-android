@@ -129,7 +129,9 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
             JSArray failed = new JSArray();
             for (Uri uri : uris) {
                 try {
-                    imported.put(AnalysisModelImporter.importUri(getContext(), uri));
+                    for (String model : AnalysisModelImporter.importUri(getContext(), uri)) {
+                        imported.put(model);
+                    }
                 } catch (Exception error) {
                     Log.w(TAG, "model import failed: " + uri, error);
                     failed.put(error.getMessage() == null ? "import failed" : error.getMessage());

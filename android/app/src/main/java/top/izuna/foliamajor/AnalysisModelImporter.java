@@ -3,35 +3,77 @@ package top.izuna.foliamajor;
 import android.content.Context;
 import android.net.Uri;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
- * 本地导入分析模型：用户在系统文件选择器里选 .bin，这里边复制边算 SHA-256，
- * 只有字节数和摘要都对上某个模型的清单才落盘；否则拒绝，不覆盖已有模型。
+ * 本地导入分析模型：支持单个 .bin，也支持一个包含两个 .bin 的 .zip。
+ * 每个条目边复制边算 SHA-256，只有字节数和摘要都对上清单才落盘；坏条目跳过，不覆盖已有模型。
  */
 final class AnalysisModelImporter {
 
     private AnalysisModelImporter() {
     }
 
-    /** 返回导入的模型名（beat_this / htdemucs），不是 Folia 的模型时抛 IOException。 */
-    static String importUri(Context context, Uri uri) throws IOException {
+    /** 返回导入的模型名（beat_this / htdemucs）；一个都没匹配上时抛 IOException。 */
+    static List<String> importUri(Context context, Uri uri) throws IOException {
         if (uri == null) throw new IOException("No file was selected");
+        try (InputStream raw = context.getContentResolver().openInputStream(uri)) {
+            if (raw == null) throw new IOException("The selected file cannot be read");
+            BufferedInputStream input = new BufferedInputStream(raw);
+            input.mark(4);
+            int first = input.read();
+            int second = input.read();
+            int third = input.read();
+            int fourth = input.read();
+            input.reset();
+            boolean zip = first == 'P' && second == 'K' && third == 3 && fourth == 4;
+            if (zip) return importZip(context, input);
+            String model = importStream(context, input);
+            if (model == null) throw new IOException("Not a Folia analysis model (size or SHA-256 does not match)");
+            List<String> imported = new ArrayList<>();
+            imported.add(model);
+            return imported;
+        }
+    }
+
+    private static List<String> importZip(Context context, InputStream input) throws IOException {
+        List<String> imported = new ArrayList<>();
+        try (ZipInputStream zip = new ZipInputStream(input, StandardCharsets.UTF_8)) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                String model = importStream(context, zip);
+                if (model != null && !imported.contains(model)) imported.add(model);
+                zip.closeEntry();
+            }
+        }
+        if (imported.isEmpty()) {
+            throw new IOException("The zip contains no Folia analysis model");
+        }
+        return imported;
+    }
+
+    /** 读完一个条目到临时文件并校验；匹配返回模型名，否则 null。不关闭 input（zip 还要读下一条）。 */
+    private static String importStream(Context context, InputStream input) throws IOException {
         File temporary = new File(context.getCacheDir(), "analysis-model-import-" + System.nanoTime() + ".bin");
         long bytes = 0;
         String sha256;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (InputStream input = context.getContentResolver().openInputStream(uri);
-                 OutputStream output = new FileOutputStream(temporary)) {
-                if (input == null) throw new IOException("The selected file cannot be read");
+            try (OutputStream output = new FileOutputStream(temporary)) {
                 byte[] buffer = new byte[64 * 1024];
                 int read;
                 while ((read = input.read(buffer)) > 0) {
@@ -64,7 +106,7 @@ final class AnalysisModelImporter {
         if (match == null) {
             //noinspection ResultOfMethodCallIgnored
             temporary.delete();
-            throw new IOException("Not a Folia analysis model (size or SHA-256 does not match)");
+            return null;
         }
 
         File target = AnalysisModelDownloader.target(context, match.file);
@@ -76,12 +118,11 @@ final class AnalysisModelImporter {
         //noinspection ResultOfMethodCallIgnored
         target.delete();
         if (!temporary.renameTo(target)) {
-            // renameTo can fail across filesystems; fall back to a copy.
-            try (InputStream input = new FileInputStream(temporary);
-                 OutputStream output = new FileOutputStream(target)) {
+            try (InputStream from = new FileInputStream(temporary);
+                 OutputStream to = new FileOutputStream(target)) {
                 byte[] buffer = new byte[64 * 1024];
                 int read;
-                while ((read = input.read(buffer)) > 0) output.write(buffer, 0, read);
+                while ((read = from.read(buffer)) > 0) to.write(buffer, 0, read);
             }
             //noinspection ResultOfMethodCallIgnored
             temporary.delete();
