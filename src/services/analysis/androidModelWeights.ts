@@ -21,6 +21,7 @@ interface FoliaAnalysisModelsPlugin {
     delete(options: { model: string }): Promise<{ deleted?: boolean }>;
     verify(options: { model: string }): Promise<{ installed?: boolean; valid?: boolean; bytes?: number }>;
     status(): Promise<Record<string, { downloading?: boolean; percent?: number; bytes?: number; total?: number } | undefined>>;
+    importModels(): Promise<{ imported?: string[]; failed?: string[]; canceled?: boolean }>;
     addListener(
         eventName: 'downloadProgress',
         listener: (progress: AndroidModelProgress) => void,
@@ -38,6 +39,21 @@ export type AndroidModelDownloadState = {
 
 /** 这个运行时有没有模型桥（不代表权重一定在，present 才是那个答案）。 */
 export const hasAndroidModelBridge = (): boolean => isCapacitorAndroid();
+
+export const importAndroidModels = async (): Promise<{ imported: string[]; failed: string[]; canceled: boolean }> => {
+    if (!isCapacitorAndroid()) return { imported: [], failed: [], canceled: true };
+    try {
+        const answer = await FoliaAnalysisModels.importModels();
+        return {
+            imported: Array.isArray(answer?.imported) ? answer.imported.map(String) : [],
+            failed: Array.isArray(answer?.failed) ? answer.failed.map(String) : [],
+            canceled: answer?.canceled === true,
+        };
+    } catch (error) {
+        console.warn('[Analysis] could not import the Android model files', error);
+        return { imported: [], failed: [error instanceof Error ? error.message : String(error)], canceled: false };
+    }
+};
 
 export const readAndroidModelDownloadStatus = async (): Promise<Record<string, AndroidModelDownloadState> | null> => {
     if (!isCapacitorAndroid()) return null;

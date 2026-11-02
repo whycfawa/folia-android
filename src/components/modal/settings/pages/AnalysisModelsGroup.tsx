@@ -5,7 +5,7 @@ import {
     modelsPresent, refreshModelAvailability, subscribeModelAvailability,
 } from '../../../../services/analysis/modelAvailability';
 import {
-    downloadAndroidModel, onAndroidModelProgress, readAndroidModelDownloadStatus, verifyAndroidModel,
+    downloadAndroidModel, importAndroidModels, onAndroidModelProgress, readAndroidModelDownloadStatus, verifyAndroidModel,
 } from '../../../../services/analysis/androidModelWeights';
 
 // src/components/modal/settings/pages/AnalysisModelsGroup.tsx
@@ -22,6 +22,8 @@ const AnalysisModelsGroup: React.FC = () => {
     const [checking, setChecking] = React.useState(false);
     const [progress, setProgress] = React.useState<Record<string, number>>({});
     const [failed, setFailed] = React.useState(false);
+    const [importing, setImporting] = React.useState(false);
+    const [importFailed, setImportFailed] = React.useState(false);
     const [checked, setChecked] = React.useState<boolean | null>(null);
     const busyRef = React.useRef(false);
 
@@ -95,6 +97,25 @@ const AnalysisModelsGroup: React.FC = () => {
         }
     };
 
+    const importFiles = async () => {
+        if (importing || busyRef.current) return;
+        setImporting(true);
+        setImportFailed(false);
+        try {
+            const result = await importAndroidModels();
+            if (!result.canceled && (result.failed.length > 0 || result.imported.length === 0)) {
+                setImportFailed(true);
+            }
+            if (result.imported.length > 0) {
+                setFailed(false);
+                setChecked(null);
+            }
+            await refreshModelAvailability();
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const check = async () => {
         if (checking || busyRef.current) return;
         setChecking(true);
@@ -109,6 +130,8 @@ const AnalysisModelsGroup: React.FC = () => {
     };
 
     const hint = (() => {
+        if (importing) return t('options.modelImporting');
+        if (importFailed) return t('options.modelImportFailed');
         if (checking) return t('options.modelChecking');
         if (busy) return t('options.modelDownloadingName', {
             name: busy === 'beat_this' ? t('options.modelBeatThis') : t('options.modelHtdemucs'),
@@ -123,11 +146,14 @@ const AnalysisModelsGroup: React.FC = () => {
     return (
         <Row label={t('options.modelAnalysisModels')} hint={hint}>
             <div className="flex items-center gap-2">
-                <Button onClick={() => void check()} disabled={checking || busy !== null}>
+                <Button onClick={() => void check()} disabled={checking || busy !== null || importing}>
                     {checking ? t('options.modelChecking') : t('options.modelCheck')}
                 </Button>
+                <Button onClick={() => void importFiles()} disabled={importing || busy !== null}>
+                    {importing ? t('options.modelImporting') : t('options.modelImport')}
+                </Button>
                 {!allInstalled && (
-                    <Button onClick={() => void download()} disabled={busy !== null}>
+                    <Button onClick={() => void download()} disabled={busy !== null || importing}>
                         {busy
                             ? t('options.modelDownloading', { percent: progress[busy] ?? 0 })
                             : failed || checked === false ? t('options.modelRetry') : t('options.modelDownload')}

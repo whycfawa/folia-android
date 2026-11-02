@@ -1,15 +1,25 @@
 package top.izuna.foliamajor;
 
+import android.app.Activity;
+import android.content.ClipData;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
+import androidx.activity.result.ActivityResult;
+
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +45,7 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Set<String> downloading = ConcurrentHashMap.newKeySet();
     private final Map<String, DownloadState> states = new ConcurrentHashMap<>();
+    private boolean importOpen;
     private AnalysisModelServer server;
 
     private AnalysisModelServer server() {
@@ -72,6 +83,63 @@ public class FoliaAnalysisModelsPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("url", url);
         call.resolve(result);
+    }
+
+    /** 打开系统文件选择器，导入一个或两个模型 .bin；由 handleImportedModels 收结果。 */
+    @PluginMethod
+    public void importModels(PluginCall call) {
+        if (importOpen) {
+            call.reject("A model import is already open");
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("*/*")
+                .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        importOpen = true;
+        startActivityForResult(call, intent, "handleImportedModels");
+    }
+
+    @ActivityCallback
+    private void handleImportedModels(PluginCall call, ActivityResult result) {
+        importOpen = false;
+        if (call == null) return;
+        int resultCode = result == null ? Activity.RESULT_CANCELED : result.getResultCode();
+        List<Uri> uris = new ArrayList<>();
+        Intent data = result == null ? null : result.getData();
+        if (data != null) {
+            ClipData clipData = data.getClipData();
+            if (clipData != null) {
+                for (int index = 0; index < clipData.getItemCount(); index += 1) {
+                    Uri uri = clipData.getItemAt(index).getUri();
+                    if (uri != null) uris.add(uri);
+                }
+            } else if (data.getData() != null) {
+                uris.add(data.getData());
+            }
+        }
+        if (resultCode != Activity.RESULT_OK || uris.isEmpty()) {
+            JSObject canceled = new JSObject();
+            canceled.put("canceled", true);
+            call.resolve(canceled);
+            return;
+        }
+        executor.execute(() -> {
+            JSArray imported = new JSArray();
+            JSArray failed = new JSArray();
+            for (Uri uri : uris) {
+                try {
+                    imported.put(AnalysisModelImporter.importUri(getContext(), uri));
+                } catch (Exception error) {
+                    Log.w(TAG, "model import failed: " + uri, error);
+                    failed.put(error.getMessage() == null ? "import failed" : error.getMessage());
+                }
+            }
+            JSObject answer = new JSObject();
+            answer.put("imported", imported);
+            answer.put("failed", failed);
+            call.resolve(answer);
+        });
     }
 
     /** 检测已下载文件的字节数与 SHA-256，不改动文件。 */
