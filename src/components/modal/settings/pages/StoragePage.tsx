@@ -12,6 +12,8 @@ import { Button, CopyValue, FoldedGroup, Group, Row, Select, Toggle, Value, useS
 import { useSettingsPage } from './settingsPageContext';
 import ConfigTransferRows from './storage/ConfigTransferRows';
 import FolderWatchGroup from './storage/FolderWatchGroup';
+import AnalysisModelsStorageGroup from './AnalysisModelsStorageGroup';
+import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
 import { BACKUP, CACHE_ROWS, CACHES, MEDIA, O } from './storage/options';
 
 // src/components/modal/settings/pages/StoragePage.tsx
@@ -94,6 +96,8 @@ const StoragePage: React.FC = () => {
                     <Value>{mediaCount} · {cacheSizes.media}</Value>
                 </Row>
             </Group>
+
+            {IS_ANDROID_WEBVIEW && <AnalysisModelsStorageGroup />}
 
             <Group
                 def={CACHES}

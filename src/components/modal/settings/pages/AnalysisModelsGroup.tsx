@@ -5,139 +5,97 @@ import {
     modelsPresent, refreshModelAvailability, subscribeModelAvailability,
 } from '../../../../services/analysis/modelAvailability';
 import {
-    deleteAndroidModel, downloadAndroidModel, onAndroidModelProgress, verifyAndroidModel,
-    type AndroidModelName,
+    downloadAndroidModel, onAndroidModelProgress, verifyAndroidModel,
 } from '../../../../services/analysis/androidModelWeights';
 
 // src/components/modal/settings/pages/AnalysisModelsGroup.tsx
-// 安卓外壳里的分析模型管理：Beat This! 与 HTDemucs 都按需下载，这里给检测、下载、进度、重试和删除。
-// 同一个模型同时只允许一个下载（UI 的 busy 与原生 downloading 集合双重拦截）。
+// 安卓外壳里的分析模型：两个模型合成一行，一个下载按钮按 Beat This! → HTDemucs 顺序补齐；
+// 同一个时间只允许一个下载（busyRef 与原生 downloading 集合双重拦截）。删除入口在「存储」页。
 
 type ModelKey = 'beat_this' | 'htdemucs';
-
-const ROWS: { model: ModelKey; labelKey: string; size: string }[] = [
-    { model: 'beat_this', labelKey: 'options.modelBeatThis', size: '40 MB' },
-    { model: 'htdemucs', labelKey: 'options.modelHtdemucs', size: '88 MB' },
-];
-
-type CheckState = { installed: boolean; valid: boolean };
+const MODELS: ModelKey[] = ['beat_this', 'htdemucs'];
 
 const AnalysisModelsGroup: React.FC = () => {
     const { t } = useTranslation();
     const present = React.useSyncExternalStore(subscribeModelAvailability, modelsPresent, modelsPresent);
     const [busy, setBusy] = React.useState<ModelKey | null>(null);
-    const [checking, setChecking] = React.useState<ModelKey | null>(null);
+    const [checking, setChecking] = React.useState(false);
     const [progress, setProgress] = React.useState<Record<string, number>>({});
-    const [failed, setFailed] = React.useState<ModelKey | null>(null);
-    const [checked, setChecked] = React.useState<Partial<Record<ModelKey, CheckState>>>({});
-    const busyRef = React.useRef<ModelKey | null>(null);
+    const [failed, setFailed] = React.useState(false);
+    const [checked, setChecked] = React.useState<boolean | null>(null);
+    const busyRef = React.useRef(false);
 
     React.useEffect(() => onAndroidModelProgress((event) => {
         setProgress(current => ({ ...current, [event.model]: event.percent }));
     }), []);
 
-    const download = async (model: ModelKey, force = false) => {
-        // 连点、两个按钮同时点：同一时间只让一个下载进入原生。
-        if (busyRef.current) return;
-        busyRef.current = model;
-        setBusy(model);
-        setFailed(null);
-        setChecked(current => {
-            const next = { ...current };
-            delete next[model];
-            return next;
-        });
-        try {
-            const ok = await downloadAndroidModel(model, force);
-            if (!ok) setFailed(model);
-            await refreshModelAvailability();
-        } finally {
-            busyRef.current = null;
-            setBusy(null);
-            setProgress(current => {
-                const next = { ...current };
-                delete next[model];
-                return next;
-            });
-        }
-    };
+    const installedOf = (model: ModelKey) => model === 'beat_this' ? present.beat_this : present.htdemucs;
+    const allInstalled = installedOf('beat_this') && installedOf('htdemucs');
 
-    const remove = async (model: ModelKey) => {
+    const download = async () => {
         if (busyRef.current) return;
-        busyRef.current = model;
-        setBusy(model);
-        setFailed(null);
+        busyRef.current = true;
+        setFailed(false);
+        setChecked(null);
         try {
-            await deleteAndroidModel(model);
-            await refreshModelAvailability();
-            setChecked(current => {
-                const next = { ...current };
-                delete next[model];
-                return next;
-            });
-        } finally {
-            busyRef.current = null;
-            setBusy(null);
-        }
-    };
-
-    const check = async (model: ModelKey) => {
-        if (checking || busyRef.current) return;
-        setChecking(model);
-        try {
-            const answer = await verifyAndroidModel(model);
-            if (answer) {
-                setChecked(current => ({ ...current, [model]: { installed: answer.installed, valid: answer.valid } }));
+            const force = failed || checked === false;
+            for (const model of MODELS) {
+                if (installedOf(model) && !force) continue;
+                setBusy(model);
+                const ok = await downloadAndroidModel(model, force);
+                if (!ok) {
+                    setFailed(true);
+                    break;
+                }
             }
             await refreshModelAvailability();
         } finally {
-            setChecking(null);
+            busyRef.current = false;
+            setBusy(null);
+            setProgress({});
         }
     };
 
-    const hintFor = (model: ModelKey, installed: boolean, size: string, percent: number | undefined): string => {
-        if (checking === model) return t('options.modelChecking');
-        if (busy === model) return t('options.modelDownloading', { percent: percent ?? 0 });
-        if (failed === model) return t('options.modelDownloadFailed');
-        const state = checked[model];
-        if (state) return state.valid ? t('options.modelCheckValid') : t('options.modelCheckInvalid');
-        return installed ? t('options.modelInstalled') : t('options.modelNeedsDownload', { size });
+    const check = async () => {
+        if (checking || busyRef.current) return;
+        setChecking(true);
+        setChecked(null);
+        try {
+            const results = await Promise.all(MODELS.map(model => verifyAndroidModel(model)));
+            setChecked(results.every(result => result?.valid === true));
+            await refreshModelAvailability();
+        } finally {
+            setChecking(false);
+        }
     };
 
+    const hint = (() => {
+        if (checking) return t('options.modelChecking');
+        if (busy) return t('options.modelDownloadingName', {
+            name: busy === 'beat_this' ? t('options.modelBeatThis') : t('options.modelHtdemucs'),
+            percent: progress[busy] ?? 0,
+        });
+        if (failed) return t('options.modelDownloadFailed');
+        if (checked === true) return t('options.modelCheckValid');
+        if (checked === false) return t('options.modelCheckInvalid');
+        return allInstalled ? t('options.modelInstalled') : t('options.modelNeedsDownloadAll');
+    })();
+
     return (
-        <>
-            {ROWS.map(({ model, labelKey, size }) => {
-                const installed = model === 'beat_this' ? present.beat_this : present.htdemucs;
-                const percent = progress[model];
-                const working = busy === model;
-                const checkingThis = checking === model;
-                const invalid = checked[model]?.valid === false;
-                return (
-                    <Row key={model} label={t(labelKey)} hint={hintFor(model, installed, size, percent)}>
-                        <div className="flex items-center gap-2">
-                            <Button onClick={() => void check(model)} disabled={checking !== null || busy !== null}>
-                                {checkingThis ? t('options.modelChecking') : t('options.modelCheck')}
-                            </Button>
-                            {installed && !invalid && (
-                                <Button onClick={() => void remove(model)} disabled={busy !== null}>
-                                    {t('options.modelDelete')}
-                                </Button>
-                            )}
-                            {(!installed || invalid) && (
-                                <Button
-                                    onClick={() => void download(model, invalid)}
-                                    disabled={busy !== null}
-                                >
-                                    {working
-                                        ? t('options.modelDownloading', { percent: percent ?? 0 })
-                                        : failed === model ? t('options.modelRetry') : t('options.modelDownload')}
-                                </Button>
-                            )}
-                        </div>
-                    </Row>
-                );
-            })}
-        </>
+        <Row label={t('options.modelAnalysisModels')} hint={hint}>
+            <div className="flex items-center gap-2">
+                <Button onClick={() => void check()} disabled={checking || busy !== null}>
+                    {checking ? t('options.modelChecking') : t('options.modelCheck')}
+                </Button>
+                {!allInstalled && (
+                    <Button onClick={() => void download()} disabled={busy !== null}>
+                        {busy
+                            ? t('options.modelDownloading', { percent: progress[busy] ?? 0 })
+                            : failed || checked === false ? t('options.modelRetry') : t('options.modelDownload')}
+                    </Button>
+                )}
+            </div>
+        </Row>
     );
 };
 
