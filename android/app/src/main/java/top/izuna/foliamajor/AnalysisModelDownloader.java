@@ -51,10 +51,9 @@ final class AnalysisModelDownloader {
             "beat_this-wgsl.bin",
             41_102_271L,
             "6365ae5ba2e42922772da01fbfd0bde8dd20b7362a679018e78a5f251fe8a967",
-            "https://hf-mirror.com/HUAI4236/folia-models/resolve/main/beat_this-wgsl.bin",
-            "https://huggingface.co/HUAI4236/folia-models/resolve/main/beat_this-wgsl.bin",
-            "https://github.com/chthollyphile/folia-major/releases/download/models-v1/beat_this-wgsl.bin",
-            "https://github.com/AZURE-HUAI/folia-models/releases/download/weights-v1/beat_this-wgsl.bin"
+            "https://ghproxy.net/https://github.com/chthollyphile/folia-major/releases/download/models-v1/beat_this-wgsl.bin",
+            "https://gh-proxy.com/https://github.com/chthollyphile/folia-major/releases/download/models-v1/beat_this-wgsl.bin",
+            "https://github.com/chthollyphile/folia-major/releases/download/models-v1/beat_this-wgsl.bin"
     );
 
     private static final Spec HTDEMUCS = new Spec(
@@ -62,15 +61,14 @@ final class AnalysisModelDownloader {
             "htdemucs-wgsl.bin",
             91_838_176L,
             "27d5331a74a4e23b18172b3d59d0378e698fd79bc0d0fed3316da77e3a37d8d1",
-            "https://hf-mirror.com/HUAI4236/folia-models/resolve/main/htdemucs-wgsl.bin",
-            "https://huggingface.co/HUAI4236/folia-models/resolve/main/htdemucs-wgsl.bin",
-            "https://github.com/chthollyphile/folia-major/releases/download/models-v1/htdemucs-wgsl.bin",
-            "https://github.com/AZURE-HUAI/folia-models/releases/download/weights-v1/htdemucs-wgsl.bin"
+            "https://ghproxy.net/https://github.com/chthollyphile/folia-major/releases/download/models-v1/htdemucs-wgsl.bin",
+            "https://gh-proxy.com/https://github.com/chthollyphile/folia-major/releases/download/models-v1/htdemucs-wgsl.bin",
+            "https://github.com/chthollyphile/folia-major/releases/download/models-v1/htdemucs-wgsl.bin"
     );
 
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
             .build();

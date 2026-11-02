@@ -420,3 +420,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - APK 不再内置 Beat This! / HTDemucs 权重，体积回到约 27MB。
 - 设置 → 通用 → 安卓外壳新增模型管理：下载、进度、删除；镜像优先，GitHub 最后。
 - 下载完成校验 SHA-256；模型落在私有目录，运行时经本地回环读取。
+
+### 0.7.25-android.290：模型下载镜像修正
+
+- hf-mirror / huggingface / AZURE 对这两个文件已 404/超时；改为 ghproxy.net → gh-proxy.com → GitHub 直连。
+- 第一个镜像先用 Range 验证，再整份下载并校验 SHA-256。
