@@ -25,6 +25,15 @@ export const normalizeUrlBackgroundUrl = (value: unknown): string | null => {
     }
 };
 
+const normalizeUrlBackgroundImage = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    // 只接受内联图片：远程图片仍走普通网页 URL，不在这里加载。
+    return /^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(trimmed) && trimmed.length <= 12 * 1024 * 1024
+        ? trimmed
+        : null;
+};
+
 export const sanitizeUrlBackgroundItem = (value: unknown): UrlBackgroundItem | null => {
     if (!value || typeof value !== 'object') {
         return null;
@@ -32,7 +41,8 @@ export const sanitizeUrlBackgroundItem = (value: unknown): UrlBackgroundItem | n
 
     const item = value as Partial<UrlBackgroundItem>;
     const id = typeof item.id === 'string' ? item.id.trim() : '';
-    const url = normalizeUrlBackgroundUrl(item.url);
+    const kind = item.kind === 'image' ? 'image' : 'url';
+    const url = kind === 'image' ? normalizeUrlBackgroundImage(item.url) : normalizeUrlBackgroundUrl(item.url);
 
     if (!id || !url) {
         return null;
@@ -40,9 +50,34 @@ export const sanitizeUrlBackgroundItem = (value: unknown): UrlBackgroundItem | n
 
     const note = typeof item.note === 'string' && item.note.trim()
         ? item.note.trim()
-        : url;
+        : kind === 'image' ? '自定义图片' : url;
 
-    return { id, url, note };
+    return { id, kind, url, note };
+};
+
+/** 读取用户选中的图片，压到最长边 1920px 的 JPEG；只保留一张，控制 localStorage 体积。 */
+export const readUrlBackgroundImageFile = async (file: File): Promise<{ url: string; note: string } | null> => {
+    if (!file.type.startsWith('image/')) return null;
+    try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1920 / Math.max(1, bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+            bitmap.close();
+            return null;
+        }
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close();
+        return { url: canvas.toDataURL('image/jpeg', 0.86), note: file.name || '自定义图片' };
+    } catch (error) {
+        console.warn('[UrlBackground] image read failed', error);
+        return null;
+    }
 };
 
 // An imported list is merged into the current one by id rather than replacing it, so a shared config
@@ -64,6 +99,7 @@ export const mergeUrlBackgroundList = (
             const existing = merged.get(sanitized.id);
             merged.set(sanitized.id, {
                 ...(existing ?? { id: sanitized.id }),
+                kind: sanitized.kind,
                 url: sanitized.url,
                 note: sanitized.note,
             });

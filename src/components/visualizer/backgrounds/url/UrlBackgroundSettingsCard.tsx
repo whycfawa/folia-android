@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import React, { useCallback, useRef, useState } from 'react';
+import { ImagePlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { UrlBackgroundItem } from '../../../../types';
-import { normalizeUrlBackgroundUrl } from '../../../../utils/urlBackground';
+import { normalizeUrlBackgroundUrl, readUrlBackgroundImageFile } from '../../../../utils/urlBackground';
 import { Button, Group, Row, Status, TextField, type SettingsGroupDef } from '../../../modal/settings/kit';
 
 // src/components/visualizer/backgrounds/url/UrlBackgroundSettingsCard.tsx
@@ -34,6 +34,8 @@ const UrlBackgroundSettingsCard: React.FC<UrlBackgroundSettingsCardProps> = ({
     const [editingId, setEditingId] = useState<string | null>(null);
     const [draftUrl, setDraftUrl] = useState('');
     const [draftNote, setDraftNote] = useState('');
+    const [imageError, setImageError] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const resetDraft = useCallback(() => {
         setDraftUrl('');
@@ -54,6 +56,35 @@ const UrlBackgroundSettingsCard: React.FC<UrlBackgroundSettingsCardProps> = ({
         onSetUrlBackgroundSelectedId?.(item.id);
         resetDraft();
     }, [draftUrl, draftNote, onAddUrlBackgroundItem, onSetUrlBackgroundSelectedId, resetDraft]);
+
+    const handlePickImage = useCallback(async (file: File | undefined) => {
+        if (!file) return;
+        setImageError(false);
+        const image = await readUrlBackgroundImageFile(file);
+        if (!image) {
+            setImageError(true);
+            return;
+        }
+        const existing = urlBackgroundList.find(item => item.kind === 'image');
+        if (existing) {
+            onUpdateUrlBackgroundItem?.(existing.id, { kind: 'image', url: image.url, note: image.note });
+            onSetUrlBackgroundSelectedId?.(existing.id);
+            // 只保留一张：导入过多张时把其余的删掉。
+            for (const item of urlBackgroundList.filter(entry => entry.kind === 'image' && entry.id !== existing.id)) {
+                onDeleteUrlBackgroundItem?.(item.id);
+            }
+        } else {
+            const item: UrlBackgroundItem = {
+                id: generateId(),
+                kind: 'image',
+                url: image.url,
+                note: image.note,
+            };
+            onAddUrlBackgroundItem?.(item);
+            onSetUrlBackgroundSelectedId?.(item.id);
+        }
+        resetDraft();
+    }, [urlBackgroundList, onAddUrlBackgroundItem, onUpdateUrlBackgroundItem, onDeleteUrlBackgroundItem, onSetUrlBackgroundSelectedId, resetDraft]);
 
     const handleStartEdit = useCallback((item: UrlBackgroundItem) => {
         setIsAdding(false);
@@ -91,7 +122,7 @@ const UrlBackgroundSettingsCard: React.FC<UrlBackgroundSettingsCardProps> = ({
 
     return (
         <Group def={URL_GROUP} foot={t('options.urlBackgroundSettingsDesc')}>
-            {urlBackgroundList.map(item => (editingId === item.id ? (
+            {urlBackgroundList.map(item => (editingId === item.id && item.kind !== 'image' ? (
                 <React.Fragment key={item.id}>{draftRow(handleSaveEdit)}</React.Fragment>
             ) : (
                 <Row
@@ -110,18 +141,25 @@ const UrlBackgroundSettingsCard: React.FC<UrlBackgroundSettingsCardProps> = ({
                             />
                             <span className="min-w-0">
                                 <span className="block truncate">{item.note}</span>
-                                <span className="block truncate text-xs leading-[18px] text-[color:var(--st-t2)]">{item.url}</span>
+                                <span className="block truncate text-xs leading-[18px] text-[color:var(--st-t2)]">{item.kind === 'image' ? t('options.urlBackgroundImageBadge') : item.url}</span>
                             </span>
                         </button>
                     )}
                 >
-                    <Button icon={Pencil} tip={t('options.urlBackgroundEdit')} onClick={() => handleStartEdit(item)} />
+                    {item.kind === 'image'
+                        ? <Button icon={ImagePlus} tip={t('options.urlBackgroundReplaceImage')} onClick={() => fileInputRef.current?.click()} />
+                        : <Button icon={Pencil} tip={t('options.urlBackgroundEdit')} onClick={() => handleStartEdit(item)} />}
                     <Button icon={Trash2} tip={t('options.urlBackgroundDelete')} onClick={() => onDeleteUrlBackgroundItem?.(item.id)} />
                 </Row>
             )))}
 
             {isAdding ? draftRow(handleAdd) : (
                 <Row label={urlBackgroundList.length === 0 ? <Status>{t('options.urlBackgroundEmpty')}</Status> : undefined}>
+                    <Button icon={ImagePlus} onClick={() => fileInputRef.current?.click()}>
+                        {urlBackgroundList.some(item => item.kind === 'image')
+                            ? t('options.urlBackgroundReplaceImage')
+                            : t('options.urlBackgroundUploadImage')}
+                    </Button>
                     <Button
                         icon={Plus}
                         onClick={() => {
@@ -135,6 +173,17 @@ const UrlBackgroundSettingsCard: React.FC<UrlBackgroundSettingsCardProps> = ({
                     </Button>
                 </Row>
             )}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                    void handlePickImage(event.currentTarget.files?.[0]);
+                    event.currentTarget.value = '';
+                }}
+            />
+            {imageError && <Row notice={t('options.urlBackgroundImageReadFailed')} />}
         </Group>
     );
 };

@@ -987,6 +987,8 @@ export type VisualizerBackgroundMode = BuiltinVisualizerBackgroundMode | (string
 
 export interface UrlBackgroundItem {
   id: string;
+  /** 'url'（默认）是网页；'image' 是本地静态图片的 data URL。 */
+  kind?: 'url' | 'image';
   url: string;
   note: string;
 }

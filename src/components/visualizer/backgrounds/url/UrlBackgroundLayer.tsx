@@ -61,7 +61,15 @@ const UrlBackgroundLayer: React.FC<UrlBackgroundLayerProps> = ({
         <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden">
             {/* key forces React to destroy and recreate the iframe when URL changes,
                 preventing chrome-error://chromewebdata cross-origin navigation errors */}
-            {ready && (
+            {ready && (selectedItem.kind === 'image' ? (
+                <img
+                    src={selectedItem.url}
+                    alt={selectedItem.note || 'Custom image'}
+                    className="h-full w-full object-cover"
+                    style={{ pointerEvents: 'none' }}
+                    draggable={false}
+                />
+            ) : (
                 <iframe
                     key={selectedItem.url}
                     src={selectedItem.url}
@@ -73,7 +81,7 @@ const UrlBackgroundLayer: React.FC<UrlBackgroundLayerProps> = ({
                     sandbox="allow-scripts"
                     allowFullScreen
                 />
-            )}
+            ))}
             {/* Semi-transparent overlay to ensure lyrics readability */}
             <div
                 className="absolute inset-0"
