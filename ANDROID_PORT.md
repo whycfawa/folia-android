@@ -526,3 +526,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.311：模组分辨率保护 50% 与诊断
 
 - 模组 canvas 分辨率压到 50%，并在诊断里输出开关状态、倍率和已处理画布数。
+
+### 0.7.25-android.312：修复模组画布识别
+
+- 之前只检查 canvas 自身和 ShadowRoot host，漏掉普通 DOM 祖先上的 data-folium-owner，导致 canvases=0。
+- 现在沿 parentElement 向上查找，动感波光等 canvas 会被正确压缩。

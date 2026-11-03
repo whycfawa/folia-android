@@ -22,15 +22,16 @@ let scaled = new WeakSet<HTMLCanvasElement>();
 let clampedCanvases = 0;
 
 const isModCanvas = (canvas: HTMLCanvasElement): boolean => {
-    let node: Node | null = canvas;
+    // 先沿普通 DOM 祖先走，再跨 ShadowRoot 的 host 继续；只看 getRootNode 会漏掉 host 里的 canvas。
+    let node: Element | null = canvas;
     while (node) {
-        if (node instanceof Element && node.hasAttribute('data-folium-owner')) return true;
-        const rootNode = node.getRootNode();
-        if (rootNode instanceof ShadowRoot) {
-            node = rootNode.host;
-        } else {
-            break;
+        if (node.hasAttribute('data-folium-owner')) return true;
+        if (node.parentElement) {
+            node = node.parentElement;
+            continue;
         }
+        const rootNode = node.getRootNode();
+        node = rootNode instanceof ShadowRoot ? rootNode.host : null;
     }
     return false;
 };
