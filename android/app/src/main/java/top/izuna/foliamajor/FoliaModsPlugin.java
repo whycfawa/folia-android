@@ -147,8 +147,7 @@ public class FoliaModsPlugin extends Plugin {
         }
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("application/zip")
-                .putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/zip", "application/octet-stream"});
+                .setType("*/*");
         importOpen = true;
         startActivityForResult(call, intent, "handleImportedZip");
     }

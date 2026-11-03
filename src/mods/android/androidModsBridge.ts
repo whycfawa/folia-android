@@ -1,6 +1,7 @@
 import { registerPlugin } from '@capacitor/core';
 import type { ModRuntimeInfo, ModsListPayload, ModSetEnabledResult } from '../types';
 import { isCapacitorAndroid } from '../../platform/runtime';
+import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 
 // src/mods/android/androidModsBridge.ts
 // Android 端只加载客户端模组：原生负责 zip 安装、目录、启用状态与本地 HTTP 文件服务，
@@ -72,6 +73,8 @@ export const listAndroidMods = async (): Promise<ModsListPayload> => {
         startSkipped: false,
     };
     if (!isCapacitorAndroid()) return empty;
+    // 总开关关闭时不加载任何模组代码：连列表都不返回，clientLoader 不会启动它们。
+    if (!useDesktopSettingsStore.getState().modSystemEnabled) return empty;
     try {
         const answer = await FoliaMods.list();
         const mods = (Array.isArray(answer?.mods) ? answer.mods : [])
@@ -117,4 +120,13 @@ export const androidModsBridge = {
     setModEnabled: setAndroidModEnabled,
     reloadMods: async () => (await listAndroidMods()).mods,
     onModsStateChanged: () => () => undefined,
+    // 桌面主进程专属的能力：Android 上没有对应实现，明确返回不可用而不是抛错。
+    getFfmpegStatus: async () => ({ available: false, path: null, version: null, candidates: [] }),
+    openModsDirectory: async () => ({ ok: false, error: 'unsupported-on-android' }),
+    installModFromZip: async () => ({ ok: false, error: 'unsupported-on-android' }),
+    getModStorageUsage: async () => ({ ok: true, data: 0, cache: 0 }),
+    clearModCache: async () => ({ ok: false, error: 'unsupported-on-android' }),
+    cancelExport: async () => undefined,
+    onExportProgress: () => () => undefined,
+    onModLog: () => () => undefined,
 };
