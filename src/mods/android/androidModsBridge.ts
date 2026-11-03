@@ -285,4 +285,6 @@ export const androidModsBridge = {
     invokeModNetFetch: invokeAndroidNetFetch,
     invokeModStorage: invokeAndroidStorage,
     invokeModSecrets: invokeAndroidSecrets,
+    // App 的主机桥会在播放状态变化时推快照；Android 没有主进程接收，吞掉即可。
+    pushRuntimeSnapshot: async () => undefined,
 };
