@@ -162,6 +162,10 @@ const invokeAndroidNetFetch = async (
     } else if (options.headers) {
         Object.assign(headers, options.headers);
     }
+    if (!Object.keys(headers).some(name => name.toLowerCase() === 'user-agent')) {
+        // 桌面主进程的 net.fetch 带 Chromium UA；原生 OkHttp 默认 UA 会被豆瓣/百度直接拒绝。
+        headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    }
     let bodyText = '';
     if (typeof options.body === 'string') bodyText = options.body;
     else if (options.body instanceof URLSearchParams) bodyText = options.body.toString();

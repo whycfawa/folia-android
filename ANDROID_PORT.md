@@ -518,3 +518,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.309：重新打开保护时重新扫描
 
 - 关闭期间模组可能把画布改回全分辨率；再次打开时重新扫描现有 canvas。
+
+### 0.7.25-android.310：模组常用库映射
+
+- index.html 的 import map 补 pixi.js / three / opencc-js，供裸导入这些库的模组使用；自带 vendor 的模组不受影响。
