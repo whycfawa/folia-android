@@ -1,25 +1,24 @@
-import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
+import { useDesktopSettingsStore, type ModResolutionGuardLevel } from '../../stores/useDesktopSettingsStore';
 import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 
 // src/mods/runtime/modResolutionGuard.ts
 // 宿主层的模组画面分辨率保护：只压模组挂载容器（[data-folium-owner]）里的 canvas，
 // 不碰内置歌词动画，也不改帧率。开关关闭时把 canvas 的 width/height setter 原样还回去。
 
-/** 0.5 = 25% 像素量；只压模组 canvas，不改布局，也不改帧率。 */
-export const MOD_CANVAS_RESOLUTION_SCALE = 0.5;
+/** 三挡压制强度：轻度 75%、均衡 50%、强力 35%。 */
+export const MOD_RESOLUTION_GUARD_SCALES: Readonly<Record<ModResolutionGuardLevel, number>> = {
+    light: 0.75,
+    medium: 0.5,
+    strong: 0.35,
+};
 
 type CanvasDimension = 'width' | 'height';
 
-type PatchedDescriptor = {
-    dimension: CanvasDimension;
-    descriptor: PropertyDescriptor;
-};
-
 let installed = false;
 let observer: MutationObserver | null = null;
-let patched: PatchedDescriptor[] = [];
-let scaled = new WeakSet<HTMLCanvasElement>();
-let clampedCanvases = 0;
+let currentScale = MOD_RESOLUTION_GUARD_SCALES.medium;
+let source: Partial<Record<CanvasDimension, PropertyDescriptor>> = {};
+let scaled = new Set<HTMLCanvasElement>();
 
 const isModCanvas = (canvas: HTMLCanvasElement): boolean => {
     // 先沿普通 DOM 祖先走，再跨 ShadowRoot 的 host 继续；只看 getRootNode 会漏掉 host 里的 canvas。
@@ -36,37 +35,35 @@ const isModCanvas = (canvas: HTMLCanvasElement): boolean => {
     return false;
 };
 
-const clamp = (value: number): number => Math.max(1, Math.round(value * MOD_CANVAS_RESOLUTION_SCALE));
+const rawSet = (canvas: HTMLCanvasElement, dimension: CanvasDimension, value: number) => {
+    source[dimension]?.set?.call(canvas, Math.max(1, Math.round(value)));
+};
 
 const installDimension = (dimension: CanvasDimension) => {
     const proto = HTMLCanvasElement.prototype;
     const original = Object.getOwnPropertyDescriptor(proto, dimension);
     if (!original?.get || !original.set) return;
-    const descriptor: PropertyDescriptor = {
+    source[dimension] = original;
+    Object.defineProperty(proto, dimension, {
         configurable: true,
         enumerable: original.enumerable,
         get: original.get,
         set(this: HTMLCanvasElement, value: number) {
             if (installed && Number.isFinite(value) && isModCanvas(this)) {
-                if (!scaled.has(this)) {
-                    scaled.add(this);
-                    clampedCanvases += 1;
-                }
-                original.set?.call(this, clamp(value));
+                scaled.add(this);
+                original.set?.call(this, Math.max(1, Math.round(value * currentScale)));
                 return;
             }
             original.set?.call(this, value);
         },
-    };
-    Object.defineProperty(proto, dimension, descriptor);
-    patched.push({ dimension, descriptor: original });
+    });
 };
 
 const clampExistingCanvas = (canvas: HTMLCanvasElement) => {
     if (!canvas.isConnected || scaled.has(canvas) || !isModCanvas(canvas)) return;
-    // 走被替换过的 setter：只压一次，之后模组自己重设尺寸时 setter 会继续压。
-    if (canvas.width > 0) canvas.width = canvas.width;
-    if (canvas.height > 0) canvas.height = canvas.height;
+    scaled.add(canvas);
+    if (canvas.width > 0) rawSet(canvas, 'width', canvas.width * currentScale);
+    if (canvas.height > 0) rawSet(canvas, 'height', canvas.height * currentScale);
 };
 
 const visit = (node: Node) => {
@@ -78,12 +75,25 @@ const visit = (node: Node) => {
     });
 };
 
-const start = () => {
+const applyScale = (next: number) => {
+    if (next === currentScale) return;
+    const ratio = next / currentScale;
+    currentScale = next;
+    for (const canvas of scaled) {
+        if (!canvas.isConnected) continue;
+        const width = canvas.width;
+        const height = canvas.height;
+        if (width > 0) rawSet(canvas, 'width', width * ratio);
+        if (height > 0) rawSet(canvas, 'height', height * ratio);
+    }
+};
+
+const start = (level: ModResolutionGuardLevel) => {
     if (installed || typeof window === 'undefined') return;
     installed = true;
+    currentScale = MOD_RESOLUTION_GUARD_SCALES[level];
     // 每次重新打开都重新扫描：关闭期间模组可能已经把画布改回全分辨率。
-    scaled = new WeakSet<HTMLCanvasElement>();
-    clampedCanvases = 0;
+    scaled = new Set<HTMLCanvasElement>();
     installDimension('width');
     installDimension('height');
     observer = new MutationObserver((records) => {
@@ -101,25 +111,43 @@ const stop = () => {
     observer?.disconnect();
     observer = null;
     const proto = HTMLCanvasElement.prototype;
-    for (const entry of patched.reverse()) {
-        Object.defineProperty(proto, entry.dimension, entry.descriptor);
+    for (const dimension of ['width', 'height'] as const) {
+        const original = source[dimension];
+        if (original) Object.defineProperty(proto, dimension, original);
     }
-    patched = [];
+    source = {};
+    scaled = new Set<HTMLCanvasElement>();
 };
 
-/** 跟随设置开关；只改分辨率，不改帧率。 */
-export const getModResolutionGuardStats = (): { enabled: boolean; scale: number; canvases: number } => ({
+/** 跟随设置开关与挡位；只改分辨率，不改帧率。 */
+export const getModResolutionGuardStats = (): {
+    enabled: boolean;
+    level: ModResolutionGuardLevel;
+    scale: number;
+    canvases: number;
+} => ({
     enabled: installed,
-    scale: MOD_CANVAS_RESOLUTION_SCALE,
-    canvases: clampedCanvases,
+    level: useDesktopSettingsStore.getState().modResolutionGuardLevel,
+    scale: currentScale,
+    canvases: scaled.size,
 });
 
 export const installModResolutionGuard = (): void => {
     if (typeof window === 'undefined' || !IS_ANDROID_WEBVIEW) return;
-    const sync = (enabled: boolean) => {
-        if (enabled) start();
-        else stop();
+    const sync = (enabled: boolean, level: ModResolutionGuardLevel) => {
+        if (!enabled) {
+            stop();
+            return;
+        }
+        if (!installed) {
+            start(level);
+            return;
+        }
+        applyScale(MOD_RESOLUTION_GUARD_SCALES[level]);
     };
-    sync(useDesktopSettingsStore.getState().modResolutionGuardEnabled);
-    useDesktopSettingsStore.subscribe((state) => sync(state.modResolutionGuardEnabled));
+    const state = useDesktopSettingsStore.getState();
+    sync(state.modResolutionGuardEnabled, state.modResolutionGuardLevel);
+    useDesktopSettingsStore.subscribe((state) => {
+        sync(state.modResolutionGuardEnabled, state.modResolutionGuardLevel);
+    });
 };

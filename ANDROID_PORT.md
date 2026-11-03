@@ -531,3 +531,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 之前只检查 canvas 自身和 ShadowRoot host，漏掉普通 DOM 祖先上的 data-folium-owner，导致 canvases=0。
 - 现在沿 parentElement 向上查找，动感波光等 canvas 会被正确压缩。
+
+### 0.7.25-android.313：分辨率三挡位
+
+- 模组分辨率保护增加轻度 75% / 均衡 50% / 强力 35% 三挡；切换时按比例重设已有模组画布。
