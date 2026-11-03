@@ -505,3 +505,16 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 客户端模组的 net.fetch 走 FoliaNative.httpRequest，绕过 WebView CORS；filesystem.data / secret 用本地存储桥。
 - Android 模组管理去掉拖放 ZIP 安装与打开目录按钮，保留工具栏 ZIP 导入。
 - 歌曲资料等依赖 net.fetch 的客户端模组可正常查询。
+
+### 0.7.25-android.307：模组分辨率保护开关
+
+- 模组系统开关下新增「模组分辨率保护」，只把模组挂载 canvas 的绘制分辨率压到 75%，不限制帧率。
+- 只处理 [data-folium-owner] 容器（含 ShadowRoot），内置歌词动画不受影响。
+
+### 0.7.25-android.308：分辨率保护修正
+
+- 保护只对模组 canvas 压一次，避免重复缩放；只对 Android 生效。
+
+### 0.7.25-android.309：重新打开保护时重新扫描
+
+- 关闭期间模组可能把画布改回全分辨率；再次打开时重新扫描现有 canvas。

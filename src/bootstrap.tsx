@@ -15,6 +15,7 @@ import { initializeLocalCoverRuntime } from './services/localCoverRuntime';
 import { installFoliumHomePageDismissal } from './components/app/home/foliumHomePageDismissal';
 import { installLibrarySuiteChromeCommands } from './library/app/installLibrarySuiteChromeCommands';
 import { noteFoliumFirstScreenMounted, startFoliumForMainWindow } from './mods/runtime/mainWindowStart';
+import { installModResolutionGuard } from './mods/runtime/modResolutionGuard';
 import { installNativeDragGuard } from './utils/nativeDragGuard';
 import { prewarmSavedVisualizer, prewarmVisualizersWhenIdle } from './components/visualizer/prewarmVisualizers';
 import { bootNavidromeServerPreset } from './services/navidromeServerPreset';
@@ -104,6 +105,8 @@ if (isMainApp) prewarmSavedVisualizer();
 
 const bootFolium = async () => {
     if (!isMainApp) return;
+    // 模组画面分辨率保护：跟随设置开关，只压模组 canvas，不限制帧率。
+    installModResolutionGuard();
     // 显式打开集合时关掉开着的模组首页页面；与 Home 挂没挂着无关，所以在这里装（见 foliumHomePageDismissal）。
     installFoliumHomePageDismissal();
     await startFoliumForMainWindow({ firstScreenWaitMs: FIRST_SCREEN_MOD_WAIT_MS });
