@@ -522,3 +522,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.310：模组常用库映射
 
 - index.html 的 import map 补 pixi.js / three / opencc-js，供裸导入这些库的模组使用；自带 vendor 的模组不受影响。
+
+### 0.7.25-android.311：模组分辨率保护 50% 与诊断
+
+- 模组 canvas 分辨率压到 50%，并在诊断里输出开关状态、倍率和已处理画布数。

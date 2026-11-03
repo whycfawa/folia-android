@@ -5,8 +5,8 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 // 宿主层的模组画面分辨率保护：只压模组挂载容器（[data-folium-owner]）里的 canvas，
 // 不碰内置歌词动画，也不改帧率。开关关闭时把 canvas 的 width/height setter 原样还回去。
 
-/** 0.75 = 约 56% 像素量；只压模组，不改布局。 */
-export const MOD_CANVAS_RESOLUTION_SCALE = 0.75;
+/** 0.5 = 25% 像素量；只压模组 canvas，不改布局，也不改帧率。 */
+export const MOD_CANVAS_RESOLUTION_SCALE = 0.5;
 
 type CanvasDimension = 'width' | 'height';
 
@@ -19,6 +19,7 @@ let installed = false;
 let observer: MutationObserver | null = null;
 let patched: PatchedDescriptor[] = [];
 let scaled = new WeakSet<HTMLCanvasElement>();
+let clampedCanvases = 0;
 
 const isModCanvas = (canvas: HTMLCanvasElement): boolean => {
     let node: Node | null = canvas;
@@ -46,7 +47,10 @@ const installDimension = (dimension: CanvasDimension) => {
         get: original.get,
         set(this: HTMLCanvasElement, value: number) {
             if (installed && Number.isFinite(value) && isModCanvas(this)) {
-                scaled.add(this);
+                if (!scaled.has(this)) {
+                    scaled.add(this);
+                    clampedCanvases += 1;
+                }
                 original.set?.call(this, clamp(value));
                 return;
             }
@@ -78,6 +82,7 @@ const start = () => {
     installed = true;
     // 每次重新打开都重新扫描：关闭期间模组可能已经把画布改回全分辨率。
     scaled = new WeakSet<HTMLCanvasElement>();
+    clampedCanvases = 0;
     installDimension('width');
     installDimension('height');
     observer = new MutationObserver((records) => {
@@ -102,6 +107,12 @@ const stop = () => {
 };
 
 /** 跟随设置开关；只改分辨率，不改帧率。 */
+export const getModResolutionGuardStats = (): { enabled: boolean; scale: number; canvases: number } => ({
+    enabled: installed,
+    scale: MOD_CANVAS_RESOLUTION_SCALE,
+    canvases: clampedCanvases,
+});
+
 export const installModResolutionGuard = (): void => {
     if (typeof window === 'undefined' || !IS_ANDROID_WEBVIEW) return;
     const sync = (enabled: boolean) => {

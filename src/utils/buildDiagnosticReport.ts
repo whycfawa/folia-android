@@ -18,6 +18,7 @@ import {
 } from '../services/videoLayerFile';
 import { useVideoLayerSettingsStore } from '../stores/useVideoLayerSettingsStore';
 import { collectWebGL2Diagnostics, formatWebGL2DiagnosticsLine } from './webglDiagnostics';
+import { getModResolutionGuardStats } from '../mods/runtime/modResolutionGuard';
 import { BUILTIN_VISUALIZER_BACKGROUND_MODES } from '../types/visualizerModes';
 import {
     VISUALIZER_BACKGROUND_REGISTRY,
@@ -649,6 +650,7 @@ export const buildDiagnosticReport = async (): Promise<string> => {
         // 漫游背景 / 部分可视化依赖 WebGL2：把真实能力写进报告，避免只能让用户在浏览器另测。
         'graphics capability:',
         formatWebGL2DiagnosticsLine(collectWebGL2Diagnostics()),
+        `mod resolution guard: enabled=${getModResolutionGuardStats().enabled} scale=${getModResolutionGuardStats().scale} canvases=${getModResolutionGuardStats().canvases}`,
         '',
         'visualizer backgrounds:',
         ...readVisualizerBackgroundLines(),
