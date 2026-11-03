@@ -1110,6 +1110,14 @@ export default {
     }
   },
   "mods": {
+    "androidTitle": "Mô-đun máy khách Android",
+    "androidDesc": "Chỉ mô-đun máy khách. Mô-đun có mục main (Node) sẽ không được cài.",
+    "androidImport": "Nhập ZIP mô-đun",
+    "androidEmpty": "Chưa cài mô-đun nào.",
+    "androidIncompatible": "Mô-đun này có mục main (Node), không tương thích Android",
+    "enable": "Bật",
+    "disable": "Tắt",
+    "remove": "Xóa",
     "homeBackToLibrary": "Quay lại thư viện",
     "homePageNavigation": "Chuyển tab trang chủ",
     "title": "Quản lý mod",

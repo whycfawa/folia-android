@@ -12,15 +12,21 @@ import type {
     ModsListPayload,
     ModExportProgress,
 } from './types';
+import { androidModsBridge, isAndroidModsAvailable } from './android/androidModsBridge';
 
 // src/mods/ipc.ts
 // Typed access to the preload bridge under window.electron.mods. Every call
 // degrades to a safe fallback on the web build so the panel stays renderable
 // even when no Electron bridge exists (the UI then shows a desktop-only hint).
 
-const bridge = (): NonNullable<typeof window.electron>['mods'] => window.electron?.mods;
+type ElectronModsBridge = NonNullable<typeof window.electron>['mods'];
 
-export const isModsBridgeAvailable = (): boolean => Boolean(window.electron?.mods);
+const bridge = (): ElectronModsBridge => (
+    window.electron?.mods
+    ?? (isAndroidModsAvailable() ? androidModsBridge as unknown as ElectronModsBridge : undefined)
+) as ElectronModsBridge;
+
+export const isModsBridgeAvailable = (): boolean => Boolean(window.electron?.mods) || isAndroidModsAvailable();
 
 const EMPTY_PAYLOAD: ModsListPayload = {
     mods: [],

@@ -88,6 +88,8 @@ export const SETTINGS_NAV_GROUP_SPECS: GroupSpec[] = [
     },
 ];
 
+import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
+
 /** Resolves the grouping into translated nav items, dropping desktop-only sections (and groups left empty) on web. */
 export const buildSettingsNavGroups = (t: Translate, options: { isElectron: boolean }): SettingsNavGroup[] => (
     SETTINGS_NAV_GROUP_SPECS
@@ -95,7 +97,9 @@ export const buildSettingsNavGroups = (t: Translate, options: { isElectron: bool
             id: group.id,
             label: t(group.labelKey),
             items: group.sections
-                .filter(section => !section.electronOnly || options.isElectron)
+                .filter(section => !section.electronOnly
+                    || options.isElectron
+                    || (section.id === 'mods' && IS_ANDROID_WEBVIEW))
                 .map(section => ({
                     id: section.id,
                     icon: section.icon,

@@ -15,6 +15,8 @@ export const SETTINGS_LAST_SECTION_STORAGE_KEY = 'folia_settings_last_section';
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = 'appearance';
 
 /** The slice of Storage this module touches; tests pass a plain object. */
+import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
+
 export type SettingsSectionStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 export interface SettingsSectionAvailability {
@@ -25,7 +27,9 @@ export interface SettingsSectionAvailability {
 export const getAvailableSettingsSectionIds = ({ isElectron }: SettingsSectionAvailability): SettingsSectionId[] => (
     SETTINGS_NAV_GROUP_SPECS
         .flatMap(group => group.sections)
-        .filter(section => !section.electronOnly || isElectron)
+        .filter(section => !section.electronOnly
+            || isElectron
+            || (section.id === 'mods' && IS_ANDROID_WEBVIEW))
         .map(section => section.id)
 );
 

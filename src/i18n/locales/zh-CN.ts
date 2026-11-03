@@ -1110,6 +1110,14 @@ export default {
     }
   },
   "mods": {
+    "androidTitle": "Android 客户端模组",
+    "androidDesc": "只加载客户端模组；带 main（Node 主进程）入口的模组不会安装。",
+    "androidImport": "导入模组 ZIP",
+    "androidEmpty": "还没有安装模组。",
+    "androidIncompatible": "此模组包含 main（Node）入口，Android 不兼容",
+    "enable": "启用",
+    "disable": "禁用",
+    "remove": "删除",
     "homeBackToLibrary": "返回书库",
     "homePageNavigation": "首页页面",
     "title": "模组管理",

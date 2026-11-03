@@ -5,6 +5,8 @@ import type { ModManagerClasses } from '../../../../mods/manager/modManagerClass
 import { useDesktopSettingsStore } from '../../../../stores/useDesktopSettingsStore';
 import { Group, Row, Status, Toggle, option, useSettingsKitTheme, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { SettingsAnchor } from '../navigation/SettingsAnchorContext';
+import AndroidModsPage from '../../../../mods/android/AndroidModsPage';
+import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
 
 // src/components/modal/settings/pages/ModsPage.tsx
 // The 模组 page (desktop app only): the mod system's master switch, and under it the mod manager.
@@ -46,6 +48,8 @@ const ModsPage: React.FC = () => {
     const enabled = useDesktopSettingsStore(state => state.modSystemEnabled);
     const setEnabled = useDesktopSettingsStore(state => state.handleToggleModSystem);
     const managerTitle = t(MANAGER.titleKey);
+
+    if (IS_ANDROID_WEBVIEW) return <AndroidModsPage />;
 
     return (
         <>

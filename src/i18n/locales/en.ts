@@ -1110,6 +1110,14 @@ export default {
     }
   },
   "mods": {
+    "androidTitle": "Android client mods",
+    "androidDesc": "Client mods only. Mods with a main (Node) entry are not installed.",
+    "androidImport": "Import mod ZIP",
+    "androidEmpty": "No mods installed yet.",
+    "androidIncompatible": "This mod has a main (Node) entry and is not compatible with Android",
+    "enable": "Enable",
+    "disable": "Disable",
+    "remove": "Remove",
     "homeBackToLibrary": "Back to library",
     "homePageNavigation": "Home pages",
     "title": "Mod Manager",

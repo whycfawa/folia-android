@@ -1110,6 +1110,14 @@ export default {
     }
   },
   "mods": {
+    "androidTitle": "Mod klien Android",
+    "androidDesc": "Hanya mod klien. Mod dengan entri main (Node) tidak dipasang.",
+    "androidImport": "Impor ZIP mod",
+    "androidEmpty": "Belum ada mod terpasang.",
+    "androidIncompatible": "Mod ini memiliki entri main (Node) dan tidak kompatibel dengan Android",
+    "enable": "Aktifkan",
+    "disable": "Nonaktifkan",
+    "remove": "Hapus",
     "homeBackToLibrary": "Kembali ke pustaka",
     "homePageNavigation": "Halaman beranda",
     "title": "Manajer Mod",
