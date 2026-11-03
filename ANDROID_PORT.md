@@ -465,3 +465,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 本地导入同时支持单个 .bin 与包含两个模型的 .zip；ZIP 内逐条校验 SHA-256。
 - 输出 Folia-Analysis-Models.zip，一次选择导入两个模型。
+
+### 0.7.25-android.299：启动图压缩
+
+- 26 张 splash PNG（约 21.4MB）转为 WebP，约 0.32MB；APK 体积下降约 21MB。
