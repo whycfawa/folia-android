@@ -115,6 +115,155 @@ export const removeAndroidMod = async (id: string): Promise<boolean> => {
 };
 
 /** 与 electron 的 window.electron.mods 同形的最小子集；clientLoader 只用到 list/set/reload。 */
+
+type NativeHttpResponse = {
+    status?: number;
+    headers?: Array<{ name?: string; value?: string }> | Record<string, string>;
+    bodyBase64?: string;
+};
+
+const nativePlugin = (): { httpRequest?: (options: Record<string, unknown>) => Promise<NativeHttpResponse> } | null => {
+    const capacitor = (window as unknown as { Capacitor?: { Plugins?: Record<string, unknown> } }).Capacitor;
+    return (capacitor?.Plugins?.FoliaNative as { httpRequest?: (options: Record<string, unknown>) => Promise<NativeHttpResponse> } | undefined) ?? null;
+};
+
+const decodeBase64 = (value: string): string => {
+    const binary = atob(value || '');
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return new TextDecoder().decode(bytes);
+};
+
+const normalizeHeaders = (headers: NativeHttpResponse['headers']): Record<string, string> => {
+    if (Array.isArray(headers)) {
+        return Object.fromEntries(headers
+            .filter(header => typeof header?.name === 'string')
+            .map(header => [String(header.name), String(header.value ?? '')]));
+    }
+    return headers && typeof headers === 'object' ? headers : {};
+};
+
+const invokeAndroidNetFetch = async (
+    _modId: string,
+    url: string,
+    init: unknown,
+): Promise<{ ok: boolean; result?: unknown; error?: string }> => {
+    const plugin = nativePlugin();
+    if (!plugin?.httpRequest) return { ok: false, error: 'native-http-unavailable' };
+    const options = (init && typeof init === 'object' ? init : {}) as {
+        method?: string;
+        headers?: Record<string, string> | Array<[string, string]>;
+        body?: unknown;
+        redirect?: string;
+    };
+    const headers: Record<string, string> = {};
+    if (Array.isArray(options.headers)) {
+        for (const [name, value] of options.headers) headers[name] = value;
+    } else if (options.headers) {
+        Object.assign(headers, options.headers);
+    }
+    let bodyText = '';
+    if (typeof options.body === 'string') bodyText = options.body;
+    else if (options.body instanceof URLSearchParams) bodyText = options.body.toString();
+    try {
+        const response = await plugin.httpRequest({
+            url,
+            method: (options.method || 'GET').toUpperCase(),
+            headers,
+            bodyText,
+            redirect: options.redirect || 'follow',
+            timeoutMs: 30000,
+        });
+        return {
+            ok: true,
+            result: {
+                status: Number(response.status || 0),
+                statusText: '',
+                headers: normalizeHeaders(response.headers),
+                body: decodeBase64(response.bodyBase64 || ''),
+            },
+        };
+    } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+};
+
+const storageKey = (modId: string, kind: 'data' | 'secrets') => 'folia:mod:' + modId + ':' + kind;
+
+const readStorage = (modId: string): Record<string, unknown> => {
+    try {
+        const raw = localStorage.getItem(storageKey(modId, 'data'));
+        return raw ? JSON.parse(raw) as Record<string, unknown> : {};
+    } catch {
+        return {};
+    }
+};
+
+const writeStorage = (modId: string, value: Record<string, unknown>) => {
+    localStorage.setItem(storageKey(modId, 'data'), JSON.stringify(value));
+};
+
+const invokeAndroidStorage = async (
+    modId: string,
+    operation: 'get' | 'set' | 'has' | 'delete' | 'keys',
+    key?: string,
+    value?: unknown,
+): Promise<{ ok: boolean; result?: unknown; error?: string }> => {
+    const data = readStorage(modId);
+    switch (operation) {
+        case 'get': return { ok: true, result: key ? data[key] : undefined };
+        case 'set': {
+            if (!key) return { ok: false, error: 'key is required' };
+            data[key] = value;
+            writeStorage(modId, data);
+            return { ok: true, result: undefined };
+        }
+        case 'has': return { ok: true, result: Boolean(key && Object.prototype.hasOwnProperty.call(data, key)) };
+        case 'delete': {
+            if (key) delete data[key];
+            writeStorage(modId, data);
+            return { ok: true, result: undefined };
+        }
+        case 'keys': return { ok: true, result: Object.keys(data) };
+        default: return { ok: false, error: 'unsupported-storage-operation' };
+    }
+};
+
+const invokeAndroidSecrets = async (
+    modId: string,
+    operation: 'get' | 'has' | 'set' | 'declare' | 'state',
+    key?: string | readonly string[],
+    value?: string | null,
+): Promise<{ ok: boolean; result?: unknown; error?: string }> => {
+    const read = (): Record<string, string> => {
+        try {
+            const raw = localStorage.getItem(storageKey(modId, 'secrets'));
+            return raw ? JSON.parse(raw) as Record<string, string> : {};
+        } catch {
+            return {};
+        }
+    };
+    const write = (data: Record<string, string>) => localStorage.setItem(storageKey(modId, 'secrets'), JSON.stringify(data));
+    const data = read();
+    switch (operation) {
+        case 'get': return { ok: true, result: typeof key === 'string' ? data[key] : undefined };
+        case 'has': return { ok: true, result: typeof key === 'string' && Boolean(data[key]) };
+        case 'set': {
+            if (typeof key !== 'string') return { ok: false, error: 'key is required' };
+            if (typeof value === 'string' && value) data[key] = value;
+            else delete data[key];
+            write(data);
+            return { ok: true, result: undefined };
+        }
+        case 'declare': return { ok: true, result: undefined };
+        case 'state': {
+            const keys = Array.isArray(key) ? key : [];
+            return { ok: true, result: Object.fromEntries(keys.map(name => [name, Boolean(data[name])])) };
+        }
+        default: return { ok: false, error: 'unsupported-secret-operation' };
+    }
+};
+
 export const androidModsBridge = {
     listMods: listAndroidMods,
     setModEnabled: setAndroidModEnabled,
@@ -129,4 +278,7 @@ export const androidModsBridge = {
     cancelExport: async () => undefined,
     onExportProgress: () => () => undefined,
     onModLog: () => () => undefined,
+    invokeModNetFetch: invokeAndroidNetFetch,
+    invokeModStorage: invokeAndroidStorage,
+    invokeModSecrets: invokeAndroidSecrets,
 };

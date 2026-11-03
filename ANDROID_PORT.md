@@ -499,3 +499,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 模组总开关关闭时不返回列表，clientLoader 不启动任何模组代码。
 - ZIP 选择器改为 */*，避免部分文件管理器把 zip 标成 x-zip-compressed 时选不到。
+
+### 0.7.25-android.306：模组 net.fetch/存储适配
+
+- 客户端模组的 net.fetch 走 FoliaNative.httpRequest，绕过 WebView CORS；filesystem.data / secret 用本地存储桥。
+- Android 模组管理去掉拖放 ZIP 安装与打开目录按钮，保留工具栏 ZIP 导入。
+- 歌曲资料等依赖 net.fetch 的客户端模组可正常查询。

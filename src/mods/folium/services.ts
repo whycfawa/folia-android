@@ -21,6 +21,7 @@ import type {
 import { FOLIUM_SONG_REF_POOL_SIZE, FOLIUM_SONG_REF_PREFIX } from './dto';
 import type { FoliumPermissionId } from './shared';
 import { FOLIUM_LYRICS_HELPERS } from './sharedHelpers';
+import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 
 // src/mods/folium/services.ts
 // `folium.playback`, `folium.ui`, `folium.net` and `folium.lyrics`. This module deliberately
@@ -316,7 +317,8 @@ const buildResponse = (raw: { status: number; statusText: string; headers: Recor
 
 export const createFoliumNetService = (mod: ModRuntimeInfo, context: FoliumContextKind): FoliumNetService => Object.freeze({
     fetch: async (url: string, init: FoliumFetchInit = {}) => {
-        requireMain('net', context);
+        // Android 没有主进程：客户端模组的 net.fetch 走原生 HTTP 桥，仍由权限清单约束。
+        if (!IS_ANDROID_WEBVIEW) requireMain('net', context);
         const response = await invokeModNetFetch(mod.id, String(url), init);
         if (!response.ok) throw new Error(response.error ?? 'net-fetch-failed');
         return buildResponse(response.result as { status: number; statusText: string; headers: Record<string, string>; body: string });

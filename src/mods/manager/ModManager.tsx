@@ -234,12 +234,12 @@ export const ModManager: React.FC<ModManagerProps> = ({ classes, isDaylight, the
     return (
         <div
             className="relative flex flex-col gap-3"
-            onDragEnter={handleDragEnter}
-            onDragOver={(event) => event.preventDefault()}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDropZip}
+            onDragEnter={IS_ANDROID_WEBVIEW ? undefined : handleDragEnter}
+            onDragOver={IS_ANDROID_WEBVIEW ? undefined : (event) => event.preventDefault()}
+            onDragLeave={IS_ANDROID_WEBVIEW ? undefined : handleDragLeave}
+            onDrop={IS_ANDROID_WEBVIEW ? undefined : handleDropZip}
         >
-            {isDragging ? (
+            {!IS_ANDROID_WEBVIEW && isDragging ? (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -273,15 +273,17 @@ export const ModManager: React.FC<ModManagerProps> = ({ classes, isDaylight, the
                             {installing ? t('mods.installing') : t('mods.androidImport')}
                         </button>
                     )}
-                    <button
-                        type="button"
-                        onClick={() => { void handleOpenDirectory(); }}
-                        className={`${toolbarButtonClass} ${classes.ghostButton}`}
-                        style={{ color: 'var(--text-primary)' }}
-                    >
-                        <FolderOpen size={12} />
-                        {t('mods.openDirectory')}
-                    </button>
+                    {!IS_ANDROID_WEBVIEW && (
+                        <button
+                            type="button"
+                            onClick={() => { void handleOpenDirectory(); }}
+                            className={`${toolbarButtonClass} ${classes.ghostButton}`}
+                            style={{ color: 'var(--text-primary)' }}
+                        >
+                            <FolderOpen size={12} />
+                            {t('mods.openDirectory')}
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
