@@ -469,3 +469,17 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.299：启动图压缩
 
 - 26 张 splash PNG（约 21.4MB）转为 WebP，约 0.32MB；APK 体积下降约 21MB。
+
+### 0.7.25-android.300：QQ VIP 播放授权识别
+
+- 区分「快速/微信登录缺少 p_skey/skey」与真正版权限制；前者返回 login_required 并引导重新用 QQ 扫码。
+- vkey trace 增加 webAuth 字段。
+
+### 0.7.25-android.301：QQ 登录提示修正
+
+- 缺少 p_skey/skey 时明确说明是 QQ 登录未拿到网页播放授权，不再误指微信。
+
+### 0.7.25-android.302：禁用 QQ 原生快速登录降级
+
+- QQ 网页扫码失败时不再降级到原生通道；原生通道缺少 p_skey/skey，VIP 歌必回 104003。
+- 失败直接提示重试，避免生成「能登录但不能播 VIP」的会话。

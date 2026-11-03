@@ -3,6 +3,7 @@ import {
   getQQCookie,
   parseCookieString,
   qqCookieAvatar,
+  qqCookieHasWebAuth,
   qqCookieMusicKey,
   qqCookieNickname,
   qqCookiePlaybackKey,
@@ -112,6 +113,7 @@ function playbackRestriction(provider, category, message, action, extra) {
 function classifyQQPlaybackRestriction(info, session) {
   const hasSession = typeof session === 'object' ? !!session.hasSession : !!session;
   const hasPlaybackKey = typeof session === 'object' ? !!session.hasPlaybackKey : hasSession;
+  const hasWebAuth = typeof session === 'object' ? session.hasWebAuth !== false : hasSession;
   const rawMsg = String((info && (info.msg || info.tips || info.errmsg || info.message)) || '').trim();
   const code = Number((info && (info.result || info.code || info.errtype)) || 0);
   const lower = rawMsg.toLowerCase();
@@ -120,6 +122,12 @@ function classifyQQPlaybackRestriction(info, session) {
   }
   if (!hasPlaybackKey && code === 104003) {
     return playbackRestriction('qq', 'login_required', 'QQ 音乐当前只拿到了网页登录状态，还缺少播放授权，请重新打开 y.qq.com 完成登录', 'login', { code, rawMessage: rawMsg, missingPlaybackKey: true });
+  }
+  if (code === 104003 && !hasWebAuth) {
+    // 快速扫码/微信通道只有 musickey，没有网页登录的 p_skey/skey：VIP 歌会逐档回 104003。
+    return playbackRestriction('qq', 'login_required',
+      '当前 QQ 登录没有拿到网页播放授权（p_skey/skey），VIP 歌曲会被 QQ 拒绝。请退出 QQ 音乐登录后重新用 QQ 扫码，等网页登录完成再试。',
+      'login', { code, rawMessage: rawMsg, missingWebAuth: true });
   }
   if (code === 104003) {
     // 现场实测：非会员账号点 VIP 歌时，逐档音质都回 104003 且 purl 为空；同一账号的免费歌能正常播。
@@ -768,6 +776,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   const vkeySession = {
     hasSession: !!(uin && musicKey),
     hasPlaybackKey: !!(uin && playbackKey),
+    hasWebAuth: qqCookieHasWebAuth(cookieHeader),
   };
   for (const candidate of vkeyShapes) {
     vkeyAttempts += 1;
@@ -858,6 +867,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
     rawMessage: String((info && (info.msg || info.tips || info.errmsg || info.message)) || '').slice(0, 60),
     category: lastRestriction && lastRestriction.category ? lastRestriction.category : '',
     hasPlaybackKey: vkeySession.hasPlaybackKey,
+    webAuth: vkeySession.hasWebAuth,
     mediaMid: fileMediaMid ? fileMediaMid.slice(0, 20) : '(none)',
     filename: info && info.filename,
     rowDetail: rowDetail.slice(0, 160),
@@ -884,6 +894,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   const restriction = classifyQQPlaybackRestriction(info, {
     hasSession: !!(uin && musicKey),
     hasPlaybackKey: !!(uin && playbackKey),
+    hasWebAuth: qqCookieHasWebAuth(cookieHeader),
   });
   return {
     provider: 'qq',

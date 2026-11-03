@@ -370,6 +370,12 @@ export function qqCookiePlaybackKey(cookieHeader) {
   return obj.qm_keyst || obj.qqmusic_key || obj.music_key || obj.wxskey || '';
 }
 
+export function qqCookieHasWebAuth(cookieHeader) {
+  const obj = parseCookieString(cookieHeader);
+  // VIP 播放权挂在网页登录的 p_skey / skey 上；只有 musickey（qm_keyst/qqmusic_key）不够。
+  return Boolean(obj.p_skey || obj.skey);
+}
+
 export function qqCookieMusicKey(cookieHeader) {
   const obj = parseCookieString(cookieHeader);
   return obj.qm_keyst || obj.qqmusic_key || obj.music_key || obj.p_skey || obj.skey

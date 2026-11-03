@@ -58,7 +58,6 @@ import {
 } from './qq-wechat-login.js';
 import { clearQQPlatformSessionCookies } from './qq-login-qr.js';
 import {
-  qqNativeCreateLoginQr,
   qqNativeCheckLoginQr,
   qqNativeCancelLoginQr,
 } from './qq-native-login.js';
@@ -727,20 +726,14 @@ async function routeFoliaQqRequest(operation, params, segments, url, cookie) {
       });
       return { code: 200, data: { code: 200, unikey: key } };
     } catch (error) {
-      noteLibraryStep('qq', 'web-login:fallback', {
+      noteLibraryStep('qq', 'web-login:failed', {
         message: String((error && error.message) || error).slice(0, 120),
       });
+      // 不再降级到原生安卓扫码：那条通道只有 musickey，没有 p_skey/skey，
+      // 登进去能看歌单、能播免费歌，但 VIP 歌每档都回 104003。
+      // 宁可让这次登录失败并提示重试，也不要生成一个「看似登录成功、实际播不了 VIP」的会话。
+      throw new Error('QQ 网页登录暂时不可用，请稍后重试；已禁用会丢失 VIP 播放权的快速登录');
     }
-
-    // 网页通道建不起来才用原生安卓扫码兜底。
-    const nativeQr = await qqNativeCreateLoginQr();
-    const nativeKey = encodeBridgeKey({
-      channel,
-      native: true,
-      qrcodeId: nativeQr.qrcodeId,
-      qrimg: nativeQr.qrimg,
-    });
-    return { code: 200, data: { code: 200, unikey: nativeKey } };
   }
   if (operation === 'login_qr_create') {    const key = decodeBridgeKey(firstValue(params.key, url.searchParams.get('key')));
     return {
