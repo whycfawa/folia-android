@@ -553,3 +553,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.317：QQ android comm 补 authst
 
 - UrlGetVkey 的 android comm 同步带 musickey(authst)、qq、tmeLoginType。
+
+### 0.7.25-android.318：QQ 只保留网页 vkey
+
+- 删除 vkey 的 android 设备身份兜底，只保留网页登录的 CgiGetVkey/UrlGetVkey 形态。
