@@ -545,3 +545,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - vkey 文件名改成两段式 prefix + songmid + media_mid + 扩展名。
 - 增加 music.vkey.GetVkey / UrlGetVkey 形态，并在 android 兜底里也试一次。
+
+### 0.7.25-android.316：QQ UrlGetVkey 用音乐账号 id
+
+- UrlGetVkey 的 uin 改用 str_musicid/musicid；comm 带 qq；诊断记录 hasMusicId。

@@ -714,6 +714,8 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   const uin = qqCookieUin(cookieHeader) || '0';
   const musicKey = qqCookieMusicKey(cookieHeader);
   const playbackKey = qqCookiePlaybackKey(cookieHeader);
+  // 新版 UrlGetVkey 的 uin 用的是音乐账号 id（str_musicid/musicid），不是 QQ 号。
+  const musicId = qqCookieMusicId(cookieHeader);
   let fileMediaMid = String(mediaMid || '').trim();
   let detailMeta = null;
   if (!fileMediaMid) {
@@ -766,14 +768,14 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   // 这里按顺序试几种形态，只要拿到 purl 就停；trace 记下哪种生效，报告里能直接看出来。
   const vkeyRequest = { req_0: { module: 'vkey.GetVkeyServer', method: 'CgiGetVkey', param } };
   const urlVkeyRequest = {
-    req_0: { module: 'music.vkey.GetVkey', method: 'UrlGetVkey', param: { ...param, ctx: 0 } },
+    req_0: { module: 'music.vkey.GetVkey', method: 'UrlGetVkey', param: { ...param, uin: musicId || uin, ctx: 0 } },
   };
   const vkeyShapes = [
     { shape: 'ct19', comm, req_0: vkeyRequest.req_0 },
     { shape: 'ct24', comm: { ...comm, ct: 24 }, req_0: vkeyRequest.req_0 },
     { shape: 'web-plain', comm: { format: 'json', uin, ct: 24, cv: 0, platform: 'yqq.json' }, req_0: vkeyRequest.req_0 },
     // 新版播放协议：带会话用 UrlGetVkey；优先于 android 兜底，网页 p_skey 可用时就能拿到 VIP 链接。
-    { shape: 'url-web', comm, req_0: urlVkeyRequest.req_0 },
+    { shape: 'url-web', comm: musicId ? { ...comm, qq: musicId } : comm, req_0: urlVkeyRequest.req_0 },
   ];
   let json = null;
   let { data, rows: infos, info } = { data: null, rows: [], info: null };
@@ -879,6 +881,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
     category: lastRestriction && lastRestriction.category ? lastRestriction.category : '',
     hasPlaybackKey: vkeySession.hasPlaybackKey,
     webAuth: vkeySession.hasWebAuth,
+    hasMusicId: Boolean(musicId),
     mediaMid: fileMediaMid ? fileMediaMid.slice(0, 20) : '(none)',
     filename: info && info.filename,
     rowDetail: rowDetail.slice(0, 160),
