@@ -808,7 +808,43 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
       lastRestriction = classifyQQPlaybackRestriction(info, vkeySession);
     } catch (_) {}
   }
-  // 只保留网页登录形态：之前删掉的是原生扫码登录，这里也不再走 android 身份兜底。
+  // 最后再试一次实测可用的 android 身份（设备 + QIMEI + uid/sid 会话 + g_tk）。
+  // 注意：这不是原生扫码登录，登录仍然只走网页；这里只是用同一份网页 cookie 换一种 vkey 请求形态。
+  if (!purl) {
+    try {
+      const device = await getQQRadioDevice();
+      await ensureQQQimei(device);
+      await ensureQQAndroidSession(device);
+      const { candidates } = qqRadioLoginTypes(cookieHeader);
+      const androidComm = {
+        ...buildQQRadioComm(cookieHeader, device, candidates[0]),
+        ...(musicKey ? { authst: musicKey } : {}),
+      };
+      for (const request of [vkeyRequest.req_0, urlVkeyRequest.req_0]) {
+        vkeyAttempts += 1;
+        const androidJson = await qqMusicRequest(
+          { comm: androidComm, req_0: request },
+          buildQQRadioCookie(cookieHeader),
+          QQ_MUSICU_UA,
+          { gTk: qqGtk(cookieHeader) },
+        );
+        const fallback = readVkey(androidJson);
+        if (fallback.info && fallback.info.purl) {
+          json = androidJson;
+          data = fallback.data;
+          infos = fallback.rows;
+          info = fallback.info;
+          purl = fallback.info.purl;
+          vkeyShape = request.method === 'UrlGetVkey' ? 'android-url' : 'android';
+          break;
+        }
+        data = fallback.data;
+        infos = fallback.rows;
+        info = fallback.info;
+        lastRestriction = classifyQQPlaybackRestriction(info, vkeySession);
+      }
+    } catch (_) {}
+  }
   // 最后一步：上面几种形态都拿不到 purl 时，说明问题可能不在身份，而在**请求的文件名/音质组合**。
   // 现场：失败歌的 qqCode=104003 但 rawMessage 为空、rows 有 4~6 行 —— 像是「这些文件不存在」而不是
   // 「没权限」。所以把全部音质模板（含无损 FLAC / Hi-Res）都塞进去再问一次，逐行看 QQ 怎么回。
