@@ -815,7 +815,12 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
       await ensureQQQimei(device);
       await ensureQQAndroidSession(device);
       const { candidates } = qqRadioLoginTypes(cookieHeader);
-      const androidComm = buildQQRadioComm(cookieHeader, device, candidates[0]);
+      // 新版 UrlGetVkey 的 android comm 必须同时带 qq、authst（musickey）与 tmeLoginType；
+      // 只带 Cookie 时网页形态能过，VIP 播放却会被拒。
+      const androidComm = {
+        ...buildQQRadioComm(cookieHeader, device, candidates[0]),
+        ...(musicKey ? { authst: musicKey } : {}),
+      };
       for (const request of [vkeyRequest.req_0, urlVkeyRequest.req_0]) {
         vkeyAttempts += 1;
         const androidJson = await qqMusicRequest(

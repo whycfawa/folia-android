@@ -549,3 +549,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.316：QQ UrlGetVkey 用音乐账号 id
 
 - UrlGetVkey 的 uin 改用 str_musicid/musicid；comm 带 qq；诊断记录 hasMusicId。
+
+### 0.7.25-android.317：QQ android comm 补 authst
+
+- UrlGetVkey 的 android comm 同步带 musickey(authst)、qq、tmeLoginType。
