@@ -1446,7 +1446,6 @@ export default {
     "localServiceStopped": "The local {{provider}} service is not running",
     "retryLater": "{{provider}}: try again later",
     "signInNeeded": "{{provider}} sign-in expired",
-    "qqSessionSuspected": "QQ sign-in may have expired",
     "noAudio": "{{provider}} returned no audio",
     "audioUnplayable": "The audio cannot be played",
     "refused": "Request refused by {{provider}}",

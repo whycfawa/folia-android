@@ -1446,7 +1446,6 @@ export default {
     "localServiceStopped": "Layanan lokal {{provider}} tidak berjalan",
     "retryLater": "{{provider}}: coba lagi nanti",
     "signInNeeded": "Sesi masuk {{provider}} kedaluwarsa",
-    "qqSessionSuspected": "Sesi QQ mungkin sudah kedaluwarsa",
     "noAudio": "{{provider}} tidak mengembalikan audio",
     "audioUnplayable": "Audio tidak dapat diputar",
     "refused": "Permintaan ditolak oleh {{provider}}",

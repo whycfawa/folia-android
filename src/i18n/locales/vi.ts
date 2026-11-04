@@ -1446,7 +1446,6 @@ export default {
     "localServiceStopped": "Dịch vụ {{provider}} cục bộ chưa khởi chạy",
     "retryLater": "{{provider}} yêu cầu thử lại sau",
     "signInNeeded": "Phiên đăng nhập {{provider}} đã hết hạn",
-    "qqSessionSuspected": "Phiên đăng nhập QQ có thể đã hết hạn",
     "noAudio": "{{provider}} không trả về luồng âm thanh",
     "audioUnplayable": "Không thể phát âm thanh",
     "refused": "Yêu cầu bị {{provider}} từ chối",

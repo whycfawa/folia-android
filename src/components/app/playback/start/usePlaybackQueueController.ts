@@ -186,16 +186,9 @@ const withSignInAction = (
     said: StatusMessage,
     t: (key: string) => string,
 ): StatusMessage => {
-    // QQ 无音频经常是网页会话失效，重新登录即可；即使这次只是单曲权限，也给一个重新登录入口。
-    const qqNoAudio = shown.providerId === 'qq' && shown.case === 'no-audio';
-    const signInTo = shown.case === 'sign-in-needed'
-        ? shown.providerId
-        : qqNoAudio
-            ? 'qq'
-            : undefined;
+    const signInTo = shown.case === 'sign-in-needed' ? shown.providerId : undefined;
     return signInTo ? {
         ...said,
-        ...(qqNoAudio ? { text: t('failure.qqSessionSuspected'), note: t('failure.noteSignIn') } : {}),
         actionLabel: t('failure.signIn'),
         onAction: () => {
             setStatusMsg(null);
