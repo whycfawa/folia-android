@@ -561,3 +561,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.319：恢复 android vkey 兜底供测试
 
 - 恢复 CgiGetVkey/UrlGetVkey 的 android 设备 comm（带 qq/authst/tmeLoginType）；登录仍只走网页。
+
+### 0.7.25-android.320：QQ 无音频给重新登录入口
+
+- QQ 无音频提示改成「QQ 登录状态可能已失效」，并带登录按钮直接打开 QQ 登录窗口。

@@ -1446,6 +1446,8 @@ export default {
     "localServiceStopped": "{{provider}}本地服务未启动",
     "retryLater": "{{provider}}要求稍后再试",
     "signInNeeded": "{{provider}}登录已失效",
+
+    "qqSessionSuspected": "QQ 登录状态可能已失效",
     "noAudio": "{{provider}}未返回音频",
     "audioUnplayable": "音频无法播放",
     "refused": "请求被{{provider}}拒绝",
