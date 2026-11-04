@@ -732,9 +732,12 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   const mediaIds = [];
   if (fileMediaMid) mediaIds.push(fileMediaMid);
   if (songmid && !mediaIds.includes(songmid)) mediaIds.push(songmid);
+  // 文件名必须是两段：prefix + songmid + media_mid + 扩展名。只给 media_mid 时
+  // vkey 可能给 purl，但 CDN 仍会 403；VIP 歌也可能直接回 104003。
+  const filenameFor = (item, mediaId) => item.prefix + songmid + (mediaId || songmid) + item.ext;
   const fileCandidates = mediaIds.flatMap((mediaId) =>
     qualityCandidatesFrom(requestedQuality, QQ_QUALITY_CANDIDATE_TEMPLATES)
-      .map((item) => ({ ...item, mediaId, filename: item.prefix + mediaId + item.ext })),
+      .map((item) => ({ ...item, mediaId, filename: filenameFor(item, mediaId) })),
   );
   const filenames = fileCandidates.map((item) => item.filename);
   const param = {
@@ -762,10 +765,15 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   // 说明不是版权问题，而是**请求形态**（客户端类型 ct 与凭证种类）不匹配 —— 和当初写红心同一个教训。
   // 这里按顺序试几种形态，只要拿到 purl 就停；trace 记下哪种生效，报告里能直接看出来。
   const vkeyRequest = { req_0: { module: 'vkey.GetVkeyServer', method: 'CgiGetVkey', param } };
+  const urlVkeyRequest = {
+    req_0: { module: 'music.vkey.GetVkey', method: 'UrlGetVkey', param: { ...param, ctx: 0 } },
+  };
   const vkeyShapes = [
-    { shape: 'ct19', comm },
-    { shape: 'ct24', comm: { ...comm, ct: 24 } },
-    { shape: 'web-plain', comm: { format: 'json', uin, ct: 24, cv: 0, platform: 'yqq.json' } },
+    { shape: 'ct19', comm, req_0: vkeyRequest.req_0 },
+    { shape: 'ct24', comm: { ...comm, ct: 24 }, req_0: vkeyRequest.req_0 },
+    { shape: 'web-plain', comm: { format: 'json', uin, ct: 24, cv: 0, platform: 'yqq.json' }, req_0: vkeyRequest.req_0 },
+    // 新版播放协议：带会话用 UrlGetVkey；优先于 android 兜底，网页 p_skey 可用时就能拿到 VIP 链接。
+    { shape: 'url-web', comm, req_0: urlVkeyRequest.req_0 },
   ];
   let json = null;
   let { data, rows: infos, info } = { data: null, rows: [], info: null };
@@ -781,7 +789,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   for (const candidate of vkeyShapes) {
     vkeyAttempts += 1;
     try {
-      const response = await qqMusicRequest({ comm: candidate.comm, req_0: vkeyRequest.req_0 }, cookieHeader);
+      const response = await qqMusicRequest({ comm: candidate.comm, req_0: candidate.req_0 || vkeyRequest.req_0 }, cookieHeader);
       const read = readVkey(response);
       if (read.info && read.info.purl) {
         json = response;
@@ -800,27 +808,30 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   }
   // 最后再试一次实测可用的 android 身份（设备 + QIMEI + uid/sid 会话 + g_tk）。
   if (!purl) {
-    vkeyAttempts += 1;
     try {
       const device = await getQQRadioDevice();
       await ensureQQQimei(device);
       await ensureQQAndroidSession(device);
       const { candidates } = qqRadioLoginTypes(cookieHeader);
-      const androidJson = await qqMusicRequest(
-        { comm: buildQQRadioComm(cookieHeader, device, candidates[0]), req_0: vkeyRequest.req_0 },
-        buildQQRadioCookie(cookieHeader),
-        QQ_MUSICU_UA,
-        { gTk: qqGtk(cookieHeader) },
-      );
-      const fallback = readVkey(androidJson);
-      if (fallback.info && fallback.info.purl) {
-        json = androidJson;
-        data = fallback.data;
-        infos = fallback.rows;
-        info = fallback.info;
-        purl = fallback.info.purl;
-        vkeyShape = 'android';
-      } else {
+      const androidComm = buildQQRadioComm(cookieHeader, device, candidates[0]);
+      for (const request of [vkeyRequest.req_0, urlVkeyRequest.req_0]) {
+        vkeyAttempts += 1;
+        const androidJson = await qqMusicRequest(
+          { comm: androidComm, req_0: request },
+          buildQQRadioCookie(cookieHeader),
+          QQ_MUSICU_UA,
+          { gTk: qqGtk(cookieHeader) },
+        );
+        const fallback = readVkey(androidJson);
+        if (fallback.info && fallback.info.purl) {
+          json = androidJson;
+          data = fallback.data;
+          infos = fallback.rows;
+          info = fallback.info;
+          purl = fallback.info.purl;
+          vkeyShape = request.method === 'UrlGetVkey' ? 'android-url' : 'android';
+          break;
+        }
         data = fallback.data;
         infos = fallback.rows;
         info = fallback.info;
@@ -835,7 +846,7 @@ export async function handleQQSongUrl(mid, mediaMid, qualityPreference, cookieHe
   if (!purl) {
     try {
       const allFileCandidates = mediaIds.flatMap((mediaId) =>
-        QQ_QUALITY_CANDIDATE_TEMPLATES.map((item) => ({ ...item, mediaId, filename: item.prefix + mediaId + item.ext })),
+        QQ_QUALITY_CANDIDATE_TEMPLATES.map((item) => ({ ...item, mediaId, filename: filenameFor(item, mediaId) })),
       );
       const allParam = { ...param, filename: allFileCandidates.map((item) => item.filename) };
       const allResponse = await qqMusicRequest(

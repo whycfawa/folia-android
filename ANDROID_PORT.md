@@ -540,3 +540,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 三挡同时控制画布分辨率与模组 DOM 特效：轻度 75%、均衡 50% + 去阴影、强力 35% + 去 filter/blend。
 - 补 pushRuntimeSnapshot 桥，消掉 Android 上的 unhandled rejection。
+
+### 0.7.25-android.315：QQ 播放文件名与 UrlGetVkey
+
+- vkey 文件名改成两段式 prefix + songmid + media_mid + 扩展名。
+- 增加 music.vkey.GetVkey / UrlGetVkey 形态，并在 android 兜底里也试一次。
