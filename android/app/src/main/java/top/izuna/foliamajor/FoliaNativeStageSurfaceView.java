@@ -323,7 +323,10 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         float x = (width - total) / 2f;
         float baseline = centerY - (wordPaint.ascent() + wordPaint.descent()) / 2f;
         for (int index = 0; index < wordTexts.length; index++) {
-            wordPaint.setColor(wordPosition >= wordStarts[index] ? Color.WHITE : 0x55FFFFFF);
+            float span = Math.max(0.001f, wordEnds[index] - wordStarts[index]);
+            float wordProgress = Math.max(0f, Math.min(1f, (wordPosition - wordStarts[index]) / span));
+            int alpha = 0x55 + Math.round((0xFF - 0x55) * wordProgress);
+            wordPaint.setColor((alpha << 24) | 0x00FFFFFF);
             canvas.drawText(wordTexts[index], x, baseline, wordPaint);
             x += wordPaint.measureText(wordTexts[index]);
         }
