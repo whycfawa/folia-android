@@ -20,11 +20,11 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * 原生舞台的 SurfaceView 版本：独立渲染线程，不占用 WebView/UI 线程的 Canvas。
+ * 原生舞台的 SurfaceView 版本：独立渲染线程，最高 120fps，不占用 WebView/UI 线程的 Canvas。
  * 只负责渐变背景和缓存后的歌词排版；SurfaceView 默认在窗口后面，WebView 透明时可见。
  */
 public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
-    private static final long FRAME_MS = 16L;
+    private static final long FRAME_MS = 8L;
 
     private final TextPaint lyricPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint nextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -244,6 +244,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
             synchronized (stateLock) {
                 animate = playing && getVisibility() == VISIBLE && getWindowVisibility() == VISIBLE;
             }
+            long frameStartedAt = SystemClock.uptimeMillis();
             if (animate || dirty) {
                 Canvas canvas = null;
                 try {
@@ -266,7 +267,8 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
                 }
             }
             try {
-                Thread.sleep(animate ? FRAME_MS : 80L);
+                long frameCost = SystemClock.uptimeMillis() - frameStartedAt;
+                Thread.sleep(animate ? Math.max(1L, FRAME_MS - frameCost) : 80L);
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
                 return;
