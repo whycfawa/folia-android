@@ -590,3 +590,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.326：原生舞台音频响应
 
 - JS 以 20Hz 推送 audioPower/bass/mid/treble，原生 SurfaceView 画频谱条和发光脉冲。
+
+### 0.7.25-android.327：原生底部控制条
+
+- 原生 SurfaceView 上方增加底部控制条：上一首/播放暂停/下一首。
+- 原生控制条通过 plugin 事件调用 WebView 的播放动作；开启原生舞台时隐藏 WebView 底部控件。

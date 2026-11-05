@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { loadCachedOrFetchCover } from './services/coverCache';
 import VisualizerRenderer from './components/visualizer/VisualizerRenderer';
 import NativeStageBridge from './components/visualizer/NativeStageBridge';
+import { registerNativeStageActions } from './services/nativeStageActions';
 import CommandPalette from './components/command-palette/CommandPalette';
 import AddToPlaylistHost from './components/app/AddToPlaylistHost';
 import { useCommandPalette } from './components/command-palette/useCommandPalette';
@@ -1564,6 +1565,12 @@ export default function App() {
         resumePlayback,
         syncStageLyricsClock,
     });
+
+    useEffect(() => registerNativeStageActions({
+        toggle: togglePlay,
+        next: () => { void handleNextTrack(); },
+        previous: () => { void handlePrevTrack(); },
+    }), [handleNextTrack, handlePrevTrack, togglePlay]);
 
     const { personalFmSelection, personalFmSelectionLabel, isPersonalFmModeSupported, setPersonalFmSelection } = usePersonalFmModeController({
         isFmMode,

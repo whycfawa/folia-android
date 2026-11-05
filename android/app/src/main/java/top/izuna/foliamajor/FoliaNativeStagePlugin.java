@@ -3,7 +3,9 @@ package top.izuna.foliamajor;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.view.Gravity;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.webkit.WebView;
 
 import com.getcapacitor.JSObject;
@@ -21,6 +23,7 @@ public class FoliaNativeStagePlugin extends Plugin {
     private static final String PREFS = "folia_native_stage";
     private static final String ACTIVE = "active";
     private FoliaNativeStageSurfaceView stageView;
+    private FoliaNativeStageControlsView controlsView;
     private boolean guardChecked;
     private boolean unsafe;
 
@@ -59,6 +62,17 @@ public class FoliaNativeStagePlugin extends Plugin {
                             ViewGroup.LayoutParams.MATCH_PARENT));
                 }
                 stageView.setVisibility(FoliaNativeStageSurfaceView.VISIBLE);
+                if (controlsView == null) {
+                    controlsView = new FoliaNativeStageControlsView(activity);
+                    controlsView.setListener(new FoliaNativeStageControlsView.Listener() {
+                        @Override public void onPrevious() { emitControl("previous"); }
+                        @Override public void onToggle() { emitControl("toggle"); }
+                        @Override public void onNext() { emitControl("next"); }
+                    });
+                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, (int) dp(88), Gravity.BOTTOM);
+                    root.addView(controlsView, params);
+                }
                 WebView webView = getBridge() == null ? null : getBridge().getWebView();
                 if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
                 getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();
@@ -85,6 +99,7 @@ public class FoliaNativeStagePlugin extends Plugin {
         }
         activity.runOnUiThread(() -> {
             try {
+                controlsView.setPlaying(Boolean.TRUE.equals(call.getBoolean("playing", true)));
                 stageView.update(
                         call.getString("line", ""),
                         call.getString("nextLine", ""),
@@ -134,6 +149,16 @@ public class FoliaNativeStagePlugin extends Plugin {
         });
     }
 
+    private void emitControl(String action) {
+        JSObject payload = new JSObject();
+        payload.put("action", action);
+        notifyListeners("control", payload);
+    }
+
+    private float dp(float value) {
+        return value * getContext().getResources().getDisplayMetrics().density;
+    }
+
     private static float floatValue(PluginCall call, String key) {
         Double value = call.getDouble(key, 0.0);
         return value == null ? 0f : value.floatValue();
@@ -144,6 +169,11 @@ public class FoliaNativeStagePlugin extends Plugin {
         ViewGroup parent = (ViewGroup) stageView.getParent();
         if (parent != null) parent.removeView(stageView);
         stageView = null;
+        if (controlsView != null) {
+            ViewGroup controlsParent = (ViewGroup) controlsView.getParent();
+            if (controlsParent != null) controlsParent.removeView(controlsView);
+            controlsView = null;
+        }
         getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, false).apply();
         try {
             WebView webView = getBridge() == null ? null : getBridge().getWebView();

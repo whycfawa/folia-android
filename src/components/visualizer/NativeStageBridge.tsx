@@ -3,7 +3,8 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio } from '../../services/nativeStage';
+import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio } from '../../services/nativeStage';
+import { runNativeStageControl } from '../../services/nativeStageActions';
 import { audioBands, audioPower } from '../../stores/motionSignals';
 
 // src/components/visualizer/NativeStageBridge.tsx
@@ -23,6 +24,9 @@ html.folia-native-stage #root {
 }
 html.folia-native-stage [data-testid="player-visual-surface"] {
   opacity: 0 !important;
+}
+html.folia-native-stage [data-folia-player-controls] {
+  display: none !important;
 }
 `;
     document.head.appendChild(style);
@@ -73,6 +77,13 @@ const NativeStageBridge: React.FC = () => {
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
     }, [enabled, lineIndex, lyrics, playerState, song]);
+
+    React.useEffect(() => {
+        if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
+        let remove: (() => void) | undefined;
+        void addNativeStageControlListener(runNativeStageControl).then(cleanup => { remove = cleanup; });
+        return () => remove?.();
+    }, [enabled]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled || playerState !== PlayerState.PLAYING) return undefined;
