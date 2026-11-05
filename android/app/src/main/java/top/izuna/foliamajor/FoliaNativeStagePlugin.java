@@ -74,6 +74,15 @@ public class FoliaNativeStagePlugin extends Plugin {
                             ViewGroup.LayoutParams.MATCH_PARENT, (int) dp(88), Gravity.BOTTOM);
                     root.addView(controlsView, params);
                 }
+                final FoliaNativeStageSurfaceView currentStage = stageView;
+                root.postDelayed(() -> {
+                    if (stageView == currentStage && currentStage.isPlaying() && currentStage.getFrameCount() == 0) {
+                        removeStage();
+                        JSObject payload = new JSObject();
+                        payload.put("reason", "no-frames");
+                        notifyListeners("fallback", payload);
+                    }
+                }, 3000L);
                 WebView webView = getBridge() == null ? null : getBridge().getWebView();
                 if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
                 getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();

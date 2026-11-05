@@ -3,7 +3,7 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { addNativeStageControlListener, disableNativeStage, enableNativeStage, getNativeStageStats, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
+import { addNativeStageControlListener, addNativeStageFallbackListener, disableNativeStage, enableNativeStage, getNativeStageStats, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
 import { setNativeStageStats } from '../../services/nativeStageDiagnostics';
 import { runNativeStageControl } from '../../services/nativeStageActions';
 import { getNativeStageTheme, subscribeNativeStageTheme } from '../../services/nativeStageTheme';
@@ -84,6 +84,16 @@ const NativeStageBridge: React.FC = () => {
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
     }, [enabled, lineIndex, lyrics, nativeTheme, playerState, song]);
+
+    React.useEffect(() => {
+        if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
+        let removeFallback: (() => void) | undefined;
+        void addNativeStageFallbackListener(() => {
+            console.warn('[NativeStage] surface produced no frames, falling back to WebView');
+            useDesktopSettingsStore.getState().handleToggleNativeStage(false);
+        }).then(cleanup => { removeFallback = cleanup; });
+        return () => removeFallback?.();
+    }, [enabled]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;

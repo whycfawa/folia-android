@@ -348,6 +348,12 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         return frameCount;
     }
 
+    public boolean isPlaying() {
+        synchronized (stateLock) {
+            return playing;
+        }
+    }
+
     private boolean drawWords(Canvas canvas, int width, float centerY) {
         if (wordTexts.length == 0 || layoutSize <= 0) return false;
         wordPaint.setTextSize(layoutSize);

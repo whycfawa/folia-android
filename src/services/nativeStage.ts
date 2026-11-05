@@ -32,6 +32,10 @@ export const addNativeStageControlListener = async (listener: (action: string, v
     const handle = await FoliaNativeStage.addListener('control', event => listener(String(event?.action || ''), Number(event?.value || 0)));
     return () => { void handle.remove(); };
 };
+export const addNativeStageFallbackListener = async (listener: () => void): Promise<() => void> => {
+    const handle = await FoliaNativeStage.addListener('fallback', () => listener());
+    return () => { void handle.remove(); };
+};
 export const getNativeStageStats = () => FoliaNativeStage.stats();
 export const updateNativeStageWords = (options: { words: string; position: number }) => FoliaNativeStage.updateWords(options);
 export const updateNativeStageProgress = (options: { position: number; duration: number; lineProgress: number }) => FoliaNativeStage.updateProgress(options);

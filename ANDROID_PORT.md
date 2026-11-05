@@ -636,3 +636,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.337：原生舞台诊断
 
 - 诊断报告输出 native stage enabled/active/renderer/frames，便于确认真机是否真的在原生渲染。
+
+### 0.7.25-android.338：原生舞台无帧自动回退
+
+- 开启后 3 秒内 SurfaceView 没有出帧且处于播放状态，自动移除原生舞台并关闭开关，回到 WebView。
