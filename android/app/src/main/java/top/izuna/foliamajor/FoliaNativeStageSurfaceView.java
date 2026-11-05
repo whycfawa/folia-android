@@ -29,7 +29,18 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Object stateLock = new Object();
+    private static final int PARTICLE_COUNT = 64;
+    private final float[] particleX = new float[PARTICLE_COUNT];
+    private final float[] particleY = new float[PARTICLE_COUNT];
+    private final float[] particleVx = new float[PARTICLE_COUNT];
+    private final float[] particleVy = new float[PARTICLE_COUNT];
+    private final float[] particleLife = new float[PARTICLE_COUNT];
+    private final float[] particleSize = new float[PARTICLE_COUNT];
+    private int nextParticle;
+    private long lastFrameAt;
+    private long lastSpawnAt;
 
     private String line = "";
     private String nextLine = "";
@@ -238,6 +249,38 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
                 .build();
     }
 
+    private void updateParticles(long now, int width, int height) {
+        float dt = lastFrameAt == 0 ? 0.016f : Math.min(0.05f, (now - lastFrameAt) / 1000f);
+        lastFrameAt = now;
+        for (int index = 0; index < PARTICLE_COUNT; index++) {
+            if (particleLife[index] <= 0f) continue;
+            particleLife[index] -= dt;
+            particleX[index] += particleVx[index] * dt;
+            particleY[index] += particleVy[index] * dt;
+            particleVy[index] += 14f * dt;
+        }
+        if (audioPower > 0.06f && now - lastSpawnAt > 55L) {
+            lastSpawnAt = now;
+            int index = nextParticle;
+            nextParticle = (nextParticle + 1) % PARTICLE_COUNT;
+            particleX[index] = (float) Math.random() * width;
+            particleY[index] = height * (0.42f + (float) Math.random() * 0.28f);
+            particleVx[index] = ((float) Math.random() - 0.5f) * width * 0.025f;
+            particleVy[index] = -height * (0.01f + (float) Math.random() * 0.02f);
+            particleLife[index] = 1.2f + (float) Math.random() * 1.8f;
+            particleSize[index] = dp(1.2f + (float) Math.random() * 2.4f);
+        }
+    }
+
+    private void drawParticles(Canvas canvas) {
+        for (int index = 0; index < PARTICLE_COUNT; index++) {
+            if (particleLife[index] <= 0f) continue;
+            int alpha = (int) Math.min(160f, particleLife[index] * 90f);
+            particlePaint.setColor((accent & 0x00FFFFFF) | (alpha << 24));
+            canvas.drawCircle(particleX[index], particleY[index], particleSize[index], particlePaint);
+        }
+    }
+
     private void drawStage(Canvas canvas) {
         int width = getWidth();
         int height = getHeight();
@@ -255,6 +298,9 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         canvas.translate(glowX, glowY);
         canvas.drawCircle(0, 0, width * (0.55f + 0.12f * audioPower), glowPaint);
         canvas.restore();
+
+        updateParticles(SystemClock.uptimeMillis(), width, height);
+        drawParticles(canvas);
 
         // 原生频谱条：只消费 20Hz 的能量值，不在每帧做 FFT。
         if (audioPower > 0.01f) {
