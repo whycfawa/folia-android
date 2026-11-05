@@ -77,7 +77,11 @@ export const TvControlDock = ({
                         <small>{song ? getSongArtistLabel(song) : t('tv.home.chooseSong')}</small>
                     </span>
                 </div>
-                <div className="tv-control-buttons">
+                <div
+                    className="tv-control-buttons"
+                    data-tv-focus-group="controls-actions"
+                    data-tv-focus-axis="horizontal"
+                >
                     <button
                         type="button"
                         data-tv-focusable="true"
@@ -113,6 +117,7 @@ export const TvControlDock = ({
                         data-tv-focusable="true"
                         data-tv-focus-key="controls-queue"
                         onClick={onOpenQueue}
+                        aria-label={t('tv.player.queue')}
                     >
                         <ListMusic size={22} />
                         <span>{t('tv.player.queue')}</span>
@@ -122,6 +127,7 @@ export const TvControlDock = ({
                         data-tv-focusable="true"
                         data-tv-focus-key="controls-effects"
                         onClick={player.toggleEffectsMode}
+                        aria-label={player.effectsMode === 'flow' ? t('tv.player.flow') : t('tv.player.calm')}
                     >
                         {player.effectsMode === 'flow' ? <Sparkles size={22} /> : <MoonStar size={22} />}
                         <span>{player.effectsMode === 'flow' ? t('tv.player.flow') : t('tv.player.calm')}</span>

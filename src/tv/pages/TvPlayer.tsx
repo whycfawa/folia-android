@@ -17,12 +17,14 @@ export const TvPlayer = ({
     constrained,
     onOpenQueue,
     onCloseControls,
+    inert,
 }: {
     player: TvPlayerModel;
     controlsOpen: boolean;
     constrained: boolean;
     onOpenQueue: () => void;
     onCloseControls: () => void;
+    inert: boolean;
 }) => {
     const { t } = useTranslation();
     const song = player.currentSong;
@@ -36,6 +38,7 @@ export const TvPlayer = ({
             id="tv-layer-player"
             data-tv-layer="player"
             className={`tv-page tv-player-page${controlsOpen ? ' has-controls' : ''}`}
+            inert={inert || undefined}
         >
             <TvBackdrop
                 coverUrl={coverUrl}

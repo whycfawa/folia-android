@@ -8,8 +8,12 @@ import { isTvDirection, resolveTvRemoteAction, type TvRemoteAction } from '../in
 
 const DIRECTION_REPEAT_INTERVAL_MS = 95;
 
+export type TvRemoteActionContext = {
+    repeat: boolean;
+};
+
 type TvRemoteOptions = {
-    onAction: (action: TvRemoteAction) => boolean;
+    onAction: (action: TvRemoteAction, context: TvRemoteActionContext) => boolean;
     onHandledKey?: (action: TvRemoteAction) => void;
 };
 
@@ -48,7 +52,7 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
                 lastDirectionRef.current = { action, at: now };
             }
 
-            const handled = actionRef.current(action);
+            const handled = actionRef.current(action, { repeat: event.repeat });
             if (!handled) return;
 
             event.preventDefault();

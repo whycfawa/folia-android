@@ -23,7 +23,7 @@ import { resolveTvBackRoute, resolveTvLayer, TV_HOME_ROUTE, type TvRoute } from 
 import { TvHome } from './pages/TvHome';
 import { TvPlayer } from './pages/TvPlayer';
 
-const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login'] as const;
+const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login', 'collection', 'queue'] as const;
 
 export const TvApp = () => {
     const player = useTvPlayer();
@@ -61,7 +61,11 @@ export const TvApp = () => {
     const defaultFocus = useMemo(() => ({
         home: 'home-hero',
         controls: 'controls-play',
-        queue: player.currentIndex >= 0 ? 'queue-current' : 'queue-0',
+        queue: player.currentIndex >= 0
+            ? 'queue-current'
+            : player.queue[0]
+                ? `queue-${player.queue[0].id}-0`
+                : 'queue-close',
         collection: 'collection-play-all',
         exit: 'exit-background',
         login: account.pendingSwitch
@@ -80,10 +84,13 @@ export const TvApp = () => {
         account.login,
         account.pendingSwitch,
         player.currentIndex,
+        player.queue[0]?.id,
     ]);
     const { moveFocus } = useTvFocus(
         activeLayer,
-        `${route.page}:${route.overlay}:${collection?.id ?? ''}:${player.currentIndex}`,
+        `${route.page}:${route.overlay}:${collection?.id ?? ''}:${player.currentIndex}:${
+            account.login?.session?.phase ?? ''
+        }:${account.pendingSwitch?.request.id ?? ''}`,
         defaultFocus,
         RESET_FOCUS_MEMORY_LAYERS,
     );
@@ -100,7 +107,10 @@ export const TvApp = () => {
         return true;
     }, [closeAccount, route]);
 
-    const handleAction = useCallback((action: TvRemoteAction): boolean => {
+    const handleAction = useCallback((
+        action: TvRemoteAction,
+        { repeat }: { repeat: boolean },
+    ): boolean => {
         if (action === 'back') return goBack();
 
         if (route.page === 'player' && !route.overlay) {
@@ -109,6 +119,7 @@ export const TvApp = () => {
                 return true;
             }
             if (action === 'left' || action === 'right') {
+                if (repeat) return true;
                 player.seekBy(action === 'left' ? -10 : 10);
                 return true;
             }
@@ -222,6 +233,7 @@ export const TvApp = () => {
                     onOpenPlayer={openPlayer}
                     onPlayTracks={playTracks}
                     onOpenCollection={openCollection}
+                    inert={route.overlay !== null}
                 />
             ) : (
                 <TvPlayer
@@ -230,6 +242,7 @@ export const TvApp = () => {
                     constrained={performanceProfile.tier === 'constrained'}
                     onOpenQueue={() => setRoute(current => ({ ...current, overlay: 'queue' }))}
                     onCloseControls={closeControls}
+                    inert={route.overlay !== null && route.overlay !== 'controls'}
                 />
             )}
             {route.overlay === 'queue' && (

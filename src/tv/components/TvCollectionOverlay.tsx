@@ -22,12 +22,17 @@ export const TvCollectionOverlay = ({
 
     return (
         <section id="tv-layer-collection" data-tv-layer="collection" className="tv-overlay tv-collection-overlay">
-            <div className="tv-overlay-panel">
+            <div
+                className="tv-overlay-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tv-collection-title"
+            >
                 <header className="tv-overlay-header">
                     <div>
                         <span className="tv-overlay-icon"><ListMusic size={22} /></span>
                         <span>
-                            <h2>{collection.name}</h2>
+                            <h2 id="tv-collection-title">{collection.name}</h2>
                             <small>{t('tv.collection.trackCount', { count: tracks.length })}</small>
                         </span>
                     </div>
@@ -75,7 +80,11 @@ export const TvCollectionOverlay = ({
                                 <Play size={20} fill="currentColor" />
                                 {t('tv.collection.playAll')}
                             </button>
-                            <div className="tv-overlay-list">
+                            <div
+                                className="tv-overlay-list"
+                                data-tv-focus-group="collection-list"
+                                data-tv-focus-axis="vertical"
+                            >
                                 {tracks.map((song, index) => {
                                     const coverUrl = resolveTvSongCoverUrl(song);
                                     return (
@@ -84,7 +93,7 @@ export const TvCollectionOverlay = ({
                                             type="button"
                                             className="tv-track-row"
                                             data-tv-focusable="true"
-                                            data-tv-focus-key={`collection-track-${index}`}
+                                            data-tv-focus-key={`collection-track-${song.id}-${index}`}
                                             onClick={() => onPlayTracks(tracks, index)}
                                         >
                                             <span className="tv-track-index">{index + 1}</span>

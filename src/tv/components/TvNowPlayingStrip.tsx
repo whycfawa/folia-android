@@ -22,7 +22,11 @@ export const TvNowPlayingStrip = ({
     const coverUrl = resolveTvSongCoverUrl(song);
 
     return (
-        <div className="tv-now-playing-strip">
+        <div
+            className="tv-now-playing-strip"
+            data-tv-focus-group="home-now-playing"
+            data-tv-focus-axis="horizontal"
+        >
             <button
                 type="button"
                 className="tv-now-playing-open"

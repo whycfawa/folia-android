@@ -38,7 +38,11 @@ export const TvExitOverlay = ({
                     <span className="tv-overlay-icon"><Power size={22} /></span>
                     <h2 id="tv-exit-title">{t('tv.exit.title')}</h2>
                     <p id="tv-exit-description">{message}</p>
-                    <div className="tv-exit-actions">
+                    <div
+                        className="tv-exit-actions"
+                        data-tv-focus-group="exit-actions"
+                        data-tv-focus-axis="vertical"
+                    >
                         {canBackground && (
                             <button
                                 type="button"

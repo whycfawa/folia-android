@@ -21,12 +21,17 @@ export const TvQueueOverlay = ({
 
     return (
         <section id="tv-layer-queue" data-tv-layer="queue" className="tv-overlay tv-queue-overlay">
-            <div className="tv-overlay-panel">
+            <div
+                className="tv-overlay-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tv-queue-title"
+            >
                 <header className="tv-overlay-header">
                     <div>
                         <span className="tv-overlay-icon"><ListMusic size={22} /></span>
                         <span>
-                            <h2>{t('tv.player.queue')}</h2>
+                            <h2 id="tv-queue-title">{t('tv.player.queue')}</h2>
                             <small>{t('tv.player.queueCount', { count: queue.length })}</small>
                         </span>
                     </div>
@@ -40,7 +45,11 @@ export const TvQueueOverlay = ({
                         <X size={22} />
                     </button>
                 </header>
-                <div className="tv-overlay-list">
+                <div
+                    className="tv-overlay-list"
+                    data-tv-focus-group="queue-list"
+                    data-tv-focus-axis="vertical"
+                >
                     {queue.length === 0 && (
                         <div className="tv-overlay-empty">{t('tv.player.queueEmpty')}</div>
                     )}
@@ -52,7 +61,9 @@ export const TvQueueOverlay = ({
                                 type="button"
                                 className={`tv-track-row${index === currentIndex ? ' is-current' : ''}`}
                                 data-tv-focusable="true"
-                                data-tv-focus-key={index === currentIndex ? 'queue-current' : `queue-${index}`}
+                                data-tv-focus-key={index === currentIndex
+                                    ? 'queue-current'
+                                    : `queue-${song.id}-${index}`}
                                 onClick={() => onPlay(index)}
                             >
                                 <span className="tv-track-index">

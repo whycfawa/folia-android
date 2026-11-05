@@ -16,6 +16,11 @@
     --tv-cyan: #89d8e8;
     --tv-focus-gap: #050509;
     --tv-radius: 24px;
+    --tv-safe-x: clamp(36px, 5vw, 96px);
+    --tv-safe-y: clamp(14px, 5vh, 54px);
+    --tv-now-playing-h: clamp(76px, 8.2vh, 92px);
+    --tv-card-w: clamp(200px, 11.5vw, 232px);
+    --tv-control-dock-h: clamp(168px, 20.7vh, 224px);
     font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
         "Noto Sans CJK SC", system-ui, sans-serif;
 }
@@ -64,6 +69,8 @@ img {
 
 [data-tv-focusable="true"] {
     position: relative;
+    scroll-margin-block: 10px;
+    scroll-margin-inline: 10px;
     outline: none;
     transition:
         transform 150ms ease,
@@ -73,12 +80,13 @@ img {
 }
 
 [data-tv-focusable="true"]:focus {
-    z-index: 2;
+    z-index: 3;
     border-color: var(--tv-accent);
     outline: 3px solid var(--tv-accent);
-    outline-offset: 4px;
-    box-shadow: 0 0 0 2px var(--tv-focus-gap);
-    transform: scale(1.04);
+    outline-offset: -5px;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+        0 0 24px rgba(167, 139, 250, 0.22);
 }
 
 .tv-app,
@@ -105,8 +113,11 @@ img {
 }
 
 .tv-home-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     background:
         linear-gradient(180deg, rgba(6, 6, 12, 0.2), rgba(6, 6, 12, 0.74) 82%),
         radial-gradient(ellipse at 20% -8%, rgba(139, 92, 246, 0.2), transparent 46%),
@@ -129,23 +140,27 @@ img {
 .tv-header {
     position: relative;
     z-index: 4;
-    min-height: 112px;
-    padding: 28px 72px 18px;
+    grid-row: 1;
+    min-height: clamp(84px, 10.4vh, 112px);
+    padding:
+        var(--tv-safe-y)
+        var(--tv-safe-x)
+        clamp(12px, 1.7vh, 18px);
     display: flex;
     align-items: center;
-    gap: 34px;
+    gap: clamp(20px, 1.8vw, 34px);
 }
 
 .tv-brand {
     display: flex;
     align-items: center;
     gap: 14px;
-    min-width: 245px;
+    min-width: clamp(216px, 12.8vw, 245px);
 }
 
 .tv-brand-mark {
-    width: 46px;
-    height: 46px;
+    width: clamp(42px, 2.4vw, 48px);
+    height: clamp(42px, 2.4vw, 48px);
     display: grid;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -154,7 +169,7 @@ img {
         linear-gradient(145deg, rgba(167, 139, 250, 0.48), rgba(139, 92, 246, 0.08)),
         var(--tv-bg-raised);
     color: #fff;
-    font-size: 24px;
+    font-size: clamp(22px, 1.25vw, 25px);
     font-weight: 700;
     box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.12);
 }
@@ -166,14 +181,14 @@ img {
 }
 
 .tv-brand strong {
-    font-size: 20px;
+    font-size: clamp(20px, 1.1vw, 22px);
     line-height: 1.1;
     letter-spacing: 0.02em;
 }
 
 .tv-brand small {
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(12px, 0.67vw, 14px);
     letter-spacing: 0.12em;
     text-transform: uppercase;
 }
@@ -181,15 +196,15 @@ img {
 .tv-header-hint {
     flex: 1;
     color: var(--tv-text-faint);
-    font-size: 14px;
+    font-size: clamp(14px, 0.82vw, 16px);
     letter-spacing: 0.04em;
     text-align: center;
 }
 
 .tv-account-chip,
 .tv-account-login {
-    min-width: 210px;
-    height: 54px;
+    min-width: clamp(196px, 10.9vw, 220px);
+    height: clamp(52px, 5vh, 56px);
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -202,15 +217,15 @@ img {
 }
 
 .tv-account-login:focus {
-    transform: scale(1.03);
+    background: rgba(167, 139, 250, 0.12);
 }
 
 .tv-account-chip span,
 .tv-account-login span {
-    max-width: 130px;
+    max-width: clamp(116px, 7vw, 140px);
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 15px;
+    font-size: clamp(15px, 0.84vw, 17px);
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -219,31 +234,44 @@ img {
 .tv-account-chip small,
 .tv-account-login small {
     color: var(--tv-text-faint);
-    font-size: 11px;
+    font-size: clamp(11px, 0.63vw, 13px);
 }
 
 .tv-home-content {
     position: relative;
     z-index: 2;
+    grid-row: 3;
     width: 100%;
-    padding: 12px 72px 240px;
+    min-width: 0;
+    min-height: 0;
+    padding:
+        clamp(8px, 1.2vh, 14px)
+        var(--tv-safe-x)
+        var(--tv-safe-y);
     display: flex;
     flex-direction: column;
-    gap: 38px;
+    gap: clamp(26px, 3.5vh, 38px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 12px;
 }
 
 .tv-hero {
     position: relative;
     width: 100%;
-    min-height: 312px;
+    min-width: 0;
+    min-height: clamp(250px, 28.9vh, 312px);
     overflow: hidden;
     display: flex;
     align-items: stretch;
     justify-content: space-between;
-    gap: 36px;
-    padding: 42px 50px;
+    gap: clamp(24px, 1.9vw, 36px);
+    padding:
+        clamp(28px, 3.9vh, 42px)
+        clamp(30px, 2.6vw, 50px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 32px;
+    border-radius: clamp(24px, 1.7vw, 32px);
     background:
         linear-gradient(112deg, rgba(36, 28, 58, 0.94), rgba(13, 16, 27, 0.88) 62%),
         var(--tv-bg-raised);
@@ -262,10 +290,6 @@ img {
     pointer-events: none;
 }
 
-.tv-hero:focus {
-    transform: scale(1.012);
-}
-
 .tv-hero-copy {
     position: relative;
     z-index: 2;
@@ -281,31 +305,40 @@ img {
     align-items: center;
     gap: 10px;
     color: var(--tv-accent);
-    font-size: 15px;
+    font-size: clamp(15px, 0.84vw, 17px);
     font-weight: 650;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
 .tv-hero-title {
-    max-width: 1010px;
-    margin-top: 18px;
+    max-width: 100%;
+    margin-top: clamp(12px, 1.6vh, 18px);
     overflow: hidden;
     color: #fff;
-    font-size: clamp(42px, 3.2vw, 62px);
+    font-size: clamp(38px, min(3.2vw, 5.7vh), 62px);
     font-weight: 650;
-    line-height: 1.14;
+    line-height: 1.28;
     letter-spacing: -0.035em;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .tv-hero-meta {
+    min-width: 0;
     display: flex;
+    flex-wrap: nowrap;
     gap: 14px;
-    margin-top: 16px;
+    margin-top: clamp(10px, 1.5vh, 16px);
     color: var(--tv-text-muted);
-    font-size: 18px;
+    font-size: clamp(17px, 0.98vw, 20px);
+}
+
+.tv-hero-meta span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .tv-hero-meta span + span::before {
@@ -319,19 +352,19 @@ img {
     display: flex;
     align-items: center;
     gap: 9px;
-    margin-top: 28px;
-    padding: 11px 17px;
+    margin-top: clamp(18px, 2.6vh, 28px);
+    padding: clamp(10px, 1.2vh, 12px) clamp(16px, 1vw, 19px);
     border: 1px solid rgba(167, 139, 250, 0.32);
     border-radius: 999px;
     background: rgba(167, 139, 250, 0.12);
     color: #ded4ff;
-    font-size: 15px;
+    font-size: clamp(15px, 0.84vw, 17px);
     font-weight: 600;
 }
 
 .tv-hero-art {
     position: relative;
-    flex: 0 0 330px;
+    flex: 0 0 clamp(238px, 17.2vw, 330px);
     display: grid;
     place-items: center;
     align-self: stretch;
@@ -341,9 +374,9 @@ img {
 .tv-hero-art-fallback {
     position: relative;
     z-index: 2;
-    width: 236px;
-    height: 236px;
-    border-radius: 28px;
+    width: clamp(188px, min(12.3vw, 21.8vh), 236px);
+    height: clamp(188px, min(12.3vw, 21.8vh), 236px);
+    border-radius: clamp(22px, 1.5vw, 28px);
     object-fit: cover;
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
@@ -358,8 +391,8 @@ img {
 
 .tv-hero-orbit {
     position: absolute;
-    width: 300px;
-    height: 300px;
+    width: clamp(232px, min(15.6vw, 27.8vh), 300px);
+    height: clamp(232px, min(15.6vw, 27.8vh), 300px);
     border: 1px solid rgba(167, 139, 250, 0.18);
     border-radius: 50%;
     animation: tv-orbit 24s linear infinite;
@@ -394,38 +427,38 @@ img {
     display: flex;
     align-items: baseline;
     gap: 18px;
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px, 1.2vh, 13px);
     padding: 0 5px;
 }
 
 .tv-row-heading h2 {
     margin: 0;
     color: var(--tv-text);
-    font-size: 24px;
+    font-size: clamp(24px, 1.42vw, 30px);
     font-weight: 620;
     letter-spacing: -0.015em;
 }
 
 .tv-row-heading span {
     color: var(--tv-text-faint);
-    font-size: 14px;
+    font-size: clamp(14px, 0.82vw, 17px);
 }
 
 .tv-row-scroll {
-    min-height: 256px;
+    min-height: calc(var(--tv-card-w) + 62px);
     display: flex;
-    gap: 22px;
+    gap: clamp(18px, 1.25vw, 24px);
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 10px 8px 16px;
-    margin: -8px;
+    padding: 12px 14px 18px;
+    margin: -12px -6px -18px;
     scroll-behavior: auto;
 }
 
 .tv-media-card,
 .tv-collection-card {
-    flex: 0 0 208px;
-    width: 208px;
+    flex: 0 0 var(--tv-card-w);
+    width: var(--tv-card-w);
     padding: 10px;
     border: 1px solid transparent;
     border-radius: 22px;
@@ -441,8 +474,9 @@ img {
 .tv-media-cover,
 .tv-collection-cover {
     position: relative;
-    width: 188px;
-    height: 188px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
     display: grid;
     place-items: center;
     overflow: hidden;
@@ -468,13 +502,13 @@ img {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 12px 4px 3px;
+    padding: 13px 4px 4px;
 }
 
 .tv-media-copy strong {
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 15px;
+    font-size: clamp(17px, 1vw, 19px);
     font-weight: 600;
     line-height: 1.35;
     text-overflow: ellipsis;
@@ -484,7 +518,7 @@ img {
 .tv-media-copy small {
     overflow: hidden;
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(14px, 0.78vw, 16px);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -529,7 +563,7 @@ img {
 
 .tv-row-empty {
     width: 100%;
-    min-height: 176px;
+    min-height: calc(var(--tv-card-w) * 0.72);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -537,23 +571,31 @@ img {
     border-radius: 22px;
     background: rgba(18, 18, 29, 0.42);
     color: var(--tv-text-faint);
-    font-size: 16px;
+    font-size: clamp(17px, 0.95vw, 19px);
 }
 
 .tv-now-playing-strip {
-    position: fixed;
-    z-index: 30;
-    left: 72px;
-    right: 72px;
-    bottom: 30px;
-    height: 88px;
+    position: relative;
+    z-index: 5;
+    height: var(--tv-now-playing-h);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px 10px 10px;
+    gap: clamp(10px, 0.8vw, 14px);
+    margin:
+        0
+        var(--tv-safe-x)
+        clamp(10px, 1.5vh, 16px);
+    padding:
+        clamp(7px, 0.9vh, 10px)
+        clamp(10px, 0.9vw, 14px)
+        clamp(7px, 0.9vh, 10px)
+        clamp(8px, 0.8vw, 11px);
     border: 1px solid rgba(255, 255, 255, 0.13);
-    border-radius: 24px;
-    background: rgba(14, 14, 23, 0.95);
+    border-radius: clamp(18px, 1.25vw, 24px);
+    background:
+        linear-gradient(90deg, rgba(167, 139, 250, 0.08), transparent 38%),
+        rgba(14, 14, 23, 0.95);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
 }
 
 .tv-now-playing-open {
@@ -562,17 +604,17 @@ img {
     height: 100%;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: clamp(12px, 0.9vw, 17px);
     padding: 0 12px 0 4px;
     border: 1px solid transparent;
     border-radius: 18px;
 }
 
 .tv-now-playing-open img {
-    width: 64px;
-    height: 64px;
-    flex: 0 0 64px;
-    border-radius: 13px;
+    width: calc(var(--tv-now-playing-h) - 20px);
+    height: calc(var(--tv-now-playing-h) - 20px);
+    flex: 0 0 calc(var(--tv-now-playing-h) - 20px);
+    border-radius: clamp(11px, 0.7vw, 14px);
     object-fit: cover;
 }
 
@@ -585,7 +627,7 @@ img {
 
 .tv-now-playing-open small {
     color: var(--tv-accent);
-    font-size: 10px;
+    font-size: clamp(11px, 0.63vw, 13px);
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -594,7 +636,7 @@ img {
 .tv-now-playing-open strong {
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 17px;
+    font-size: clamp(18px, 1.05vw, 21px);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -602,16 +644,16 @@ img {
 .tv-now-playing-open em {
     overflow: hidden;
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(14px, 0.78vw, 16px);
     font-style: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .tv-now-playing-toggle {
-    width: 62px;
-    height: 62px;
-    flex: 0 0 62px;
+    width: calc(var(--tv-now-playing-h) - 22px);
+    height: calc(var(--tv-now-playing-h) - 22px);
+    flex: 0 0 calc(var(--tv-now-playing-h) - 22px);
     display: grid;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -619,16 +661,29 @@ img {
     background: rgba(255, 255, 255, 0.06);
 }
 
-.tv-now-playing-open:focus,
+.tv-now-playing-open:focus {
+    background: rgba(167, 139, 250, 0.1);
+}
+
 .tv-now-playing-toggle:focus {
-    transform: scale(1.025);
+    background: rgba(167, 139, 250, 0.2);
 }
 
 /* Player */
 
 .tv-player-page {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     overflow: hidden;
+    padding:
+        var(--tv-safe-y)
+        var(--tv-safe-x)
+        var(--tv-safe-y);
     background: #07070c;
+}
+
+.tv-player-page > .tv-backdrop {
+    z-index: 0;
 }
 
 .tv-backdrop {
@@ -693,37 +748,36 @@ img {
 }
 
 .tv-player-header {
-    position: absolute;
+    position: relative;
     z-index: 8;
-    top: 42px;
-    left: 72px;
-    right: 72px;
+    min-width: 0;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 28px;
+    gap: clamp(18px, 1.5vw, 28px);
 }
 
 .tv-player-song {
     min-width: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: clamp(4px, 0.7vh, 7px);
 }
 
 .tv-player-brand {
     color: var(--tv-accent);
-    font-size: 11px;
+    font-size: clamp(12px, 0.68vw, 14px);
     font-weight: 700;
     letter-spacing: 0.17em;
     text-transform: uppercase;
 }
 
 .tv-player-song strong {
-    max-width: 64vw;
+    max-width: 100%;
     overflow: hidden;
     color: #fff;
-    font-size: clamp(24px, 1.7vw, 32px);
+    font-size: clamp(25px, min(1.7vw, 3vh), 32px);
     font-weight: 600;
     line-height: 1.18;
     letter-spacing: -0.025em;
@@ -732,15 +786,18 @@ img {
 }
 
 .tv-player-song small {
-    max-width: 62vw;
+    max-width: 100%;
     overflow: hidden;
     color: var(--tv-text-muted);
-    font-size: 15px;
+    font-size: clamp(15px, 0.84vw, 18px);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .tv-player-mode {
+    flex: 0 1 auto;
+    max-width: min(42vw, 360px);
+    overflow: hidden;
     min-height: 46px;
     display: flex;
     align-items: center;
@@ -750,14 +807,26 @@ img {
     border-radius: 999px;
     background: rgba(12, 12, 21, 0.76);
     color: var(--tv-text-muted);
-    font-size: 13px;
+    font-size: clamp(13px, 0.73vw, 15px);
+}
+
+.tv-player-mode span,
+.tv-player-mode em {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tv-player-mode span {
+    flex: 0 0 auto;
 }
 
 .tv-player-mode em {
     padding-left: 12px;
     border-left: 1px solid var(--tv-line);
     color: var(--tv-accent);
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
     font-style: normal;
 }
 
@@ -766,25 +835,30 @@ img {
 }
 
 .tv-lyric-stage {
-    position: absolute;
-    inset: 0;
+    position: relative;
     z-index: 4;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 150px 10vw 150px;
+    padding:
+        clamp(14px, 2.6vh, 34px)
+        clamp(38px, 5vw, 96px)
+        clamp(16px, 2.8vh, 36px);
     text-align: center;
-    transition: padding 220ms ease;
+    transition: padding 180ms ease;
 }
 
 .tv-player-page.has-controls .tv-lyric-stage {
-    padding-bottom: 320px;
+    padding-bottom: calc(
+        var(--tv-control-dock-h) + var(--tv-safe-y) + clamp(10px, 2vh, 24px)
+    );
 }
 
 .tv-lyric-focus {
     width: 100%;
-    min-height: 220px;
+    min-height: clamp(140px, 22vh, 220px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -802,7 +876,7 @@ img {
     max-width: 100%;
     display: inline;
     color: rgba(255, 255, 255, 0.16);
-    font-size: clamp(50px, 4.7vw, 90px);
+    font-size: clamp(40px, min(4.7vw, 7.6vh), 90px);
     font-weight: 660;
     line-height: 1.28;
     letter-spacing: -0.035em;
@@ -829,21 +903,21 @@ img {
 
 .tv-lyric-translation {
     max-width: 78vw;
-    margin: 24px 0 0;
+    margin: clamp(14px, 2.2vh, 24px) 0 0;
     color: rgba(234, 226, 255, 0.58);
-    font-size: clamp(18px, 1.35vw, 25px);
+    font-size: clamp(17px, min(1.35vw, 2.4vh), 25px);
     font-weight: 450;
     line-height: 1.45;
     letter-spacing: 0;
 }
 
 .tv-lyric-upcoming {
-    min-height: 34px;
+    min-height: clamp(26px, 3.1vh, 34px);
     max-width: 70vw;
-    margin-top: 64px;
+    margin-top: clamp(30px, 5.9vh, 64px);
     overflow: hidden;
     color: rgba(244, 240, 255, 0.38);
-    font-size: clamp(17px, 1.15vw, 22px);
+    font-size: clamp(16px, min(1.15vw, 2.1vh), 22px);
     line-height: 1.45;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -858,8 +932,8 @@ img {
 }
 
 .tv-lyric-empty-mark {
-    width: 76px;
-    height: 76px;
+    width: clamp(56px, 7vh, 76px);
+    height: clamp(56px, 7vh, 76px);
     display: grid;
     place-items: center;
     margin-bottom: 4px;
@@ -867,18 +941,18 @@ img {
     border-radius: 50%;
     background: rgba(167, 139, 250, 0.08);
     color: var(--tv-accent);
-    font-size: 34px;
+    font-size: clamp(28px, 3.2vh, 34px);
 }
 
 .tv-lyric-empty strong {
     color: var(--tv-text);
-    font-size: 32px;
+    font-size: clamp(26px, 3.2vh, 32px);
     font-weight: 600;
 }
 
 .tv-lyric-empty > span:last-child {
     color: var(--tv-text-faint);
-    font-size: 16px;
+    font-size: clamp(15px, 1.55vh, 18px);
 }
 
 .tv-lyric-stage.is-chorus .tv-lyric-tokens {
@@ -900,16 +974,14 @@ img {
 }
 
 .tv-player-footer {
-    position: absolute;
+    position: relative;
     z-index: 8;
-    left: 76px;
-    right: 76px;
-    bottom: 28px;
+    min-width: 0;
     display: flex;
     justify-content: space-between;
     gap: 24px;
     color: rgba(238, 234, 255, 0.3);
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
     letter-spacing: 0.04em;
     transition: opacity 160ms ease;
 }
@@ -923,11 +995,14 @@ img {
 .tv-control-dock {
     position: absolute;
     z-index: 40;
-    left: 56px;
-    right: 56px;
-    bottom: 24px;
-    min-height: 224px;
-    padding: 20px 30px 18px;
+    left: var(--tv-safe-x);
+    right: var(--tv-safe-x);
+    bottom: var(--tv-safe-y);
+    min-height: var(--tv-control-dock-h);
+    padding:
+        clamp(14px, 1.9vh, 20px)
+        clamp(20px, 1.6vw, 30px)
+        clamp(12px, 1.7vh, 18px);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 30px;
     background: rgba(13, 13, 22, 0.96);
@@ -938,16 +1013,16 @@ img {
 .tv-control-progress {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: clamp(12px, 0.9vw, 16px);
     color: var(--tv-text-faint);
     font-variant-numeric: tabular-nums;
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
 }
 
 .tv-control-track {
     position: relative;
     flex: 1;
-    height: 4px;
+    height: 6px;
     overflow: hidden;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.1);
@@ -963,24 +1038,25 @@ img {
 }
 
 .tv-control-main {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: 26px;
-    padding-top: 18px;
+    gap: clamp(14px, 1.4vw, 26px);
+    padding-top: clamp(12px, 1.7vh, 18px);
 }
 
 .tv-control-song {
+    width: 100%;
     min-width: 0;
-    flex: 0 0 350px;
     display: flex;
     align-items: center;
     gap: 14px;
 }
 
 .tv-control-song img {
-    width: 66px;
-    height: 66px;
-    flex: 0 0 66px;
+    width: clamp(54px, 6.1vh, 66px);
+    height: clamp(54px, 6.1vh, 66px);
+    flex: 0 0 clamp(54px, 6.1vh, 66px);
     border-radius: 14px;
     object-fit: cover;
 }
@@ -995,7 +1071,7 @@ img {
 .tv-control-song strong {
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 16px;
+    font-size: clamp(16px, 0.9vw, 18px);
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1004,39 +1080,38 @@ img {
 .tv-control-song small {
     overflow: hidden;
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(13px, 0.73vw, 15px);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .tv-control-buttons {
     min-width: 0;
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: clamp(12px, 0.83vw, 16px);
 }
 
 .tv-control-buttons button {
-    height: 54px;
-    min-width: 54px;
+    height: clamp(50px, 5.6vh, 56px);
+    min-width: clamp(50px, 5.6vh, 56px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 0 15px;
+    padding: 0 clamp(14px, 0.95vw, 18px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 17px;
     background: rgba(255, 255, 255, 0.045);
     color: var(--tv-text-muted);
-    font-size: 13px;
+    font-size: clamp(14px, 0.78vw, 16px);
     font-weight: 550;
 }
 
 .tv-control-buttons button.is-primary {
-    min-width: 72px;
-    height: 72px;
+    min-width: clamp(64px, 7.4vh, 72px);
+    height: clamp(64px, 7.4vh, 72px);
     border-radius: 50%;
     border-color: rgba(167, 139, 250, 0.42);
     background: var(--tv-accent-strong);
@@ -1044,7 +1119,6 @@ img {
 }
 
 .tv-control-buttons button:focus {
-    transform: scale(1.08);
     color: #fff;
     background: rgba(167, 139, 250, 0.2);
 }
@@ -1054,10 +1128,11 @@ img {
 }
 
 .tv-control-hint {
-    margin-top: 9px;
+    justify-self: end;
+    margin-top: 7px;
     color: rgba(238, 234, 255, 0.26);
-    font-size: 11px;
-    text-align: center;
+    font-size: clamp(11px, 0.63vw, 13px);
+    text-align: right;
 }
 
 /* Overlays */
@@ -1069,30 +1144,34 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 52px 80px;
+    padding:
+        var(--tv-safe-y)
+        var(--tv-safe-x);
     background: rgba(3, 3, 8, 0.78);
     animation: tv-overlay-in 180ms ease-out;
 }
 
 .tv-overlay-panel {
-    width: min(1080px, 90vw);
-    max-height: min(850px, 84vh);
+    width: min(1080px, 100%);
+    max-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 30px;
+    border-radius: clamp(24px, 1.7vw, 30px);
     background: #101019;
     box-shadow: 0 30px 70px rgba(0, 0, 0, 0.46);
 }
 
 .tv-overlay-header {
-    min-height: 92px;
+    min-height: clamp(76px, 8.5vh, 92px);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    padding: 20px 26px;
+    padding:
+        clamp(14px, 1.9vh, 20px)
+        clamp(18px, 1.45vw, 26px);
     border-bottom: 1px solid var(--tv-line);
     background: rgba(255, 255, 255, 0.018);
 }
@@ -1127,7 +1206,7 @@ img {
     margin: 0;
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 22px;
+    font-size: clamp(22px, 1.3vw, 27px);
     font-weight: 620;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1135,13 +1214,13 @@ img {
 
 .tv-overlay-header small {
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(13px, 0.73vw, 15px);
 }
 
 .tv-overlay-header > button {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
+    width: clamp(46px, 5vh, 52px);
+    height: clamp(46px, 5vh, 52px);
+    flex: 0 0 clamp(46px, 5vh, 52px);
     display: grid;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1153,21 +1232,23 @@ img {
 .tv-overlay-list {
     min-height: 0;
     overflow-y: auto;
-    padding: 14px 18px 22px;
+    padding: clamp(12px, 1.7vh, 18px) clamp(16px, 1.2vw, 22px) clamp(18px, 2.3vh, 26px);
+    overscroll-behavior: contain;
+    scroll-padding-block: 10px;
 }
 
 .tv-track-row {
     width: 100%;
-    min-height: 68px;
+    min-height: clamp(70px, 7.4vh, 80px);
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 8px 14px;
+    gap: clamp(12px, 0.9vw, 16px);
+    padding: clamp(8px, 1vh, 11px) clamp(12px, 0.95vw, 18px);
     border: 1px solid transparent;
     border-radius: 15px;
     text-align: left;
     content-visibility: auto;
-    contain-intrinsic-size: 68px;
+    contain-intrinsic-size: 76px;
 }
 
 .tv-track-row.is-current {
@@ -1176,19 +1257,19 @@ img {
 
 .tv-track-row img,
 .tv-track-cover-fallback {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
+    width: clamp(48px, 5.2vh, 56px);
+    height: clamp(48px, 5.2vh, 56px);
+    flex: 0 0 clamp(48px, 5.2vh, 56px);
     border-radius: 10px;
     object-fit: cover;
     background: var(--tv-bg-soft);
 }
 
 .tv-track-index {
-    width: 28px;
-    flex: 0 0 28px;
+    width: clamp(28px, 1.6vw, 34px);
+    flex: 0 0 clamp(28px, 1.6vw, 34px);
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
     text-align: center;
 }
 
@@ -1207,7 +1288,7 @@ img {
 .tv-track-copy strong {
     overflow: hidden;
     color: var(--tv-text);
-    font-size: 15px;
+    font-size: clamp(17px, 0.95vw, 19px);
     font-weight: 560;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1216,31 +1297,30 @@ img {
 .tv-track-copy small {
     overflow: hidden;
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(13px, 0.73vw, 15px);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .tv-track-row em {
     color: var(--tv-accent);
-    font-size: 11px;
+    font-size: clamp(12px, 0.68vw, 14px);
     font-style: normal;
 }
 
 .tv-track-row:focus {
     background: rgba(167, 139, 250, 0.16);
-    transform: scale(1.006);
 }
 
 .tv-overlay-empty {
-    min-height: 220px;
+    min-height: clamp(150px, 20vh, 220px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
     color: var(--tv-text-faint);
-    font-size: 15px;
+    font-size: clamp(16px, 0.9vw, 18px);
 }
 
 .tv-overlay-empty button {
@@ -1263,19 +1343,20 @@ img {
 }
 
 .tv-play-all {
-    width: calc(100% - 36px);
-    min-height: 56px;
-    flex: 0 0 56px;
+    width: auto;
+    align-self: stretch;
+    min-height: clamp(54px, 6vh, 60px);
+    flex: 0 0 clamp(54px, 6vh, 60px);
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 18px 18px 2px;
+    margin: clamp(14px, 1.9vh, 18px) clamp(16px, 1.2vw, 20px) 2px;
     padding: 0 20px;
     border: 1px solid rgba(167, 139, 250, 0.3);
     border-radius: 16px;
     background: rgba(167, 139, 250, 0.11);
     color: #e3d9ff;
-    font-size: 15px;
+    font-size: clamp(16px, 0.9vw, 18px);
     font-weight: 600;
 }
 
@@ -1290,14 +1371,17 @@ img {
 }
 
 .tv-exit-panel {
-    width: min(650px, 82vw);
+    width: min(650px, 100%);
 }
 
 .tv-exit-body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 34px 38px 30px;
+    padding:
+        clamp(24px, 3.2vh, 34px)
+        clamp(26px, 2vw, 38px)
+        clamp(20px, 2.8vh, 30px);
 }
 
 .tv-exit-body > .tv-overlay-icon {
@@ -1307,7 +1391,7 @@ img {
 .tv-exit-body h2 {
     margin: 0;
     color: var(--tv-text);
-    font-size: 30px;
+    font-size: clamp(27px, 2.8vh, 32px);
     font-weight: 650;
     letter-spacing: -0.02em;
 }
@@ -1315,7 +1399,7 @@ img {
 .tv-exit-body > p {
     margin: 12px 0 26px;
     color: var(--tv-text-muted);
-    font-size: 15px;
+    font-size: clamp(16px, 1.55vh, 18px);
     line-height: 1.65;
 }
 
@@ -1328,7 +1412,7 @@ img {
 
 .tv-exit-option {
     width: 100%;
-    min-height: 74px;
+    min-height: clamp(68px, 7.8vh, 80px);
     display: flex;
     align-items: center;
     gap: 16px;
@@ -1354,13 +1438,13 @@ img {
 
 .tv-exit-option strong {
     color: var(--tv-text);
-    font-size: 16px;
+    font-size: clamp(17px, 0.95vw, 19px);
     font-weight: 620;
 }
 
 .tv-exit-option small {
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(13px, 0.73vw, 15px);
 }
 
 .tv-exit-option.is-background {
@@ -1395,7 +1479,7 @@ img {
     align-self: center;
     margin-top: 18px;
     color: var(--tv-text-faint);
-    font-size: 11px;
+    font-size: clamp(12px, 0.68vw, 14px);
 }
 
 /* Login */
@@ -1405,21 +1489,26 @@ img {
 }
 
 .tv-login-panel {
-    width: min(1080px, 92vw);
+    width: min(1080px, 100%);
+    min-height: min(clamp(360px, 55vh, 620px), 100%);
 }
 
 .tv-account-layout {
-    min-height: 500px;
+    min-height: 0;
+    flex: 1;
     display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: clamp(260px, 15.7vw, 310px) minmax(0, 1fr);
 }
 
 .tv-account-providers {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 22px 16px 18px;
+    gap: clamp(8px, 1.2vh, 12px);
+    padding:
+        clamp(14px, 2vh, 22px)
+        clamp(12px, 1vw, 16px)
+        clamp(12px, 1.8vh, 18px);
     border-right: 1px solid var(--tv-line);
     background: rgba(255, 255, 255, 0.016);
 }
@@ -1427,7 +1516,7 @@ img {
 .tv-account-providers-title {
     padding: 0 10px 4px;
     color: var(--tv-text-faint);
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1439,16 +1528,18 @@ img {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 6px;
+    margin: -6px;
 }
 
 .tv-provider-option {
     width: 100%;
-    min-height: 70px;
+    min-height: clamp(68px, 7.6vh, 78px);
     display: grid;
     grid-template-columns: 40px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 11px;
-    padding: 10px 12px;
+    gap: clamp(9px, 0.7vw, 12px);
+    padding: clamp(9px, 1.2vh, 12px);
     border: 1px solid transparent;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.035);
@@ -1470,15 +1561,15 @@ img {
 }
 
 .tv-provider-mark {
-    width: 40px;
-    height: 40px;
+    width: clamp(38px, 4.6vh, 44px);
+    height: clamp(38px, 4.6vh, 44px);
     display: grid;
     place-items: center;
     border: 1px solid var(--tv-line);
     border-radius: 13px;
     background: rgba(5, 5, 10, 0.34);
     color: var(--tv-accent);
-    font-size: 17px;
+    font-size: clamp(17px, 0.95vw, 19px);
     font-weight: 700;
 }
 
@@ -1498,14 +1589,14 @@ img {
 
 .tv-provider-copy strong {
     color: var(--tv-text);
-    font-size: 15px;
+    font-size: clamp(16px, 0.9vw, 18px);
     font-weight: 650;
 }
 
 .tv-provider-copy small,
 .tv-provider-action {
     color: var(--tv-text-faint);
-    font-size: 11px;
+    font-size: clamp(12px, 0.68vw, 14px);
 }
 
 .tv-provider-action {
@@ -1519,14 +1610,15 @@ img {
     margin: auto 0 0;
     padding: 0 10px;
     color: var(--tv-text-faint);
-    font-size: 11px;
+    font-size: clamp(11px, 0.63vw, 13px);
     line-height: 1.5;
 }
 
 .tv-account-detail {
     min-width: 0;
-    min-height: 500px;
+    min-height: 0;
     display: flex;
+    overflow: hidden;
 }
 
 .tv-account-detail > .tv-login-body,
@@ -1541,14 +1633,16 @@ img {
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    gap: 14px;
-    padding: 48px 56px;
+    gap: clamp(10px, 1.5vh, 14px);
+    padding:
+        clamp(24px, 4.4vh, 48px)
+        clamp(28px, 3vw, 56px);
 }
 
 .tv-account-intro > strong,
 .tv-account-pending > strong {
     color: var(--tv-text);
-    font-size: 24px;
+    font-size: clamp(22px, 1.45vw, 27px);
     font-weight: 650;
 }
 
@@ -1557,13 +1651,13 @@ img {
     max-width: 520px;
     margin: 0;
     color: var(--tv-text-faint);
-    font-size: 14px;
+    font-size: clamp(14px, 0.82vw, 16px);
     line-height: 1.6;
 }
 
 .tv-account-intro > button,
 .tv-account-pending-actions button {
-    min-height: 50px;
+    min-height: clamp(46px, 5.4vh, 54px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1573,7 +1667,7 @@ img {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--tv-text-muted);
-    font-size: 15px;
+    font-size: clamp(15px, 0.84vw, 17px);
     font-weight: 600;
 }
 
@@ -1591,22 +1685,25 @@ img {
 
 .tv-account-error {
     color: #fda4af;
-    font-size: 12px;
+    font-size: clamp(12px, 0.68vw, 14px);
     line-height: 1.5;
 }
 
 .tv-login-body {
-    min-height: 410px;
+    min-height: 0;
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 52px;
-    padding: 40px 54px;
+    gap: clamp(24px, 2.7vw, 52px);
+    padding:
+        clamp(18px, 3.7vh, 40px)
+        clamp(24px, 2.8vw, 54px);
 }
 
 .tv-login-qr {
-    width: 280px;
-    height: 280px;
-    flex: 0 0 280px;
+    width: clamp(190px, 26vh, 280px);
+    height: clamp(190px, 26vh, 280px);
+    flex: 0 0 clamp(190px, 26vh, 280px);
     display: grid;
     place-items: center;
     padding: 14px;
@@ -1637,7 +1734,7 @@ img {
 .tv-login-qr-failure {
     padding: 22px;
     color: #b42342;
-    font-size: 14px;
+    font-size: clamp(13px, 0.73vw, 15px);
 }
 
 .tv-login-status {
@@ -1650,16 +1747,16 @@ img {
 
 .tv-login-status > strong {
     color: var(--tv-text);
-    font-size: 20px;
+    font-size: clamp(19px, 1.1vw, 22px);
     font-weight: 600;
     line-height: 1.45;
 }
 
 .tv-login-status > p {
-    min-height: 48px;
+    min-height: clamp(40px, 5vh, 50px);
     margin: 0;
     color: var(--tv-text-faint);
-    font-size: 13px;
+    font-size: clamp(13px, 0.73vw, 15px);
     line-height: 1.55;
     word-break: break-word;
 }
@@ -1672,7 +1769,7 @@ img {
 
 .tv-login-actions button,
 .tv-login-method-grid button {
-    min-height: 48px;
+    min-height: clamp(46px, 5.3vh, 52px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1682,27 +1779,30 @@ img {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.045);
     color: var(--tv-text-muted);
-    font-size: 14px;
+    font-size: clamp(14px, 0.82vw, 16px);
 }
 
 .tv-login-methods {
-    min-height: 410px;
+    min-height: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 14px;
-    padding: 48px 56px;
+    gap: clamp(10px, 1.5vh, 14px);
+    padding:
+        clamp(24px, 4.4vh, 48px)
+        clamp(28px, 3vw, 56px);
 }
 
 .tv-login-methods > strong {
-    font-size: 23px;
+    font-size: clamp(21px, 1.4vw, 26px);
     font-weight: 600;
 }
 
 .tv-login-methods > p {
     margin: 0 0 8px;
     color: var(--tv-text-faint);
-    font-size: 14px;
+    font-size: clamp(14px, 0.82vw, 16px);
     line-height: 1.55;
 }
 
@@ -1713,8 +1813,8 @@ img {
 }
 
 .tv-login-method-grid button {
-    min-height: 70px;
-    font-size: 16px;
+    min-height: clamp(56px, 7.6vh, 70px);
+    font-size: clamp(16px, 0.9vw, 18px);
     font-weight: 600;
 }
 
@@ -1793,71 +1893,868 @@ img {
     }
 }
 
-@media (max-width: 1360px) {
+@media (max-width: 1180px) {
+    .tv-control-hint {
+        display: none;
+    }
+
+    .tv-account-providers-hint {
+        display: none;
+    }
+}
+
+@media (max-width: 760px) {
+    :root {
+        --tv-card-w: clamp(156px, 25vw, 190px);
+    }
+
     .tv-header {
-        padding-right: 48px;
-        padding-left: 48px;
+        gap: 12px;
+    }
+
+    .tv-header-hint {
+        display: none;
     }
 
     .tv-home-content {
-        padding-right: 48px;
-        padding-left: 48px;
+        gap: 16px;
     }
 
     .tv-hero {
-        min-height: 280px;
-        padding: 34px 38px;
+        min-height: 190px;
+        gap: 16px;
+        padding: 18px 20px;
+        border-radius: 22px;
+    }
+
+    .tv-hero-eyebrow {
+        gap: 7px;
+        font-size: 13px;
     }
 
     .tv-hero-title {
-        font-size: 44px;
+        margin-top: 8px;
+        font-size: clamp(28px, 4.8vw, 36px);
+    }
+
+    .tv-hero-meta {
+        gap: 8px;
+        margin-top: 8px;
+        font-size: 14px;
+    }
+
+    .tv-hero-meta span + span::before {
+        margin-right: 8px;
+    }
+
+    .tv-hero-action {
+        gap: 6px;
+        margin-top: 10px;
+        padding: 8px 12px;
+        font-size: 14px;
     }
 
     .tv-hero-art {
-        flex-basis: 270px;
+        flex-basis: clamp(112px, 26vw, 160px);
     }
 
     .tv-hero-art img,
-    .tv-hero-art-fallback,
+    .tv-hero-art-fallback {
+        width: clamp(104px, 24vw, 148px);
+        height: clamp(104px, 24vw, 148px);
+        border-radius: 20px;
+    }
+
     .tv-hero-orbit {
-        width: 210px;
-        height: 210px;
+        display: none;
+    }
+
+    .tv-row-heading {
+        gap: 10px;
+        margin-bottom: 4px;
+        padding: 0 2px;
+    }
+
+    .tv-row-heading h2 {
+        font-size: 20px;
+    }
+
+    .tv-row-heading span {
+        font-size: 13px;
+    }
+
+    .tv-row-scroll {
+        min-height: calc(var(--tv-card-w) + 50px);
+        gap: 12px;
+        padding: 10px 8px 14px;
+        margin: -10px -4px -14px;
     }
 
     .tv-media-card,
     .tv-collection-card {
-        flex-basis: 180px;
-        width: 180px;
+        padding: 8px;
+        border-radius: 18px;
     }
 
     .tv-media-cover,
     .tv-collection-cover {
-        width: 160px;
-        height: 160px;
+        border-radius: 12px;
+    }
+
+    .tv-media-copy {
+        gap: 3px;
+        padding: 10px 3px 3px;
+    }
+
+    .tv-media-copy strong {
+        font-size: 15px;
+    }
+
+    .tv-media-copy small {
+        font-size: 13px;
     }
 
     .tv-now-playing-strip {
-        left: 48px;
-        right: 48px;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding: 6px 8px 6px 7px;
+        border-radius: 16px;
     }
 
-    .tv-player-header {
-        left: 48px;
-        right: 48px;
+    .tv-now-playing-open {
+        gap: 10px;
+        padding-right: 8px;
+        border-radius: 13px;
     }
 
-    .tv-player-footer {
-        left: 52px;
-        right: 52px;
+    .tv-now-playing-open img {
+        width: calc(var(--tv-now-playing-h) - 16px);
+        height: calc(var(--tv-now-playing-h) - 16px);
+        flex-basis: calc(var(--tv-now-playing-h) - 16px);
+        border-radius: 10px;
     }
 
-    .tv-control-dock {
-        left: 38px;
-        right: 38px;
+    .tv-now-playing-open small {
+        font-size: 10px;
+    }
+
+    .tv-now-playing-open strong {
+        font-size: 16px;
+    }
+
+    .tv-now-playing-open em {
+        font-size: 12px;
+    }
+
+    .tv-now-playing-toggle {
+        width: calc(var(--tv-now-playing-h) - 18px);
+        height: calc(var(--tv-now-playing-h) - 18px);
+        flex-basis: calc(var(--tv-now-playing-h) - 18px);
+    }
+
+    .tv-control-main {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        padding-top: 8px;
     }
 
     .tv-control-song {
-        flex-basis: 280px;
+        display: none;
+    }
+
+    .tv-control-buttons {
+        gap: 8px;
+    }
+
+    .tv-control-buttons button > span {
+        display: none;
+    }
+
+    .tv-control-buttons button {
+        min-width: 44px;
+        height: 44px;
+        padding: 0 10px;
+        border-radius: 14px;
+    }
+
+    .tv-control-buttons button.is-primary {
+        min-width: 56px;
+        height: 56px;
+    }
+
+    .tv-overlay {
+        padding: 16px var(--tv-safe-x);
+    }
+
+    .tv-overlay-header {
+        min-height: 56px;
+        gap: 12px;
+        padding: 8px 14px;
+    }
+
+    .tv-overlay-icon {
+        width: 36px;
+        height: 36px;
+        flex-basis: 36px;
+        border-radius: 11px;
+    }
+
+    .tv-overlay-header h2 {
+        font-size: 20px;
+    }
+
+    .tv-overlay-header small {
+        font-size: 11px;
+    }
+
+    .tv-overlay-header > button {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .tv-login-panel {
+        min-height: 0;
+        height: 100%;
+    }
+
+    .tv-account-layout {
+        grid-template-columns: clamp(150px, 28vw, 180px) minmax(0, 1fr);
+    }
+
+    .tv-account-providers {
+        padding: 10px 8px;
+    }
+
+    .tv-provider-option {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .tv-provider-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    .tv-provider-action {
+        display: none;
+    }
+
+    .tv-account-intro,
+    .tv-account-pending {
+        gap: 10px;
+        padding: 16px 18px;
+    }
+
+    .tv-login-body {
+        gap: 16px;
+        padding: 14px 16px;
+    }
+
+    .tv-login-qr {
+        width: clamp(132px, 26vh, 180px);
+        height: clamp(132px, 26vh, 180px);
+        flex-basis: clamp(132px, 26vh, 180px);
+        padding: 10px;
+        border-radius: 16px;
+    }
+
+    .tv-login-methods {
+        gap: 8px;
+        padding: 16px 18px;
+    }
+}
+
+@media (max-width: 600px) {
+    .tv-header {
+        gap: 8px;
+    }
+
+    .tv-brand {
+        min-width: 0;
+        gap: 10px;
+    }
+
+    .tv-brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        font-size: 18px;
+    }
+
+    .tv-brand strong {
+        font-size: 17px;
+    }
+
+    .tv-brand small,
+    .tv-header-hint,
+    .tv-account-chip small,
+    .tv-account-login small {
+        display: none;
+    }
+
+    .tv-account-chip,
+    .tv-account-login {
+        min-width: 148px;
+        height: 42px;
+        gap: 7px;
+        padding: 0 12px;
+        border-radius: 14px;
+    }
+
+    .tv-account-chip span,
+    .tv-account-login span {
+        max-width: 100px;
+        font-size: 14px;
+    }
+
+    .tv-account-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .tv-account-providers {
+        gap: 0;
+        padding: 6px 8px;
+        border-right: 0;
+        border-bottom: 1px solid var(--tv-line);
+    }
+
+    .tv-account-providers-title,
+    .tv-account-providers-hint {
+        display: none;
+    }
+
+    .tv-account-provider-list {
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 4px;
+        margin: 0;
+        scroll-padding-inline: 4px;
+    }
+
+    .tv-provider-option {
+        width: clamp(156px, 34vw, 190px);
+        min-height: 46px;
+        flex: 0 0 clamp(156px, 34vw, 190px);
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 7px;
+        padding: 6px 8px;
+    }
+
+    .tv-provider-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 14px;
+    }
+
+    .tv-provider-copy strong {
+        font-size: 14px;
+    }
+
+    .tv-provider-copy small {
+        font-size: 11px;
+    }
+
+    .tv-account-detail {
+        overflow-y: auto;
+    }
+}
+
+@media (max-height: 680px) {
+    .tv-hero-meta {
+        display: none;
+    }
+
+    .tv-account-intro > p,
+    .tv-account-pending > p,
+    .tv-login-status > p {
+        min-height: 0;
+    }
+
+    .tv-exit-back-hint {
+        margin-top: 10px;
+    }
+}
+
+@media (max-height: 620px) {
+    .tv-player-page.has-controls .tv-lyric-focus {
+        min-height: 0;
+    }
+
+    .tv-player-page.has-controls .tv-lyric-upcoming {
+        display: none;
+    }
+
+    .tv-lyric-empty-mark {
+        width: 52px;
+        height: 52px;
+    }
+}
+
+@media (max-height: 500px) {
+    :root {
+        --tv-now-playing-h: 56px;
+        --tv-control-dock-h: 112px;
+    }
+
+    .tv-header {
+        min-height: 52px;
+        padding-block: var(--tv-safe-y) 6px;
+    }
+
+    .tv-brand-mark {
+        width: 32px;
+        height: 32px;
+    }
+
+    .tv-account-chip,
+    .tv-account-login {
+        height: 40px;
+    }
+
+    .tv-home-content {
+        gap: 14px;
+        padding-top: 6px;
+    }
+
+    .tv-hero {
+        min-height: 176px;
+        gap: 14px;
+        padding: 14px 18px;
+    }
+
+    .tv-hero-eyebrow {
+        font-size: 12px;
+    }
+
+    .tv-hero-title {
+        margin-top: 6px;
+        font-size: clamp(26px, 5.2vh, 32px);
+    }
+
+    .tv-hero-action {
+        gap: 5px;
+        margin-top: 8px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .tv-hero-art {
+        flex-basis: clamp(104px, 24vw, 148px);
+    }
+
+    .tv-hero-art img,
+    .tv-hero-art-fallback {
+        width: clamp(96px, 22vw, 136px);
+        height: clamp(96px, 22vw, 136px);
+        border-radius: 18px;
+    }
+
+    .tv-now-playing-open small {
+        display: none;
+    }
+
+    .tv-now-playing-open strong {
+        font-size: 15px;
+    }
+
+    .tv-now-playing-open em {
+        font-size: 11px;
+    }
+
+    .tv-player-page {
+        padding-block: var(--tv-safe-y);
+    }
+
+    .tv-player-header {
+        gap: 12px;
+    }
+
+    .tv-player-brand {
+        font-size: 11px;
+    }
+
+    .tv-player-song {
+        gap: 2px;
+    }
+
+    .tv-player-song strong {
+        font-size: 22px;
+        line-height: 1.1;
+    }
+
+    .tv-player-song small {
+        font-size: 12px;
+    }
+
+    .tv-player-mode {
+        min-height: 32px;
+        gap: 6px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .tv-player-mode em {
+        padding-left: 6px;
+        font-size: 11px;
+    }
+
+    .tv-player-page.has-controls .tv-player-footer {
+        display: none;
+    }
+
+    .tv-player-page.has-controls .tv-lyric-stage {
+        padding-top: 8px;
+        padding-bottom: calc(var(--tv-control-dock-h) + var(--tv-safe-y) + 8px);
+    }
+
+    .tv-lyric-tokens {
+        font-size: clamp(28px, 7vh, 38px);
+        line-height: 1.2;
+    }
+
+    .tv-lyric-translation {
+        margin-top: 8px;
+        font-size: 14px;
+    }
+
+    .tv-lyric-upcoming {
+        display: none;
+    }
+
+    .tv-player-footer {
+        font-size: 12px;
+    }
+
+    .tv-control-dock {
+        padding: 8px 12px 7px;
+        border-radius: 22px;
+    }
+
+    .tv-control-progress {
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .tv-control-main {
+        padding-top: 6px;
+    }
+
+    .tv-control-buttons {
+        gap: 6px;
+    }
+
+    .tv-control-buttons button {
+        min-width: 42px;
+        height: 42px;
+        padding: 0 8px;
+    }
+
+    .tv-control-buttons button.is-primary {
+        min-width: 54px;
+        height: 54px;
+    }
+
+    .tv-overlay {
+        padding: var(--tv-safe-y) var(--tv-safe-x);
+    }
+
+    .tv-overlay-header {
+        min-height: 48px;
+        gap: 10px;
+        padding: 6px 12px;
+    }
+
+    .tv-overlay-header .tv-overlay-icon {
+        display: none;
+    }
+
+    .tv-overlay-header h2 {
+        font-size: 18px;
+    }
+
+    .tv-overlay-header small {
+        font-size: 10px;
+    }
+
+    .tv-overlay-header > button {
+        width: 36px;
+        height: 36px;
+        flex-basis: 36px;
+    }
+
+    .tv-overlay-list {
+        padding: 8px 10px 10px;
+        scroll-padding-block: 6px;
+    }
+
+    .tv-track-row {
+        min-height: 52px;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 12px;
+        contain-intrinsic-size: 52px;
+    }
+
+    .tv-track-row img,
+    .tv-track-cover-fallback {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+        border-radius: 8px;
+    }
+
+    .tv-track-index {
+        width: 20px;
+        flex-basis: 20px;
+        font-size: 10px;
+    }
+
+    .tv-track-copy {
+        gap: 1px;
+    }
+
+    .tv-track-copy strong {
+        font-size: 14px;
+    }
+
+    .tv-track-copy small,
+    .tv-track-row em {
+        font-size: 10px;
+    }
+
+    .tv-play-all {
+        min-height: 42px;
+        flex-basis: 42px;
+        gap: 7px;
+        margin: 8px 10px 1px;
+        padding: 0 12px;
+        border-radius: 13px;
+        font-size: 14px;
+    }
+
+    .tv-exit-body {
+        padding: 14px 18px;
+    }
+
+    .tv-exit-body > .tv-overlay-icon {
+        display: none;
+    }
+
+    .tv-exit-body h2 {
+        font-size: 22px;
+    }
+
+    .tv-exit-body > p {
+        display: -webkit-box;
+        margin: 6px 0 10px;
+        overflow: hidden;
+        font-size: 13px;
+        line-height: 1.4;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .tv-exit-actions {
+        gap: 8px;
+    }
+
+    .tv-exit-option {
+        min-height: 50px;
+        gap: 10px;
+        padding: 7px 12px;
+        border-radius: 14px;
+    }
+
+    .tv-exit-option > svg {
+        flex-basis: 18px;
+    }
+
+    .tv-exit-option strong {
+        font-size: 15px;
+    }
+
+    .tv-exit-option small {
+        display: none;
+    }
+
+    .tv-exit-back-hint {
+        margin-top: 6px;
+        font-size: 10px;
+    }
+
+    .tv-account-providers {
+        padding-block: 6px;
+    }
+
+    .tv-account-provider-list {
+        gap: 4px;
+    }
+
+    .tv-provider-option {
+        min-height: 50px;
+        padding-block: 6px;
+    }
+
+    .tv-account-intro,
+    .tv-account-pending {
+        gap: 8px;
+        padding: 12px 16px;
+    }
+
+    .tv-account-intro > .tv-overlay-icon,
+    .tv-account-pending > .tv-overlay-icon {
+        display: none;
+    }
+
+    .tv-account-intro > strong,
+    .tv-account-pending > strong {
+        font-size: 18px;
+    }
+
+    .tv-account-intro > p,
+    .tv-account-pending > p {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .tv-login-body {
+        gap: 12px;
+        padding: 10px 14px;
+    }
+
+    .tv-login-qr {
+        width: clamp(96px, 28vh, 140px);
+        height: clamp(96px, 28vh, 140px);
+        flex-basis: clamp(96px, 28vh, 140px);
+        padding: 8px;
+        border-radius: 14px;
+    }
+
+    .tv-login-status {
+        gap: 6px;
+    }
+
+    .tv-login-status > strong {
+        font-size: 15px;
+        line-height: 1.3;
+    }
+
+    .tv-login-status > p {
+        display: -webkit-box;
+        min-height: 0;
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 1.35;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+    }
+
+    .tv-login-actions button,
+    .tv-login-method-grid button {
+        min-height: 38px;
+        padding-inline: 12px;
+        font-size: 13px;
+    }
+
+    .tv-login-methods {
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 10px 14px;
+    }
+
+    .tv-login-methods > strong {
+        font-size: 18px;
+    }
+
+    .tv-login-methods > p {
+        margin-bottom: 0;
+        font-size: 12px;
+    }
+
+    .tv-login-method-grid {
+        gap: 8px;
+    }
+
+    .tv-login-method-grid button {
+        min-height: 42px;
+    }
+}
+
+@media (max-height: 380px) {
+    .tv-header {
+        min-height: 46px;
+        padding-block: var(--tv-safe-y) 4px;
+    }
+
+    .tv-hero {
+        min-height: 148px;
+        gap: 12px;
+        padding: 10px 14px;
+    }
+
+    .tv-hero-eyebrow {
+        display: none;
+    }
+
+    .tv-hero-title {
+        margin-top: 0;
+        font-size: 24px;
+    }
+
+    .tv-hero-action {
+        margin-top: 6px;
+        padding: 5px 9px;
+        font-size: 12px;
+    }
+
+    .tv-hero-art {
+        flex-basis: 96px;
+    }
+
+    .tv-hero-art img,
+    .tv-hero-art-fallback {
+        width: 92px;
+        height: 92px;
+        border-radius: 16px;
+    }
+
+    .tv-now-playing-strip {
+        margin-bottom: 6px;
+    }
+
+    .tv-control-dock {
+        border-radius: 18px;
+    }
+
+    .tv-lyric-empty {
+        gap: 6px;
+    }
+
+    .tv-lyric-empty-mark {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 0;
+        font-size: 22px;
+    }
+
+    .tv-lyric-empty strong {
+        font-size: 22px;
+    }
+
+    .tv-lyric-empty > span:last-child {
+        display: none;
+    }
+
+    .tv-login-methods > p {
+        display: none;
     }
 }
 
@@ -1887,7 +2784,7 @@ img {
 
 .tv-app.is-constrained [data-tv-focusable="true"]:focus {
     transform: none;
-    box-shadow: 0 0 0 2px var(--tv-focus-gap);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 .tv-app.is-constrained .tv-home-page::before,
@@ -1927,12 +2824,5 @@ img {
 .tv-app.is-constrained .tv-media-card,
 .tv-app.is-constrained .tv-collection-card {
     content-visibility: auto;
-    contain-intrinsic-size: 208px 256px;
-}
-
-@media (max-width: 1360px) {
-    .tv-app.is-constrained .tv-media-card,
-    .tv-app.is-constrained .tv-collection-card {
-        contain-intrinsic-size: 180px 228px;
-    }
+    contain-intrinsic-size: var(--tv-card-w) calc(var(--tv-card-w) + 52px);
 }

@@ -11,6 +11,18 @@ const rect = (id: string, left: number, top: number, width = 100, height = 80): 
     bottom: top + height,
 });
 
+const groupedRect = (
+    id: string,
+    left: number,
+    top: number,
+    group: string,
+    groupAxis: 'horizontal' | 'vertical',
+): TvFocusRect => ({
+    ...rect(id, left, top),
+    group,
+    groupAxis,
+});
+
 describe('pickNextFocusRect', () => {
     const grid = [
         rect('top-left', 0, 0),
@@ -47,6 +59,56 @@ describe('pickNextFocusRect', () => {
             rect('a', 300, 0),
         ];
         expect(pickNextFocusRect(ties, 'current', 'right')?.id).toBe('a');
+    });
+
+    it('keeps horizontal media-row focus inside the row', () => {
+        const rows = [
+            groupedRect('hero', 0, 0, 'hero', 'horizontal'),
+            groupedRect('row-a-1', 0, 200, 'row-a', 'horizontal'),
+            groupedRect('row-a-2', 260, 200, 'row-a', 'horizontal'),
+            groupedRect('row-b-1', 0, 400, 'row-b', 'horizontal'),
+            groupedRect('account', 900, 0, 'account', 'horizontal'),
+        ];
+
+        expect(pickNextFocusRect(rows, 'row-a-2', 'right')?.id).toBe('row-a-2');
+        expect(pickNextFocusRect(rows, 'row-a-2', 'down')?.id).toBe('row-b-1');
+    });
+
+    it('keeps vertical movement inside the list and allows lateral exit', () => {
+        const list = [
+            groupedRect('close', 900, 0, 'close', 'horizontal'),
+            groupedRect('track-1', 0, 100, 'tracks', 'vertical'),
+            groupedRect('track-2', 0, 200, 'tracks', 'vertical'),
+        ];
+
+        expect(pickNextFocusRect(list, 'track-2', 'down')?.id).toBe('track-2');
+        expect(pickNextFocusRect(list, 'track-2', 'up')?.id).toBe('track-1');
+        expect(pickNextFocusRect(list, 'track-2', 'right')?.id).toBe('close');
+    });
+
+    it('keeps a single horizontal group locked and lets a vertical boundary fall through', () => {
+        const items = [
+            groupedRect('only-card', 0, 200, 'single-row', 'horizontal'),
+            groupedRect('account', 900, 0, 'account', 'horizontal'),
+            groupedRect('only-provider', 0, 400, 'single-provider', 'vertical'),
+            groupedRect('detail-action', 300, 500, 'detail', 'horizontal'),
+        ];
+
+        expect(pickNextFocusRect(items, 'only-card', 'right')?.id).toBe('only-card');
+        expect(pickNextFocusRect(items, 'only-provider', 'right')?.id).toBe('detail-action');
+        expect(pickNextFocusRect(items, 'only-provider', 'down')?.id).toBe('detail-action');
+    });
+
+    it('exits a vertical list at its boundary into adjacent chrome', () => {
+        const list = [
+            groupedRect('play-all', 0, 0, 'play-all', 'horizontal'),
+            groupedRect('track-1', 0, 100, 'tracks', 'vertical'),
+            groupedRect('track-2', 0, 200, 'tracks', 'vertical'),
+            groupedRect('footer-action', 0, 320, 'footer', 'horizontal'),
+        ];
+
+        expect(pickNextFocusRect(list, 'track-1', 'up')?.id).toBe('play-all');
+        expect(pickNextFocusRect(list, 'track-2', 'down')?.id).toBe('footer-action');
     });
 });
 

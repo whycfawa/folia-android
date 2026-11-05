@@ -10,6 +10,8 @@ export type TvFocusRect = {
     top: number;
     right: number;
     bottom: number;
+    group?: string;
+    groupAxis?: 'horizontal' | 'vertical';
 };
 
 const center = (rect: TvFocusRect) => ({
@@ -34,35 +36,55 @@ export const pickNextFocusRect = (
 
     const currentCenter = center(current);
     const horizontal = direction === 'left' || direction === 'right';
+    const groupAxis = horizontal ? 'horizontal' : 'vertical';
+    const sameGroup = current.group
+        ? rects.filter(rect => rect.group === current.group)
+        : [];
+    const lockedToGroup = Boolean(
+        current.group
+        && sameGroup.length > 0
+        && current.groupAxis === groupAxis,
+    );
+    const candidates = lockedToGroup ? sameGroup : rects;
     const sign = direction === 'right' || direction === 'down' ? 1 : -1;
-    let bestRect: TvFocusRect | null = null;
-    let bestScore = Number.POSITIVE_INFINITY;
 
-    rects.forEach(rect => {
-        if (rect.id === current.id) return;
-        const candidateCenter = center(rect);
-        const primary = horizontal
-            ? (candidateCenter.x - currentCenter.x) * sign
-            : (candidateCenter.y - currentCenter.y) * sign;
-        if (primary <= 4) return;
+    const findBest = (pool: readonly TvFocusRect[]): TvFocusRect | null => {
+        let bestRect: TvFocusRect | null = null;
+        let bestScore = Number.POSITIVE_INFINITY;
 
-        const cross = horizontal
-            ? Math.abs(candidateCenter.y - currentCenter.y)
-            : Math.abs(candidateCenter.x - currentCenter.x);
-        const aligned = horizontal
-            ? overlap(current.top, current.bottom, rect.top, rect.bottom)
-            : overlap(current.left, current.right, rect.left, rect.right);
-        const score = primary + cross * 2.4 - aligned * 0.9;
+        pool.forEach(rect => {
+            if (rect.id === current.id) return;
+            const candidateCenter = center(rect);
+            const primary = horizontal
+                ? (candidateCenter.x - currentCenter.x) * sign
+                : (candidateCenter.y - currentCenter.y) * sign;
+            if (primary <= 4) return;
 
-        if (
-            !bestRect
-            || score < bestScore
-            || (Math.abs(score - bestScore) < 0.001 && rect.id.localeCompare(bestRect.id) < 0)
-        ) {
-            bestRect = rect;
-            bestScore = score;
-        }
-    });
+            const cross = horizontal
+                ? Math.abs(candidateCenter.y - currentCenter.y)
+                : Math.abs(candidateCenter.x - currentCenter.x);
+            const aligned = horizontal
+                ? overlap(current.top, current.bottom, rect.top, rect.bottom)
+                : overlap(current.left, current.right, rect.left, rect.right);
+            const score = primary + cross * 2.4 - aligned * 0.9;
 
-    return bestRect ?? current;
+            if (
+                !bestRect
+                || score < bestScore
+                || (Math.abs(score - bestScore) < 0.001 && rect.id.localeCompare(bestRect.id) < 0)
+            ) {
+                bestRect = rect;
+                bestScore = score;
+            }
+        });
+
+        return bestRect;
+    };
+
+    let next = findBest(candidates);
+    if (!next && lockedToGroup && current.groupAxis === 'vertical') {
+        next = findBest(rects.filter(rect => rect.group !== current.group));
+    }
+
+    return next ?? current;
 };

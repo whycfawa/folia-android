@@ -22,6 +22,7 @@ export const TvHome = ({
     onOpenPlayer,
     onPlayTracks,
     onOpenCollection,
+    inert,
 }: {
     account: TvAccountModel;
     library: TvLibraryModel;
@@ -31,6 +32,7 @@ export const TvHome = ({
     onOpenPlayer: () => void;
     onPlayTracks: (songs: SongResult[], startIndex: number) => void;
     onOpenCollection: (collection: ProviderCollection) => void;
+    inert: boolean;
 }) => {
     const { t } = useTranslation();
     const isPlaying = player.status === 'playing';
@@ -47,12 +49,23 @@ export const TvHome = ({
     };
 
     return (
-        <div id="tv-layer-home" data-tv-layer="home" className="tv-page tv-home-page">
+        <div
+            id="tv-layer-home"
+            data-tv-layer="home"
+            className="tv-page tv-home-page"
+            inert={inert || undefined}
+        >
             <TvHeader
                 userName={account.activeAccount?.user?.nickname}
                 providerLabel={account.providerLabel}
                 isAuthenticated={account.isAuthenticated}
                 onOpenAccount={onOpenAccount}
+            />
+            <TvNowPlayingStrip
+                song={player.currentSong}
+                isPlaying={isPlaying}
+                onActivate={onOpenPlayer}
+                onToggle={player.togglePlayback}
             />
             <main className="tv-home-content">
                 <TvHero
@@ -70,16 +83,16 @@ export const TvHome = ({
                         loginAction: t('tv.home.login'),
                     }}
                 />
-                <TvMediaRow title={t('tv.home.recent')} subtitle={localCount}>
+                <TvMediaRow title={t('tv.home.recent')} subtitle={localCount} focusGroup="home-recent">
                     {library.isLoadingLocal ? (
                         <div className="tv-row-empty">{t('tv.home.loading')}</div>
                     ) : library.recentLocalSongs.length === 0 ? (
                         <div className="tv-row-empty">{t('tv.home.localEmpty')}</div>
-                    ) : library.recentLocalSongs.map((song, index) => (
+                    ) : library.recentLocalSongs.map(song => (
                         <TvSongCard
                             key={song.id}
                             song={song}
-                            focusKey={`home-recent-${index}`}
+                            focusKey={`home-recent-${song.id}`}
                             isCurrent={song.id === player.currentSong?.id}
                             onClick={() => playLocalSong(song)}
                         />
@@ -88,21 +101,26 @@ export const TvHome = ({
                 <TvMediaRow
                     title={t('tv.home.playlists')}
                     subtitle={account.isAuthenticated ? account.providerLabel : undefined}
+                    focusGroup="home-playlists"
                 >
                     {!account.isAuthenticated ? (
                         <div className="tv-row-empty">{t('tv.home.loginForPlaylists')}</div>
                     ) : library.playlists.length === 0 ? (
                         <div className="tv-row-empty">{t('tv.home.playlistsEmpty')}</div>
-                    ) : library.playlists.map((collection, index) => (
+                    ) : library.playlists.map(collection => (
                         <TvPlaylistCard
-                            key={`${collection.id}-${index}`}
+                            key={collection.id}
                             collection={collection}
-                            focusKey={`home-playlist-${index}`}
+                            focusKey={`home-playlist-${collection.id}`}
                             onClick={() => onOpenCollection(collection)}
                         />
                     ))}
                 </TvMediaRow>
-                <TvMediaRow title={t('tv.home.liked')} subtitle={account.isAuthenticated ? likedCount : undefined}>
+                <TvMediaRow
+                    title={t('tv.home.liked')}
+                    subtitle={account.isAuthenticated ? likedCount : undefined}
+                    focusGroup="home-liked"
+                >
                     {!account.isAuthenticated ? (
                         <div className="tv-row-empty">{t('tv.home.loginForLiked')}</div>
                     ) : library.isLoadingLiked ? (
@@ -111,23 +129,17 @@ export const TvHome = ({
                         <div className="tv-row-empty">{t('tv.home.likedError')}</div>
                     ) : library.likedSongs.length === 0 ? (
                         <div className="tv-row-empty">{t('tv.home.likedEmpty')}</div>
-                    ) : library.likedSongs.map((song, index) => (
+                    ) : library.likedSongs.map(song => (
                         <TvSongCard
                             key={song.id}
                             song={song}
-                            focusKey={`home-liked-${index}`}
+                            focusKey={`home-liked-${song.id}`}
                             isCurrent={song.id === player.currentSong?.id}
                             onClick={() => playLikedSong(song)}
                         />
                     ))}
                 </TvMediaRow>
             </main>
-            <TvNowPlayingStrip
-                song={player.currentSong}
-                isPlaying={isPlaying}
-                onActivate={onOpenPlayer}
-                onToggle={player.togglePlayback}
-            />
         </div>
     );
 };

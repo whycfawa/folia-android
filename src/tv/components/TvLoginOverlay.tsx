@@ -4,6 +4,7 @@ import { Check, Loader2, QrCode, RefreshCw, ServerCog, UserRound, X } from 'luci
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProviderAccountSummary } from '../../types/onlineMusic';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { TvAccountModel } from '../hooks/useTvAccount';
 
 const errorMessage = (error: unknown): string => (
@@ -22,6 +23,7 @@ export const TvLoginOverlay = ({
     onSwitchConfirmed: () => void;
 }) => {
     const { t } = useTranslation();
+    const compactProviderStrip = useMediaQuery('(max-width: 600px)');
     const [actionError, setActionError] = useState<string | null>(null);
     const login = account.login;
     const pendingSwitch = account.pendingSwitch;
@@ -83,14 +85,19 @@ export const TvLoginOverlay = ({
 
     return (
         <section id="tv-layer-login" data-tv-layer="login" className="tv-overlay tv-login-overlay">
-            <div className="tv-overlay-panel tv-login-panel" role="dialog" aria-modal="true">
+            <div
+                className="tv-overlay-panel tv-login-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="tv-login-title"
+            >
                 <header className="tv-overlay-header">
                     <div>
                         <span className="tv-overlay-icon">
                             {login ? <QrCode size={22} /> : <UserRound size={22} />}
                         </span>
                         <span>
-                            <h2>{title}</h2>
+                            <h2 id="tv-login-title">{title}</h2>
                             <small>{hint}</small>
                         </span>
                     </div>
@@ -108,7 +115,11 @@ export const TvLoginOverlay = ({
                 <div className="tv-account-layout">
                     <aside className="tv-account-providers" aria-label={t('tv.account.providers')}>
                         <strong className="tv-account-providers-title">{t('tv.account.providers')}</strong>
-                        <div className="tv-account-provider-list">
+                        <div
+                            className="tv-account-provider-list"
+                            data-tv-focus-group="login-providers"
+                            data-tv-focus-axis={compactProviderStrip ? 'horizontal' : 'vertical'}
+                        >
                             {account.providers.map(provider => {
                                 const configured = provider.availability.configured;
                                 const active = provider.providerId === account.activeProviderId;
@@ -151,7 +162,11 @@ export const TvLoginOverlay = ({
                                 <span className="tv-overlay-icon"><UserRound size={24} /></span>
                                 <strong>{pendingSwitch.title}</strong>
                                 <p>{pendingSwitch.description}</p>
-                                <div className="tv-account-pending-actions">
+                                <div
+                                    className="tv-account-pending-actions"
+                                    data-tv-focus-group="login-switch-actions"
+                                    data-tv-focus-axis="horizontal"
+                                >
                                     <button
                                         type="button"
                                         data-tv-focusable="true"
