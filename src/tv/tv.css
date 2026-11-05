@@ -19,7 +19,7 @@
     --tv-safe-x: clamp(36px, 5vw, 96px);
     --tv-safe-y: clamp(14px, 5vh, 54px);
     --tv-card-w: clamp(200px, 11.5vw, 232px);
-    --tv-control-dock-h: clamp(168px, 20.7vh, 224px);
+    --tv-control-dock-h: clamp(92px, 16vh, 108px);
     font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
         "Noto Sans CJK SC", system-ui, sans-serif;
 }
@@ -3107,36 +3107,70 @@ img {
 
 .tv-control-dock {
     min-height: var(--tv-control-dock-h);
-    padding:
-        clamp(12px, 1.6vh, 18px)
-        var(--tv-safe-x)
-        calc(var(--tv-safe-y) + clamp(3px, 0.6vh, 7px));
+    height: var(--tv-control-dock-h);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    row-gap: 2px;
+    padding: 8px var(--tv-safe-x) 10px;
     border: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0;
-    background: linear-gradient(180deg, rgba(14, 14, 23, 0.985), rgba(7, 7, 12, 0.998));
-    box-shadow: none;
+    background: linear-gradient(180deg, rgba(11, 11, 18, 0.92), rgba(5, 5, 9, 0.995) 38%);
+    box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.tv-player-page.has-controls .tv-lyric-stage {
+    padding-bottom: calc(var(--tv-control-dock-h) + clamp(8px, 1.4vh, 16px));
+}
+
+.tv-control-progress {
+    min-height: 12px;
+    gap: clamp(9px, 0.7vw, 12px);
+    color: rgba(238, 234, 255, 0.46);
+    font-size: clamp(10px, 0.58vw, 12px);
+    line-height: 12px;
+}
+
+.tv-control-track {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.13);
 }
 
 .tv-control-main {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: clamp(14px, 1.4vw, 24px);
-    padding-top: clamp(9px, 1.2vh, 13px);
+    gap: clamp(10px, 1.2vw, 20px);
+    min-height: 0;
+    padding-top: 0;
 }
 
 .tv-control-song {
-    gap: 12px;
+    gap: 9px;
 }
 
 .tv-control-song img {
-    width: clamp(46px, 5.5vh, 54px);
-    height: clamp(46px, 5.5vh, 54px);
-    flex-basis: clamp(46px, 5.5vh, 54px);
-    border-radius: 13px;
+    width: clamp(36px, 7.2vh, 44px);
+    height: clamp(36px, 7.2vh, 44px);
+    flex-basis: clamp(36px, 7.2vh, 44px);
+    border-radius: 8px;
+}
+
+.tv-control-song > span {
+    gap: 2px;
+}
+
+.tv-control-song strong {
+    font-size: clamp(14px, 0.78vw, 16px);
+    line-height: 1.25;
+}
+
+.tv-control-song small {
+    color: rgba(238, 234, 255, 0.44);
+    font-size: clamp(11px, 0.62vw, 13px);
+    line-height: 1.3;
 }
 
 .tv-control-buttons {
-    gap: clamp(12px, 0.9vw, 16px);
+    display: contents;
 }
 
 .tv-control-transport,
@@ -3144,62 +3178,93 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 3px;
+}
+
+.tv-control-transport {
+    grid-column: 2;
+    justify-self: center;
 }
 
 .tv-control-utilities {
-    gap: 7px;
-    padding-left: clamp(12px, 1vw, 16px);
-    border-left: 1px solid var(--tv-line);
+    grid-column: 3;
+    justify-self: end;
+    gap: 2px;
+    padding-left: 0;
+    border-left: 0;
 }
 
 .tv-control-buttons button {
-    width: clamp(46px, 5.3vh, 50px);
-    height: clamp(46px, 5.3vh, 50px);
-    min-width: clamp(46px, 5.3vh, 50px);
+    width: clamp(38px, 6.6vh, 44px);
+    height: clamp(38px, 6.6vh, 44px);
+    min-width: clamp(38px, 6.6vh, 44px);
     padding: 0;
     gap: 0;
     border: 1px solid transparent;
     border-radius: 50%;
     background: transparent;
-    color: var(--tv-text-muted);
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.tv-control-buttons button svg {
+    width: 20px;
+    height: 20px;
 }
 
 .tv-control-buttons button.is-utility {
-    width: clamp(44px, 5vh, 48px);
-    height: clamp(44px, 5vh, 48px);
-    min-width: clamp(44px, 5vh, 48px);
-    border-color: rgba(255, 255, 255, 0.09);
-    background: rgba(255, 255, 255, 0.045);
+    width: clamp(34px, 5.8vh, 40px);
+    height: clamp(34px, 5.8vh, 40px);
+    min-width: clamp(34px, 5.8vh, 40px);
+    border-color: transparent;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.56);
+}
+
+.tv-control-buttons button.is-utility svg {
+    width: 18px;
+    height: 18px;
 }
 
 .tv-control-buttons button.is-primary {
-    width: clamp(58px, 6.7vh, 64px);
-    height: clamp(58px, 6.7vh, 64px);
-    min-width: clamp(58px, 6.7vh, 64px);
-    border: 1px solid rgba(167, 139, 250, 0.46);
+    width: clamp(44px, 7.4vh, 50px);
+    height: clamp(44px, 7.4vh, 50px);
+    min-width: clamp(44px, 7.4vh, 50px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
-    background: var(--tv-accent-strong);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.94);
+    color: #09090e;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.26);
+}
+
+.tv-control-buttons button.is-primary svg {
+    width: 23px;
+    height: 23px;
 }
 
 .tv-control-buttons button:focus {
+    transform: scale(1.05);
     background: rgba(167, 139, 250, 0.2);
+    color: #fff;
 }
 
 .tv-control-buttons button.is-utility:focus {
-    border-color: rgba(167, 139, 250, 0.7);
+    border-color: transparent;
+    color: #fff;
 }
 
 .tv-control-buttons button.is-primary:focus {
-    background: var(--tv-accent);
+    background: #fff;
+    color: #09090e;
 }
 
 .tv-queue-overlay {
     z-index: 110;
     align-items: stretch;
     justify-content: flex-end;
-    padding: var(--tv-safe-y) 0;
+    padding:
+        var(--tv-safe-y)
+        0
+        calc(var(--tv-safe-y) + var(--tv-control-dock-h) + 8px);
     background: linear-gradient(90deg, rgba(3, 3, 8, 0.3), rgba(3, 3, 8, 0.66));
 }
 
@@ -3242,13 +3307,13 @@ img {
 
 @media (max-height: 620px) {
     :root {
-        --tv-control-dock-h: 136px;
+        --tv-control-dock-h: 92px;
     }
 }
 
 @media (max-height: 500px) {
     :root {
-        --tv-control-dock-h: 112px;
+        --tv-control-dock-h: 84px;
     }
 
     .tv-header {
@@ -3284,44 +3349,44 @@ img {
     }
 
     .tv-control-dock {
-        padding: 8px var(--tv-safe-x) calc(var(--tv-safe-y) + 2px);
+        padding: 7px var(--tv-safe-x) 8px;
     }
 
     .tv-control-main {
-        padding-top: 7px;
+        padding-top: 0;
     }
 
     .tv-control-song img {
-        width: 36px;
-        height: 36px;
-        flex-basis: 36px;
-        border-radius: 10px;
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+        border-radius: 7px;
     }
 
     .tv-control-song strong {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .tv-control-song small {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .tv-control-buttons button {
-        width: 42px;
-        height: 42px;
-        min-width: 42px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
     }
 
     .tv-control-buttons button.is-utility {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
     }
 
     .tv-control-buttons button.is-primary {
-        width: 52px;
-        height: 52px;
-        min-width: 52px;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
     }
 }
 
