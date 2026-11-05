@@ -89,10 +89,14 @@ const NativeStageBridge: React.FC = () => {
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
         const timer = window.setInterval(() => {
-            void updateNativeStageProgress({ position: currentTime.get(), duration }).catch(() => undefined);
+            const position = currentTime.get();
+            const active = lyrics?.lines?.[lineIndex];
+            const span = active ? Math.max(0.001, active.endTime - active.startTime) : 0;
+            const lineProgress = active ? Math.max(0, Math.min(1, (position - active.startTime) / span)) : 0;
+            void updateNativeStageProgress({ position, duration, lineProgress }).catch(() => undefined);
         }, 200);
         return () => window.clearInterval(timer);
-    }, [duration, enabled]);
+    }, [duration, enabled, lineIndex, lyrics]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled || playerState !== PlayerState.PLAYING) return undefined;

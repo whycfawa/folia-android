@@ -37,6 +37,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private String artist = "";
     private int accent = 0xFF7C9BFF;
     private boolean playing = true;
+    private float lineProgress = 0f;
     private float audioPower;
     private float audioBass;
     private float audioMid;
@@ -85,6 +86,13 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    public void setLineProgress(float progress) {
+        synchronized (stateLock) {
+            this.lineProgress = clampUnit(progress);
+            this.dirty = true;
+        }
     }
 
     public void updateAudio(float power, float bass, float mid, float treble) {
@@ -266,8 +274,17 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
         float centerY = height * 0.5f;
         if (lyricLayout != null) {
+            float left = (width - width * 0.86f) / 2f;
+            float top = centerY - lyricLayout.getHeight() / 2f;
+            lyricPaint.setColor(0x55FFFFFF);
             canvas.save();
-            canvas.translate((width - width * 0.86f) / 2f, centerY - lyricLayout.getHeight() / 2f);
+            canvas.translate(left, top);
+            lyricLayout.draw(canvas);
+            canvas.restore();
+            lyricPaint.setColor(Color.WHITE);
+            canvas.save();
+            canvas.clipRect(left, 0f, left + width * 0.86f * lineProgress, height);
+            canvas.translate(left, top);
             lyricLayout.draw(canvas);
             canvas.restore();
         }

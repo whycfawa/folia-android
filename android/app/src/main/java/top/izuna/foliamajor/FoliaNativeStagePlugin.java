@@ -145,9 +145,11 @@ public class FoliaNativeStagePlugin extends Plugin {
         }
         double position = call.getDouble("position", 0.0);
         double duration = call.getDouble("duration", 0.0);
+        double lineProgress = call.getDouble("lineProgress", 0.0);
         float progress = duration > 0 ? (float) (position / duration) : 0f;
         activity.runOnUiThread(() -> {
             if (controlsView != null) controlsView.setProgress(progress);
+            if (stageView != null) stageView.setLineProgress((float) lineProgress);
             call.resolve();
         });
     }
