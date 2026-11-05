@@ -8,6 +8,22 @@ export default {
       "trackCount_one": "{{count}} 首",
       "trackCount_other": "{{count}} 首"
     },
+    "search": {
+      "open": "搜索歌曲、歌手或专辑",
+      "title": "搜索",
+      "provider": "在 {{provider}} 中搜索",
+      "placeholder": "输入歌曲、歌手或专辑",
+      "inputLabel": "搜索关键词",
+      "action": "搜索",
+      "hint": "按 OK 打开键盘输入，停止输入后自动搜索。",
+      "idle": "输入关键字开始搜索",
+      "loading": "正在搜索…",
+      "error": "搜索失败，请稍后重试",
+      "retry": "重试",
+      "empty": "没有找到与“{{query}}”相关的歌曲",
+      "resultCount_one": "找到 {{count}} 首歌曲",
+      "resultCount_other": "找到 {{count}} 首歌曲"
+    },
     "home": {
       "signedIn": "已登录",
       "login": "扫码登录",

@@ -6,7 +6,7 @@ import type { LyricData, SongResult } from '../../types';
 
 export type TvPage = 'home' | 'player';
 
-export type TvOverlay = 'controls' | 'queue' | 'collection' | 'login' | 'exit';
+export type TvOverlay = 'controls' | 'queue' | 'collection' | 'search' | 'login' | 'exit';
 
 export type TvEffectsMode = 'flow' | 'calm';
 

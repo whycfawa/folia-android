@@ -36,9 +36,22 @@ export const TvHero = ({
             data-tv-focus-key="home-hero"
             onClick={onActivate}
         >
+            <span className="tv-hero-art">
+                {coverUrl ? (
+                    <img
+                        src={coverUrl}
+                        alt=""
+                        loading="eager"
+                        decoding="async"
+                        fetchPriority="high"
+                    />
+                ) : (
+                    <span className="tv-hero-art-fallback"><Disc3 size={34} /></span>
+                )}
+            </span>
             <span className="tv-hero-copy">
                 <span className="tv-hero-eyebrow">
-                    {song ? <Play size={18} /> : <CalendarClock size={18} />}
+                    {song ? <Play size={14} /> : <CalendarClock size={14} />}
                     {song ? labels.continue : isAuthenticated ? labels.welcome : labels.loginTitle}
                 </span>
                 <strong className="tv-hero-title">
@@ -50,28 +63,14 @@ export const TvHero = ({
                         {getSongAlbumLabel(song) && <span>{getSongAlbumLabel(song)}</span>}
                     </span>
                 )}
-                <span className="tv-hero-action">
-                    {song || isAuthenticated
-                        ? <Play size={18} fill="currentColor" />
-                        : <LogIn size={18} />}
-                    {song
-                        ? (isPlaying ? labels.continue : labels.openPlayer)
-                        : isAuthenticated ? labels.chooseSong : labels.loginAction}
-                </span>
             </span>
-            <span className="tv-hero-art">
-                {coverUrl ? (
-                    <img
-                        src={coverUrl}
-                        alt=""
-                        loading="eager"
-                        decoding="async"
-                        fetchPriority="high"
-                    />
-                ) : (
-                    <span className="tv-hero-art-fallback"><Disc3 size={84} /></span>
-                )}
-                <span className="tv-hero-orbit" aria-hidden="true" />
+            <span className="tv-hero-action">
+                {song || isAuthenticated
+                    ? <Play size={16} fill="currentColor" />
+                    : <LogIn size={16} />}
+                {song
+                    ? (isPlaying ? labels.continue : labels.openPlayer)
+                    : isAuthenticated ? labels.chooseSong : labels.loginAction}
             </span>
         </button>
     );

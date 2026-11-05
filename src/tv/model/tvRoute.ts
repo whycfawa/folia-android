@@ -24,6 +24,7 @@ export const resolveTvBackRoute = (route: TvRoute): TvRoute | null => {
     if (
         route.overlay === 'login'
         || route.overlay === 'collection'
+        || route.overlay === 'search'
         || route.overlay === 'controls'
         || route.overlay === 'exit'
     ) {

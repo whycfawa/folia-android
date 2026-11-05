@@ -24,6 +24,7 @@ export const TvHome = ({
     player,
     onActivateHero,
     onOpenAccount,
+    onOpenSearch,
     onPlayTracks,
     onOpenCollection,
     inert,
@@ -33,6 +34,7 @@ export const TvHome = ({
     player: TvPlayerModel;
     onActivateHero: () => void;
     onOpenAccount: () => void;
+    onOpenSearch: () => void;
     onPlayTracks: (songs: SongResult[], startIndex: number) => void;
     onOpenCollection: (collection: ProviderCollection) => void;
     inert: boolean;
@@ -65,12 +67,8 @@ export const TvHome = ({
                 providerLabel={account.providerLabel}
                 isAuthenticated={account.isAuthenticated}
                 onOpenAccount={onOpenAccount}
-            />
-            <TvHomeLibraryTabs
-                activeTab={activeLibraryTab}
-                onChange={setActiveLibraryTab}
-            />
-            <main className="tv-home-content" data-tv-focus-container="home-body">
+                onOpenSearch={onOpenSearch}
+            >
                 <TvHero
                     song={player.currentSong}
                     isAuthenticated={account.isAuthenticated}
@@ -86,6 +84,12 @@ export const TvHome = ({
                         loginAction: t('tv.home.login'),
                     }}
                 />
+            </TvHeader>
+            <TvHomeLibraryTabs
+                activeTab={activeLibraryTab}
+                onChange={setActiveLibraryTab}
+            />
+            <main className="tv-home-content" data-tv-focus-container="home-body">
                 <TvHomeLibraryRow
                     activeTab={activeLibraryTab}
                     account={account}

@@ -9,6 +9,7 @@ import { TvCollectionOverlay } from './components/TvCollectionOverlay';
 import { TvExitOverlay } from './components/TvExitOverlay';
 import { TvLoginOverlay } from './components/TvLoginOverlay';
 import { TvQueueOverlay } from './components/TvQueueOverlay';
+import { TvSearchOverlay } from './components/TvSearchOverlay';
 import { useTvAccount } from './hooks/useTvAccount';
 import { useTvControlsAutoHide } from './hooks/useTvControlsAutoHide';
 import { useTvFocus } from './hooks/useTvFocus';
@@ -23,7 +24,7 @@ import { resolveTvBackRoute, resolveTvLayer, TV_HOME_ROUTE, type TvRoute } from 
 import { TvHome } from './pages/TvHome';
 import { TvPlayer } from './pages/TvPlayer';
 
-const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login', 'collection', 'queue'] as const;
+const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login', 'collection', 'search', 'queue'] as const;
 
 export const TvApp = () => {
     const player = useTvPlayer();
@@ -67,6 +68,7 @@ export const TvApp = () => {
                 ? `queue-${player.queue[0].id}-0`
                 : 'queue-close',
         collection: 'collection-play-all',
+        search: 'search-input',
         exit: 'exit-background',
         login: account.pendingSwitch
             ? 'login-switch-confirm'
@@ -164,6 +166,18 @@ export const TvApp = () => {
         setRoute(current => ({ ...current, overlay: 'login' }));
     }, [account.lastLoginCompletion]);
 
+    const openSearch = useCallback(() => {
+        setRoute(current => (
+            current.page === 'home' ? { ...current, overlay: 'search' } : current
+        ));
+    }, []);
+
+    const closeSearch = useCallback(() => {
+        setRoute(current => (
+            current.overlay === 'search' ? { ...current, overlay: null } : current
+        ));
+    }, []);
+
     const openPlayer = useCallback(() => {
         setRoute(current => ({ ...current, page: 'player', overlay: null }));
     }, []);
@@ -230,6 +244,7 @@ export const TvApp = () => {
                     player={player}
                     onActivateHero={activateHero}
                     onOpenAccount={openAccount}
+                    onOpenSearch={openSearch}
                     onPlayTracks={playTracks}
                     onOpenCollection={openCollection}
                     inert={route.overlay !== null}
@@ -267,6 +282,13 @@ export const TvApp = () => {
                         setCollection(null);
                         setRoute(current => ({ ...current, overlay: null }));
                     }}
+                />
+            )}
+            {route.overlay === 'search' && (
+                <TvSearchOverlay
+                    providerLabel={account.providerLabel}
+                    onPlayTracks={playTracks}
+                    onClose={closeSearch}
                 />
             )}
             {route.overlay === 'login' && (

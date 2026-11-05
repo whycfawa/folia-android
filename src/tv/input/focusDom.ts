@@ -2,7 +2,7 @@
 // DOM helpers for the TV focus layer. Focusable controls opt in explicitly; nothing here relies on
 // sequential Tab order or browser default button focus.
 
-export type TvLayerId = 'home' | 'player' | 'controls' | 'queue' | 'collection' | 'login' | 'exit';
+export type TvLayerId = 'home' | 'player' | 'controls' | 'queue' | 'collection' | 'search' | 'login' | 'exit';
 
 const FOCUSABLE_SELECTOR = '[data-tv-focusable="true"]:not(:disabled):not([aria-disabled="true"])';
 

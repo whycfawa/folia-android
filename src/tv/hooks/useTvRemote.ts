@@ -29,10 +29,17 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.altKey || event.ctrlKey || event.metaKey) return;
-            if (isTextEntryTarget(event.target)) return;
-
             const action = resolveTvRemoteAction(event);
             if (!action) return;
+            if (isTextEntryTarget(event.target)) {
+                const target = event.target instanceof HTMLElement ? event.target : null;
+                const remoteInput = target?.closest('[data-tv-remote-input="true"]');
+                const canLeaveInput = action === 'up'
+                    || action === 'down'
+                    || action === 'ok'
+                    || action === 'back';
+                if (!remoteInput || !canLeaveInput) return;
+            }
             const repeated = event.repeat || pressTrackerRef.current.press(action);
 
             if (!isTvDirection(action) && repeated) {

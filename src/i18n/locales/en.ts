@@ -8,6 +8,22 @@ export default {
       "trackCount_one": "{{count}} track",
       "trackCount_other": "{{count}} tracks"
     },
+    "search": {
+      "open": "Search songs, artists, albums",
+      "title": "Search",
+      "provider": "Searching {{provider}}",
+      "placeholder": "Enter a song, artist or album",
+      "inputLabel": "Search query",
+      "action": "Search",
+      "hint": "Press OK to open the keyboard. Results appear as you type.",
+      "idle": "Enter a keyword to start searching",
+      "loading": "Searching…",
+      "error": "Search failed. Try again shortly.",
+      "retry": "Try again",
+      "empty": "No songs found for “{{query}}”",
+      "resultCount_one": "{{count}} song found",
+      "resultCount_other": "{{count}} songs found"
+    },
     "home": {
       "signedIn": "Signed in",
       "login": "Sign in",
