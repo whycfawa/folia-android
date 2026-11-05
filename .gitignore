@@ -103,3 +103,5 @@ public/nebbia-strokes.json
 
 # 分析模型由构建任务从 models/ 复制，不入库
 android/app/src/main/assets/models/
+
+%SystemDrive%/
