@@ -69,9 +69,11 @@ public class FoliaNativeStageControlsView extends View {
         int height = getHeight();
         if (width <= 0 || height <= 0) return;
         float margin = dp(24);
+        float barWidth = Math.min(width - margin * 2f, dp(420));
+        float barLeft = (width - barWidth) / 2f;
         float usableHeight = Math.max(dp(64), height - bottomInset);
         float barHeight = Math.min(dp(64), usableHeight - dp(8));
-        rect.set(margin, (usableHeight - barHeight) / 2f, width - margin, (usableHeight + barHeight) / 2f);
+        rect.set(barLeft, (usableHeight - barHeight) / 2f, barLeft + barWidth, (usableHeight + barHeight) / 2f);
         paint.setColor(0xCC101014);
         canvas.drawRoundRect(rect, barHeight / 2f, barHeight / 2f, paint);
         paint.setColor(0x55FFFFFF);
@@ -89,9 +91,9 @@ public class FoliaNativeStageControlsView extends View {
         canvas.drawRect(trackLeft, trackY, trackLeft + (trackRight - trackLeft) * progress, trackY + dp(2), paint);
 
         float cy = (height - bottomInset) / 2f;
-        float left = width * 0.27f;
-        float middle = width * 0.5f;
-        float right = width * 0.73f;
+        float left = rect.left + barWidth * 0.27f;
+        float middle = rect.left + barWidth * 0.5f;
+        float right = rect.left + barWidth * 0.73f;
         paint.setColor(Color.WHITE);
         // prev
         path.reset();
@@ -127,15 +129,17 @@ public class FoliaNativeStageControlsView extends View {
         if (event.getAction() != MotionEvent.ACTION_UP) return true;
         int width = getWidth();
         float x = event.getX();
+        if (x < rect.left || x > rect.right) return true;
         if (event.getY() < rect.top + dp(16)) {
-            float margin = dp(24) + dp(22);
-            float fraction = (x - margin) / Math.max(1f, width - margin * 2);
+            float trackLeft = rect.left + dp(22);
+            float trackRight = rect.right - dp(22);
+            float fraction = (x - trackLeft) / Math.max(1f, trackRight - trackLeft);
             if (listener != null) listener.onSeek(Math.max(0f, Math.min(1f, fraction)));
             performClick();
             return true;
         }
-        if (x < width / 3f) { if (listener != null) listener.onPrevious(); }
-        else if (x > width * 2f / 3f) { if (listener != null) listener.onNext(); }
+        if (x < rect.left + (rect.right - rect.left) / 3f) { if (listener != null) listener.onPrevious(); }
+        else if (x > rect.left + (rect.right - rect.left) * 2f / 3f) { if (listener != null) listener.onNext(); }
         else { if (listener != null) listener.onToggle(); }
         performClick();
         return true;
