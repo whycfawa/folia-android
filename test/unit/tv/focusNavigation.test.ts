@@ -137,6 +137,18 @@ describe('pickNextFocusRect', () => {
         expect(pickNextFocusRect(items, 'only-provider', 'down')?.id).toBe('detail-action');
     });
 
+    it('enters a tab group on its selected item without blocking later lateral moves', () => {
+        const tabs = [
+            { ...groupedRect('tab-playlists', 48, 91, 'tabs', 'horizontal'), groupEntry: 'selected' as const },
+            { ...groupedRect('tab-radio', 160, 91, 'tabs', 'horizontal'), groupEntry: 'selected' as const, selected: true },
+            { ...groupedRect('tab-albums', 272, 91, 'tabs', 'horizontal'), groupEntry: 'selected' as const },
+            rect('hero', 48, 156, 864, 250),
+        ];
+
+        expect(pickNextFocusRect(tabs, 'hero', 'up')?.id).toBe('tab-radio');
+        expect(pickNextFocusRect(tabs, 'tab-radio', 'right')?.id).toBe('tab-albums');
+    });
+
     it('exits a vertical list at its boundary into adjacent chrome', () => {
         const list = [
             groupedRect('play-all', 0, 0, 'play-all', 'horizontal'),

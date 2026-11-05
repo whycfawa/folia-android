@@ -114,7 +114,7 @@ img {
 .tv-home-page {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     overflow-x: hidden;
     overflow-y: hidden;
     background:
@@ -236,10 +236,45 @@ img {
     font-size: clamp(11px, 0.63vw, 13px);
 }
 
+.tv-home-tabs {
+    position: relative;
+    z-index: 3;
+    grid-row: 2;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 0.7vw, 12px);
+    padding: 0 var(--tv-safe-x) clamp(10px, 1.4vh, 15px);
+}
+
+.tv-home-tab {
+    min-width: clamp(104px, 7.6vw, 142px);
+    min-height: clamp(44px, 5.2vh, 52px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 clamp(20px, 1.55vw, 28px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    background: rgba(18, 18, 29, 0.72);
+    color: var(--tv-text-muted);
+    font-size: clamp(17px, 0.95vw, 20px);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+.tv-home-tab.is-active {
+    border-color: rgba(167, 139, 250, 0.42);
+    background: rgba(167, 139, 250, 0.16);
+    color: #eee8ff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
 .tv-home-content {
     position: relative;
     z-index: 2;
-    grid-row: 2;
+    grid-row: 3;
     width: 100%;
     min-width: 0;
     min-height: 0;
@@ -446,6 +481,7 @@ img {
 .tv-row-scroll {
     min-height: calc(var(--tv-card-w) + 62px);
     display: flex;
+    align-items: flex-start;
     gap: clamp(18px, 1.25vw, 24px);
     overflow-x: auto;
     overflow-y: hidden;
@@ -527,6 +563,43 @@ img {
     background: rgba(41, 34, 61, 0.9);
 }
 
+.tv-online-card .tv-collection-cover {
+    isolation: isolate;
+}
+
+.tv-online-card .tv-collection-cover::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, transparent 58%, rgba(4, 4, 10, 0.28));
+    pointer-events: none;
+}
+
+.tv-online-card.is-personal-fm .tv-collection-cover {
+    background:
+        radial-gradient(circle at 24% 18%, rgba(196, 181, 253, 0.28), transparent 48%),
+        linear-gradient(145deg, #302750, #12121d);
+    color: #d8ccff;
+}
+
+.tv-online-card.is-daily .tv-collection-cover {
+    background:
+        radial-gradient(circle at 76% 18%, rgba(245, 184, 168, 0.26), transparent 46%),
+        linear-gradient(145deg, #3a2633, #13121d);
+    color: #ffd2c5;
+}
+
+.tv-online-card.is-personal-fm .tv-media-copy small {
+    color: #c4b5fd;
+}
+
+.tv-online-card.is-daily .tv-media-copy small {
+    color: #f5b8a8;
+}
+
 .tv-playing-bars {
     position: absolute;
     right: 10px;
@@ -562,7 +635,7 @@ img {
 
 .tv-row-empty {
     width: 100%;
-    min-height: calc(var(--tv-card-w) * 0.72);
+    min-height: clamp(64px, 10vh, 88px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -738,6 +811,16 @@ img {
     color: #fda4af;
 }
 
+.tv-player-status {
+    min-height: 0;
+    padding: 10px 14px;
+}
+
+.tv-player-status em {
+    padding-left: 0;
+    border-left: 0;
+}
+
 .tv-lyric-stage {
     position: relative;
     z-index: 4;
@@ -899,18 +982,19 @@ img {
 .tv-control-dock {
     position: absolute;
     z-index: 40;
-    left: var(--tv-safe-x);
-    right: var(--tv-safe-x);
-    bottom: var(--tv-safe-y);
+    left: 0;
+    right: 0;
+    bottom: 0;
     min-height: var(--tv-control-dock-h);
     padding:
         clamp(14px, 1.9vh, 20px)
-        clamp(20px, 1.6vw, 30px)
-        clamp(12px, 1.7vh, 18px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 30px;
-    background: rgba(13, 13, 22, 0.96);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+        var(--tv-safe-x)
+        calc(var(--tv-safe-y) + clamp(8px, 1.2vh, 12px));
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: clamp(24px, 2vw, 32px) clamp(24px, 2vw, 32px) 0 0;
+    background: linear-gradient(180deg, rgba(17, 17, 27, 0.985), rgba(9, 9, 14, 0.995));
+    box-shadow: 0 -22px 56px rgba(0, 0, 0, 0.34);
     animation: tv-control-in 220ms cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
@@ -2265,7 +2349,7 @@ img {
 
     .tv-player-page.has-controls .tv-lyric-stage {
         padding-top: 8px;
-        padding-bottom: calc(var(--tv-control-dock-h) + var(--tv-safe-y) + 8px);
+        padding-bottom: calc(var(--tv-control-dock-h) + 8px);
     }
 
     .tv-lyric-tokens {
@@ -2287,8 +2371,8 @@ img {
     }
 
     .tv-control-dock {
-        padding: 8px 12px 7px;
-        border-radius: 22px;
+        padding: 8px var(--tv-safe-x) calc(var(--tv-safe-y) + 4px);
+        border-radius: 18px 18px 0 0;
     }
 
     .tv-control-progress {
@@ -2580,7 +2664,7 @@ img {
     }
 
     .tv-control-dock {
-        border-radius: 18px;
+        border-radius: 16px 16px 0 0;
     }
 
     .tv-lyric-empty {

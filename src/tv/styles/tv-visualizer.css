@@ -1,0 +1,148 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "../../components/visualizer";
+@source "../components/TvVisualizerStage.tsx";
+
+/* src/tv/styles/tv-visualizer.css */
+/* TV deliberately imports only Tailwind's theme and utilities, never the main app's preflight. */
+
+.tv-visualizer-stage {
+    position: relative;
+    z-index: 4;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    isolation: isolate;
+    padding:
+        clamp(10px, 2.2vh, 28px)
+        clamp(24px, 4vw, 72px)
+        clamp(10px, 2vh, 24px);
+    contain: layout paint;
+    pointer-events: none;
+    transition: padding 180ms ease;
+}
+
+.tv-player-page.has-controls .tv-visualizer-stage {
+    padding-bottom: calc(
+        var(--tv-control-dock-h) + clamp(8px, 1.6vh, 20px)
+    );
+}
+
+.tv-visualizer-stage.is-constrained {
+    transition: none;
+}
+
+.tv-visualizer-stage__renderer {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.tv-visualizer-stage__renderer > div:first-child {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+/* Classic ships desktop presentation dimensions. On TV the stage already owns the safe area,
+   the dock clearance and the available viewport, so the renderer must fill that box instead. */
+.tv-visualizer-stage__renderer [class~="h-[70vh]"] {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+}
+
+.tv-visualizer-stage__renderer [class~="max-w-6xl"] {
+    min-height: 0 !important;
+    max-height: 100%;
+    padding-inline: clamp(8px, 2.4vw, 36px);
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Keep the original word spring/rotation/glow, but size it from both projector axes so long CJK
+   lines can wrap without touching the header or the remote-control dock. */
+.tv-visualizer-stage__renderer [class~="whitespace-nowrap"] {
+    font-size: clamp(30px, min(5.8vw, 9.4vh), 72px) !important;
+    line-height: 1.16 !important;
+}
+
+.tv-visualizer-copy {
+    position: absolute;
+    z-index: 6;
+    left: clamp(24px, 5vw, 96px);
+    right: clamp(24px, 5vw, 96px);
+    bottom: clamp(8px, 1.6vh, 18px);
+    margin: 0;
+    overflow: hidden;
+    color: rgba(244, 240, 255, 0.48);
+    font-size: clamp(16px, min(1.35vw, 2.2vh), 24px);
+    font-weight: 450;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-wrap: balance;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.tv-visualizer-copy.is-translation {
+    color: rgba(244, 240, 255, 0.64);
+}
+
+.tv-player-page.has-controls .tv-visualizer-copy {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+/* Without preflight the Tailwind border-width utility has no border style to render. */
+.tv-visualizer-stage__renderer [class~="border-1"] {
+    border-style: solid;
+}
+
+@media (max-height: 500px) {
+    .tv-visualizer-stage {
+        padding:
+            4px
+            clamp(18px, 3.6vw, 34px)
+            4px;
+    }
+
+    .tv-player-page.has-controls .tv-visualizer-stage {
+        padding-bottom: calc(
+            var(--tv-control-dock-h) + 4px
+        );
+    }
+
+    .tv-visualizer-stage__renderer [class~="max-w-6xl"] {
+        padding-inline: clamp(4px, 1.8vw, 16px);
+    }
+
+    .tv-visualizer-stage__renderer [class~="whitespace-nowrap"] {
+        font-size: clamp(26px, 5.6vw, 38px) !important;
+        line-height: 1.14 !important;
+    }
+
+    .tv-visualizer-copy {
+        bottom: 4px;
+        font-size: clamp(14px, 2.2vh, 18px);
+    }
+}
+
+@media (max-width: 760px) {
+    .tv-visualizer-stage {
+        padding-inline: clamp(16px, 3.5vw, 28px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tv-visualizer-stage,
+    .tv-visualizer-copy {
+        transition: none;
+    }
+}

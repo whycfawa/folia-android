@@ -8,6 +8,7 @@ import {
 import { TvBackdrop } from '../components/TvBackdrop';
 import { TvControlDock } from '../components/TvControlDock';
 import { TvLyricStage } from '../components/TvLyricStage';
+import { TvVisualizerStage } from '../components/TvVisualizerStage';
 import type { TvPlayerModel } from '../model/tvTypes';
 import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 
@@ -31,7 +32,11 @@ export const TvPlayer = ({
     const coverUrl = resolveTvSongCoverUrl(song);
     const artist = song ? getSongArtistLabel(song) : '';
     const album = song ? getSongAlbumLabel(song) : '';
-    const modeLabel = player.effectsMode === 'flow' ? t('tv.player.flow') : t('tv.player.calm');
+    const statusLabel = player.status === 'loading'
+        ? t('tv.player.loading')
+        : player.status === 'error'
+            ? t('tv.player.playbackFailed')
+            : null;
 
     return (
         <div
@@ -50,20 +55,34 @@ export const TvPlayer = ({
                     <strong>{song?.name || t('tv.player.noSong')}</strong>
                     <small>{[artist, album].filter(Boolean).join(' · ') || t('tv.home.chooseSong')}</small>
                 </div>
-                <div className="tv-player-mode">
-                    <span>{modeLabel}</span>
-                    {player.status === 'loading' && <em>{t('tv.player.loading')}</em>}
-                    {player.status === 'error' && <em className="is-error">{t('tv.player.playbackFailed')}</em>}
-                </div>
+                {statusLabel && (
+                    <div className="tv-player-mode tv-player-status" aria-live="polite">
+                        <em className={player.status === 'error' ? 'is-error' : undefined}>
+                            {statusLabel}
+                        </em>
+                    </div>
+                )}
             </header>
-            <TvLyricStage
-                song={song}
-                lyrics={player.lyrics}
-                status={player.status}
-                effectsMode={player.effectsMode}
-                isLyricsLoading={player.isLyricsLoading}
-                currentTime={player.currentTime}
-            />
+            {song && player.lyrics && player.lyrics.lines.length > 0 && player.status !== 'error' ? (
+                <TvVisualizerStage
+                    key={song.id}
+                    song={song}
+                    lyrics={player.lyrics}
+                    status={player.status}
+                    effectsMode={player.effectsMode}
+                    constrained={constrained}
+                    currentTime={player.currentTime}
+                />
+            ) : (
+                <TvLyricStage
+                    song={song}
+                    lyrics={player.lyrics}
+                    status={player.status}
+                    effectsMode={player.effectsMode}
+                    isLyricsLoading={player.isLyricsLoading}
+                    currentTime={player.currentTime}
+                />
+            )}
             <footer className="tv-player-footer">
                 <span>{t('tv.player.backHome')}</span>
                 <span>{controlsOpen ? t('tv.player.controlHint') : t('tv.player.remoteHint')}</span>

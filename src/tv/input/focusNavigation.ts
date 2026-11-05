@@ -12,6 +12,8 @@ export type TvFocusRect = {
     bottom: number;
     group?: string;
     groupAxis?: 'horizontal' | 'vertical';
+    groupEntry?: 'selected';
+    selected?: boolean;
     container?: string;
 };
 
@@ -98,6 +100,17 @@ export const pickNextFocusRect = (
     if (!next && candidates !== rects && !lockedToGroup) next = findBest(rects);
     if (!next && lockedToGroup && current.groupAxis === 'vertical') {
         next = findBest(rects.filter(rect => rect.group !== current.group));
+    }
+
+    if (
+        next
+        && next.group !== current.group
+        && next.groupEntry === 'selected'
+    ) {
+        next = rects.find(rect => (
+            rect.group === next?.group
+            && rect.selected
+        )) ?? next;
     }
 
     return next ?? current;
