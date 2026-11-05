@@ -14,11 +14,7 @@ import { TvOnlineCard, type TvOnlineCardKind } from './TvOnlineCard';
 import { TvPlaylistCard } from './TvPlaylistCard';
 
 // src/tv/components/TvHomeLibrarySection.tsx
-// 首页在线曲库的页签与卡片行：歌单、电台、专辑共用同一块可见区域，切换页签时不保留隐藏行。
-
-export type TvHomeLibraryTab = 'playlists' | 'radio' | 'albums';
-
-const LIBRARY_TABS: TvHomeLibraryTab[] = ['playlists', 'radio', 'albums'];
+// 首页在线曲库的纵向内容区，固定按电台、歌单、专辑排列，不再使用页签切换。
 
 const radioCardKind = (card: LibraryHomeCard): TvOnlineCardKind => (
     isPersonalFmCard(card)
@@ -28,60 +24,14 @@ const radioCardKind = (card: LibraryHomeCard): TvOnlineCardKind => (
             : 'playlist'
 );
 
-/** The persistent three-tab entry for the online library. */
-export const TvHomeLibraryTabs = ({
-    activeTab,
-    onChange,
-}: {
-    activeTab: TvHomeLibraryTab;
-    onChange: (tab: TvHomeLibraryTab) => void;
-}) => {
-    const { t } = useTranslation();
-
-    return (
-        <div
-            className="tv-home-tabs"
-            role="tablist"
-            aria-label={t('tv.home.onlineLibrary')}
-            data-tv-focus-group="home-library-tabs"
-            data-tv-focus-axis="horizontal"
-            data-tv-focus-entry="selected"
-        >
-            {LIBRARY_TABS.map(tab => (
-                <button
-                    key={tab}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === tab}
-                    aria-controls="tv-home-library-panel"
-                    className={`tv-home-tab${activeTab === tab ? ' is-active' : ''}`}
-                    data-tv-focusable="true"
-                    data-tv-focus-key={`home-library-tab-${tab}`}
-                    onClick={() => onChange(tab)}
-                    onFocus={() => {
-                        if (activeTab !== tab) onChange(tab);
-                    }}
-                >
-                    {t(`tv.home.${tab}`)}
-                </button>
-            ))}
-        </div>
-    );
-};
-
-/**
- * The selected online-library row. Only the visible tab is mounted, so TV does not keep three
- * horizontal card rows (and their lazy images) alive below the fold.
- */
-export const TvHomeLibraryRow = ({
-    activeTab,
+/** 电台、歌单、专辑三行同时挂载，按遥控器几何导航顺序纵向排列。 */
+export const TvHomeLibraryRows = ({
     account,
     playlists,
     online,
     onPlayTracks,
     onOpenCollection,
 }: {
-    activeTab: TvHomeLibraryTab;
     account: TvAccountModel;
     playlists: ProviderCollection[];
     online: TvOnlineHomeModel;
@@ -108,89 +58,79 @@ export const TvHomeLibraryRow = ({
     };
 
     return (
-        <div
-            id="tv-home-library-panel"
-            role="tabpanel"
-            aria-label={t(`tv.home.${activeTab}`)}
-        >
-            {activeTab === 'playlists' && (
-                <TvMediaRow
-                    title={t('tv.home.playlists')}
-                    subtitle={account.isAuthenticated ? account.providerLabel : undefined}
-                    focusGroup="home-playlists"
-                >
-                    {!account.isAuthenticated ? (
-                        <div className="tv-row-empty">{t('tv.home.loginForPlaylists')}</div>
-                    ) : playlists.length === 0 ? (
-                        <div className="tv-row-empty">{t('tv.home.playlistsEmpty')}</div>
-                    ) : playlists.map(collection => (
-                        <TvPlaylistCard
-                            key={collection.id}
-                            collection={collection}
-                            focusKey={`home-playlist-${collection.id}`}
-                            onClick={() => onOpenCollection(collection)}
-                        />
-                    ))}
-                </TvMediaRow>
-            )}
+        <>
+            <TvMediaRow
+                title={t('tv.home.radio')}
+                subtitle={online.radioActionError
+                    ? t('tv.home.radioPlaybackError')
+                    : account.isAuthenticated ? account.providerLabel : undefined}
+                focusGroup="home-radio"
+            >
+                {!account.isAuthenticated ? (
+                    <div className="tv-row-empty">{t('tv.home.loginForRadio')}</div>
+                ) : !online.canUseRadio ? (
+                    <div className="tv-row-empty">{t('tv.home.radioUnavailable')}</div>
+                ) : online.radioStatus === 'error' ? (
+                    <div className="tv-row-empty">{t('tv.home.radioError')}</div>
+                ) : online.radioStatus === 'idle' || online.radioStatus === 'loading' ? (
+                    <div className="tv-row-empty">{t('tv.home.loading')}</div>
+                ) : online.radioCards.length === 0 ? (
+                    <div className="tv-row-empty">{t('tv.home.radioEmpty')}</div>
+                ) : online.radioCards.map(card => (
+                    <TvOnlineCard
+                        key={card.id}
+                        card={card}
+                        kind={radioCardKind(card)}
+                        focusKey={`home-radio-${String(card.id)}`}
+                        onClick={() => void activateRadioCard(card)}
+                    />
+                ))}
+            </TvMediaRow>
 
-            {activeTab === 'radio' && (
-                <TvMediaRow
-                    title={t('tv.home.radio')}
-                    subtitle={online.radioActionError
-                        ? t('tv.home.radioPlaybackError')
-                        : account.isAuthenticated ? account.providerLabel : undefined}
-                    focusGroup="home-radio"
-                >
-                    {!account.isAuthenticated ? (
-                        <div className="tv-row-empty">{t('tv.home.loginForRadio')}</div>
-                    ) : !online.canUseRadio ? (
-                        <div className="tv-row-empty">{t('tv.home.radioUnavailable')}</div>
-                    ) : online.radioStatus === 'error' ? (
-                        <div className="tv-row-empty">{t('tv.home.radioError')}</div>
-                    ) : online.radioStatus === 'idle' || online.radioStatus === 'loading' ? (
-                        <div className="tv-row-empty">{t('tv.home.loading')}</div>
-                    ) : online.radioCards.length === 0 ? (
-                        <div className="tv-row-empty">{t('tv.home.radioEmpty')}</div>
-                    ) : online.radioCards.map(card => (
-                        <TvOnlineCard
-                            key={card.id}
-                            card={card}
-                            kind={radioCardKind(card)}
-                            focusKey={`home-radio-${String(card.id)}`}
-                            onClick={() => void activateRadioCard(card)}
-                        />
-                    ))}
-                </TvMediaRow>
-            )}
+            <TvMediaRow
+                title={t('tv.home.playlists')}
+                subtitle={account.isAuthenticated ? account.providerLabel : undefined}
+                focusGroup="home-playlists"
+            >
+                {!account.isAuthenticated ? (
+                    <div className="tv-row-empty">{t('tv.home.loginForPlaylists')}</div>
+                ) : playlists.length === 0 ? (
+                    <div className="tv-row-empty">{t('tv.home.playlistsEmpty')}</div>
+                ) : playlists.map(collection => (
+                    <TvPlaylistCard
+                        key={collection.id}
+                        collection={collection}
+                        focusKey={`home-playlist-${collection.id}`}
+                        onClick={() => onOpenCollection(collection)}
+                    />
+                ))}
+            </TvMediaRow>
 
-            {activeTab === 'albums' && (
-                <TvMediaRow
-                    title={t('tv.home.albums')}
-                    subtitle={account.isAuthenticated ? account.providerLabel : undefined}
-                    focusGroup="home-albums"
-                >
-                    {!account.isAuthenticated ? (
-                        <div className="tv-row-empty">{t('tv.home.loginForAlbums')}</div>
-                    ) : !online.canUseAlbums ? (
-                        <div className="tv-row-empty">{t('tv.home.albumsUnavailable')}</div>
-                    ) : online.albumsStatus === 'error' ? (
-                        <div className="tv-row-empty">{t('tv.home.albumsError')}</div>
-                    ) : online.albumsStatus === 'idle' || online.albumsStatus === 'loading' ? (
-                        <div className="tv-row-empty">{t('tv.home.loading')}</div>
-                    ) : online.albumCards.length === 0 ? (
-                        <div className="tv-row-empty">{t('tv.home.albumsEmpty')}</div>
-                    ) : online.albumCards.map(card => (
-                        <TvOnlineCard
-                            key={card.id}
-                            card={card}
-                            kind="album"
-                            focusKey={`home-album-${String(card.id)}`}
-                            onClick={() => openOnlineCollection(card)}
-                        />
-                    ))}
-                </TvMediaRow>
-            )}
-        </div>
+            <TvMediaRow
+                title={t('tv.home.albums')}
+                subtitle={account.isAuthenticated ? account.providerLabel : undefined}
+                focusGroup="home-albums"
+            >
+                {!account.isAuthenticated ? (
+                    <div className="tv-row-empty">{t('tv.home.loginForAlbums')}</div>
+                ) : !online.canUseAlbums ? (
+                    <div className="tv-row-empty">{t('tv.home.albumsUnavailable')}</div>
+                ) : online.albumsStatus === 'error' ? (
+                    <div className="tv-row-empty">{t('tv.home.albumsError')}</div>
+                ) : online.albumsStatus === 'idle' || online.albumsStatus === 'loading' ? (
+                    <div className="tv-row-empty">{t('tv.home.loading')}</div>
+                ) : online.albumCards.length === 0 ? (
+                    <div className="tv-row-empty">{t('tv.home.albumsEmpty')}</div>
+                ) : online.albumCards.map(card => (
+                    <TvOnlineCard
+                        key={card.id}
+                        card={card}
+                        kind="album"
+                        focusKey={`home-album-${String(card.id)}`}
+                        onClick={() => openOnlineCollection(card)}
+                    />
+                ))}
+            </TvMediaRow>
+        </>
     );
 };
