@@ -1,6 +1,6 @@
 // src/tv/components/TvCollectionOverlay.tsx
 
-import { ListMusic, Loader2, Play, RefreshCw, X } from 'lucide-react';
+import { ListMusic, Loader2, Play, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
@@ -11,11 +11,9 @@ import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 export const TvCollectionOverlay = ({
     collection,
     onPlayTracks,
-    onClose,
 }: {
     collection: ProviderCollection;
     onPlayTracks: (tracks: SongResult[], startIndex: number) => void;
-    onClose: () => void;
 }) => {
     const { t } = useTranslation();
     const { tracks, isLoading, error, reload } = useTvCollectionTracks(collection);
@@ -35,15 +33,6 @@ export const TvCollectionOverlay = ({
                             <h2 id="tv-collection-title">{collection.name}</h2>
                         </span>
                     </div>
-                    <button
-                        type="button"
-                        data-tv-focusable="true"
-                        data-tv-focus-key="collection-close"
-                        onClick={onClose}
-                        aria-label={t('tv.common.close')}
-                    >
-                        <X size={22} />
-                    </button>
                 </header>
 
                 <div className="tv-collection-body">

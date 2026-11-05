@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { Loader2, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,10 +15,8 @@ import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 
 export const TvSearchOverlay = ({
     onPlayTracks,
-    onClose,
 }: {
     onPlayTracks: (tracks: SongResult[], startIndex: number) => void;
-    onClose: () => void;
 }) => {
     const { t } = useTranslation();
     const search = useTvSearch();
@@ -58,15 +56,6 @@ export const TvSearchOverlay = ({
                             <h2 id="tv-search-title">{t('tv.search.title')}</h2>
                         </span>
                     </div>
-                    <button
-                        type="button"
-                        data-tv-focusable="true"
-                        data-tv-focus-key="search-close"
-                        onClick={onClose}
-                        aria-label={t('tv.common.close')}
-                    >
-                        <X size={22} />
-                    </button>
                 </header>
 
                 <div className="tv-search-bar">

@@ -1,7 +1,7 @@
 // src/tv/components/TvHero.tsx
 
-import { CalendarClock, Disc3, LogIn, Play } from 'lucide-react';
-import { getSongAlbumLabel, getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
+import { Disc3, LogIn, Play } from 'lucide-react';
+import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
 import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 
@@ -17,21 +17,23 @@ export const TvHero = ({
     isPlaying: boolean;
     onActivate: () => void;
     labels: {
-        continue: string;
-        welcome: string;
-        openPlayer: string;
         chooseSong: string;
-        loginTitle: string;
         loginHint: string;
-        loginAction: string;
     };
 }) => {
     const coverUrl = resolveTvSongCoverUrl(song);
+    const title = song?.name
+        || (isAuthenticated ? labels.chooseSong : labels.loginHint);
+    const artist = song ? getSongArtistLabel(song) : '';
+    const actionIcon = song || isAuthenticated
+        ? <Play size={11} fill="currentColor" />
+        : <LogIn size={11} />;
 
     return (
         <button
             type="button"
             className={`tv-hero${song ? ' has-song' : ''}`}
+            aria-label={[title, artist].filter(Boolean).join('，')}
             data-tv-focusable="true"
             data-tv-focus-key="home-hero"
             onClick={onActivate}
@@ -48,32 +50,15 @@ export const TvHero = ({
                 ) : (
                     <span className="tv-hero-art-fallback"><Disc3 size={34} /></span>
                 )}
+                <span className="tv-hero-art-state" aria-hidden="true">{actionIcon}</span>
             </span>
             <span className="tv-hero-copy">
-                {!song && (
-                    <span className="tv-hero-eyebrow">
-                        <CalendarClock size={14} />
-                        {isAuthenticated ? labels.welcome : labels.loginTitle}
-                    </span>
-                )}
-                <strong className="tv-hero-title">
-                    {song ? song.name : isAuthenticated ? labels.chooseSong : labels.loginHint}
-                </strong>
-                {song && (
-                    <span className="tv-hero-meta">
-                        <span>{getSongArtistLabel(song) || '—'}</span>
-                        {getSongAlbumLabel(song) && <span>{getSongAlbumLabel(song)}</span>}
-                    </span>
-                )}
+                <strong className="tv-hero-title">{title}</strong>
+                {artist && <span className="tv-hero-meta">{artist}</span>}
             </span>
-            <span className="tv-hero-action">
-                {song || isAuthenticated
-                    ? <Play size={16} fill="currentColor" />
-                    : <LogIn size={16} />}
-                {song
-                    ? (isPlaying ? labels.continue : labels.openPlayer)
-                    : isAuthenticated ? labels.chooseSong : labels.loginAction}
-            </span>
+            {song && isPlaying && (
+                <span className="tv-hero-playing" aria-hidden="true"><i /><i /><i /></span>
+            )}
         </button>
     );
 };

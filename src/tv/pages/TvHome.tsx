@@ -67,13 +67,8 @@ export const TvHome = ({
                     isPlaying={isPlaying}
                     onActivate={onActivateHero}
                     labels={{
-                        continue: t('tv.home.continue'),
-                        welcome: t('tv.home.welcome'),
-                        openPlayer: t('tv.home.openPlayer'),
                         chooseSong: t('tv.home.chooseSong'),
-                        loginTitle: t('tv.home.loginTitle'),
                         loginHint: t('tv.home.loginHint'),
-                        loginAction: t('tv.home.login'),
                     }}
                 />
             </TvHeader>

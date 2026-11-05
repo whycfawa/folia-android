@@ -68,7 +68,7 @@ export const TvApp = () => {
             ? 'queue-current'
             : player.queue[0]
                 ? `queue-${player.queue[0].id}-0`
-                : 'queue-close',
+                : undefined,
         collection: 'collection-play-all',
         search: 'search-input',
         exit: 'exit-background',
@@ -81,7 +81,7 @@ export const TvApp = () => {
                         ? 'login-restart'
                         : account.login.canRetry
                             ? 'login-retry'
-                            : 'login-close'
+                            : `login-provider-${account.activeProviderId}`
                     : `login-provider-${account.activeProviderId}`,
     }), [
         account.activeProviderId,
@@ -175,12 +175,6 @@ export const TvApp = () => {
         ));
     }, []);
 
-    const closeSearch = useCallback(() => {
-        setRoute(current => (
-            current.overlay === 'search' ? { ...current, overlay: null } : current
-        ));
-    }, []);
-
     const openPlayer = useCallback(() => {
         setRoute(current => ({ ...current, page: 'player', overlay: null }));
     }, []);
@@ -267,11 +261,10 @@ export const TvApp = () => {
             ) : (
                 <TvPlayer
                     player={player}
-                    controlsOpen={route.overlay === 'controls'}
+                    controlsOpen={route.overlay === 'controls' || route.overlay === 'queue'}
                     constrained={performanceProfile.tier === 'constrained'}
                     onOpenQueue={() => setRoute(current => ({ ...current, overlay: 'queue' }))}
                     onOpenEffects={openEffects}
-                    onCloseControls={closeControls}
                     inert={route.overlay !== null && route.overlay !== 'controls'}
                 />
             )}
@@ -283,11 +276,6 @@ export const TvApp = () => {
                         player.playQueue(player.queue, index);
                         setRoute(current => ({ ...current, overlay: 'controls' }));
                     }}
-                    onClose={() => {
-                        setRoute(current => (
-                            current.overlay === 'queue' ? { ...current, overlay: 'controls' } : current
-                        ));
-                    }}
                 />
             )}
             {route.overlay === 'effects' && (
@@ -296,32 +284,23 @@ export const TvApp = () => {
                     backgroundMode={player.backgroundMode}
                     onVisualizerModeChange={player.setVisualizerMode}
                     onBackgroundModeChange={player.setBackgroundMode}
-                    onClose={() => setRoute(current => (
-                        current.overlay === 'effects' ? { ...current, overlay: 'controls' } : current
-                    ))}
                 />
             )}
             {route.overlay === 'collection' && collection && (
                 <TvCollectionOverlay
                     collection={collection}
                     onPlayTracks={playTracks}
-                    onClose={() => {
-                        setCollection(null);
-                        setRoute(current => ({ ...current, overlay: null }));
-                    }}
                 />
             )}
             {route.overlay === 'search' && (
                 <TvSearchOverlay
                     onPlayTracks={playTracks}
-                    onClose={closeSearch}
                 />
             )}
             {route.overlay === 'login' && (
                 <TvLoginOverlay
                     account={account}
                     startError={loginError}
-                    onClose={closeAccount}
                     onSwitchConfirmed={closeAccount}
                 />
             )}

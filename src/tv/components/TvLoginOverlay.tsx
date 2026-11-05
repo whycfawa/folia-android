@@ -1,6 +1,6 @@
 // src/tv/components/TvLoginOverlay.tsx
 
-import { Check, Loader2, QrCode, RefreshCw, ServerCog, UserRound, X } from 'lucide-react';
+import { Check, Loader2, QrCode, RefreshCw, ServerCog, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProviderAccountSummary } from '../../types/onlineMusic';
@@ -14,12 +14,10 @@ const errorMessage = (error: unknown): string => (
 export const TvLoginOverlay = ({
     account,
     startError,
-    onClose,
     onSwitchConfirmed,
 }: {
     account: TvAccountModel;
     startError: string | null;
-    onClose: () => void;
     onSwitchConfirmed: () => void;
 }) => {
     const { t } = useTranslation();
@@ -98,15 +96,6 @@ export const TvLoginOverlay = ({
                             <h2 id="tv-login-title">{title}</h2>
                         </span>
                     </div>
-                    <button
-                        type="button"
-                        data-tv-focusable="true"
-                        data-tv-focus-key="login-close"
-                        onClick={onClose}
-                        aria-label={t('tv.common.close')}
-                    >
-                        <X size={22} />
-                    </button>
                 </header>
 
                 <div className="tv-account-layout">

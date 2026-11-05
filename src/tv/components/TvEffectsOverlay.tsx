@@ -1,4 +1,4 @@
-import { Check, Sparkles, X } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { VisualizerBackgroundMode, VisualizerMode } from '../../types';
 import {
@@ -18,13 +18,11 @@ export const TvEffectsOverlay = ({
     backgroundMode,
     onVisualizerModeChange,
     onBackgroundModeChange,
-    onClose,
 }: {
     visualizerMode: VisualizerMode;
     backgroundMode: VisualizerBackgroundMode;
     onVisualizerModeChange: (mode: VisualizerMode) => void;
     onBackgroundModeChange: (mode: VisualizerBackgroundMode) => void;
-    onClose: () => void;
 }) => {
     const { t } = useTranslation();
 
@@ -43,15 +41,6 @@ export const TvEffectsOverlay = ({
                             <h2 id="tv-effects-title">{t('tv.effects.title')}</h2>
                         </span>
                     </div>
-                    <button
-                        type="button"
-                        data-tv-focusable="true"
-                        data-tv-focus-key="effects-close"
-                        onClick={onClose}
-                        aria-label={t('tv.common.close')}
-                    >
-                        <X size={22} />
-                    </button>
                 </header>
 
                 <div className="tv-effects-body">

@@ -1,6 +1,6 @@
 // src/tv/components/TvQueueOverlay.tsx
 
-import { ListMusic, X } from 'lucide-react';
+import { ListMusic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
@@ -10,19 +10,17 @@ export const TvQueueOverlay = ({
     queue,
     currentIndex,
     onPlay,
-    onClose,
 }: {
     queue: SongResult[];
     currentIndex: number;
     onPlay: (index: number) => void;
-    onClose: () => void;
 }) => {
     const { t } = useTranslation();
 
     return (
         <section id="tv-layer-queue" data-tv-layer="queue" className="tv-overlay tv-queue-overlay">
             <div
-                className="tv-overlay-panel"
+                className="tv-overlay-panel tv-queue-panel"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="tv-queue-title"
@@ -34,15 +32,6 @@ export const TvQueueOverlay = ({
                             <h2 id="tv-queue-title">{t('tv.player.queue')}</h2>
                         </span>
                     </div>
-                    <button
-                        type="button"
-                        data-tv-focusable="true"
-                        data-tv-focus-key="queue-close"
-                        onClick={onClose}
-                        aria-label={t('tv.common.close')}
-                    >
-                        <X size={22} />
-                    </button>
                 </header>
                 <div
                     className="tv-overlay-list"
@@ -75,7 +64,6 @@ export const TvQueueOverlay = ({
                                     <strong>{song.name}</strong>
                                     <small>{getSongArtistLabel(song) || '—'}</small>
                                 </span>
-                                {index === currentIndex && <em>{t('tv.player.nowPlaying')}</em>}
                             </button>
                         );
                     })}

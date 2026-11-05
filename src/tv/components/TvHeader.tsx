@@ -26,10 +26,6 @@ export const TvHeader = ({
 
     return (
         <header className="tv-header">
-            <div className="tv-brand">
-                <span className="tv-brand-mark">F</span>
-                <strong>Music</strong>
-            </div>
             {children}
             <button
                 type="button"

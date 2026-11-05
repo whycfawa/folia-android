@@ -22,7 +22,6 @@ export const TvPlayer = ({
     constrained,
     onOpenQueue,
     onOpenEffects,
-    onCloseControls,
     inert,
 }: {
     player: TvPlayerModel;
@@ -30,7 +29,6 @@ export const TvPlayer = ({
     constrained: boolean;
     onOpenQueue: () => void;
     onOpenEffects: () => void;
-    onCloseControls: () => void;
     inert: boolean;
 }) => {
     const { t } = useTranslation();
@@ -116,7 +114,6 @@ export const TvPlayer = ({
                     constrained={constrained}
                     onOpenQueue={onOpenQueue}
                     onOpenEffects={onOpenEffects}
-                    onClose={onCloseControls}
                 />
             )}
         </div>
