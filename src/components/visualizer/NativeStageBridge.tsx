@@ -47,6 +47,7 @@ const NativeStageBridge: React.FC = () => {
         void enableNativeStage().catch(error => {
             console.warn('[NativeStage] enable failed', error);
             document.documentElement.classList.remove('folia-native-stage');
+            useDesktopSettingsStore.getState().handleToggleNativeStage(false);
         });
         return () => {
             document.documentElement.classList.remove('folia-native-stage');

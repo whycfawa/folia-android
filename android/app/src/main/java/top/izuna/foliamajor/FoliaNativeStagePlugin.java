@@ -1,6 +1,7 @@
 package top.izuna.foliamajor;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.view.ViewGroup;
 import android.webkit.WebView;
@@ -17,10 +18,28 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  */
 @CapacitorPlugin(name = "FoliaNativeStage")
 public class FoliaNativeStagePlugin extends Plugin {
+    private static final String PREFS = "folia_native_stage";
+    private static final String ACTIVE = "active";
     private FoliaNativeStageView stageView;
+    private boolean guardChecked;
+    private boolean unsafe;
+
+    /** 上一次进程没来得及 disable 就死了：这次先拒绝一次，避免闪退循环。 */
+    private boolean consumeCrashGuard() {
+        if (guardChecked) return unsafe;
+        guardChecked = true;
+        SharedPreferences preferences = getContext().getSharedPreferences(PREFS, 0);
+        unsafe = preferences.getBoolean(ACTIVE, false);
+        preferences.edit().putBoolean(ACTIVE, false).apply();
+        return unsafe;
+    }
 
     @PluginMethod
     public void enable(PluginCall call) {
+        if (consumeCrashGuard()) {
+            call.reject("native-stage-previous-crash");
+            return;
+        }
         Activity activity = getActivity();
         if (activity == null) {
             call.reject("no activity");
@@ -31,18 +50,24 @@ public class FoliaNativeStagePlugin extends Plugin {
             call.reject("no content view");
             return;
         }
-        if (stageView == null) {
-            stageView = new FoliaNativeStageView(activity);
-            root.addView(stageView, 0, new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT));
+        try {
+            if (stageView == null) {
+                stageView = new FoliaNativeStageView(activity);
+                root.addView(stageView, 0, new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+            stageView.setVisibility(FoliaNativeStageView.VISIBLE);
+            WebView webView = getBridge() == null ? null : getBridge().getWebView();
+            if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
+            getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();
+            JSObject result = new JSObject();
+            result.put("enabled", true);
+            call.resolve(result);
+        } catch (Throwable error) {
+            removeStage();
+            call.reject("native-stage-enable-failed: " + error);
         }
-        stageView.setVisibility(FoliaNativeStageView.VISIBLE);
-        WebView webView = getBridge() == null ? null : getBridge().getWebView();
-        if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
-        JSObject result = new JSObject();
-        result.put("enabled", true);
-        call.resolve(result);
     }
 
     @PluginMethod
@@ -51,14 +76,18 @@ public class FoliaNativeStagePlugin extends Plugin {
             call.resolve();
             return;
         }
-        stageView.update(
-                call.getString("line", ""),
-                call.getString("nextLine", ""),
-                call.getString("title", ""),
-                call.getString("artist", ""),
-                call.getString("accent", ""),
-                Boolean.TRUE.equals(call.getBoolean("playing", true)));
-        call.resolve();
+        try {
+            stageView.update(
+                    call.getString("line", ""),
+                    call.getString("nextLine", ""),
+                    call.getString("title", ""),
+                    call.getString("artist", ""),
+                    call.getString("accent", ""),
+                    Boolean.TRUE.equals(call.getBoolean("playing", true)));
+            call.resolve();
+        } catch (Throwable error) {
+            call.reject("native-stage-update-failed: " + error);
+        }
     }
 
     @PluginMethod
@@ -72,8 +101,12 @@ public class FoliaNativeStagePlugin extends Plugin {
         ViewGroup parent = (ViewGroup) stageView.getParent();
         if (parent != null) parent.removeView(stageView);
         stageView = null;
-        WebView webView = getBridge() == null ? null : getBridge().getWebView();
-        if (webView != null) webView.setBackgroundColor(Color.BLACK);
+        getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, false).apply();
+        try {
+            WebView webView = getBridge() == null ? null : getBridge().getWebView();
+            if (webView != null) webView.setBackgroundColor(Color.BLACK);
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override

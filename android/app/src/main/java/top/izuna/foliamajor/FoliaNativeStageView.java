@@ -53,7 +53,6 @@ public class FoliaNativeStageView extends View {
     }
 
     private void init() {
-        setLayerType(LAYER_TYPE_HARDWARE, null);
         setClickable(false);
         setFocusable(false);
         startedAt = SystemClock.uptimeMillis();
@@ -102,6 +101,15 @@ public class FoliaNativeStageView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        try {
+            drawStage(canvas);
+        } catch (Throwable ignored) {
+            // 原生绘制失败就停下，不把整个应用带崩。
+            running = false;
+        }
+    }
+
+    private void drawStage(Canvas canvas) {
         super.onDraw(canvas);
         int width = getWidth();
         int height = getHeight();
