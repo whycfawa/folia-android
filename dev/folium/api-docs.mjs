@@ -304,7 +304,7 @@ export const renderApiDocs = (contractText) => {
         `当前契约版本：**Folium ${version ? `${version[1]}.${version[2]}` : '1.x'}**（运行时用 \`folium.host.folium.minor\` 做功能探测）。`,
         '',
         '本文列出模组能用到的全部公开类型，内容直接来自契约文件 [`src/mods/folium/contract.ts`](../../src/mods/folium/contract.ts)，',
-        '成员说明保留契约里的原文注释。平台规则（清单、权限、生命周期、安全模型）见 [Folium 规范](../../mods/README.md)，',
+        '成员说明保留契约里的原文注释。平台规则（清单、权限、生命周期、安全模型）见 [Folium 规范（上游桌面版）](https://github.com/chthollyphile/folia-major/blob/main/mods/README.md)，',
         '从零开始写模组、调试与发布到模组市场见 [模组开发与贡献指南](contributing.md)。',
         '',
         '## 目录',

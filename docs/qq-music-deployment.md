@@ -207,9 +207,9 @@ QQ 二维码最多存活约 3 分钟。出向 WebSocket 期间 Durable Object �
 
 如果要退回仅支持微信扫码的登录方式，移除 `QQ_QR_CHANNEL` 的 `durable_objects.bindings` 后重新部署即可。已经执行过的 migration 属于部署历史，不要重写或复用它的 tag；失去 binding 后 Durable Object 不再收到请求，也不会继续维持 MQTT 连接。`QQ_SESSION_SECRET` 和其他 QQ API 路由不需要改动。
 
-## 方案三：Docker Compose
+## 方案三：Docker Compose（上游桌面/Web 版）
 
-Folia 的完整 Docker 堆栈已经包含 `qq-api`，不需要单独安装 npm 包：
+Folia 的完整 Docker 堆栈已经包含 `qq-api`，不需要单独安装 npm 包。本 Android fork 不包含 `deploy/docker/`，以下命令和部署文件请在上游桌面/Web 仓库执行：
 
 ```bash
 cd deploy/docker
@@ -224,7 +224,7 @@ docker compose ps qq-api
 curl http://localhost:18080/qq/login/status
 ```
 
-Docker / NAS、HTTPS、反向代理和本地镜像验证见 [Docker 全栈部署文档](../deploy/docker/README.md)。QQ 服务的卷、环境变量和独立镜像说明见 [QQ API 容器文档](../deploy/docker/qq-api/README.md)。
+Docker / NAS、HTTPS、反向代理和本地镜像验证见 [上游 Docker 全栈部署文档](https://github.com/chthollyphile/folia-major/blob/main/deploy/docker/README.md)。QQ 服务的卷、环境变量和独立镜像说明见 [上游 QQ API 容器文档](https://github.com/chthollyphile/folia-major/blob/main/deploy/docker/qq-api/README.md)。
 
 ## 方案四：裸 Node.js
 

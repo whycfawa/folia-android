@@ -79,7 +79,7 @@ windowrule {
 
 如果使用前端版本的话，需要先自行部署该 API 服务。
 
-QQ 音乐是可选音源，由 npm 包 `@yakult-green-tea/qq-music-api` 提供，有两种部署形态。一是常驻 Node 进程（Docker 容器、裸 Node，或 Electron 主进程内嵌），功能最完整，支持微信扫码和 QQ 扫码两种登录方式。二是 serverless：从 3.0.0 起该包提供 `./serverless` 导出，本仓库已内置 Cloudflare Workers 与 Vercel 两个平台的入口，把 `VITE_QQ_API_BASE` 填成 `/api/qq` 并配好 `QQ_SESSION_SECRET` 即可，不需要单独部署 API 实例。serverless 形态默认只支持微信扫码登录，且 `/getMusicPlay` 必须先登录；Cloudflare 使用 3.1.0 或更高版本时，可选地绑定 Durable Object（`QQ_QR_CHANNEL` → `QqQrChannel`），增加 QQ 扫码登录方式。完整部署步骤与排错方法见 [QQ 音乐部署指南](qq-music-deployment.md)；Docker 镜像、卷和常驻服务细节见 [`deploy/docker/qq-api/README.md`](../deploy/docker/qq-api/README.md)。Electron 版在主进程内直接启动该包，不需要单独部署。Folia 锁定 3.3.1：电台页的每日推荐、私人 FM（猜你喜欢）与推荐歌单，往自建歌单加歌删歌和收藏歌单，是 3.3.0 新增的接口；红心与收藏专辑是 3.3.1 新增的。不喜欢与历史日推后端还没有，QQ 不提供这两项。
+QQ 音乐是可选音源，由 npm 包 `@yakult-green-tea/qq-music-api` 提供，有两种部署形态。一是常驻 Node 进程（Docker 容器、裸 Node，或 Electron 主进程内嵌），功能最完整，支持微信扫码和 QQ 扫码两种登录方式。二是 serverless：从 3.0.0 起该包提供 `./serverless` 导出，本仓库已内置 Cloudflare Workers 与 Vercel 两个平台的入口，把 `VITE_QQ_API_BASE` 填成 `/api/qq` 并配好 `QQ_SESSION_SECRET` 即可，不需要单独部署 API 实例。serverless 形态默认只支持微信扫码登录，且 `/getMusicPlay` 必须先登录；Cloudflare 使用 3.1.0 或更高版本时，可选地绑定 Durable Object（`QQ_QR_CHANNEL` → `QqQrChannel`），增加 QQ 扫码登录方式。完整部署步骤与排错方法见 [QQ 音乐部署指南](qq-music-deployment.md)；Docker 镜像、卷和常驻服务细节见 [上游 QQ API 容器文档](https://github.com/chthollyphile/folia-major/blob/main/deploy/docker/qq-api/README.md)。Electron 版在主进程内直接启动该包，不需要单独部署。Folia 锁定 3.3.1：电台页的每日推荐、私人 FM（猜你喜欢）与推荐歌单，往自建歌单加歌删歌和收藏歌单，是 3.3.0 新增的接口；红心与收藏专辑是 3.3.1 新增的。不喜欢与历史日推后端还没有，QQ 不提供这两项。
 
 ### AI 能力
 

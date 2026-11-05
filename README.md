@@ -149,7 +149,7 @@ https://github.com/user-attachments/assets/704f195a-2194-434b-86e8-8f36290e5cc4
 
 Vercel 与 Cloudflare 上的 QQ 音乐不再需要额外部署一个常驻 API 实例：把 `VITE_QQ_API_BASE` 填成 `/api/qq`，再配一个 `QQ_SESSION_SECRET`（服务端密钥，**不加 `VITE_` 前缀**）即可。这种形态默认只支持微信扫码登录，且播放前必须先登录；Cloudflare 上可以再绑定一个 Durable Object，增加 QQ 扫码登录方式。完整步骤、平台差异和排错方法见 [QQ 音乐部署指南](docs/qq-music-deployment.md)。
 
-自托管用户可以使用 [Docker Compose 全栈部署](deploy/docker/README.md)。本地音乐目录访问依赖可信 HTTPS 安全上下文，部署文档包含 NAS 反向代理和证书要求。
+自托管用户可以使用 [Docker Compose 全栈部署](https://github.com/chthollyphile/folia-major/blob/main/deploy/docker/README.md)；该部署属于上游桌面/Web 版，不在本 Android fork 的构建范围内。
 
 关于移动端：
 
@@ -172,7 +172,7 @@ Linux 包、Wayland / Hyprland 遥控窗和桌面端细节见 [技术与开发�
 
 更完整的使用说明请访问 [Folia Guide](https://folia-site.cielaniska.top/guide/)。
 
-部署、环境变量、本地开发、Stage API、常用脚本和技术栈见 [技术与开发说明](docs/technical.md)。
+部署、环境变量、本地开发、Stage API、常用脚本和技术栈见 [技术与开发说明](docs/technical.md)。完整文档地图见 [docs/README.md](docs/README.md)。
 
 ## 模组系统（Folium v1.x）
 
@@ -185,7 +185,7 @@ Folium 是 Folia 的模组平台。模组可以添加新的歌词动画模式和
 - **官方认证**：市场里的模组都带有 Folium 签名，安装后显示「官方认证」；只通过安全审查的先行测试模组显示「先行测试」；没有签名的第三方模组显示「未验证」，同样可以使用。
 - **开发与贡献**：[模组开发与贡献指南](docs/folium/contributing.md)，从写第一个模组、本地调试，到提交到模组市场、审查与签名、发布更新。
 - **API 参考**：[Folium API 参考](docs/folium/api.md)，由契约文件生成的完整接口文档，按注册表、上下文、事件、服务等分类查询。
-- **平台规范**：[Folium 规范](mods/README.md)，包括清单字段、权限、注册表语义、事件、安全模型与版本策略。
+- **平台规范**：[上游桌面版 Folium 规范](https://github.com/chthollyphile/folia-major/blob/main/mods/README.md)，包括清单字段、权限、注册表语义、事件、安全模型与版本策略；本 Android fork 未包含该规范文件。
 - **示范模组**：仓库的 [`mods/`](mods/) 目录，覆盖歌词动画、调参、进度条、播放页图层与透明视频导出。
 
 ## Sync Server
@@ -196,7 +196,7 @@ Folia 提供了可选的官方同步服务端 `sync-server`，用于在多个设
 
 - **Cloudflare Workers / D1**：免服务器运维的 Serverless 部署，推荐使用。
   [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chthollyphile/folia-major/tree/main/sync-server)
-- **Docker**：镜像与 Compose 入口见 [Docker 部署目录](deploy/docker/README.md)。
+- **Docker**：镜像与 Compose 入口见 [上游 Docker 部署目录](https://github.com/chthollyphile/folia-major/blob/main/deploy/docker/README.md)；本 Android fork 不包含该目录。
 - **Node.js 自托管**：使用 SQLite，适合本地或不方便使用 Docker 的环境。
 
 详细的环境变量、Token 配置与部署步骤请参阅 [Sync-Server 部署指南](https://folia-site.cielaniska.top/guide/deploy-sync)。部署完成后，在 Folia 的“存储设置”中填写服务端地址和 `SYNC_TOKEN` 即可启用同步。

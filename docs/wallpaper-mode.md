@@ -174,4 +174,4 @@ Electron 主进程 (main.cjs)
 
 ### 5. 打包
 
-- mac 打包无需 helper 二进制；`koffi` 的 `@koromix/koffi-*` 可选依赖按构建主机的 CPU 安装。`beforePack` 按目标架构取得与锁文件一致的原生包，校验完整性与 Mach-O CPU 类型，再通过 mac `extraResources` 放入 Koffi 支持的 `resources/koffi/darwin_<arch>/koffi.node` 查找路径；`afterPack` 检查实际产物，缺失或架构/版本错误时终止打包。实现入口为 [`prepareBundledKoffi` / `verifyBundledKoffi`](../packaging/macos/prepare-koffi.mjs)。
+- mac 打包无需 helper 二进制；`koffi` 的 `@koromix/koffi-*` 可选依赖按构建主机的 CPU 安装。`beforePack` 按目标架构取得与锁文件一致的原生包，校验完整性与 Mach-O CPU 类型，再通过 mac `extraResources` 放入 Koffi 支持的 `resources/koffi/darwin_<arch>/koffi.node` 查找路径；`afterPack` 检查实际产物，缺失或架构/版本错误时终止打包。实现入口为上游桌面版的 [`prepareBundledKoffi` / `verifyBundledKoffi`](https://github.com/chthollyphile/folia-major/blob/main/packaging/macos/prepare-koffi.mjs)；本 Android fork 不包含该文件。
