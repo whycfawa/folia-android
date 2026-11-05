@@ -92,6 +92,12 @@ export const useNativeBackButton = (): void => {
                 cancelable: true,
             });
             const handled = !window.dispatchEvent(event) || event.defaultPrevented;
+            window.dispatchEvent(new KeyboardEvent('keyup', {
+                key: 'Escape',
+                code: 'Escape',
+                bubbles: true,
+                cancelable: true,
+            }));
             applyNativeBackPress(plugin, handled);
         });
 

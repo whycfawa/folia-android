@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Window;
+import android.webkit.WebView;
 
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -37,6 +38,8 @@ public class TvActivity extends MainActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         enterTvMode();
+        focusWebView();
+        postFocusWebView(250);
     }
 
     @Override
@@ -44,12 +47,32 @@ public class TvActivity extends MainActivity {
         super.onResume();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         enterTvMode();
+        focusWebView();
+        postFocusWebView(250);
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) enterTvMode();
+        if (hasFocus) {
+            enterTvMode();
+            focusWebView();
+            postFocusWebView(150);
+        }
+    }
+
+    /** Keeps the WebView as the native key-focus owner so the first remote press is not lost. */
+    private void focusWebView() {
+        if (getBridge() == null || getBridge().getWebView() == null) return;
+        WebView webView = getBridge().getWebView();
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
+        webView.requestFocus();
+    }
+
+    private void postFocusWebView(long delayMs) {
+        if (getBridge() == null || getBridge().getWebView() == null) return;
+        getBridge().getWebView().postDelayed(this::focusWebView, delayMs);
     }
 
     /** TV pages always own the whole panel; the phone adaptive-layout preference is ignored here. */

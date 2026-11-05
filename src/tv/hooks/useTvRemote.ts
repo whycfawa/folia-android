@@ -5,6 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { isTextEntryTarget } from '../../utils/keyboardTargets';
 import { isTvDirection, resolveTvRemoteAction, type TvRemoteAction } from '../input/tvKeys';
+import { createTvRemotePressTracker } from '../input/tvRemotePress';
 
 const DIRECTION_REPEAT_INTERVAL_MS = 95;
 
@@ -21,6 +22,7 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
     const actionRef = useRef(onAction);
     const handledRef = useRef(onHandledKey);
     const lastDirectionRef = useRef<{ action: TvRemoteAction; at: number } | null>(null);
+    const pressTrackerRef = useRef(createTvRemotePressTracker());
     actionRef.current = onAction;
     handledRef.current = onHandledKey;
 
@@ -31,8 +33,9 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
 
             const action = resolveTvRemoteAction(event);
             if (!action) return;
+            const repeated = event.repeat || pressTrackerRef.current.press(action);
 
-            if (!isTvDirection(action) && event.repeat) {
+            if (!isTvDirection(action) && repeated) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 return;
@@ -52,7 +55,7 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
                 lastDirectionRef.current = { action, at: now };
             }
 
-            const handled = actionRef.current(action, { repeat: event.repeat });
+            const handled = actionRef.current(action, { repeat: repeated });
             if (!handled) return;
 
             event.preventDefault();
@@ -60,7 +63,19 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
             handledRef.current?.(action);
         };
 
+        const handleKeyUp = (event: KeyboardEvent) => {
+            const action = resolveTvRemoteAction(event);
+            if (action) pressTrackerRef.current.release(action);
+        };
+        const clearPressedActions = () => pressTrackerRef.current.clear();
+
         window.addEventListener('keydown', handleKeyDown, true);
-        return () => window.removeEventListener('keydown', handleKeyDown, true);
+        window.addEventListener('keyup', handleKeyUp, true);
+        window.addEventListener('blur', clearPressedActions);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown, true);
+            window.removeEventListener('keyup', handleKeyUp, true);
+            window.removeEventListener('blur', clearPressedActions);
+        };
     }, []);
 };
