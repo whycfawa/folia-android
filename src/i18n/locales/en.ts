@@ -1,6 +1,104 @@
 
 
 export default {
+  "tv": {
+    "brandTagline": "Lean back. Listen.",
+    "common": {
+      "close": "Close",
+      "trackCount_one": "{{count}} track",
+      "trackCount_other": "{{count}} tracks"
+    },
+    "home": {
+      "signedIn": "Signed in",
+      "login": "Sign in",
+      "continue": "Continue listening",
+      "chooseSong": "Choose something to play",
+      "welcome": "Your library is ready",
+      "loginTitle": "Connect a music service",
+      "loginHint": "Scan the QR code with your phone",
+      "openPlayer": "Open player",
+      "recent": "Recently added",
+      "playlists": "Playlists",
+      "liked": "Liked songs",
+      "loading": "Loading…",
+      "localEmpty": "Local import is not available on TV yet. Sign in to play online playlists.",
+      "loginForPlaylists": "Sign in to browse your playlists",
+      "playlistsEmpty": "No playlists in this account yet",
+      "loginForLiked": "Sign in to see liked songs",
+      "likedEmpty": "No liked songs yet",
+      "likedError": "Could not load liked songs",
+      "remoteHint": "D-pad: navigate · OK: select · Back: return"
+    },
+    "player": {
+      "noSong": "Nothing playing yet",
+      "loading": "Loading track",
+      "lyricsLoading": "Loading lyrics…",
+      "noLyrics": "No lyrics for this track",
+      "playbackFailed": "Playback failed. Press OK to retry or choose another song.",
+      "stageHint": "Lyrics light up here word by word",
+      "instrumentalHint": "Instrumental · let the scene breathe",
+      "previous": "Previous",
+      "pause": "Pause",
+      "play": "Play",
+      "next": "Next",
+      "queue": "Queue",
+      "queueCount_one": "Play queue · {{count}} track",
+      "queueCount_other": "Play queue · {{count}} tracks",
+      "queueEmpty": "The queue is empty",
+      "nowPlaying": "Now playing",
+      "flow": "Flow",
+      "calm": "Calm",
+      "hideControls": "Hide controls",
+      "controlHint": "D-pad: move · OK: run · Back: close",
+      "remoteHint": "Up/Down: controls · Left/Right: seek 10s · OK: play/pause",
+      "backHome": "Back returns home"
+    },
+    "collection": {
+      "trackCount_one": "{{count}} track",
+      "trackCount_other": "{{count}} tracks",
+      "loading": "Loading tracks…",
+      "error": "This playlist could not be loaded",
+      "retry": "Try again",
+      "empty": "This playlist has no playable tracks",
+      "playAll": "Play all"
+    },
+    "login": {
+      "title": "Sign in to {{provider}}",
+      "hint": "Open the music app on your phone and scan the code.",
+      "waiting": "Waiting for the QR code…"
+    },
+    "account": {
+      "title": "Music services",
+      "hint": "Choose NetEase, KuGou or another service. Press Back to close.",
+      "providers": "Services",
+      "remoteHint": "Up/Down to choose, OK to sign in or switch, Back to close.",
+      "current": "Current",
+      "signedIn": "Signed in",
+      "notSignedIn": "Signed out · Press OK to scan",
+      "noAccount": "No sign-in needed",
+      "switchAction": "Switch",
+      "loginAction": "Scan to sign in",
+      "chooseHint": "Choose KuGou and press OK to show its QR sign-in code.",
+      "signedInHint": "This service is signed in. Choose another service on the left, or press Back.",
+      "switchTitle": "Switch music service?",
+      "switchHint": "The home library will switch to the new service after you confirm.",
+      "switchConfirm": "Switch service",
+      "switchCancel": "Cancel"
+    },
+    "exit": {
+      "title": "Leave Folia TV?",
+      "playingMessage": "“{{song}}” will keep playing in the background. You can also exit.",
+      "pausedMessage": "“{{song}}” is not playing. You can leave the app in the background or exit.",
+      "idleMessage": "Nothing is playing. You can leave the app in the background or exit.",
+      "background": "Keep playing",
+      "backgroundIdle": "Leave in background",
+      "backgroundHint": "Keep music and the playback service running",
+      "backgroundIdleHint": "Keep the app ready in the background",
+      "exit": "Exit app",
+      "exitHint": "Pause music and stop the background service",
+      "backHint": "Press Back to cancel"
+    }
+  },
   "libraryBravais": {
     "suiteName": "Bravais wall",
     "homeTitle": "Library",

@@ -12,4 +12,12 @@ export const obsSourceKind = searchParams.get('obsSource');
 
 export const isRemoteControlSurface = !isObsBrowserSourceSurface && searchParams.get('remote') === '1';
 
-export const isMainAppSurface = typeof window !== 'undefined' && !isObsBrowserSourceSurface && !isRemoteControlSurface;
+export const isTvSurface = typeof window !== 'undefined'
+    && !isObsBrowserSourceSurface
+    && !isRemoteControlSurface
+    && (window.location.pathname.endsWith('/tv.html') || searchParams.get('tv') === '1');
+
+export const isMainAppSurface = typeof window !== 'undefined'
+    && !isObsBrowserSourceSurface
+    && !isRemoteControlSurface
+    && !isTvSurface;

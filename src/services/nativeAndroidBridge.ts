@@ -425,7 +425,9 @@ const installMessageBridge = () => {
   });
 };
 
-export const installNativeAndroidBridge = async (): Promise<void> => {
+export const installNativeAndroidBridge = async (
+  options: { installPlaybackBridge?: boolean } = {},
+): Promise<void> => {
   if (typeof window === 'undefined') return;
   const capacitor = (window as any).Capacitor;
   if (!capacitor?.isNativePlatform?.() && capacitor?.getPlatform?.() !== 'android') return;
@@ -439,8 +441,10 @@ export const installNativeAndroidBridge = async (): Promise<void> => {
   installCookieShim(plugin);
   installFetchShim(plugin);
   installMessageBridge();
-  const { installNativePlaybackBridge } = await import('./nativePlaybackBridge');
-  await installNativePlaybackBridge(plugin as any);
+  if (options.installPlaybackBridge !== false) {
+    const { installNativePlaybackBridge } = await import('./nativePlaybackBridge');
+    await installNativePlaybackBridge(plugin as any);
+  }
 
   // @ts-ignore The bundled extension module is plain JavaScript.
   const module = await import('../nativeBridge/api/folia.js');

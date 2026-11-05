@@ -1,6 +1,104 @@
 
 
 export default {
+  "tv": {
+    "brandTagline": "躺下来，听歌",
+    "common": {
+      "close": "关闭",
+      "trackCount_one": "{{count}} 首",
+      "trackCount_other": "{{count}} 首"
+    },
+    "home": {
+      "signedIn": "已登录",
+      "login": "扫码登录",
+      "continue": "继续播放",
+      "chooseSong": "选一首歌开始",
+      "welcome": "曲库已就绪",
+      "loginTitle": "连接音乐平台",
+      "loginHint": "用手机扫码登录",
+      "openPlayer": "进入播放",
+      "recent": "最近添加",
+      "playlists": "歌单",
+      "liked": "我喜欢",
+      "loading": "载入中…",
+      "localEmpty": "TV 端暂不支持本地导入。登录后可播放在线歌单。",
+      "loginForPlaylists": "登录后查看你的歌单",
+      "playlistsEmpty": "这个账户还没有歌单",
+      "loginForLiked": "登录后查看我喜欢的歌曲",
+      "likedEmpty": "还没有喜欢的歌曲",
+      "likedError": "喜欢的歌曲加载失败",
+      "remoteHint": "方向键选择 · OK 确认 · 返回键返回"
+    },
+    "player": {
+      "noSong": "还没有正在播放的歌曲",
+      "loading": "正在载入歌曲",
+      "lyricsLoading": "正在载入歌词…",
+      "noLyrics": "这首歌没有歌词",
+      "playbackFailed": "播放失败，按 OK 重试或换一首歌。",
+      "stageHint": "歌词会在这里逐字点亮",
+      "instrumentalHint": "纯音乐 · 让画面停留一会",
+      "previous": "上一首",
+      "pause": "暂停",
+      "play": "播放",
+      "next": "下一首",
+      "queue": "队列",
+      "queueCount_one": "播放队列 · {{count}} 首",
+      "queueCount_other": "播放队列 · {{count}} 首",
+      "queueEmpty": "队列还是空的",
+      "nowPlaying": "正在播放",
+      "flow": "流光",
+      "calm": "静谧",
+      "hideControls": "收起控制",
+      "controlHint": "方向键移动 · OK 执行 · 返回键收起",
+      "remoteHint": "上下键打开控制 · 左右键快退/快进 10 秒 · OK 暂停/继续",
+      "backHome": "返回键回到首页"
+    },
+    "collection": {
+      "trackCount_one": "{{count}} 首",
+      "trackCount_other": "{{count}} 首",
+      "loading": "正在载入歌曲…",
+      "error": "这个歌单暂时无法载入",
+      "retry": "重试",
+      "empty": "这个歌单里没有可播放的歌曲",
+      "playAll": "播放全部"
+    },
+    "login": {
+      "title": "登录 {{provider}}",
+      "hint": "打开手机上的音乐 App，扫描二维码。",
+      "waiting": "正在等待二维码…"
+    },
+    "account": {
+      "title": "音乐平台",
+      "hint": "选择网易云、酷狗或其他平台；按返回键关闭。",
+      "providers": "平台",
+      "remoteHint": "上下键选择平台，OK 登录或切换，返回键关闭。",
+      "current": "当前",
+      "signedIn": "已登录",
+      "notSignedIn": "未登录 · 按 OK 扫码",
+      "noAccount": "无需登录",
+      "switchAction": "切换",
+      "loginAction": "扫码登录",
+      "chooseHint": "选择酷狗后按 OK，会出现酷狗扫码登录二维码。",
+      "signedInHint": "这个平台已经登录。可以在左侧切换平台，或按返回键关闭。",
+      "switchTitle": "切换音乐平台？",
+      "switchHint": "确认后，首页内容会切换到新平台。",
+      "switchConfirm": "确认切换",
+      "switchCancel": "取消"
+    },
+    "exit": {
+      "title": "离开 Folia TV？",
+      "playingMessage": "“{{song}}”会继续在后台播放；也可以退出应用。",
+      "pausedMessage": "“{{song}}”当前未播放。可以让应用留在后台，或退出应用。",
+      "idleMessage": "当前没有正在播放的歌曲。可以让应用留在后台，或退出应用。",
+      "background": "后台播放",
+      "backgroundIdle": "留在后台",
+      "backgroundHint": "保持音乐和播放服务运行",
+      "backgroundIdleHint": "应用留在后台，稍后回来继续",
+      "exit": "退出应用",
+      "exitHint": "暂停音乐并停止后台服务",
+      "backHint": "按返回键取消"
+    }
+  },
   "libraryBravais": {
     "suiteName": "Bravais 墙面",
     "homeTitle": "书库",

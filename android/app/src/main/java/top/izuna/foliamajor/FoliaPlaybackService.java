@@ -54,6 +54,7 @@ public class FoliaPlaybackService extends Service {
     private volatile String cachedAlbum = "";
     private volatile String cachedCoverUrl = "";
     private volatile String cachedSongKey = "";
+    private volatile String cachedLaunchTarget = "phone";
     private volatile long cachedDurationMs = 0L;
     private volatile long cachedPositionMs = 0L;
     private volatile boolean cachedPlaying = false;
@@ -132,6 +133,8 @@ public class FoliaPlaybackService extends Service {
         cachedAlbum = intent.getStringExtra("album");
         cachedCoverUrl = intent.getStringExtra("coverUrl");
         cachedSongKey = intent.getStringExtra("songKey");
+        String launchTarget = intent.getStringExtra("launchTarget");
+        if (launchTarget != null && !launchTarget.isEmpty()) cachedLaunchTarget = launchTarget;
         cachedPlaying = intent.getBooleanExtra("playing", false);
         cachedPositionMs = intent.getLongExtra("position", 0);
         cachedDurationMs = intent.getLongExtra("duration", 0);
@@ -190,6 +193,9 @@ public class FoliaPlaybackService extends Service {
             "FoliaPlaybackService.onTaskRemoved"
         );
         super.onTaskRemoved(rootIntent);
+        // The audio owner is the Activity's WebView. Once its task is gone there is nothing left
+        // to decode, so leaving the foreground service alive would only leave a ghost notification.
+        stopSelf();
     }
 
     private MediaMetadata buildMetadata(
@@ -276,7 +282,9 @@ public class FoliaPlaybackService extends Service {
         boolean playing,
         Bitmap artwork
     ) {
-        Intent activityIntent = new Intent(this, MainActivity.class);
+        Class<?> activityClass = "tv".equals(cachedLaunchTarget) ? TvActivity.class : MainActivity.class;
+        Intent activityIntent = new Intent(this, activityClass)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent contentIntent = PendingIntent.getActivity(
             this,
             0,

@@ -216,6 +216,7 @@ export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig
       rollupOptions: {
         input: {
           main: 'index.html',
+          tv: 'tv.html',
           stageClient: 'stage-client.html',
           modExport: 'mod-export.html',
         },

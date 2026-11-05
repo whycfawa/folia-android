@@ -2,6 +2,7 @@ package top.izuna.foliamajor;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.ClipData;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -534,8 +535,8 @@ public class FoliaNativePlugin extends Plugin {
      * 「返回键退到后台」：把任务移出前台，而不是结束 Activity。
      *
      * 结束 Activity 会连带收掉 WebView 与前台播放服务，用户看到的就是「退出应用就自动暂停播放」；
-     * 而这个前台服务本来就是为了后台播放准备的（onTaskRemoved 只记诊断、不自停）。真正的退出
-     * 交给系统（从最近任务划掉）或应用内的退出入口，它的 exitApp 仍然保留。
+     * 而这个前台服务本来就是为了后台播放准备的；只有任务真的从最近任务移除、WebView 已不存在时
+     * 服务才自停，避免留下幽灵通知。真正的退出交给应用内的退出入口，它的 exitApp 仍然保留。
      */
     @PluginMethod
     public void moveTaskToBack(PluginCall call) {
@@ -631,6 +632,35 @@ public class FoliaNativePlugin extends Plugin {
         result.put("enabled", PhoneLayoutOrientation.isEnabled(getContext()));
         result.put("orientation", PhoneLayoutOrientation.getOrientation(getContext()));
         call.resolve(result);
+    }
+
+    /**
+     * TV 端低配分档所需的真实设备指标。
+     *
+     * WebView 的 navigator.deviceMemory 在部分投影仪上会被 Chromium 粗略截断，不能区分
+     * 160 MB 堆和 512 MB 堆；这里直接返回 Android 的 ActivityManager 与运行时数据。
+     */
+    @PluginMethod
+    public void getTvPerformanceProfile(PluginCall call) {
+        try {
+            ActivityManager manager = (ActivityManager) getContext()
+                .getSystemService(Context.ACTIVITY_SERVICE);
+            boolean lowRamDevice = manager != null && manager.isLowRamDevice();
+            int maxHeapMb = (int) (Runtime.getRuntime().maxMemory() / (1024L * 1024L));
+            int memoryClassMb = manager == null ? 0 : manager.getMemoryClass();
+            int cpuCount = Runtime.getRuntime().availableProcessors();
+            boolean constrained = lowRamDevice || maxHeapMb <= 192 || cpuCount <= 2;
+
+            JSObject result = new JSObject();
+            result.put("tier", constrained ? "constrained" : "balanced");
+            result.put("lowRamDevice", lowRamDevice);
+            result.put("maxHeapMb", maxHeapMb);
+            result.put("memoryClassMb", memoryClassMb);
+            result.put("cpuCount", cpuCount);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject(error.getMessage(), error);
+        }
     }
 
     /**
@@ -908,7 +938,11 @@ public class FoliaNativePlugin extends Plugin {
 
     @PluginMethod
     public void updatePlaybackState(PluginCall call) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        boolean requestNotificationPermission = !Boolean.FALSE.equals(
+            call.getBoolean("requestNotificationPermission", true)
+        );
+        if (requestNotificationPermission
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
             && getPermissionState("notifications") != PermissionState.GRANTED) {
             requestPermissionForAlias("notifications", call, "notificationsPermissionCallback");
             return;
@@ -928,13 +962,18 @@ public class FoliaNativePlugin extends Plugin {
         intent.putExtra("album", call.getString("album", ""));
         intent.putExtra("coverUrl", call.getString("coverUrl", ""));
         intent.putExtra("songKey", call.getString("songKey", ""));
+        intent.putExtra("launchTarget", call.getString("launchTarget", "phone"));
         intent.putExtra("playing", Boolean.TRUE.equals(call.getBoolean("playing", false)));
         Double position = call.getDouble("position");
         Double duration = call.getDouble("duration");
         intent.putExtra("position", position == null ? 0L : position.longValue());
         intent.putExtra("duration", duration == null ? 0L : duration.longValue());
-        ContextCompat.startForegroundService(getContext(), intent);
-        call.resolve();
+        try {
+            ContextCompat.startForegroundService(getContext(), intent);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Unable to start playback service", error);
+        }
     }
 
     @PluginMethod

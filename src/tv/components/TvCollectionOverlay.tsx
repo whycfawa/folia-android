@@ -1,0 +1,109 @@
+// src/tv/components/TvCollectionOverlay.tsx
+
+import { ListMusic, Loader2, Play, RefreshCw, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
+import type { SongResult } from '../../types';
+import type { ProviderCollection } from '../../types/onlineMusic';
+import { useTvCollectionTracks } from '../hooks/useTvCollectionTracks';
+import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+
+export const TvCollectionOverlay = ({
+    collection,
+    onPlayTracks,
+    onClose,
+}: {
+    collection: ProviderCollection;
+    onPlayTracks: (tracks: SongResult[], startIndex: number) => void;
+    onClose: () => void;
+}) => {
+    const { t } = useTranslation();
+    const { tracks, isLoading, error, reload } = useTvCollectionTracks(collection);
+
+    return (
+        <section id="tv-layer-collection" data-tv-layer="collection" className="tv-overlay tv-collection-overlay">
+            <div className="tv-overlay-panel">
+                <header className="tv-overlay-header">
+                    <div>
+                        <span className="tv-overlay-icon"><ListMusic size={22} /></span>
+                        <span>
+                            <h2>{collection.name}</h2>
+                            <small>{t('tv.collection.trackCount', { count: tracks.length })}</small>
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        data-tv-focusable="true"
+                        data-tv-focus-key="collection-close"
+                        onClick={onClose}
+                        aria-label={t('tv.common.close')}
+                    >
+                        <X size={22} />
+                    </button>
+                </header>
+
+                <div className="tv-collection-body">
+                    {isLoading ? (
+                        <div className="tv-overlay-empty">
+                            <Loader2 size={28} className="tv-spin" />
+                            <span>{t('tv.collection.loading')}</span>
+                        </div>
+                    ) : error ? (
+                        <div className="tv-overlay-empty">
+                            <span>{t('tv.collection.error')}</span>
+                            <button
+                                type="button"
+                                data-tv-focusable="true"
+                                data-tv-focus-key="collection-retry"
+                                onClick={reload}
+                            >
+                                <RefreshCw size={18} />
+                                {t('tv.collection.retry')}
+                            </button>
+                        </div>
+                    ) : tracks.length === 0 ? (
+                        <div className="tv-overlay-empty">{t('tv.collection.empty')}</div>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                className="tv-play-all"
+                                data-tv-focusable="true"
+                                data-tv-focus-key="collection-play-all"
+                                onClick={() => onPlayTracks(tracks, 0)}
+                            >
+                                <Play size={20} fill="currentColor" />
+                                {t('tv.collection.playAll')}
+                            </button>
+                            <div className="tv-overlay-list">
+                                {tracks.map((song, index) => {
+                                    const coverUrl = resolveTvSongCoverUrl(song);
+                                    return (
+                                        <button
+                                            key={`${song.id}-${index}`}
+                                            type="button"
+                                            className="tv-track-row"
+                                            data-tv-focusable="true"
+                                            data-tv-focus-key={`collection-track-${index}`}
+                                            onClick={() => onPlayTracks(tracks, index)}
+                                        >
+                                            <span className="tv-track-index">{index + 1}</span>
+                                            {coverUrl
+                                                ? <img src={coverUrl} alt="" loading="lazy" decoding="async" />
+                                                : <span className="tv-track-cover-fallback" />}
+                                            <span className="tv-track-copy">
+                                                <strong>{song.name}</strong>
+                                                <small>{getSongArtistLabel(song) || '—'}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+};
+
