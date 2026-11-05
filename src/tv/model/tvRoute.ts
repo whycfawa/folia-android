@@ -30,7 +30,7 @@ export const resolveTvBackRoute = (route: TvRoute): TvRoute | null => {
     ) {
         return { ...route, overlay: null };
     }
-    if (route.overlay === 'queue') {
+    if (route.overlay === 'queue' || route.overlay === 'effects') {
         return { ...route, overlay: 'controls' };
     }
     if (route.page === 'player') return TV_HOME_ROUTE;

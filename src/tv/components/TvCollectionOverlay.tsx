@@ -33,7 +33,6 @@ export const TvCollectionOverlay = ({
                         <span className="tv-overlay-icon"><ListMusic size={22} /></span>
                         <span>
                             <h2 id="tv-collection-title">{collection.name}</h2>
-                            <small>{t('tv.collection.trackCount', { count: tracks.length })}</small>
                         </span>
                     </div>
                     <button

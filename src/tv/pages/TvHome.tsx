@@ -6,7 +6,7 @@ import type { ProviderCollection } from '../../types/onlineMusic';
 import { TvHeader } from '../components/TvHeader';
 import { TvHero } from '../components/TvHero';
 import { TvHomeLibraryRows } from '../components/TvHomeLibrarySection';
-import { TvMediaRow } from '../components/TvMediaRow';
+import { TvMediaRow, TvRowStatus } from '../components/TvMediaRow';
 import { TvSongCard } from '../components/TvSongCard';
 import type { TvAccountModel } from '../hooks/useTvAccount';
 import type { TvLibraryModel } from '../hooks/useTvLibrary';
@@ -37,8 +37,6 @@ export const TvHome = ({
     const { t } = useTranslation();
     const online = useTvOnlineHome(account);
     const isPlaying = player.status === 'playing';
-    const localCount = t('tv.common.trackCount', { count: library.localSongs.length });
-    const likedCount = t('tv.common.trackCount', { count: library.likedSongs.length });
 
     const playLocalSong = (song: SongResult) => {
         const index = library.localSongs.findIndex(candidate => candidate.id === song.id);
@@ -82,17 +80,24 @@ export const TvHome = ({
             <main className="tv-home-content" data-tv-focus-container="home-body">
                 <TvMediaRow
                     title={t('tv.home.liked')}
-                    subtitle={account.isAuthenticated ? likedCount : undefined}
                     focusGroup="home-liked"
                 >
                     {!account.isAuthenticated ? (
-                        <div className="tv-row-empty">{t('tv.home.loginForLiked')}</div>
+                        <TvRowStatus focusKey="home-liked-status">
+                            {t('tv.home.loginForLiked')}
+                        </TvRowStatus>
                     ) : library.isLoadingLiked ? (
-                        <div className="tv-row-empty">{t('tv.home.loading')}</div>
+                        <TvRowStatus focusKey="home-liked-status">
+                            {t('tv.home.loading')}
+                        </TvRowStatus>
                     ) : library.likedError ? (
-                        <div className="tv-row-empty">{t('tv.home.likedError')}</div>
+                        <TvRowStatus focusKey="home-liked-status">
+                            {t('tv.home.likedError')}
+                        </TvRowStatus>
                     ) : library.likedSongs.length === 0 ? (
-                        <div className="tv-row-empty">{t('tv.home.likedEmpty')}</div>
+                        <TvRowStatus focusKey="home-liked-status">
+                            {t('tv.home.likedEmpty')}
+                        </TvRowStatus>
                     ) : library.likedSongs.map(song => (
                         <TvSongCard
                             key={song.id}
@@ -111,7 +116,7 @@ export const TvHome = ({
                     onOpenCollection={onOpenCollection}
                 />
                 {library.recentLocalSongs.length > 0 && (
-                    <TvMediaRow title={t('tv.home.recent')} subtitle={localCount} focusGroup="home-recent">
+                    <TvMediaRow title={t('tv.home.recent')} focusGroup="home-recent">
                         {library.recentLocalSongs.map(song => (
                             <TvSongCard
                                 key={song.id}

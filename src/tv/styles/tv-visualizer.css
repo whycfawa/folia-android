@@ -63,41 +63,31 @@
     align-items: center !important;
 }
 
+/* Some modes ship desktop-only height floors. On projector the stage itself is the viewport,
+   so those floors must not push lyric content under the fixed control dock. */
+.tv-visualizer-stage__renderer [class*="min-h-"],
+.tv-visualizer-stage__renderer [style*="min-height"] {
+    min-height: 0 !important;
+}
+
+.tv-visualizer-stage__renderer [class~="p-8"] {
+    padding: clamp(8px, 1.5vh, 18px);
+}
+
+.tv-visualizer-stage__renderer [class~="pb-36"],
+.tv-visualizer-stage__renderer [class~="pb-40"] {
+    padding-top: clamp(12px, 2.4vh, 28px);
+    padding-bottom: clamp(8px, 2vh, 24px);
+}
+
 /* Keep the original word spring/rotation/glow, but size it from both projector axes so long CJK
    lines can wrap without touching the header or the remote-control dock. */
 .tv-visualizer-stage__renderer [class~="whitespace-nowrap"] {
-    font-size: clamp(30px, min(5.8vw, 9.4vh), 72px) !important;
+    font-size: var(
+        --tv-visualizer-primary-font-size,
+        clamp(30px, min(5.8vw, 9.4vh), 72px)
+    ) !important;
     line-height: 1.16 !important;
-}
-
-.tv-visualizer-copy {
-    position: absolute;
-    z-index: 6;
-    left: clamp(24px, 5vw, 96px);
-    right: clamp(24px, 5vw, 96px);
-    bottom: clamp(8px, 1.6vh, 18px);
-    margin: 0;
-    overflow: hidden;
-    color: rgba(244, 240, 255, 0.48);
-    font-size: clamp(16px, min(1.35vw, 2.2vh), 24px);
-    font-weight: 450;
-    line-height: 1.45;
-    letter-spacing: 0.01em;
-    text-align: center;
-    text-overflow: ellipsis;
-    text-wrap: balance;
-    white-space: nowrap;
-    pointer-events: none;
-    transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.tv-visualizer-copy.is-translation {
-    color: rgba(244, 240, 255, 0.64);
-}
-
-.tv-player-page.has-controls .tv-visualizer-copy {
-    opacity: 0;
-    transform: translateY(8px);
 }
 
 /* Without preflight the Tailwind border-width utility has no border style to render. */
@@ -124,13 +114,22 @@
     }
 
     .tv-visualizer-stage__renderer [class~="whitespace-nowrap"] {
-        font-size: clamp(26px, 5.6vw, 38px) !important;
+        font-size: var(
+            --tv-visualizer-primary-font-size,
+            clamp(26px, 5.6vw, 38px)
+        ) !important;
         line-height: 1.14 !important;
     }
 
-    .tv-visualizer-copy {
-        bottom: 4px;
-        font-size: clamp(14px, 2.2vh, 18px);
+}
+
+@media (max-height: 620px) {
+    .tv-visualizer-stage {
+        padding: 4px clamp(18px, 3.6vw, 34px);
+    }
+
+    .tv-player-page.has-controls .tv-visualizer-stage {
+        padding-bottom: calc(var(--tv-control-dock-h) + 4px);
     }
 }
 
@@ -141,8 +140,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .tv-visualizer-stage,
-    .tv-visualizer-copy {
+    .tv-visualizer-stage {
         transition: none;
     }
 }

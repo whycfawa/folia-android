@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { resolveThemeFontStack, resolveThemeFontWeight, resolveThemeTranslationFontStack } from '../../../utils/fontStacks';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import type { VisualizerSharedProps } from '../definition';
 import VisualizerShell from '../VisualizerShell';
 
@@ -20,6 +21,16 @@ const VisualizerStill: React.FC<VisualizerSharedProps> = ({
     ...sharedProps
 }) => {
     const [effectiveIndex, setEffectiveIndex] = useState(() => Math.max(0, currentLineIndex));
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const contentSize = useElementSize(contentRef);
+    const visibleOffsets = contentSize.height > 0 && contentSize.height < 360
+        ? [0]
+        : [-1, 0, 1];
+    const currentFontPx = contentSize.height > 0
+        ? Math.max(24, Math.min(40, contentSize.height * 0.09))
+        : 40;
+    const adjacentFontPx = Math.max(18, currentFontPx * 0.75);
+    const translationFontPx = Math.max(14, currentFontPx * 0.48);
 
     useEffect(() => {
         if (currentLineIndex !== -1) {
@@ -48,8 +59,11 @@ const VisualizerStill: React.FC<VisualizerSharedProps> = ({
             />
 
             {showText && (
-                <div className="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none px-12 pb-16 gap-8">
-                    {[-1, 0, 1].map((offset) => {
+                <div
+                    ref={contentRef}
+                    className="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none px-12 pb-16 gap-8"
+                >
+                    {visibleOffsets.map((offset) => {
                         const lineIndex = effectiveIndex + offset;
                         const line = lines[lineIndex];
                         if (!line) {
@@ -65,6 +79,7 @@ const VisualizerStill: React.FC<VisualizerSharedProps> = ({
                                         style={{
                                             color: theme.primaryColor,
                                             fontFamily: resolveThemeFontStack(theme),
+                                            fontSize: isCurrent ? currentFontPx : adjacentFontPx,
                                             scale: lyricsFontScale,
                                             fontWeight: resolveThemeFontWeight(theme, isCurrent ? 700 : 600),
                                         }}
@@ -79,6 +94,7 @@ const VisualizerStill: React.FC<VisualizerSharedProps> = ({
                                         style={{
                                             color: resolvedSubtitleTheme.secondaryColor,
                                             fontFamily: resolveThemeTranslationFontStack(resolvedSubtitleTheme),
+                                            fontSize: isCurrent ? translationFontPx : Math.max(12, translationFontPx * 0.82),
                                             scale: lyricsFontScale * subtitleFontScale,
                                             fontWeight: resolveThemeFontWeight(resolvedSubtitleTheme, isCurrent ? 500 : 400),
                                         }}

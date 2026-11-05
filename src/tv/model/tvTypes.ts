@@ -2,13 +2,23 @@
 
 import type { MotionValue } from 'framer-motion';
 import type { RefObject } from 'react';
-import type { LyricData, SongResult } from '../../types';
+import type {
+    LyricData,
+    SongResult,
+    VisualizerBackgroundMode,
+    VisualizerMode,
+} from '../../types';
 
 export type TvPage = 'home' | 'player';
 
-export type TvOverlay = 'controls' | 'queue' | 'collection' | 'search' | 'login' | 'exit';
-
-export type TvEffectsMode = 'flow' | 'calm';
+export type TvOverlay =
+    | 'controls'
+    | 'effects'
+    | 'queue'
+    | 'collection'
+    | 'search'
+    | 'login'
+    | 'exit';
 
 export type TvPlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
 
@@ -23,7 +33,8 @@ export type TvPlayerModel = {
     currentTime: MotionValue<number>;
     positionRevision: number;
     duration: number;
-    effectsMode: TvEffectsMode;
+    visualizerMode: VisualizerMode;
+    backgroundMode: VisualizerBackgroundMode;
     isLyricsLoading: boolean;
     playQueue: (songs: SongResult[], startIndex?: number) => void;
     togglePlayback: () => void;
@@ -32,7 +43,7 @@ export type TvPlayerModel = {
     next: () => void;
     previous: () => void;
     seekBy: (deltaSeconds: number) => void;
-    setEffectsMode: (mode: TvEffectsMode) => void;
-    toggleEffectsMode: () => void;
+    setVisualizerMode: (mode: VisualizerMode) => void;
+    setBackgroundMode: (mode: VisualizerBackgroundMode) => void;
 };
 

@@ -2,11 +2,16 @@
 
 export default {
   "tv": {
-    "brandTagline": "躺下来，听歌",
     "common": {
       "close": "关闭",
       "trackCount_one": "{{count}} 首",
       "trackCount_other": "{{count}} 首"
+    },
+    "effects": {
+      "open": "动效",
+      "title": "歌词与背景",
+      "lyrics": "歌词动效",
+      "background": "背景动效"
     },
     "search": {
       "open": "搜索歌曲、歌手或专辑",
@@ -15,8 +20,6 @@ export default {
       "placeholder": "输入歌曲、歌手或专辑",
       "inputLabel": "搜索关键词",
       "action": "搜索",
-      "hint": "按 OK 打开键盘输入，停止输入后自动搜索。",
-      "idle": "输入关键字开始搜索",
       "loading": "正在搜索…",
       "error": "搜索失败，请稍后重试",
       "retry": "重试",
@@ -48,7 +51,6 @@ export default {
       "radioError": "电台内容加载失败",
       "radioEmpty": "暂时没有可用的电台内容",
       "radioPlaybackError": "这组推荐暂时无法播放，请换一张卡片",
-      "personalFmHint": "根据你的口味持续推荐",
       "loginForAlbums": "登录后查看收藏专辑",
       "albumsUnavailable": "当前平台不支持收藏专辑",
       "albumsError": "收藏专辑加载失败",
@@ -56,16 +58,13 @@ export default {
       "loginForLiked": "登录后查看我喜欢的歌曲",
       "likedEmpty": "还没有喜欢的歌曲",
       "likedError": "喜欢的歌曲加载失败",
-      "remoteHint": "方向键选择 · OK 确认 · 返回键返回"
     },
     "player": {
       "noSong": "还没有正在播放的歌曲",
       "loading": "正在载入歌曲",
       "lyricsLoading": "正在载入歌词…",
       "noLyrics": "这首歌没有歌词",
-      "playbackFailed": "播放失败，按 OK 重试或换一首歌。",
-      "stageHint": "歌词会在这里逐字点亮",
-      "instrumentalHint": "纯音乐 · 让画面停留一会",
+      "playbackFailed": "播放失败",
       "previous": "上一首",
       "pause": "暂停",
       "play": "播放",
@@ -75,12 +74,7 @@ export default {
       "queueCount_other": "播放队列 · {{count}} 首",
       "queueEmpty": "队列还是空的",
       "nowPlaying": "正在播放",
-      "flow": "流光",
-      "calm": "静谧",
-      "hideControls": "收起控制",
-      "controlHint": "方向键移动 · OK 执行 · 返回键收起",
-      "remoteHint": "上下键打开控制 · 左右键快退/快进 10 秒 · OK 暂停/继续",
-      "backHome": "返回键回到首页"
+      "hideControls": "收起控制"
     },
     "collection": {
       "trackCount_one": "{{count}} 首",
@@ -93,39 +87,26 @@ export default {
     },
     "login": {
       "title": "登录 {{provider}}",
-      "hint": "打开手机上的音乐 App，扫描二维码。",
       "waiting": "正在等待二维码…"
     },
     "account": {
       "title": "音乐平台",
-      "hint": "选择网易云、酷狗或其他平台；按返回键关闭。",
       "providers": "平台",
-      "remoteHint": "上下键选择平台，OK 登录或切换，返回键关闭。",
       "current": "当前",
       "signedIn": "已登录",
-      "notSignedIn": "未登录 · 按 OK 扫码",
+      "notSignedIn": "未登录",
       "noAccount": "无需登录",
       "switchAction": "切换",
       "loginAction": "扫码登录",
-      "chooseHint": "选择音乐平台后按 OK，会出现对应平台的扫码登录二维码。",
-      "signedInHint": "这个平台已经登录。可以在平台列表切换平台，或按返回键关闭。",
       "switchTitle": "切换音乐平台？",
-      "switchHint": "确认后，首页内容会切换到新平台。",
       "switchConfirm": "确认切换",
       "switchCancel": "取消"
     },
     "exit": {
-      "title": "离开 Folia TV？",
-      "playingMessage": "“{{song}}”会继续在后台播放；也可以退出应用。",
-      "pausedMessage": "“{{song}}”当前未播放。可以让应用留在后台，或退出应用。",
-      "idleMessage": "当前没有正在播放的歌曲。可以让应用留在后台，或退出应用。",
+      "title": "离开 Music？",
       "background": "后台播放",
       "backgroundIdle": "留在后台",
-      "backgroundHint": "保持音乐和播放服务运行",
-      "backgroundIdleHint": "应用留在后台，稍后回来继续",
       "exit": "退出应用",
-      "exitHint": "暂停音乐并停止后台服务",
-      "backHint": "按返回键取消"
     }
   },
   "libraryBravais": {

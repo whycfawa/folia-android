@@ -1,7 +1,7 @@
 // test/unit/tv/tvKeys.test.ts
 
 import { describe, expect, it } from 'vitest';
-import { isTvDirection, resolveTvRemoteAction } from '../../../src/tv/input/tvKeys';
+import { isTvDirection, isTvSpaceKey, resolveTvRemoteAction } from '../../../src/tv/input/tvKeys';
 
 describe('resolveTvRemoteAction', () => {
     it('maps Android TV dpad key codes', () => {
@@ -32,6 +32,15 @@ describe('isTvDirection', () => {
         expect(isTvDirection('down')).toBe(true);
         expect(isTvDirection('ok')).toBe(false);
         expect(isTvDirection('back')).toBe(false);
+    });
+});
+
+describe('isTvSpaceKey', () => {
+    it('keeps space available for text entry', () => {
+        expect(isTvSpaceKey({ key: ' ' })).toBe(true);
+        expect(isTvSpaceKey({ key: 'Spacebar' })).toBe(true);
+        expect(isTvSpaceKey({ key: 'Unidentified', code: 'Space' })).toBe(true);
+        expect(isTvSpaceKey({ key: 'Enter', code: 'Enter' })).toBe(false);
     });
 });
 

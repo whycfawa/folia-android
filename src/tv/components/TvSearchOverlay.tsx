@@ -1,4 +1,5 @@
 import { Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     getSongAlbumLabel,
@@ -6,22 +7,41 @@ import {
 } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
 import { useTvSearch } from '../hooks/useTvSearch';
+import { isTvSpaceKey, resolveTvRemoteAction } from '../input/tvKeys';
 import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 
 // src/tv/components/TvSearchOverlay.tsx
 // 顶部搜索入口的遥控器界面：输入框支持平台键盘，方向键下移进入结果列表，OK 播放歌曲。
 
 export const TvSearchOverlay = ({
-    providerLabel,
     onPlayTracks,
     onClose,
 }: {
-    providerLabel: string;
     onPlayTracks: (tracks: SongResult[], startIndex: number) => void;
     onClose: () => void;
 }) => {
     const { t } = useTranslation();
     const search = useTvSearch();
+    const inputRef = useRef<HTMLInputElement>(null);
+    const firstResultRef = useRef<HTMLButtonElement>(null);
+    const shouldFocusResultsRef = useRef(false);
+
+    const submitSearch = useCallback(() => {
+        shouldFocusResultsRef.current = true;
+        inputRef.current?.blur();
+        search.submit();
+    }, [search.submit]);
+
+    useEffect(() => {
+        if (!shouldFocusResultsRef.current || search.status !== 'ready') return;
+        shouldFocusResultsRef.current = false;
+        if (search.results.length === 0) return;
+        const frame = window.requestAnimationFrame(() => {
+            firstResultRef.current?.focus({ preventScroll: true });
+            firstResultRef.current?.scrollIntoView({ block: 'nearest' });
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [search.results.length, search.status]);
 
     return (
         <section id="tv-layer-search" data-tv-layer="search" className="tv-overlay tv-search-overlay">
@@ -36,7 +56,6 @@ export const TvSearchOverlay = ({
                         <span className="tv-overlay-icon"><Search size={22} /></span>
                         <span>
                             <h2 id="tv-search-title">{t('tv.search.title')}</h2>
-                            <small>{t('tv.search.provider', { provider: providerLabel })}</small>
                         </span>
                     </div>
                     <button
@@ -54,13 +73,17 @@ export const TvSearchOverlay = ({
                     <label className="tv-search-field">
                         <Search size={20} />
                         <input
+                            ref={inputRef}
                             type="search"
                             value={search.query}
                             onChange={event => search.setQuery(event.target.value)}
                             onKeyDown={event => {
-                                if (event.key !== 'Enter') return;
+                                if (
+                                    resolveTvRemoteAction(event) !== 'ok'
+                                    || isTvSpaceKey(event)
+                                ) return;
                                 event.preventDefault();
-                                search.submit();
+                                submitSearch();
                             }}
                             placeholder={t('tv.search.placeholder')}
                             aria-label={t('tv.search.inputLabel')}
@@ -77,7 +100,7 @@ export const TvSearchOverlay = ({
                         className="tv-search-submit"
                         data-tv-focusable="true"
                         data-tv-focus-key="search-submit"
-                        onClick={search.submit}
+                        onClick={submitSearch}
                     >
                         <Search size={18} />
                         {t('tv.search.action')}
@@ -88,8 +111,6 @@ export const TvSearchOverlay = ({
                     {search.status === 'idle' ? (
                         <div className="tv-overlay-empty">
                             <Search size={30} />
-                            <strong>{t('tv.search.idle')}</strong>
-                            <span>{t('tv.search.hint')}</span>
                         </div>
                     ) : search.status === 'loading' ? (
                         <div className="tv-overlay-empty">
@@ -114,43 +135,39 @@ export const TvSearchOverlay = ({
                             <span>{t('tv.search.empty', { query: search.submittedQuery })}</span>
                         </div>
                     ) : (
-                        <>
-                            <div className="tv-search-summary" aria-live="polite">
-                                {t('tv.search.resultCount', { count: search.results.length })}
-                            </div>
-                            <div
-                                className="tv-overlay-list tv-search-results"
-                                data-tv-focus-group="search-results"
-                                data-tv-focus-axis="vertical"
-                            >
-                                {search.results.map((song, index) => {
-                                    const coverUrl = resolveTvSongCoverUrl(song);
-                                    const detail = [
-                                        getSongArtistLabel(song) || '—',
-                                        getSongAlbumLabel(song),
-                                    ].filter(Boolean).join(' · ');
-                                    return (
-                                        <button
-                                            key={`${song.id}-${index}`}
-                                            type="button"
-                                            className="tv-track-row"
-                                            data-tv-focusable="true"
-                                            data-tv-focus-key={`search-result-${song.id}-${index}`}
-                                            onClick={() => onPlayTracks(search.results, index)}
-                                        >
-                                            <span className="tv-track-index">{index + 1}</span>
-                                            {coverUrl
-                                                ? <img src={coverUrl} alt="" loading="lazy" decoding="async" />
-                                                : <span className="tv-track-cover-fallback" />}
-                                            <span className="tv-track-copy">
-                                                <strong>{song.name}</strong>
-                                                <small>{detail}</small>
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </>
+                        <div
+                            className="tv-overlay-list tv-search-results"
+                            data-tv-focus-group="search-results"
+                            data-tv-focus-axis="vertical"
+                        >
+                            {search.results.map((song, index) => {
+                                const coverUrl = resolveTvSongCoverUrl(song);
+                                const detail = [
+                                    getSongArtistLabel(song) || '—',
+                                    getSongAlbumLabel(song),
+                                ].filter(Boolean).join(' · ');
+                                return (
+                                    <button
+                                        ref={index === 0 ? firstResultRef : undefined}
+                                        key={`${song.id}-${index}`}
+                                        type="button"
+                                        className="tv-track-row"
+                                        data-tv-focusable="true"
+                                        data-tv-focus-key={`search-result-${song.id}-${index}`}
+                                        onClick={() => onPlayTracks(search.results, index)}
+                                    >
+                                        <span className="tv-track-index">{index + 1}</span>
+                                        {coverUrl
+                                            ? <img src={coverUrl} alt="" loading="lazy" decoding="async" />
+                                            : <span className="tv-track-cover-fallback" />}
+                                        <span className="tv-track-copy">
+                                            <strong>{song.name}</strong>
+                                            <small>{detail}</small>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
             </div>

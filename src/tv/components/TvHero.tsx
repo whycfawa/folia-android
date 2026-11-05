@@ -50,10 +50,12 @@ export const TvHero = ({
                 )}
             </span>
             <span className="tv-hero-copy">
-                <span className="tv-hero-eyebrow">
-                    {song ? <Play size={14} /> : <CalendarClock size={14} />}
-                    {song ? labels.continue : isAuthenticated ? labels.welcome : labels.loginTitle}
-                </span>
+                {!song && (
+                    <span className="tv-hero-eyebrow">
+                        <CalendarClock size={14} />
+                        {isAuthenticated ? labels.welcome : labels.loginTitle}
+                    </span>
+                )}
                 <strong className="tv-hero-title">
                     {song ? song.name : isAuthenticated ? labels.chooseSong : labels.loginHint}
                 </strong>

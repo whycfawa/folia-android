@@ -11,6 +11,12 @@ type TvKeyboardLike = {
     repeat?: boolean;
 };
 
+export const isTvSpaceKey = (event: TvKeyboardLike): boolean => (
+    event.key === ' '
+    || event.key === 'Spacebar'
+    || event.code === 'Space'
+);
+
 export const resolveTvRemoteAction = (event: TvKeyboardLike): TvRemoteAction | null => {
     const key = event.key;
     const code = event.code ?? '';
@@ -24,13 +30,11 @@ export const resolveTvRemoteAction = (event: TvKeyboardLike): TvRemoteAction | n
     if (
         key === 'Enter'
         || key === 'NumpadEnter'
-        || key === ' '
-        || key === 'Spacebar'
+        || isTvSpaceKey(event)
         || key === 'Select'
         || key === 'DPAD_CENTER'
         || code === 'Enter'
         || code === 'NumpadEnter'
-        || code === 'Space'
         || code === 'Select'
         || code === 'DPAD_CENTER'
         || keyCode === 13

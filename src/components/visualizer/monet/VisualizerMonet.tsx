@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useMotionValueEvent, useDragControls, useMotionValue } from 'framer-motion';
 import { RotateCcw } from 'lucide-react';
-import { useElementWidth } from '../../../hooks/useElementWidth';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import { DEFAULT_MONET_TUNING } from '../../../types';
 import { colorWithAlpha } from '../colorMix';
 import { type VisualizerSharedProps } from '../definition';
@@ -126,7 +126,12 @@ const VisualizerMonet: React.FC<VisualizerMonetProps> = (props) => {
         upcomingLine,
     ]);
 
-    const shellWidth = useElementWidth(shellRef);
+    const shellSize = useElementSize(shellRef);
+    const shellWidth = shellSize.width;
+    const compactProjectionLayout = shellWidth > 0 && shellWidth < 1000 && shellSize.height > 0;
+    const projectionScale = compactProjectionLayout
+        ? Math.max(0.68, Math.min(1, shellSize.height / 480))
+        : 1;
     const lyricFontStack = useMemo(() => resolveThemeFontStack(theme), [theme]);
     const translationFontStack = useMemo(
         () => resolveThemeTranslationFontStack(subtitleTheme ?? theme),
@@ -136,7 +141,7 @@ const VisualizerMonet: React.FC<VisualizerMonetProps> = (props) => {
     // Scales the whole composition up on very wide displays; 1 below 2xl, so nothing else changes.
     // Driven by the observed shell width so a resize re-lays the scene out instead of keeping the
     // width read at mount, and so an embedded preview scales by its own box, not by the display.
-    const largeScreenScale = resolveMonetLargeScreenScale(shellWidth);
+    const largeScreenScale = resolveMonetLargeScreenScale(shellWidth) * projectionScale;
     const lyricFontPx = resolveClampFontPx(
         1.34,
         2.75,
@@ -329,7 +334,11 @@ const VisualizerMonet: React.FC<VisualizerMonetProps> = (props) => {
                             animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
                             transition={{ duration: 1.6, ease: [0.25, 1, 0.5, 1], delay: 0.25 }}
                             className="hidden min-w-0 items-center justify-center overflow-visible px-3 pr-5 sm:pr-8 md:flex lg:justify-end lg:pr-10 xl:pr-12 select-none"
-                            style={{ flex: `0 0 clamp(220px, 28vw, ${portraitMaxPx}px)` }}
+                            style={{
+                                flex: compactProjectionLayout
+                                    ? `0 0 ${Math.max(168, Math.round(246 * largeScreenScale))}px`
+                                    : `0 0 clamp(220px, 28vw, ${portraitMaxPx}px)`,
+                            }}
                         >
                             {/* Bounding box wrapper that stays in the default position */}
                             <div

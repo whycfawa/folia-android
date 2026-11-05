@@ -112,6 +112,21 @@ describe('pickNextFocusRect', () => {
         expect(pickNextFocusRect(rows, 'row-a-2', 'down')?.id).toBe('row-b-1');
     });
 
+    it('moves through a wrapped grid when its group has no axis lock', () => {
+        const grid = [
+            { ...rect('lyrics-1', 0, 0), group: 'effects-lyrics' },
+            { ...rect('lyrics-2', 120, 0), group: 'effects-lyrics' },
+            { ...rect('lyrics-3', 240, 0), group: 'effects-lyrics' },
+            { ...rect('lyrics-4', 0, 100), group: 'effects-lyrics' },
+            { ...rect('lyrics-5', 120, 100), group: 'effects-lyrics' },
+            { ...rect('background-1', 0, 220), group: 'effects-backgrounds' },
+        ];
+
+        expect(pickNextFocusRect(grid, 'lyrics-2', 'down')?.id).toBe('lyrics-5');
+        expect(pickNextFocusRect(grid, 'lyrics-5', 'down')?.id).toBe('background-1');
+        expect(pickNextFocusRect(grid, 'lyrics-2', 'right')?.id).toBe('lyrics-3');
+    });
+
     it('keeps vertical movement inside the list and allows lateral exit', () => {
         const list = [
             groupedRect('close', 900, 0, 'close', 'horizontal'),

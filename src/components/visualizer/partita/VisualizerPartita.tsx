@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValueEvent } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_PARTITA_TUNING, Line } from '../../../types';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import { shouldPreheatLine, useVisualizerRuntime } from '../runtime';
 import { type VisualizerSharedProps } from '../definition';
@@ -52,16 +53,23 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
         subtitleContentMode,
     } = props;
     const { t } = useTranslation();
-    const [windowHeight, setWindowHeight] = useState(800);
     const resolvedPartitaTuning = useMemo(() => resolvePartitaTuning(partitaTuning), [partitaTuning]);
     const layoutCacheRef = useRef<Map<string, PartitaSequentialLayout>>(new Map());
+    const stageContentRef = useRef<HTMLDivElement | null>(null);
+    const stageSize = useElementSize(stageContentRef);
+    const [isProjectionStage, setIsProjectionStage] = useState(false);
 
     useEffect(() => {
-        setWindowHeight(window.innerHeight);
-        const handleResize = () => setWindowHeight(window.innerHeight);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        setIsProjectionStage(Boolean(stageContentRef.current?.closest('.tv-visualizer-stage')));
     }, []);
+
+    const windowHeight = isProjectionStage && stageSize.height > 0
+        ? stageSize.height
+        : (typeof window === 'undefined' ? 800 : window.innerHeight);
+    const measuredWidth = isProjectionStage && stageSize.width > 0 ? stageSize.width : 0;
+    const projectionFontPx = isProjectionStage
+        ? Math.max(24, Math.min(46, measuredWidth * 0.056, windowHeight * 0.105))
+        : null;
 
     const {
         activeLine,
@@ -82,8 +90,15 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
             return EMPTY_PARTITA_LAYOUT;
         }
 
-        return getOrBuildPartitaLayout(layoutCacheRef.current, activeLine, theme, windowHeight, resolvedPartitaTuning);
-    }, [activeLine, theme, windowHeight, resolvedPartitaTuning]);
+        return getOrBuildPartitaLayout(
+            layoutCacheRef.current,
+            activeLine,
+            theme,
+            windowHeight,
+            resolvedPartitaTuning,
+            measuredWidth,
+        );
+    }, [activeLine, measuredWidth, theme, windowHeight, resolvedPartitaTuning]);
 
     const nextLineRef = useRef<Line | null>(upcomingLine);
     useEffect(() => {
@@ -100,11 +115,20 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
             return;
         }
 
-        getOrBuildPartitaLayout(layoutCacheRef.current, nextLine, theme, windowHeight, resolvedPartitaTuning);
+        getOrBuildPartitaLayout(
+            layoutCacheRef.current,
+            nextLine,
+            theme,
+            windowHeight,
+            resolvedPartitaTuning,
+            measuredWidth,
+        );
     });
 
     const densityScale = sequentialLayout.totalGraphemes > 40 ? 0.8 : 1;
-    const mainFontSize = `clamp(${(2.5 * densityScale * lyricsFontScale).toFixed(3)}rem, ${(5.5 * densityScale * lyricsFontScale).toFixed(3)}vw, ${(4.5 * densityScale * lyricsFontScale).toFixed(3)}rem)`;
+    const mainFontSize = projectionFontPx
+        ? `${(projectionFontPx * densityScale).toFixed(2)}px`
+        : `clamp(${(2.5 * densityScale * lyricsFontScale).toFixed(3)}rem, ${(5.5 * densityScale * lyricsFontScale).toFixed(3)}vw, ${(4.5 * densityScale * lyricsFontScale).toFixed(3)}rem)`;
     const emptyFontSize = `clamp(${(1.2 * lyricsFontScale).toFixed(3)}rem, ${(2.8 * lyricsFontScale).toFixed(3)}vw, ${(1.9 * lyricsFontScale).toFixed(3)}rem)`;
     const translationFontSize = `clamp(${(1.05 * lyricsFontScale).toFixed(3)}rem, ${(2.2 * lyricsFontScale).toFixed(3)}vw, ${(1.2 * lyricsFontScale).toFixed(3)}rem)`;
     const upcomingFontSize = `clamp(${(0.875 * lyricsFontScale).toFixed(3)}rem, ${(1.8 * lyricsFontScale).toFixed(3)}vw, ${(1 * lyricsFontScale).toFixed(3)}rem)`;
@@ -142,9 +166,13 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
             sharedProps={props}
         >
             <motion.div
+                ref={stageContentRef}
                 className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none will-change-transform"
                 animate={lyricContainerFloat.animate}
                 transition={lyricContainerFloat.transition}
+                style={{
+                    '--tv-visualizer-primary-font-size': mainFontSize,
+                } as React.CSSProperties}
             >
                 <AnimatePresence mode="popLayout">
                     {showText && activeLine && activeLineRenderProfile && (

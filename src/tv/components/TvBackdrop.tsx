@@ -1,26 +1,41 @@
-// src/tv/components/TvBackdrop.tsx
+import type { MotionValue } from 'framer-motion';
+import VisualizerBackgroundRenderer from '../../components/visualizer/backgrounds/VisualizerBackgroundRenderer';
+import type { VisualizerBackgroundConfig } from '../../components/visualizer/backgrounds/definition';
+import type { AudioBands, Theme } from '../../types';
 
+// src/tv/components/TvBackdrop.tsx
+// Full-page background parity with the desktop visualizer backgrounds. The scrim only protects
+// header and lyric contrast; the effect itself remains visible across the projector frame.
 export const TvBackdrop = ({
+    config,
+    theme,
     coverUrl,
-    calm = false,
+    seed,
+    audioPower,
+    audioBands,
+    paused,
 }: {
+    config: VisualizerBackgroundConfig;
+    theme: Theme;
     coverUrl?: string | null;
-    calm?: boolean;
+    seed?: string | number;
+    audioPower: MotionValue<number>;
+    audioBands: AudioBands;
+    paused: boolean;
 }) => (
-    <div
-        className={`tv-backdrop${calm ? ' is-calm' : ''}`}
-        aria-hidden="true"
-    >
-        {coverUrl && (
-            <div
-                className="tv-backdrop-cover"
-                style={{ backgroundImage: `url("${coverUrl.replace(/"/g, '\\"')}")` }}
-            />
-        )}
-        <div className="tv-backdrop-wash" />
-        <div className="tv-aurora tv-aurora-a" />
-        <div className="tv-aurora tv-aurora-b" />
-        <div className="tv-vignette" />
+    <div className="tv-backdrop tv-visualizer-background" aria-hidden="true">
+        <VisualizerBackgroundRenderer
+            key={config.mode ?? 'default'}
+            config={config}
+            theme={theme}
+            isDaylight={false}
+            coverUrl={coverUrl}
+            audioPower={audioPower}
+            audioBands={audioBands}
+            seed={seed}
+            staticMode={false}
+            paused={paused}
+        />
+        <div className="tv-backdrop-scrim" />
     </div>
 );
-

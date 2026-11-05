@@ -7,6 +7,7 @@ import type { SongResult } from '../types';
 import type { ProviderCollection } from '../types/onlineMusic';
 import { TvCollectionOverlay } from './components/TvCollectionOverlay';
 import { TvExitOverlay } from './components/TvExitOverlay';
+import { TvEffectsOverlay } from './components/TvEffectsOverlay';
 import { TvLoginOverlay } from './components/TvLoginOverlay';
 import { TvQueueOverlay } from './components/TvQueueOverlay';
 import { TvSearchOverlay } from './components/TvSearchOverlay';
@@ -24,7 +25,7 @@ import { resolveTvBackRoute, resolveTvLayer, TV_HOME_ROUTE, type TvRoute } from 
 import { TvHome } from './pages/TvHome';
 import { TvPlayer } from './pages/TvPlayer';
 
-const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login', 'collection', 'search', 'queue'] as const;
+const RESET_FOCUS_MEMORY_LAYERS = ['exit', 'login', 'collection', 'search', 'queue', 'effects'] as const;
 
 export const TvApp = () => {
     const player = useTvPlayer();
@@ -62,6 +63,7 @@ export const TvApp = () => {
     const defaultFocus = useMemo(() => ({
         home: 'home-hero',
         controls: 'controls-play',
+        effects: `effects-lyrics-${player.visualizerMode}`,
         queue: player.currentIndex >= 0
             ? 'queue-current'
             : player.queue[0]
@@ -87,6 +89,7 @@ export const TvApp = () => {
         account.pendingSwitch,
         player.currentIndex,
         player.queue[0]?.id,
+        player.visualizerMode,
     ]);
     const { moveFocus } = useTvFocus(
         activeLayer,
@@ -182,6 +185,12 @@ export const TvApp = () => {
         setRoute(current => ({ ...current, page: 'player', overlay: null }));
     }, []);
 
+    const openEffects = useCallback(() => {
+        setRoute(current => (
+            current.page === 'player' ? { ...current, overlay: 'effects' } : current
+        ));
+    }, []);
+
     const leaveInBackground = useCallback(() => {
         setRoute(current => (
             current.overlay === 'exit' ? { ...current, overlay: null } : current
@@ -236,7 +245,13 @@ export const TvApp = () => {
             }`}
             data-tv-performance-tier={performanceProfile.tier}
         >
-            <audio ref={player.audioRef} className="tv-audio" preload="metadata" playsInline />
+            <audio
+                ref={player.audioRef}
+                className="tv-audio"
+                preload="metadata"
+                playsInline
+                crossOrigin="anonymous"
+            />
             {route.page === 'home' ? (
                 <TvHome
                     account={account}
@@ -255,6 +270,7 @@ export const TvApp = () => {
                     controlsOpen={route.overlay === 'controls'}
                     constrained={performanceProfile.tier === 'constrained'}
                     onOpenQueue={() => setRoute(current => ({ ...current, overlay: 'queue' }))}
+                    onOpenEffects={openEffects}
                     onCloseControls={closeControls}
                     inert={route.overlay !== null && route.overlay !== 'controls'}
                 />
@@ -274,6 +290,17 @@ export const TvApp = () => {
                     }}
                 />
             )}
+            {route.overlay === 'effects' && (
+                <TvEffectsOverlay
+                    visualizerMode={player.visualizerMode}
+                    backgroundMode={player.backgroundMode}
+                    onVisualizerModeChange={player.setVisualizerMode}
+                    onBackgroundModeChange={player.setBackgroundMode}
+                    onClose={() => setRoute(current => (
+                        current.overlay === 'effects' ? { ...current, overlay: 'controls' } : current
+                    ))}
+                />
+            )}
             {route.overlay === 'collection' && collection && (
                 <TvCollectionOverlay
                     collection={collection}
@@ -286,7 +313,6 @@ export const TvApp = () => {
             )}
             {route.overlay === 'search' && (
                 <TvSearchOverlay
-                    providerLabel={account.providerLabel}
                     onPlayTracks={playTracks}
                     onClose={closeSearch}
                 />
@@ -301,7 +327,6 @@ export const TvApp = () => {
             )}
             {route.overlay === 'exit' && (
                 <TvExitOverlay
-                    songName={player.currentSong?.name ?? null}
                     isPlaying={player.status === 'playing'}
                     canBackground={nativePlayback.canBackground}
                     canExit={nativePlayback.canExit}

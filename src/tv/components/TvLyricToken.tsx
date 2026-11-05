@@ -10,29 +10,7 @@ type TvLyricTokenProps = {
     currentTime: MotionValue<number>;
 };
 
-const TvSteadyLyricToken = ({
-    char,
-    startTime,
-    endTime,
-    currentTime,
-}: TvLyricTokenProps) => {
-    const opacity = useTransform(currentTime, time => (
-        resolveTvLyricTokenOpacity(time, startTime, endTime)
-    ));
-
-    return (
-        <span className="tv-lyric-token">
-            <span className="tv-lyric-token-base" aria-hidden="true">
-                {char === ' ' ? '\u00A0' : char}
-            </span>
-            <motion.span className="tv-lyric-token-lit" style={{ opacity }} aria-hidden="true">
-                {char === ' ' ? '\u00A0' : char}
-            </motion.span>
-        </span>
-    );
-};
-
-const TvBalancedLyricToken = ({
+export const TvLyricToken = ({
     char,
     startTime,
     endTime,
@@ -61,35 +39,6 @@ const TvBalancedLyricToken = ({
                 {char === ' ' ? '\u00A0' : char}
             </motion.span>
         </span>
-    );
-};
-
-export const TvLyricToken = ({
-    char,
-    startTime,
-    endTime,
-    currentTime,
-    calm,
-}: TvLyricTokenProps & {
-    calm: boolean;
-}) => {
-    if (calm) {
-        return (
-            <TvSteadyLyricToken
-                char={char}
-                startTime={startTime}
-                endTime={endTime}
-                currentTime={currentTime}
-            />
-        );
-    }
-    return (
-        <TvBalancedLyricToken
-            char={char}
-            startTime={startTime}
-            endTime={endTime}
-            currentTime={currentTime}
-        />
     );
 };
 

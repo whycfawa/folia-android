@@ -4,7 +4,6 @@ import { motion, useMotionValueEvent, useTransform } from 'framer-motion';
 import {
     ChevronDown,
     ListMusic,
-    MoonStar,
     Pause,
     Play,
     SkipBack,
@@ -22,11 +21,13 @@ export const TvControlDock = ({
     player,
     constrained,
     onOpenQueue,
+    onOpenEffects,
     onClose,
 }: {
     player: TvPlayerModel;
     constrained: boolean;
     onOpenQueue: () => void;
+    onOpenEffects: () => void;
     onClose: () => void;
 }) => {
     const { t } = useTranslation();
@@ -126,11 +127,11 @@ export const TvControlDock = ({
                         type="button"
                         data-tv-focusable="true"
                         data-tv-focus-key="controls-effects"
-                        onClick={player.toggleEffectsMode}
-                        aria-label={player.effectsMode === 'flow' ? t('tv.player.flow') : t('tv.player.calm')}
+                        onClick={onOpenEffects}
+                        aria-label={t('tv.effects.open')}
                     >
-                        {player.effectsMode === 'flow' ? <Sparkles size={22} /> : <MoonStar size={22} />}
-                        <span>{player.effectsMode === 'flow' ? t('tv.player.flow') : t('tv.player.calm')}</span>
+                        <Sparkles size={22} />
+                        <span>{t('tv.effects.open')}</span>
                     </button>
                     <button
                         type="button"
@@ -141,9 +142,6 @@ export const TvControlDock = ({
                     >
                         <ChevronDown size={24} />
                     </button>
-                </div>
-                <div className="tv-control-hint">
-                    {t('tv.player.controlHint')}
                 </div>
             </div>
         </section>

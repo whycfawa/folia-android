@@ -4,7 +4,12 @@
 
 import { useEffect, useRef } from 'react';
 import { isTextEntryTarget } from '../../utils/keyboardTargets';
-import { isTvDirection, resolveTvRemoteAction, type TvRemoteAction } from '../input/tvKeys';
+import {
+    isTvDirection,
+    isTvSpaceKey,
+    resolveTvRemoteAction,
+    type TvRemoteAction,
+} from '../input/tvKeys';
 import { createTvRemotePressTracker } from '../input/tvRemotePress';
 
 const DIRECTION_REPEAT_INTERVAL_MS = 95;
@@ -31,16 +36,27 @@ export const useTvRemote = ({ onAction, onHandledKey }: TvRemoteOptions): void =
             if (event.altKey || event.ctrlKey || event.metaKey) return;
             const action = resolveTvRemoteAction(event);
             if (!action) return;
+            const repeated = event.repeat || pressTrackerRef.current.press(action);
             if (isTextEntryTarget(event.target)) {
                 const target = event.target instanceof HTMLElement ? event.target : null;
                 const remoteInput = target?.closest('[data-tv-remote-input="true"]');
-                const canLeaveInput = action === 'up'
-                    || action === 'down'
-                    || action === 'ok'
-                    || action === 'back';
-                if (!remoteInput || !canLeaveInput) return;
+                if (!remoteInput) return;
+
+                if (action === 'ok') {
+                    if (isTvSpaceKey(event)) return;
+                    if (repeated) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        return;
+                    }
+                    // Let the input receive this same key event so its own submit handler can run.
+                    target?.click();
+                    return;
+                }
+
+                const canLeaveInput = action === 'up' || action === 'down' || action === 'back';
+                if (!canLeaveInput) return;
             }
-            const repeated = event.repeat || pressTrackerRef.current.press(action);
 
             if (!isTvDirection(action) && repeated) {
                 event.preventDefault();

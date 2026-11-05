@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_CLASSIC_TUNING, AudioBands, type ClassicTuning } from '../../../types';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import { useVisualizerRuntime } from '../runtime';
 import { type VisualizerSharedProps } from '../definition';
@@ -115,17 +116,25 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
     const activeWordRenderProfile = activeLineRenderProfile ?? (activeLine ? resolveGlowWordRenderProfile(activeLine) : null);
     const activeLineContainerMotion = getGlowWordLineContainerMotion(activeLineRenderProfile);
 
-    const [viewportWidth, setViewportWidth] = useState(() => (
-        typeof window === 'undefined' ? 1200 : window.innerWidth
-    ));
+    const stageContentRef = useRef<HTMLDivElement | null>(null);
+    const stageSize = useElementSize(stageContentRef);
+    const [isProjectionStage, setIsProjectionStage] = useState(false);
 
     useEffect(() => {
-        const handleResize = () => {
-            setViewportWidth(window.innerWidth);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        setIsProjectionStage(Boolean(stageContentRef.current?.closest('.tv-visualizer-stage')));
     }, []);
+
+    const fallbackViewportWidth = typeof window === 'undefined' ? 1200 : window.innerWidth;
+    const fallbackViewportHeight = typeof window === 'undefined' ? 720 : window.innerHeight * 0.7;
+    const layoutWidth = isProjectionStage && stageSize.width > 0
+        ? stageSize.width
+        : fallbackViewportWidth;
+    const layoutHeight = isProjectionStage && stageSize.height > 0
+        ? stageSize.height
+        : fallbackViewportHeight;
+    const projectionFontPx = isProjectionStage
+        ? Math.max(24, Math.min(52, layoutWidth * 0.058, layoutHeight * 0.112))
+        : null;
 
     const displayWords = useMemo(() => {
         if (!activeLine) return [];
@@ -136,8 +145,12 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
         return buildDisplayWordsFromLayoutUnits(layoutUnits);
     }, [activeLine, resolvedClassicTuning.useLegacyLayout]);
 
-    const mainFontSize = `clamp(${(2.25 * lyricsFontScale).toFixed(3)}rem, ${(6 * lyricsFontScale).toFixed(3)}vw, ${(4.5 * lyricsFontScale).toFixed(3)}rem)`;
-    const emptyFontSize = `clamp(${(1.5 * lyricsFontScale).toFixed(3)}rem, ${(3.5 * lyricsFontScale).toFixed(3)}vw, ${(2.25 * lyricsFontScale).toFixed(3)}rem)`;
+    const mainFontSize = projectionFontPx
+        ? `${projectionFontPx.toFixed(2)}px`
+        : `clamp(${(2.25 * lyricsFontScale).toFixed(3)}rem, ${(6 * lyricsFontScale).toFixed(3)}vw, ${(4.5 * lyricsFontScale).toFixed(3)}rem)`;
+    const emptyFontSize = projectionFontPx
+        ? `${Math.max(22, projectionFontPx * 0.56).toFixed(2)}px`
+        : `clamp(${(1.5 * lyricsFontScale).toFixed(3)}rem, ${(3.5 * lyricsFontScale).toFixed(3)}vw, ${(2.25 * lyricsFontScale).toFixed(3)}rem)`;
     const { translationFontSize, upcomingFontSize } = resolveSubtitleFontSizes(lyricsFontScale);
 
     // Generate a stable random layout configuration for the current line.
@@ -163,8 +176,12 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
         const isInterlude = activeLine.fullText === "......";
 
         const lineConfig: LineLayoutConfig = {
-            justifyContent: isInterlude ? 'justify-center' : justifyOptions[Math.floor(seed % justifyOptions.length)], // deterministic random
-            alignItems: alignOptions[Math.floor((seed * 2) % alignOptions.length)],
+            justifyContent: isInterlude || projectionFontPx
+                ? 'justify-center'
+                : justifyOptions[Math.floor(seed % justifyOptions.length)], // deterministic random
+            alignItems: projectionFontPx
+                ? 'items-center'
+                : alignOptions[Math.floor((seed * 2) % alignOptions.length)],
             perspective: isChaotic ? 500 + (seed % 500) : 1000,
         };
 
@@ -179,11 +196,19 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
             const maxPx = 4.5 * fontScale * rem;
             return Math.max(minPx, Math.min(valPx, maxPx));
         };
-        const pxFontSize = getPixelFontSize(lyricsFontScale, viewportWidth);
+        const pxFontSize = projectionFontPx ?? getPixelFontSize(lyricsFontScale, layoutWidth);
         const wordWidths = displayWords.map(w => measureWordWidth(w.text, pxFontSize, fontStack, fontWeight));
 
-        const baseSpread = isChaotic ? 60 : isCalm ? 0 : 20;
-        const baseRotate = isChaotic ? 30 : isCalm ? 0 : 5;
+        const baseSpread = isChaotic
+            ? (projectionFontPx ? 24 : 60)
+            : isCalm
+                ? 0
+                : (projectionFontPx ? 8 : 20);
+        const baseRotate = isChaotic
+            ? (projectionFontPx ? 12 : 30)
+            : isCalm
+                ? 0
+                : (projectionFontPx ? 2 : 5);
 
         const wordConfigs: WordLayoutConfig[] = displayWords.map((w, i) => {
             const wordSeed = seed + i;
@@ -210,7 +235,9 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
                 };
             }
 
-            const wordConfigScale = isChaotic ? 0.8 + random(4) * 0.6 : 1.1 + random(4) * 0.2;
+            const wordConfigScale = isChaotic
+                ? (projectionFontPx ? 0.78 + random(4) * 0.3 : 0.8 + random(4) * 0.6)
+                : (projectionFontPx ? 0.92 + random(4) * 0.14 : 1.1 + random(4) * 0.2);
             const xVal = (random(1) - 0.5) * baseSpread * 2;
             const yVal = (random(2) - 0.5) * baseSpread * 2;
 
@@ -231,7 +258,9 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
                         const x = Math.sin(nextSeed + offset) * 10000;
                         return x - Math.floor(x);
                     };
-                    const nextConfigScale = isChaotic ? 0.8 + nextRandom(4) * 0.6 : 1.1 + nextRandom(4) * 0.2;
+                    const nextConfigScale = isChaotic
+                        ? (projectionFontPx ? 0.78 + nextRandom(4) * 0.3 : 0.8 + nextRandom(4) * 0.6)
+                        : (projectionFontPx ? 0.92 + nextRandom(4) * 0.14 : 1.1 + nextRandom(4) * 0.2);
                     s_next = nextConfigScale * 1.4;
                     x_next = (nextRandom(1) - 0.5) * baseSpread * 2;
                     w_next = wordWidths[i + 1] ?? 0;
@@ -256,13 +285,17 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
                 rotate: resolvedClassicTuning.enableWordRotation ? (random(3) - 0.5) * baseRotate * 2 : 0,
                 scale: wordConfigScale,
                 marginRight,
-                alignSelf: isChaotic && random(6) > 0.7 ? (random(7) > 0.5 ? 'flex-start' : 'flex-end') : 'auto',
-                passedRotate: resolvedClassicTuning.enableWordRotation ? (random(8) - 0.5) * 45 : 0
+                alignSelf: !projectionFontPx && isChaotic && random(6) > 0.7
+                    ? (random(7) > 0.5 ? 'flex-start' : 'flex-end')
+                    : 'auto',
+                passedRotate: resolvedClassicTuning.enableWordRotation
+                    ? (random(8) - 0.5) * (projectionFontPx ? (isChaotic ? 20 : 10) : 45)
+                    : 0
             };
         });
 
         return { wordConfigs, lineConfig };
-    }, [activeLine, displayWords, resolvedClassicTuning.enableWordRotation, resolvedClassicTuning.useLegacyLayout, resolvedClassicTuning.wordSpacing, theme, lyricsFontScale, viewportWidth]);
+    }, [activeLine, displayWords, projectionFontPx, resolvedClassicTuning.enableWordRotation, resolvedClassicTuning.useLegacyLayout, resolvedClassicTuning.wordSpacing, theme, lyricsFontScale, layoutWidth]);
 
     const layoutVariants = buildGlowWordLayoutVariants(theme.animationIntensity, resolvedClassicTuning.enableWordRotation);
     const bodyVariants = glowWordBodyVariants;
@@ -305,9 +338,13 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
         >
             {/* Main Container */}
             <motion.div
+                ref={stageContentRef}
                 className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none will-change-transform"
                 animate={lyricContainerFloat?.animate}
                 transition={lyricContainerFloat?.transition}
+                style={{
+                    '--tv-visualizer-primary-font-size': mainFontSize,
+                } as React.CSSProperties}
             >
                 <AnimatePresence mode='popLayout'>
                     {showText && activeLine && (

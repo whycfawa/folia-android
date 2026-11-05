@@ -6,20 +6,37 @@ import { retireBlobUrl } from '../../services/playbackBlobUrls';
 import { useAudioSettingsStore } from '../../stores/useAudioSettingsStore';
 import { useOnlineProviderAccountStore } from '../../stores/useOnlineProviderAccountStore';
 import type { LyricData, SongResult } from '../../types';
+import type { VisualizerBackgroundMode, VisualizerMode } from '../../types';
 import type { TvAudioTransport } from './useTvAudioTransport';
 import { isLocalPlaybackSong } from '../../utils/appPlaybackGuards';
-import type { TvEffectsMode, TvPlaybackStatus } from '../model/tvTypes';
+import {
+    DEFAULT_VISUALIZER_BACKGROUND_MODE,
+    DEFAULT_VISUALIZER_MODE,
+    isBuiltinVisualizerBackgroundMode,
+    isBuiltinVisualizerMode,
+} from '../../types/visualizerModes';
+import type { TvPlaybackStatus } from '../model/tvTypes';
 import {
     loadTvSongAudio,
     loadTvSongLyrics,
     TvPlaybackSourceError,
 } from '../services/tvPlaybackSource';
 
-const TV_EFFECTS_STORAGE_KEY = 'folia_tv_effects_mode';
+const TV_VISUALIZER_MODE_STORAGE_KEY = 'folia_tv_visualizer_mode';
+const TV_BACKGROUND_MODE_STORAGE_KEY = 'folia_tv_background_mode';
 
-const readEffectsMode = (): TvEffectsMode => {
-    if (typeof localStorage === 'undefined') return 'flow';
-    return localStorage.getItem(TV_EFFECTS_STORAGE_KEY) === 'calm' ? 'calm' : 'flow';
+const readVisualizerMode = (): VisualizerMode => {
+    if (typeof localStorage === 'undefined') return DEFAULT_VISUALIZER_MODE;
+    const stored = localStorage.getItem(TV_VISUALIZER_MODE_STORAGE_KEY);
+    return isBuiltinVisualizerMode(stored) ? stored : DEFAULT_VISUALIZER_MODE;
+};
+
+const readBackgroundMode = (): VisualizerBackgroundMode => {
+    if (typeof localStorage === 'undefined') return DEFAULT_VISUALIZER_BACKGROUND_MODE;
+    const stored = localStorage.getItem(TV_BACKGROUND_MODE_STORAGE_KEY);
+    return isBuiltinVisualizerBackgroundMode(stored)
+        ? stored
+        : DEFAULT_VISUALIZER_BACKGROUND_MODE;
 };
 
 export type TvPlaybackQueueModel = {
@@ -31,7 +48,8 @@ export type TvPlaybackQueueModel = {
     error: string | null;
     duration: number;
     isLyricsLoading: boolean;
-    effectsMode: TvEffectsMode;
+    visualizerMode: VisualizerMode;
+    backgroundMode: VisualizerBackgroundMode;
     playQueue: (songs: SongResult[], startIndex?: number) => void;
     togglePlayback: () => void;
     resumeCurrent: () => void;
@@ -39,8 +57,8 @@ export type TvPlaybackQueueModel = {
     next: () => void;
     previous: () => void;
     seekBy: (deltaSeconds: number) => void;
-    setEffectsMode: (mode: TvEffectsMode) => void;
-    toggleEffectsMode: () => void;
+    setVisualizerMode: (mode: VisualizerMode) => void;
+    setBackgroundMode: (mode: VisualizerBackgroundMode) => void;
 };
 
 /**
@@ -59,7 +77,10 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
     const [lyrics, setLyrics] = useState<LyricData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLyricsLoading, setIsLyricsLoading] = useState(false);
-    const [effectsMode, setEffectsModeState] = useState<TvEffectsMode>(readEffectsMode);
+    const [visualizerMode, setVisualizerModeState] = useState<VisualizerMode>(readVisualizerMode);
+    const [backgroundMode, setBackgroundModeState] = useState<VisualizerBackgroundMode>(
+        readBackgroundMode,
+    );
     const queueRef = useRef<SongResult[]>([]);
     const indexRef = useRef(-1);
     const currentSongRef = useRef<SongResult | null>(null);
@@ -174,16 +195,21 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
         seekTransport(deltaSeconds);
     }, [seekTransport]);
 
-    const setEffectsMode = useCallback((mode: TvEffectsMode) => {
-        setEffectsModeState(mode);
+    const setVisualizerMode = useCallback((mode: VisualizerMode) => {
+        if (!isBuiltinVisualizerMode(mode)) return;
+        setVisualizerModeState(mode);
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(TV_EFFECTS_STORAGE_KEY, mode);
+            localStorage.setItem(TV_VISUALIZER_MODE_STORAGE_KEY, mode);
         }
     }, []);
 
-    const toggleEffectsMode = useCallback(() => {
-        setEffectsMode(effectsMode === 'flow' ? 'calm' : 'flow');
-    }, [effectsMode, setEffectsMode]);
+    const setBackgroundMode = useCallback((mode: VisualizerBackgroundMode) => {
+        if (!isBuiltinVisualizerBackgroundMode(mode)) return;
+        setBackgroundModeState(mode);
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(TV_BACKGROUND_MODE_STORAGE_KEY, mode);
+        }
+    }, []);
 
     useEffect(() => {
         if (restoredRef.current) return;
@@ -228,7 +254,8 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
         error,
         duration: transport.duration,
         isLyricsLoading,
-        effectsMode,
+        visualizerMode,
+        backgroundMode,
         playQueue,
         togglePlayback,
         resumeCurrent,
@@ -236,8 +263,8 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
         next,
         previous,
         seekBy,
-        setEffectsMode,
-        toggleEffectsMode,
+        setVisualizerMode,
+        setBackgroundMode,
     };
 };
 

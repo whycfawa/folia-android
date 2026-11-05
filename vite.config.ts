@@ -213,6 +213,8 @@ export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig
       include: ['music-metadata'],
     },
     build: {
+      // S621 runs Chromium 101; keep legacy media-query syntax for its WebView.
+      cssTarget: 'chrome101',
       rollupOptions: {
         input: {
           main: 'index.html',

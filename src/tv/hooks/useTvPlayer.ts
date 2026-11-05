@@ -67,7 +67,7 @@ export const useTvPlayer = (): TvPlayerModel => {
     ]);
 
     useEffect(() => {
-        document.title = playback.currentSong ? `${playback.currentSong.name} · Folia TV` : 'Folia TV';
+        document.title = playback.currentSong ? `${playback.currentSong.name} · Music` : 'Music';
     }, [playback.currentSong]);
 
     const duration = transport.duration > 0
@@ -85,7 +85,8 @@ export const useTvPlayer = (): TvPlayerModel => {
         currentTime: transport.currentTime,
         positionRevision: transport.positionRevision,
         duration,
-        effectsMode: playback.effectsMode,
+        visualizerMode: playback.visualizerMode,
+        backgroundMode: playback.backgroundMode,
         isLyricsLoading: playback.isLyricsLoading,
         playQueue: playback.playQueue,
         togglePlayback: playback.togglePlayback,
@@ -94,8 +95,8 @@ export const useTvPlayer = (): TvPlayerModel => {
         next: playback.next,
         previous: playback.previous,
         seekBy: playback.seekBy,
-        setEffectsMode: playback.setEffectsMode,
-        toggleEffectsMode: playback.toggleEffectsMode,
+        setVisualizerMode: playback.setVisualizerMode,
+        setBackgroundMode: playback.setBackgroundMode,
     };
 };
 

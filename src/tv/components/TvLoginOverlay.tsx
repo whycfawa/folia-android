@@ -80,8 +80,6 @@ export const TvLoginOverlay = ({
 
     const title = login?.title
         || (pendingSwitch ? pendingSwitch.title : t('tv.account.title'));
-    const hint = login?.note
-        || (pendingSwitch ? t('tv.account.switchHint') : t('tv.account.hint'));
 
     return (
         <section id="tv-layer-login" data-tv-layer="login" className="tv-overlay tv-login-overlay">
@@ -98,7 +96,6 @@ export const TvLoginOverlay = ({
                         </span>
                         <span>
                             <h2 id="tv-login-title">{title}</h2>
-                            <small>{hint}</small>
                         </span>
                     </div>
                     <button
@@ -153,7 +150,6 @@ export const TvLoginOverlay = ({
                                 );
                             })}
                         </div>
-                        <p className="tv-account-providers-hint">{t('tv.account.remoteHint')}</p>
                     </aside>
 
                     <div className="tv-account-detail">
@@ -191,7 +187,6 @@ export const TvLoginOverlay = ({
                         ) : choosingMethod && login?.methodStep ? (
                             <div className="tv-login-methods">
                                 <strong>{login.methodStep.title}</strong>
-                                <p>{login.methodStep.hint}</p>
                                 <div className="tv-login-method-grid">
                                     {login.methodStep.options.map(option => (
                                         <button
@@ -229,7 +224,9 @@ export const TvLoginOverlay = ({
                                             || login.status
                                             || (backendFailure ? backendFailure.title : t('tv.login.waiting'))}
                                     </strong>
-                                    <p>{session?.backend.failed ? session.backend.detail : login.note}</p>
+                                    {session?.backend.failed && (
+                                        <p>{session.backend.detail}</p>
+                                    )}
                                     <div className="tv-login-actions">
                                         {backendFailure && (
                                             <button
@@ -261,11 +258,6 @@ export const TvLoginOverlay = ({
                             <div className="tv-account-intro">
                                 <span className="tv-overlay-icon"><UserRound size={24} /></span>
                                 <strong>{account.providerLabel}</strong>
-                                <p>
-                                    {account.isAuthenticated
-                                        ? t('tv.account.signedInHint')
-                                        : t('tv.account.chooseHint')}
-                                </p>
                                 {!account.isAuthenticated && account.activeProvider?.availability.configured && (
                                     <button
                                         type="button"

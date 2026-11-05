@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { LyricData, SongResult } from '../../types';
 import { buildWordGraphemeTimings } from '../../utils/lyrics/graphemeTiming';
 import { findTvActiveLineIndex } from '../model/tvLyricTimeline';
-import type { TvEffectsMode, TvPlaybackStatus } from '../model/tvTypes';
+import type { TvPlaybackStatus } from '../model/tvTypes';
 import { TvLyricToken } from './TvLyricToken';
 
 const useTvActiveLine = (lyrics: LyricData | null, currentTime: MotionValue<number>) => {
@@ -33,11 +33,9 @@ const useTvActiveLine = (lyrics: LyricData | null, currentTime: MotionValue<numb
 const TvLineTokens = ({
     line,
     currentTime,
-    calm,
 }: {
     line: NonNullable<LyricData['lines'][number]>;
     currentTime: MotionValue<number>;
-    calm: boolean;
 }) => {
     const tokens = useMemo(() => {
         const wordTokens = line.words.flatMap((word, wordIndex) => (
@@ -67,7 +65,6 @@ const TvLineTokens = ({
                         startTime={token.startTime}
                         endTime={token.endTime}
                         currentTime={currentTime}
-                        calm={calm}
                     />
                 )) : line.fullText}
         </span>
@@ -78,22 +75,18 @@ export const TvLyricStage = ({
     song,
     lyrics,
     status,
-    effectsMode,
     isLyricsLoading,
     currentTime,
 }: {
     song: SongResult | null;
     lyrics: LyricData | null;
     status: TvPlaybackStatus;
-    effectsMode: TvEffectsMode;
     isLyricsLoading: boolean;
     currentTime: MotionValue<number>;
 }) => {
     const { t } = useTranslation();
     const activeIndex = useTvActiveLine(lyrics, currentTime);
     const activeLine = activeIndex >= 0 ? lyrics?.lines[activeIndex] ?? null : null;
-    const nextLine = lyrics?.lines[activeIndex + 1] ?? null;
-    const calm = effectsMode === 'calm';
     const emptyTitle = !song
         ? t('tv.player.noSong')
         : status === 'error'
@@ -101,26 +94,19 @@ export const TvLyricStage = ({
             : isLyricsLoading
                 ? t('tv.player.lyricsLoading')
                 : t('tv.player.noLyrics');
-    const emptyHint = !song || isLyricsLoading || status === 'error'
-        ? t('tv.player.stageHint')
-        : t('tv.player.instrumentalHint');
 
     return (
-        <section className={`tv-lyric-stage${calm ? ' is-calm' : ''}${activeLine?.isChorus ? ' is-chorus' : ''}`}>
+        <section className={`tv-lyric-stage${activeLine?.isChorus ? ' is-chorus' : ''}`}>
             <div className="tv-lyric-focus">
                 {activeLine ? (
                     <motion.div
                         key={activeLine.startTime}
                         className="tv-lyric-line"
-                        initial={calm ? false : { opacity: 0, y: 34, scale: 0.98 }}
+                        initial={{ opacity: 0, y: 34, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: calm ? 0 : 0.38, ease: [0.2, 0.75, 0.25, 1] }}
+                        transition={{ duration: 0.38, ease: [0.2, 0.75, 0.25, 1] }}
                     >
-                        <TvLineTokens
-                            line={activeLine}
-                            currentTime={currentTime}
-                            calm={calm}
-                        />
+                        <TvLineTokens line={activeLine} currentTime={currentTime} />
                         {activeLine.translation && (
                             <p className="tv-lyric-translation">{activeLine.translation}</p>
                         )}
@@ -129,12 +115,8 @@ export const TvLyricStage = ({
                     <div className="tv-lyric-empty">
                         <span className="tv-lyric-empty-mark" aria-hidden="true">♪</span>
                         <strong>{emptyTitle}</strong>
-                        <span>{emptyHint}</span>
                     </div>
                 )}
-            </div>
-            <div className="tv-lyric-upcoming" aria-live="polite">
-                {nextLine?.fullText || (activeLine ? t('tv.player.instrumentalHint') : '')}
             </div>
             {activeLine?.isChorus && <span className="tv-chorus-sweep" aria-hidden="true" />}
         </section>

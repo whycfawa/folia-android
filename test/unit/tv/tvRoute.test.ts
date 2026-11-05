@@ -8,6 +8,7 @@ describe('TV route layers', () => {
         expect(resolveTvLayer(TV_HOME_ROUTE)).toBe('home');
         expect(resolveTvLayer({ page: 'player', overlay: null })).toBe('player');
         expect(resolveTvLayer({ page: 'player', overlay: 'controls' })).toBe('controls');
+        expect(resolveTvLayer({ page: 'player', overlay: 'effects' })).toBe('effects');
         expect(resolveTvLayer({ page: 'player', overlay: 'queue' })).toBe('queue');
         expect(resolveTvLayer({ page: 'home', overlay: 'collection' })).toBe('collection');
         expect(resolveTvLayer({ page: 'home', overlay: 'login' })).toBe('login');
@@ -23,6 +24,10 @@ describe('TV route layers', () => {
             overlay: null,
         });
         expect(resolveTvBackRoute({ page: 'player', overlay: 'queue' })).toEqual({
+            page: 'player',
+            overlay: 'controls',
+        });
+        expect(resolveTvBackRoute({ page: 'player', overlay: 'effects' })).toEqual({
             page: 'player',
             overlay: 'controls',
         });

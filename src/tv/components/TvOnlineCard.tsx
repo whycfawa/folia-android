@@ -23,11 +23,12 @@ export const TvOnlineCard = ({
     const trackCount = typeof card.trackCount === 'number'
         ? t('tv.common.trackCount', { count: card.trackCount })
         : '';
-    const description = kind === 'album'
-        ? card.description || trackCount || t('home.albums')
-        : kind === 'personal-fm'
-            ? t('tv.home.personalFmHint')
-            : trackCount || card.description || t('home.radio');
+    const fallbackLabel = kind === 'album'
+        ? t('home.albums')
+        : kind === 'personal-fm' || kind === 'daily'
+            ? t('home.radio')
+            : t('home.playlists');
+    const description = trackCount || card.description || fallbackLabel;
     const FallbackIcon = kind === 'personal-fm'
         ? Radio
         : kind === 'daily'

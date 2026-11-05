@@ -32,7 +32,6 @@ export const TvQueueOverlay = ({
                         <span className="tv-overlay-icon"><ListMusic size={22} /></span>
                         <span>
                             <h2 id="tv-queue-title">{t('tv.player.queue')}</h2>
-                            <small>{t('tv.player.queueCount', { count: queue.length })}</small>
                         </span>
                     </div>
                     <button

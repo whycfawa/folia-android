@@ -103,7 +103,13 @@ const getTargetColumnCount = (totalGraphemes: number, wordCount: number) => {
     return 5;
 };
 
-const buildSequentialColumns = (line: Line, theme: Theme, windowHeight: number, tuning: PartitaTuning): PartitaSequentialLayout => {
+const buildSequentialColumns = (
+    line: Line,
+    theme: Theme,
+    windowHeight: number,
+    tuning: PartitaTuning,
+    windowWidth = 0,
+): PartitaSequentialLayout => {
     // Partita wants the line to feel "composed", not scattered.
     // So instead of throwing each word around independently, first decide how many chunks/rows the line should have.
     const intensity = theme.animationIntensity;
@@ -118,10 +124,20 @@ const buildSequentialColumns = (line: Line, theme: Theme, windowHeight: number, 
     const columns: PartitaColumn[] = [];
     let currentWords: PartitaColumn['words'] = [];
 
-    const baseRowHeight = 100;
-    const availableHeight = windowHeight * 0.65;
+    const hasMeasuredWidth = windowWidth > 0;
+    const baseRowHeight = hasMeasuredWidth ? 78 : 100;
+    const availableHeight = windowHeight * (hasMeasuredWidth ? 0.9 : 0.65);
     const targetRowCount = Math.max(1, Math.floor(availableHeight / baseRowHeight));
-    const actualRowCount = Math.min(layoutUnits.length, targetRowCount);
+    const maxGraphemesPerRow = hasMeasuredWidth
+        ? Math.max(6, Math.floor((windowWidth * 0.82) / 52))
+        : totalGraphemes;
+    const widthDrivenRowCount = hasMeasuredWidth
+        ? Math.ceil(totalGraphemes / maxGraphemesPerRow)
+        : 1;
+    const actualRowCount = Math.min(
+        layoutUnits.length,
+        Math.max(1, targetRowCount, widthDrivenRowCount),
+    );
 
     let seed = line.startTime;
     const random = () => {
@@ -218,9 +234,11 @@ export const buildPartitaLayoutCacheKey = (
     line: Line,
     theme: Theme,
     windowHeight: number,
-    tuning: PartitaTuning
+    tuning: PartitaTuning,
+    windowWidth = 0,
 ) => {
     const windowHeightBucket = Math.round(windowHeight / 24);
+    const windowWidthBucket = windowWidth > 0 ? Math.round(windowWidth / 32) : 0;
     return [
         'semantic-layout-v1',
         line.startTime,
@@ -234,6 +252,7 @@ export const buildPartitaLayoutCacheKey = (
         theme.animationIntensity,
         theme.fontWeight ?? 'auto',
         windowHeightBucket,
+        windowWidthBucket,
         tuning.staggerMin,
         tuning.staggerMax,
         tuning.showGuideLines ? 1 : 0,
@@ -246,15 +265,16 @@ export const getOrBuildPartitaLayout = (
     line: Line,
     theme: Theme,
     windowHeight: number,
-    tuning: PartitaTuning
+    tuning: PartitaTuning,
+    windowWidth = 0,
 ): PartitaSequentialLayout => {
-    const cacheKey = buildPartitaLayoutCacheKey(line, theme, windowHeight, tuning);
+    const cacheKey = buildPartitaLayoutCacheKey(line, theme, windowHeight, tuning, windowWidth);
     const cached = cache.get(cacheKey);
     if (cached) {
         // Layout cache matters here because rebuilding columns on every frame would be pointless and expensive.
         return cached;
     }
 
-    const layout = buildSequentialColumns(line, theme, windowHeight, tuning);
+    const layout = buildSequentialColumns(line, theme, windowHeight, tuning, windowWidth);
     return rememberBounded(cache, cacheKey, layout, PARTITA_LAYOUT_CACHE_LIMIT);
 };

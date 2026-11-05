@@ -28,10 +28,7 @@ export const TvHeader = ({
         <header className="tv-header">
             <div className="tv-brand">
                 <span className="tv-brand-mark">F</span>
-                <span>
-                    <strong>Folia TV</strong>
-                    <small>{t('tv.brandTagline')}</small>
-                </span>
+                <strong>Music</strong>
             </div>
             {children}
             <button

@@ -1,6 +1,8 @@
 // src/tv/pages/TvPlayer.tsx
 
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useVisualizerBackgroundConfig } from '../../components/visualizer/useVisualizerBackgroundConfig';
 import {
     getSongAlbumLabel,
     getSongArtistLabel,
@@ -9,7 +11,9 @@ import { TvBackdrop } from '../components/TvBackdrop';
 import { TvControlDock } from '../components/TvControlDock';
 import { TvLyricStage } from '../components/TvLyricStage';
 import { TvVisualizerStage } from '../components/TvVisualizerStage';
+import { useTvAudioAnalyser } from '../hooks/useTvAudioAnalyser';
 import type { TvPlayerModel } from '../model/tvTypes';
+import { resolveTvVisualTheme } from '../model/tvVisualTheme';
 import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 
 export const TvPlayer = ({
@@ -17,6 +21,7 @@ export const TvPlayer = ({
     controlsOpen,
     constrained,
     onOpenQueue,
+    onOpenEffects,
     onCloseControls,
     inert,
 }: {
@@ -24,6 +29,7 @@ export const TvPlayer = ({
     controlsOpen: boolean;
     constrained: boolean;
     onOpenQueue: () => void;
+    onOpenEffects: () => void;
     onCloseControls: () => void;
     inert: boolean;
 }) => {
@@ -37,6 +43,21 @@ export const TvPlayer = ({
         : player.status === 'error'
             ? t('tv.player.playbackFailed')
             : null;
+    const theme = useMemo(() => resolveTvVisualTheme(constrained), [constrained]);
+    const audio = useTvAudioAnalyser(player.audioRef, player.status);
+    const sharedBackgroundConfig = useVisualizerBackgroundConfig();
+    const urlBackgroundAvailable = sharedBackgroundConfig.url?.items?.some(item => (
+        item.id === sharedBackgroundConfig.url?.selectedId
+        && Boolean(item.url?.trim())
+    )) ?? false;
+    const backgroundMode = player.backgroundMode === 'url' && !urlBackgroundAvailable
+        ? 'common'
+        : player.backgroundMode;
+    const backgroundConfig = useMemo(() => ({
+        ...sharedBackgroundConfig,
+        mode: backgroundMode,
+        transparent: false,
+    }), [backgroundMode, sharedBackgroundConfig]);
 
     return (
         <div
@@ -46,12 +67,16 @@ export const TvPlayer = ({
             inert={inert || undefined}
         >
             <TvBackdrop
+                config={backgroundConfig}
+                theme={theme}
                 coverUrl={coverUrl}
-                calm={player.effectsMode === 'calm'}
+                seed={song?.id}
+                audioPower={audio.audioPower}
+                audioBands={audio.audioBands}
+                paused={player.status !== 'playing'}
             />
             <header className="tv-player-header">
                 <div className="tv-player-song">
-                    <span className="tv-player-brand">Folia TV</span>
                     <strong>{song?.name || t('tv.player.noSong')}</strong>
                     <small>{[artist, album].filter(Boolean).join(' · ') || t('tv.home.chooseSong')}</small>
                 </div>
@@ -69,7 +94,10 @@ export const TvPlayer = ({
                     song={song}
                     lyrics={player.lyrics}
                     status={player.status}
-                    effectsMode={player.effectsMode}
+                    visualizerMode={player.visualizerMode}
+                    theme={theme}
+                    audioPower={audio.audioPower}
+                    audioBands={audio.audioBands}
                     constrained={constrained}
                     currentTime={player.currentTime}
                 />
@@ -78,20 +106,16 @@ export const TvPlayer = ({
                     song={song}
                     lyrics={player.lyrics}
                     status={player.status}
-                    effectsMode={player.effectsMode}
                     isLyricsLoading={player.isLyricsLoading}
                     currentTime={player.currentTime}
                 />
             )}
-            <footer className="tv-player-footer">
-                <span>{t('tv.player.backHome')}</span>
-                <span>{controlsOpen ? t('tv.player.controlHint') : t('tv.player.remoteHint')}</span>
-            </footer>
             {controlsOpen && (
                 <TvControlDock
                     player={player}
                     constrained={constrained}
                     onOpenQueue={onOpenQueue}
+                    onOpenEffects={onOpenEffects}
                     onClose={onCloseControls}
                 />
             )}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence, MotionValue, motionValue } from 'framer-motion
 import { useTranslation } from 'react-i18next';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { Line, Theme, AudioBands, type TiltColorScheme, type TiltTuning, DEFAULT_TILT_TUNING } from '../../../types';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import { buildWordGraphemeTimings } from '../../../utils/lyrics/graphemeTiming';
 import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import { resolveThemeFontStack, resolveThemeFontWeight } from '../../../utils/fontStacks';
@@ -51,9 +52,11 @@ const RESPLIT_THRESHOLD = 1.6;
 const SCALE_FLOOR_NORMAL = 0.55;
 const SCALE_FLOOR_TILT = 0.5;
 
-const getAvailableWidth = (): number => {
-    if (typeof window === 'undefined') return 1200;
-    return Math.max(320, window.innerWidth) * 0.85;
+const getAvailableWidth = (viewportWidth: number): number => {
+    const resolvedWidth = viewportWidth > 0
+        ? viewportWidth
+        : (typeof window === 'undefined' ? 1200 : window.innerWidth);
+    return Math.max(320, resolvedWidth) * 0.85;
 };
 
 const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -208,15 +211,28 @@ const seededRandom = (seed: number, offset: number): number => {
     return x - Math.floor(x);
 };
 
-const buildTiltLayout = (fullText: string, lineSeed: number, tuning: TiltTuning, theme: Theme, fontScale: number): TiltLayout => {
+const buildTiltLayout = (
+    fullText: string,
+    lineSeed: number,
+    tuning: TiltTuning,
+    theme: Theme,
+    fontScale: number,
+    layoutWidth = 0,
+    layoutHeight = 0,
+): TiltLayout => {
     const fontStack = resolveThemeFontStack(theme);
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const measureMaxPx = Math.max(viewportWidth * 0.06875, 5.625 * REM_PX * fontScale);
+    const hasMeasuredStage = layoutWidth > 0 && layoutHeight > 0;
+    const viewportWidth = hasMeasuredStage
+        ? layoutWidth
+        : (typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const measureMaxPx = hasMeasuredStage
+        ? Math.max(24 * fontScale, Math.min(viewportWidth * 0.06875, layoutHeight * 0.11))
+        : Math.max(viewportWidth * 0.06875, 5.625 * REM_PX * fontScale);
     const normalBasePx = measureMaxPx;
     const tiltBasePx = measureMaxPx;
     const normalFontSpec = `${resolveThemeFontWeight(theme, 400)} ${normalBasePx}px ${fontStack}`;
     const tiltFontSpec = `${resolveThemeFontWeight(theme, 300)} ${tiltBasePx}px ${fontStack} italic`;
-    const availableWidth = getAvailableWidth();
+    const availableWidth = getAvailableWidth(viewportWidth);
 
     const charCount = fullText.trim().length;
     const isEllipsisOnly = /^[\s.…·。]+$/.test(fullText.trim());
@@ -342,14 +358,38 @@ const TiltLine: React.FC<{
     segmentStartTime?: number;
     segmentEndTime?: number;
     activeLine?: Line | null;
-}> = ({ segment, theme, fontScale, scaleMultiplier, visible, colorScheme = 'default', currentTime, segmentStartTime = 0, segmentEndTime = 0, activeLine = null }) => {
+    layoutWidth?: number;
+    layoutHeight?: number;
+}> = ({
+    segment,
+    theme,
+    fontScale,
+    scaleMultiplier,
+    visible,
+    colorScheme = 'default',
+    currentTime,
+    segmentStartTime = 0,
+    segmentEndTime = 0,
+    activeLine = null,
+    layoutWidth = 0,
+    layoutHeight = 0,
+}) => {
     const baseFontScale = fontScale * scaleMultiplier;
     const shortLastBoost = segment.isShortLastLine ? 1.18 : 1;
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const tiltFontPx = Math.min(viewportWidth * 0.06875 * baseFontScale, 5.625 * REM_PX * baseFontScale);
+    const hasMeasuredStage = layoutWidth > 0 && layoutHeight > 0;
+    const viewportWidth = hasMeasuredStage
+        ? layoutWidth
+        : (typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const tiltFontPx = hasMeasuredStage
+        ? Math.max(22, Math.min(layoutWidth * 0.06875 * baseFontScale, layoutHeight * 0.11 * baseFontScale))
+        : Math.min(viewportWidth * 0.06875 * baseFontScale, 5.625 * REM_PX * baseFontScale);
     const yOffset = tiltFontPx / 6;
-    const normalFontSize = `clamp(${(3.125 * baseFontScale * shortLastBoost).toFixed(3)}rem, ${(6.875 * baseFontScale * shortLastBoost).toFixed(3)}vw, ${(5.625 * baseFontScale * shortLastBoost).toFixed(3)}rem)`;
-    const tiltFontSize = `clamp(${(3.125 * baseFontScale).toFixed(3)}rem, ${(6.875 * baseFontScale).toFixed(3)}vw, ${(5.625 * baseFontScale).toFixed(3)}rem)`;
+    const normalFontSize = hasMeasuredStage
+        ? `${(tiltFontPx * shortLastBoost).toFixed(2)}px`
+        : `clamp(${(3.125 * baseFontScale * shortLastBoost).toFixed(3)}rem, ${(6.875 * baseFontScale * shortLastBoost).toFixed(3)}vw, ${(5.625 * baseFontScale * shortLastBoost).toFixed(3)}rem)`;
+    const tiltFontSize = hasMeasuredStage
+        ? `${tiltFontPx.toFixed(2)}px`
+        : `clamp(${(3.125 * baseFontScale).toFixed(3)}rem, ${(6.875 * baseFontScale).toFixed(3)}vw, ${(5.625 * baseFontScale).toFixed(3)}rem)`;
 
     /* eslint-disable-next-line no-warning-comments -- @AI: KEEP THIS EXACTLY AS IS */
     // @note Version Control: Project Folia version 0.5.27-a16525c
@@ -438,12 +478,13 @@ const TiltLine: React.FC<{
                 className="whitespace-nowrap"
                 style={{
                     fontSize: normalFontSize,
+                    '--tv-visualizer-primary-font-size': normalFontSize,
                     color: colors.normal,
                     fontFamily: 'inherit',
                     lineHeight: 1.35,
                     fontWeight: resolveThemeFontWeight(theme, 400),
                     letterSpacing: '0.08em',
-                }}
+                } as React.CSSProperties}
             >
                 {graphemes.map((seg, ti) => {
                     const isSpace = /^\s+$/.test(seg.segment);
@@ -488,13 +529,14 @@ const TiltLine: React.FC<{
             className="whitespace-nowrap"
             style={{
                 fontSize: tiltFontSize,
+                '--tv-visualizer-primary-font-size': tiltFontSize,
                 color: colors.tilt,
                 fontFamily: 'inherit',
                 fontStyle: 'italic',
                 lineHeight: 1.25,
                 fontWeight: resolveThemeFontWeight(theme, 300),
                 letterSpacing: '0.15em',
-            }}
+            } as React.CSSProperties}
         >
             {graphemes.map((seg, ti) => {
                 const isSpace = /^\s+$/.test(seg.segment);
@@ -561,6 +603,10 @@ const VisualizerTilt: React.FC<VisualizerTiltProps & { staticMode?: boolean; }> 
     } = props;
     const { t } = useTranslation();
     const [visibleSegmentIndex, setVisibleSegmentIndex] = useState(-1);
+    const stageContentRef = useRef<HTMLDivElement | null>(null);
+    const stageSize = useElementSize(stageContentRef);
+    const measuredLayoutWidth = stageSize.width > 0 ? stageSize.width : 0;
+    const measuredLayoutHeight = stageSize.height > 0 ? stageSize.height : 0;
 
     const {
         activeLine,
@@ -575,8 +621,24 @@ const VisualizerTilt: React.FC<VisualizerTiltProps & { staticMode?: boolean; }> 
 
     const layout = useMemo<TiltLayout | null>(() => {
         if (!activeLine?.fullText) return null;
-        return buildTiltLayout(activeLine.fullText, activeLine.startTime, tiltTuning, theme, lyricsFontScale);
-    }, [activeLine?.fullText, activeLine?.startTime, tiltTuning, theme, lyricsFontScale]);
+        return buildTiltLayout(
+            activeLine.fullText,
+            activeLine.startTime,
+            tiltTuning,
+            theme,
+            lyricsFontScale,
+            measuredLayoutWidth,
+            measuredLayoutHeight,
+        );
+    }, [
+        activeLine?.fullText,
+        activeLine?.startTime,
+        lyricsFontScale,
+        measuredLayoutHeight,
+        measuredLayoutWidth,
+        theme,
+        tiltTuning,
+    ]);
 
     const segmentTimings = useMemo(() => {
         if (!activeLine || !layout) return null;
@@ -635,7 +697,10 @@ const VisualizerTilt: React.FC<VisualizerTiltProps & { staticMode?: boolean; }> 
             audioBands={audioBands}
             sharedProps={props}
         >
-            <div className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none">
+            <div
+                ref={stageContentRef}
+                className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none"
+            >
                 <AnimatePresence mode='popLayout'>
                     {showText && activeLine && layout ? (
                         <motion.div
@@ -658,6 +723,8 @@ const VisualizerTilt: React.FC<VisualizerTiltProps & { staticMode?: boolean; }> 
                                     segmentStartTime={segmentTimings?.[si]?.start ?? 0}
                                     segmentEndTime={segmentTimings?.[si]?.end ?? 0}
                                     activeLine={activeLine}
+                                    layoutWidth={measuredLayoutWidth}
+                                    layoutHeight={measuredLayoutHeight}
                                 />
                             ))}
                         </motion.div>

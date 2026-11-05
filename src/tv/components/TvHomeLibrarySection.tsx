@@ -9,7 +9,7 @@ import type { SongResult } from '../../types';
 import type { ProviderCollection } from '../../types/onlineMusic';
 import type { TvAccountModel } from '../hooks/useTvAccount';
 import type { TvOnlineHomeModel } from '../hooks/useTvOnlineHome';
-import { TvMediaRow } from './TvMediaRow';
+import { TvMediaRow, TvRowStatus } from './TvMediaRow';
 import { TvOnlineCard, type TvOnlineCardKind } from './TvOnlineCard';
 import { TvPlaylistCard } from './TvPlaylistCard';
 
@@ -61,21 +61,28 @@ export const TvHomeLibraryRows = ({
         <>
             <TvMediaRow
                 title={t('tv.home.radio')}
-                subtitle={online.radioActionError
-                    ? t('tv.home.radioPlaybackError')
-                    : account.isAuthenticated ? account.providerLabel : undefined}
                 focusGroup="home-radio"
             >
                 {!account.isAuthenticated ? (
-                    <div className="tv-row-empty">{t('tv.home.loginForRadio')}</div>
+                    <TvRowStatus focusKey="home-radio-status">
+                        {t('tv.home.loginForRadio')}
+                    </TvRowStatus>
                 ) : !online.canUseRadio ? (
-                    <div className="tv-row-empty">{t('tv.home.radioUnavailable')}</div>
+                    <TvRowStatus focusKey="home-radio-status">
+                        {t('tv.home.radioUnavailable')}
+                    </TvRowStatus>
                 ) : online.radioStatus === 'error' ? (
-                    <div className="tv-row-empty">{t('tv.home.radioError')}</div>
+                    <TvRowStatus focusKey="home-radio-status">
+                        {t('tv.home.radioError')}
+                    </TvRowStatus>
                 ) : online.radioStatus === 'idle' || online.radioStatus === 'loading' ? (
-                    <div className="tv-row-empty">{t('tv.home.loading')}</div>
+                    <TvRowStatus focusKey="home-radio-status">
+                        {t('tv.home.loading')}
+                    </TvRowStatus>
                 ) : online.radioCards.length === 0 ? (
-                    <div className="tv-row-empty">{t('tv.home.radioEmpty')}</div>
+                    <TvRowStatus focusKey="home-radio-status">
+                        {t('tv.home.radioEmpty')}
+                    </TvRowStatus>
                 ) : online.radioCards.map(card => (
                     <TvOnlineCard
                         key={card.id}
@@ -89,13 +96,16 @@ export const TvHomeLibraryRows = ({
 
             <TvMediaRow
                 title={t('tv.home.playlists')}
-                subtitle={account.isAuthenticated ? account.providerLabel : undefined}
                 focusGroup="home-playlists"
             >
                 {!account.isAuthenticated ? (
-                    <div className="tv-row-empty">{t('tv.home.loginForPlaylists')}</div>
+                    <TvRowStatus focusKey="home-playlists-status">
+                        {t('tv.home.loginForPlaylists')}
+                    </TvRowStatus>
                 ) : playlists.length === 0 ? (
-                    <div className="tv-row-empty">{t('tv.home.playlistsEmpty')}</div>
+                    <TvRowStatus focusKey="home-playlists-status">
+                        {t('tv.home.playlistsEmpty')}
+                    </TvRowStatus>
                 ) : playlists.map(collection => (
                     <TvPlaylistCard
                         key={collection.id}
@@ -108,19 +118,28 @@ export const TvHomeLibraryRows = ({
 
             <TvMediaRow
                 title={t('tv.home.albums')}
-                subtitle={account.isAuthenticated ? account.providerLabel : undefined}
                 focusGroup="home-albums"
             >
                 {!account.isAuthenticated ? (
-                    <div className="tv-row-empty">{t('tv.home.loginForAlbums')}</div>
+                    <TvRowStatus focusKey="home-albums-status">
+                        {t('tv.home.loginForAlbums')}
+                    </TvRowStatus>
                 ) : !online.canUseAlbums ? (
-                    <div className="tv-row-empty">{t('tv.home.albumsUnavailable')}</div>
+                    <TvRowStatus focusKey="home-albums-status">
+                        {t('tv.home.albumsUnavailable')}
+                    </TvRowStatus>
                 ) : online.albumsStatus === 'error' ? (
-                    <div className="tv-row-empty">{t('tv.home.albumsError')}</div>
+                    <TvRowStatus focusKey="home-albums-status">
+                        {t('tv.home.albumsError')}
+                    </TvRowStatus>
                 ) : online.albumsStatus === 'idle' || online.albumsStatus === 'loading' ? (
-                    <div className="tv-row-empty">{t('tv.home.loading')}</div>
+                    <TvRowStatus focusKey="home-albums-status">
+                        {t('tv.home.loading')}
+                    </TvRowStatus>
                 ) : online.albumCards.length === 0 ? (
-                    <div className="tv-row-empty">{t('tv.home.albumsEmpty')}</div>
+                    <TvRowStatus focusKey="home-albums-status">
+                        {t('tv.home.albumsEmpty')}
+                    </TvRowStatus>
                 ) : online.albumCards.map(card => (
                     <TvOnlineCard
                         key={card.id}

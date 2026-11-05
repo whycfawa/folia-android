@@ -162,78 +162,18 @@ img {
     height: clamp(42px, 2.4vw, 48px);
     display: grid;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 15px;
-    background:
-        linear-gradient(145deg, rgba(167, 139, 250, 0.48), rgba(139, 92, 246, 0.08)),
-        var(--tv-bg-raised);
+    background: linear-gradient(145deg, #a78bfa, #7c3aed);
     color: #fff;
     font-size: clamp(22px, 1.25vw, 25px);
     font-weight: 700;
-    box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.12);
+    box-shadow: 0 12px 28px rgba(101, 67, 210, 0.24);
 }
 
-.tv-brand > span:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.tv-brand strong {
+.tv-brand > strong {
     font-size: clamp(20px, 1.1vw, 22px);
     line-height: 1.1;
     letter-spacing: 0.02em;
-}
-
-.tv-brand small {
-    color: var(--tv-text-faint);
-    font-size: clamp(12px, 0.67vw, 14px);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.tv-header-hint {
-    flex: 1;
-    color: var(--tv-text-faint);
-    font-size: clamp(14px, 0.82vw, 16px);
-    letter-spacing: 0.04em;
-    text-align: center;
-}
-
-.tv-account-chip,
-.tv-account-login {
-    min-width: clamp(196px, 10.9vw, 220px);
-    height: clamp(52px, 5vh, 56px);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 0 18px;
-    border: 1px solid var(--tv-line);
-    border-radius: 18px;
-    background: rgba(20, 20, 32, 0.84);
-    color: var(--tv-text-muted);
-}
-
-.tv-account-login:focus {
-    background: rgba(167, 139, 250, 0.12);
-}
-
-.tv-account-chip span,
-.tv-account-login span {
-    max-width: clamp(116px, 7vw, 140px);
-    overflow: hidden;
-    color: var(--tv-text);
-    font-size: clamp(15px, 0.84vw, 17px);
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tv-account-chip small,
-.tv-account-login small {
-    color: var(--tv-text-faint);
-    font-size: clamp(11px, 0.63vw, 13px);
 }
 
 .tv-home-content {
@@ -444,7 +384,7 @@ img {
 }
 
 .tv-row-scroll {
-    min-height: calc(var(--tv-card-w) + 62px);
+    min-height: clamp(112px, 15vh, 148px);
     display: flex;
     align-items: flex-start;
     gap: clamp(18px, 1.25vw, 24px);
@@ -615,7 +555,7 @@ img {
 
 .tv-player-page {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     padding:
         var(--tv-safe-y)
@@ -632,61 +572,20 @@ img {
     position: absolute;
     inset: 0;
     overflow: hidden;
+    pointer-events: none;
     background:
         radial-gradient(circle at 22% 0%, rgba(132, 84, 240, 0.23), transparent 42%),
         radial-gradient(circle at 82% 90%, rgba(245, 184, 168, 0.12), transparent 38%),
         #07070c;
 }
 
-.tv-backdrop-cover {
-    position: absolute;
-    inset: -10%;
-    background-position: center;
-    background-size: cover;
-    opacity: 0.24;
-    transform: scale(1.08);
-}
-
-.tv-backdrop-wash {
+.tv-backdrop-scrim {
     position: absolute;
     inset: 0;
+    pointer-events: none;
     background:
-        linear-gradient(180deg, rgba(5, 5, 11, 0.28), rgba(5, 5, 11, 0.7) 68%, #07070c),
-        linear-gradient(90deg, rgba(5, 5, 11, 0.5), transparent 38%, rgba(5, 5, 11, 0.45));
-}
-
-.tv-aurora {
-    position: absolute;
-    width: 54vw;
-    height: 38vw;
-    border-radius: 48%;
-    opacity: 0.24;
-    background: radial-gradient(ellipse, rgba(167, 139, 250, 0.44), transparent 68%);
-    animation: tv-aurora-a 18s ease-in-out infinite alternate;
-}
-
-.tv-aurora-a {
-    left: -13vw;
-    top: 8vh;
-}
-
-.tv-aurora-b {
-    right: -22vw;
-    bottom: -11vw;
-    background: radial-gradient(ellipse, rgba(137, 216, 232, 0.24), transparent 68%);
-    animation-name: tv-aurora-b;
-    animation-duration: 23s;
-}
-
-.tv-vignette {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 36%, rgba(2, 2, 7, 0.52) 100%);
-}
-
-.tv-backdrop.is-calm .tv-aurora {
-    animation: none;
-    opacity: 0.12;
+        linear-gradient(180deg, rgba(5, 5, 11, 0.26), transparent 24%, transparent 70%, rgba(5, 5, 11, 0.58)),
+        radial-gradient(ellipse at center, transparent 42%, rgba(3, 3, 8, 0.28) 100%);
 }
 
 .tv-player-header {
@@ -705,14 +604,6 @@ img {
     display: flex;
     flex-direction: column;
     gap: clamp(4px, 0.7vh, 7px);
-}
-
-.tv-player-brand {
-    color: var(--tv-accent);
-    font-size: clamp(12px, 0.68vw, 14px);
-    font-weight: 700;
-    letter-spacing: 0.17em;
-    text-transform: uppercase;
 }
 
 .tv-player-song strong {
@@ -863,18 +754,6 @@ img {
     letter-spacing: 0;
 }
 
-.tv-lyric-upcoming {
-    min-height: clamp(26px, 3.1vh, 34px);
-    max-width: 70vw;
-    margin-top: clamp(30px, 5.9vh, 64px);
-    overflow: hidden;
-    color: rgba(244, 240, 255, 0.38);
-    font-size: clamp(16px, min(1.15vw, 2.1vh), 22px);
-    line-height: 1.45;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .tv-lyric-empty {
     display: flex;
     flex-direction: column;
@@ -902,11 +781,6 @@ img {
     font-weight: 600;
 }
 
-.tv-lyric-empty > span:last-child {
-    color: var(--tv-text-faint);
-    font-size: clamp(15px, 1.55vh, 18px);
-}
-
 .tv-lyric-stage.is-chorus .tv-lyric-tokens {
     text-shadow: 0 0 18px rgba(167, 139, 250, 0.3);
 }
@@ -923,23 +797,6 @@ img {
     background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.65), transparent);
     animation: tv-chorus-sweep 3.4s ease-in-out infinite;
     pointer-events: none;
-}
-
-.tv-player-footer {
-    position: relative;
-    z-index: 8;
-    min-width: 0;
-    display: flex;
-    justify-content: space-between;
-    gap: 24px;
-    color: rgba(238, 234, 255, 0.3);
-    font-size: clamp(12px, 0.68vw, 14px);
-    letter-spacing: 0.04em;
-    transition: opacity 160ms ease;
-}
-
-.tv-player-page.has-controls .tv-player-footer {
-    opacity: 0;
 }
 
 /* Control deck */
@@ -1078,14 +935,6 @@ img {
 
 .tv-control-buttons button.is-primary:focus {
     background: var(--tv-accent);
-}
-
-.tv-control-hint {
-    justify-self: end;
-    margin-top: 7px;
-    color: rgba(238, 234, 255, 0.26);
-    font-size: clamp(11px, 0.63vw, 13px);
-    text-align: right;
 }
 
 /* Overlays */
@@ -1287,6 +1136,108 @@ img {
     color: var(--tv-text-muted);
 }
 
+/* Effect picker */
+
+.tv-effects-overlay {
+    z-index: 115;
+    background: rgba(3, 3, 8, 0.64);
+}
+
+.tv-effects-panel {
+    width: min(1320px, 100%);
+}
+
+.tv-effects-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(18px, 2.5vh, 28px);
+    padding:
+        clamp(18px, 2.4vh, 26px)
+        clamp(20px, 1.6vw, 28px)
+        clamp(22px, 2.8vh, 30px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 10px;
+}
+
+.tv-effects-section {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.4vh, 14px);
+}
+
+.tv-effects-section h3 {
+    margin: 0;
+    color: var(--tv-text-muted);
+    font-size: clamp(14px, 0.8vw, 16px);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.tv-effects-grid {
+    display: grid;
+    gap: clamp(8px, 0.7vw, 12px);
+}
+
+.tv-effects-grid.is-lyrics {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tv-effects-grid.is-backgrounds {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.tv-effects-option {
+    min-width: 0;
+    height: clamp(62px, 7.4vh, 78px);
+    display: grid;
+    grid-template-columns: clamp(28px, 2.1vw, 34px) minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: clamp(8px, 0.65vw, 11px);
+    padding: 0 clamp(10px, 0.85vw, 14px);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: clamp(14px, 1.1vw, 18px);
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--tv-text-muted);
+    text-align: left;
+}
+
+.tv-effects-glyph {
+    width: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--tv-accent);
+}
+
+.tv-effects-option strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--tv-text);
+    font-size: clamp(14px, 0.78vw, 16px);
+    font-weight: 560;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tv-effects-option > svg {
+    color: var(--tv-accent);
+}
+
+.tv-effects-option.is-selected {
+    border-color: rgba(167, 139, 250, 0.55);
+    background:
+        linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(167, 139, 250, 0.06)),
+        rgba(255, 255, 255, 0.035);
+    color: #f3edff;
+}
+
+.tv-effects-option:focus {
+    background: rgba(167, 139, 250, 0.18);
+}
+
 .tv-collection-body {
     min-height: 0;
     flex: 1;
@@ -1349,18 +1300,12 @@ img {
     letter-spacing: -0.02em;
 }
 
-.tv-exit-body > p {
-    margin: 12px 0 26px;
-    color: var(--tv-text-muted);
-    font-size: clamp(16px, 1.55vh, 18px);
-    line-height: 1.65;
-}
-
 .tv-exit-actions {
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: clamp(18px, 2.5vh, 26px);
 }
 
 .tv-exit-option {
@@ -1395,11 +1340,6 @@ img {
     font-weight: 620;
 }
 
-.tv-exit-option small {
-    color: var(--tv-text-faint);
-    font-size: clamp(13px, 0.73vw, 15px);
-}
-
 .tv-exit-option.is-background {
     border-color: rgba(167, 139, 250, 0.32);
     background: rgba(167, 139, 250, 0.1);
@@ -1426,13 +1366,6 @@ img {
     border-color: #f0a2ca;
     outline-color: #f0a2ca;
     background: rgba(244, 114, 182, 0.12);
-}
-
-.tv-exit-back-hint {
-    align-self: center;
-    margin-top: 18px;
-    color: var(--tv-text-faint);
-    font-size: clamp(12px, 0.68vw, 14px);
 }
 
 /* Login */
@@ -1559,14 +1492,6 @@ img {
     white-space: nowrap;
 }
 
-.tv-account-providers-hint {
-    margin: auto 0 0;
-    padding: 0 10px;
-    color: var(--tv-text-faint);
-    font-size: clamp(11px, 0.63vw, 13px);
-    line-height: 1.5;
-}
-
 .tv-account-detail {
     min-width: 0;
     min-height: 0;
@@ -1599,7 +1524,6 @@ img {
     font-weight: 650;
 }
 
-.tv-account-intro > p,
 .tv-account-pending > p {
     max-width: 520px;
     margin: 0;
@@ -1790,24 +1714,6 @@ img {
     }
 }
 
-@keyframes tv-aurora-a {
-    from {
-        transform: translate3d(-2vw, -2vh, 0) scale(0.92);
-    }
-    to {
-        transform: translate3d(7vw, 5vh, 0) scale(1.08);
-    }
-}
-
-@keyframes tv-aurora-b {
-    from {
-        transform: translate3d(3vw, 2vh, 0) scale(1.04);
-    }
-    to {
-        transform: translate3d(-6vw, -4vh, 0) scale(0.9);
-    }
-}
-
 @keyframes tv-chorus-sweep {
     0%,
     100% {
@@ -1847,12 +1753,12 @@ img {
 }
 
 @media (max-width: 1180px) {
-    .tv-control-hint {
-        display: none;
+    .tv-effects-grid.is-lyrics {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
-    .tv-account-providers-hint {
-        display: none;
+    .tv-effects-grid.is-backgrounds {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -1865,8 +1771,12 @@ img {
         gap: 12px;
     }
 
-    .tv-header-hint {
-        display: none;
+    .tv-effects-grid.is-lyrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tv-effects-grid.is-backgrounds {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .tv-home-content {
@@ -1937,7 +1847,7 @@ img {
     }
 
     .tv-row-scroll {
-        min-height: calc(var(--tv-card-w) + 50px);
+        min-height: 104px;
         gap: 12px;
         padding: 10px 8px 14px;
         margin: -10px -4px -14px;
@@ -2104,28 +2014,6 @@ img {
         font-size: 17px;
     }
 
-    .tv-brand small,
-    .tv-header-hint,
-    .tv-account-chip small,
-    .tv-account-login small {
-        display: none;
-    }
-
-    .tv-account-chip,
-    .tv-account-login {
-        min-width: 148px;
-        height: 42px;
-        gap: 7px;
-        padding: 0 12px;
-        border-radius: 14px;
-    }
-
-    .tv-account-chip span,
-    .tv-account-login span {
-        max-width: 100px;
-        font-size: 14px;
-    }
-
     .tv-account-layout {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto minmax(0, 1fr);
@@ -2138,8 +2026,7 @@ img {
         border-bottom: 1px solid var(--tv-line);
     }
 
-    .tv-account-providers-title,
-    .tv-account-providers-hint {
+    .tv-account-providers-title {
         display: none;
     }
 
@@ -2187,24 +2074,36 @@ img {
         display: none;
     }
 
-    .tv-account-intro > p,
     .tv-account-pending > p,
     .tv-login-status > p {
         min-height: 0;
     }
-
-    .tv-exit-back-hint {
-        margin-top: 10px;
-    }
 }
 
 @media (max-height: 620px) {
-    .tv-player-page.has-controls .tv-lyric-focus {
-        min-height: 0;
+    :root {
+        --tv-control-dock-h: 152px;
     }
 
-    .tv-player-page.has-controls .tv-lyric-upcoming {
-        display: none;
+    .tv-effects-body {
+        gap: 14px;
+        padding: 12px 16px 16px;
+    }
+
+    .tv-effects-section {
+        gap: 8px;
+    }
+
+    .tv-effects-section h3 {
+        font-size: 12px;
+    }
+
+    .tv-effects-option {
+        height: 56px;
+    }
+
+    .tv-player-page.has-controls .tv-lyric-focus {
+        min-height: 0;
     }
 
     .tv-lyric-empty-mark {
@@ -2226,11 +2125,6 @@ img {
     .tv-brand-mark {
         width: 32px;
         height: 32px;
-    }
-
-    .tv-account-chip,
-    .tv-account-login {
-        height: 40px;
     }
 
     .tv-home-content {
@@ -2279,10 +2173,6 @@ img {
         gap: 12px;
     }
 
-    .tv-player-brand {
-        font-size: 11px;
-    }
-
     .tv-player-song {
         gap: 2px;
     }
@@ -2308,10 +2198,6 @@ img {
         font-size: 11px;
     }
 
-    .tv-player-page.has-controls .tv-player-footer {
-        display: none;
-    }
-
     .tv-player-page.has-controls .tv-lyric-stage {
         padding-top: 8px;
         padding-bottom: calc(var(--tv-control-dock-h) + 8px);
@@ -2325,14 +2211,6 @@ img {
     .tv-lyric-translation {
         margin-top: 8px;
         font-size: 14px;
-    }
-
-    .tv-lyric-upcoming {
-        display: none;
-    }
-
-    .tv-player-footer {
-        font-size: 12px;
     }
 
     .tv-control-dock {
@@ -2454,16 +2332,6 @@ img {
         font-size: 22px;
     }
 
-    .tv-exit-body > p {
-        display: -webkit-box;
-        margin: 6px 0 10px;
-        overflow: hidden;
-        font-size: 13px;
-        line-height: 1.4;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-    }
-
     .tv-exit-actions {
         gap: 8px;
     }
@@ -2481,15 +2349,6 @@ img {
 
     .tv-exit-option strong {
         font-size: 15px;
-    }
-
-    .tv-exit-option small {
-        display: none;
-    }
-
-    .tv-exit-back-hint {
-        margin-top: 6px;
-        font-size: 10px;
     }
 
     .tv-account-providers {
@@ -2521,7 +2380,6 @@ img {
         font-size: 18px;
     }
 
-    .tv-account-intro > p,
     .tv-account-pending > p {
         font-size: 12px;
         line-height: 1.4;
@@ -2666,7 +2524,6 @@ img {
         transition-duration: 1ms !important;
     }
 
-    .tv-aurora,
     .tv-hero-orbit,
     .tv-chorus-sweep,
     .tv-playing-bars i {
@@ -2674,7 +2531,7 @@ img {
     }
 }
 
-/* Constrained profile trims navigation chrome and non-lyric decoration. The aurora, chorus sweep,
+/* Constrained profile trims navigation chrome and non-lyric decoration. The chorus sweep,
    line entrance and per-character scale stay enabled because they are the core TV lyric effect. */
 .tv-app.is-constrained [data-tv-focusable="true"] {
     transition: none;
@@ -2701,14 +2558,8 @@ img {
     animation: none;
 }
 
-.tv-app.is-constrained .tv-lyric-stage,
-.tv-app.is-constrained .tv-player-footer {
+.tv-app.is-constrained .tv-lyric-stage {
     transition: none;
-}
-
-.tv-app.is-constrained .tv-backdrop-cover {
-    opacity: 0.18;
-    transform: none;
 }
 
 .tv-app.is-constrained .tv-brand-mark,
@@ -3005,7 +2856,7 @@ img {
             clamp(46px, 6vw, 52px);
     }
 
-    .tv-header .tv-brand > span:last-child {
+    .tv-header .tv-brand > strong {
         display: none;
     }
 

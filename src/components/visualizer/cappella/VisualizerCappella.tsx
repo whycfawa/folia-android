@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, useMotionValueEvent } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_CAPPELLA_TUNING, type CappellaTuning } from '../../../types';
+import { useElementSize } from '../../../hooks/useElementWidth';
 import { getLineRenderEndTime } from '../../../utils/lyrics/renderHints';
 import { shouldPreheatLine, useVisualizerRuntime } from '../runtime';
 import { type VisualizerSharedProps } from '../definition';
@@ -49,11 +50,14 @@ const VisualizerCappella: React.FC<VisualizerCappellaProps> = (props) => {
         isPreviewMode = false,
     } = props;
     const { t } = useTranslation();
-    const [viewportSize, setViewportSize] = useState(() => (
-        typeof window === 'undefined'
-            ? { width: 1280, height: 900 }
-            : { width: window.innerWidth, height: window.innerHeight }
-    ));
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const contentSize = useElementSize(contentRef);
+    const viewportSize = contentSize.width > 0 && contentSize.height > 0
+        ? contentSize
+        : {
+            width: typeof window === 'undefined' ? 1280 : window.innerWidth,
+            height: typeof window === 'undefined' ? 900 : window.innerHeight,
+        };
     const bubbleMetricsCacheRef = useRef(new Map<string, PreparedBubbleMetrics>());
     const fontsEpoch = useFontsEpoch();
     const [visibleLineIndex, setVisibleLineIndex] = useState(() => getVisibleLineIndexAtTime(lines, currentTime.get()));
@@ -130,18 +134,6 @@ const VisualizerCappella: React.FC<VisualizerCappellaProps> = (props) => {
     });
 
     useEffect(() => {
-        const handleResize = () => {
-            setViewportSize({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(() => {
         const nextVisibleLineIndex = getVisibleLineIndexAtTime(lines, currentTime.get());
 
         visibleLineIndexRef.current = nextVisibleLineIndex;
@@ -179,7 +171,10 @@ const VisualizerCappella: React.FC<VisualizerCappellaProps> = (props) => {
             sharedProps={props}
         >
             {showText && (
-                <div className="relative z-10 flex h-full w-full items-start justify-center overflow-visible px-4 pb-36 pt-12 sm:px-8 sm:pb-40 sm:pt-16 lg:px-14 lg:pt-20">
+                <div
+                    ref={contentRef}
+                    className="relative z-10 flex h-full w-full items-start justify-center overflow-visible px-4 pb-36 pt-12 sm:px-8 sm:pb-40 sm:pt-16 lg:px-14 lg:pt-20"
+                >
                     <div className="relative flex w-full max-w-4xl flex-col justify-start gap-3 overflow-visible">
                         <AnimatePresence initial={false} mode="popLayout">
                             {visibleMessages.map((message) => (

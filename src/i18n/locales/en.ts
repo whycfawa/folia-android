@@ -2,11 +2,16 @@
 
 export default {
   "tv": {
-    "brandTagline": "Lean back. Listen.",
     "common": {
       "close": "Close",
       "trackCount_one": "{{count}} track",
       "trackCount_other": "{{count}} tracks"
+    },
+    "effects": {
+      "open": "Effects",
+      "title": "Lyrics and background",
+      "lyrics": "Lyric effects",
+      "background": "Background effects"
     },
     "search": {
       "open": "Search songs, artists, albums",
@@ -15,8 +20,6 @@ export default {
       "placeholder": "Enter a song, artist or album",
       "inputLabel": "Search query",
       "action": "Search",
-      "hint": "Press OK to open the keyboard. Results appear as you type.",
-      "idle": "Enter a keyword to start searching",
       "loading": "Searching…",
       "error": "Search failed. Try again shortly.",
       "retry": "Try again",
@@ -48,7 +51,6 @@ export default {
       "radioError": "Could not load radio",
       "radioEmpty": "No radio recommendations are available",
       "radioPlaybackError": "This recommendation cannot play right now. Try another card.",
-      "personalFmHint": "Endless picks tuned to your taste",
       "loginForAlbums": "Sign in to see your saved albums",
       "albumsUnavailable": "This service does not support saved albums",
       "albumsError": "Could not load saved albums",
@@ -56,16 +58,13 @@ export default {
       "loginForLiked": "Sign in to see liked songs",
       "likedEmpty": "No liked songs yet",
       "likedError": "Could not load liked songs",
-      "remoteHint": "D-pad: navigate · OK: select · Back: return"
     },
     "player": {
       "noSong": "Nothing playing yet",
       "loading": "Loading track",
       "lyricsLoading": "Loading lyrics…",
       "noLyrics": "No lyrics for this track",
-      "playbackFailed": "Playback failed. Press OK to retry or choose another song.",
-      "stageHint": "Lyrics light up here word by word",
-      "instrumentalHint": "Instrumental · let the scene breathe",
+      "playbackFailed": "Playback failed",
       "previous": "Previous",
       "pause": "Pause",
       "play": "Play",
@@ -75,12 +74,7 @@ export default {
       "queueCount_other": "Play queue · {{count}} tracks",
       "queueEmpty": "The queue is empty",
       "nowPlaying": "Now playing",
-      "flow": "Flow",
-      "calm": "Calm",
-      "hideControls": "Hide controls",
-      "controlHint": "D-pad: move · OK: run · Back: close",
-      "remoteHint": "Up/Down: controls · Left/Right: seek 10s · OK: play/pause",
-      "backHome": "Back returns home"
+      "hideControls": "Hide controls"
     },
     "collection": {
       "trackCount_one": "{{count}} track",
@@ -93,39 +87,26 @@ export default {
     },
     "login": {
       "title": "Sign in to {{provider}}",
-      "hint": "Open the music app on your phone and scan the code.",
       "waiting": "Waiting for the QR code…"
     },
     "account": {
       "title": "Music services",
-      "hint": "Choose NetEase, KuGou or another service. Press Back to close.",
       "providers": "Services",
-      "remoteHint": "Up/Down to choose, OK to sign in or switch, Back to close.",
       "current": "Current",
       "signedIn": "Signed in",
-      "notSignedIn": "Signed out · Press OK to scan",
+      "notSignedIn": "Signed out",
       "noAccount": "No sign-in needed",
       "switchAction": "Switch",
       "loginAction": "Scan to sign in",
-      "chooseHint": "Choose a music service and press OK to show its QR sign-in code.",
-      "signedInHint": "This service is signed in. Switch services in the list, or press Back.",
       "switchTitle": "Switch music service?",
-      "switchHint": "The home library will switch to the new service after you confirm.",
       "switchConfirm": "Switch service",
       "switchCancel": "Cancel"
     },
     "exit": {
-      "title": "Leave Folia TV?",
-      "playingMessage": "“{{song}}” will keep playing in the background. You can also exit.",
-      "pausedMessage": "“{{song}}” is not playing. You can leave the app in the background or exit.",
-      "idleMessage": "Nothing is playing. You can leave the app in the background or exit.",
+      "title": "Leave Music?",
       "background": "Keep playing",
       "backgroundIdle": "Leave in background",
-      "backgroundHint": "Keep music and the playback service running",
-      "backgroundIdleHint": "Keep the app ready in the background",
       "exit": "Exit app",
-      "exitHint": "Pause music and stop the background service",
-      "backHint": "Press Back to cancel"
     }
   },
   "libraryBravais": {
