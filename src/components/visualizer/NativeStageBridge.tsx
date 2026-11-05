@@ -3,7 +3,8 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
+import { addNativeStageControlListener, disableNativeStage, enableNativeStage, getNativeStageStats, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
+import { setNativeStageStats } from '../../services/nativeStageDiagnostics';
 import { runNativeStageControl } from '../../services/nativeStageActions';
 import { getNativeStageTheme, subscribeNativeStageTheme } from '../../services/nativeStageTheme';
 import { audioBands, audioPower, currentTime } from '../../stores/motionSignals';
@@ -88,7 +89,19 @@ const NativeStageBridge: React.FC = () => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
         let remove: (() => void) | undefined;
         void addNativeStageControlListener((action, value) => runNativeStageControl(action, value)).then(cleanup => { remove = cleanup; });
-        return () => remove?.();
+        setNativeStageStats({ enabled: true });
+        const timer = window.setInterval(() => {
+            void getNativeStageStats().then(stats => setNativeStageStats({
+                active: Boolean(stats?.active),
+                renderer: String(stats?.renderer || 'none'),
+                frames: Number(stats?.frames || 0),
+            })).catch(() => undefined);
+        }, 1000);
+        return () => {
+            window.clearInterval(timer);
+            setNativeStageStats({ enabled: false, active: false, renderer: 'none' });
+            remove?.();
+        };
     }, [enabled]);
 
     React.useEffect(() => {

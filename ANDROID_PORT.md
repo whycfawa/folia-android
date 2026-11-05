@@ -632,3 +632,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.336：原生舞台完整主题色
 
 - 原生背景使用 theme.background/primary/secondary，发光与粒子使用 accent。
+
+### 0.7.25-android.337：原生舞台诊断
+
+- 诊断报告输出 native stage enabled/active/renderer/frames，便于确认真机是否真的在原生渲染。

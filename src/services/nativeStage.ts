@@ -19,6 +19,7 @@ interface FoliaNativeStagePlugin {
     updateAudio(options: { power: number; bass: number; mid: number; treble: number }): Promise<void>;
     updateProgress(options: { position: number; duration: number; lineProgress: number }): Promise<void>;
     updateWords(options: { words: string; position: number }): Promise<void>;
+    stats(): Promise<{ active?: boolean; renderer?: string; frames?: number }>;
     addListener(eventName: string, listener: (event: { action?: string; value?: number }) => void): Promise<{ remove: () => Promise<void> | void }>;
     disable(): Promise<void>;
 }
@@ -31,6 +32,7 @@ export const addNativeStageControlListener = async (listener: (action: string, v
     const handle = await FoliaNativeStage.addListener('control', event => listener(String(event?.action || ''), Number(event?.value || 0)));
     return () => { void handle.remove(); };
 };
+export const getNativeStageStats = () => FoliaNativeStage.stats();
 export const updateNativeStageWords = (options: { words: string; position: number }) => FoliaNativeStage.updateWords(options);
 export const updateNativeStageProgress = (options: { position: number; duration: number; lineProgress: number }) => FoliaNativeStage.updateProgress(options);
 export const updateNativeStageAudio = (options: { power: number; bass: number; mid: number; treble: number }) => FoliaNativeStage.updateAudio(options);

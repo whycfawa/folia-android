@@ -19,6 +19,7 @@ import {
 import { useVideoLayerSettingsStore } from '../stores/useVideoLayerSettingsStore';
 import { collectWebGL2Diagnostics, formatWebGL2DiagnosticsLine } from './webglDiagnostics';
 import { getModResolutionGuardStats } from '../mods/runtime/modResolutionGuard';
+import { getNativeStageStatsSnapshot } from '../services/nativeStageDiagnostics';
 import { BUILTIN_VISUALIZER_BACKGROUND_MODES } from '../types/visualizerModes';
 import {
     VISUALIZER_BACKGROUND_REGISTRY,
@@ -651,6 +652,7 @@ export const buildDiagnosticReport = async (): Promise<string> => {
         'graphics capability:',
         formatWebGL2DiagnosticsLine(collectWebGL2Diagnostics()),
         `mod resolution guard: enabled=${getModResolutionGuardStats().enabled} level=${getModResolutionGuardStats().level} scale=${getModResolutionGuardStats().scale} canvases=${getModResolutionGuardStats().canvases}`,
+        `native stage: enabled=${getNativeStageStatsSnapshot().enabled} active=${getNativeStageStatsSnapshot().active} renderer=${getNativeStageStatsSnapshot().renderer} frames=${getNativeStageStatsSnapshot().frames}`,
         '',
         'visualizer backgrounds:',
         ...readVisualizerBackgroundLines(),

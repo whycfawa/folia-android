@@ -146,6 +146,15 @@ public class FoliaNativeStagePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void stats(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("active", stageView != null);
+        result.put("renderer", "surface");
+        result.put("frames", stageView == null ? 0 : stageView.getFrameCount());
+        call.resolve(result);
+    }
+
+    @PluginMethod
     public void updateWords(PluginCall call) {
         Activity activity = getActivity();
         if (activity == null || stageView == null) {

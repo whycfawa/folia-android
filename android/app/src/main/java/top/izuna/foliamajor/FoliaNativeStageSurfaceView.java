@@ -44,6 +44,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private int nextParticle;
     private long lastFrameAt;
     private long lastSpawnAt;
+    private volatile long frameCount;
 
     private String line = "";
     private String nextLine = "";
@@ -250,6 +251,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
                     if (canvas != null) {
                         synchronized (stateLock) {
                             drawStage(canvas);
+                            frameCount += 1;
                             dirty = false;
                         }
                     }
@@ -340,6 +342,10 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
             particlePaint.setColor((accent & 0x00FFFFFF) | (alpha << 24));
             canvas.drawCircle(particleX[index], particleY[index], particleSize[index], particlePaint);
         }
+    }
+
+    public long getFrameCount() {
+        return frameCount;
     }
 
     private boolean drawWords(Canvas canvas, int width, float centerY) {
