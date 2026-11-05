@@ -575,3 +575,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 新增 FoliaNativeStage 原生 View，放在 WebView 后面绘制渐变背景和当前/下一句歌词。
 - 设置 → Android 外壳增加「原生播放舞台（实验）」开关，默认关闭；关闭立即移除原生 View 并恢复 WebView。
 - 现有控件、设置、模组全部保留。
+
+### 0.7.25-android.324：原生舞台性能优化
+
+- 渐变/Paint/StaticLayout 按尺寸和歌词缓存，不再每帧新建。
+- 原生舞台限制 60fps；暂停/窗口不可见时停止 Choreographer。
+- 原生插件所有 View 操作切到 UI 线程。

@@ -45,29 +45,31 @@ public class FoliaNativeStagePlugin extends Plugin {
             call.reject("no activity");
             return;
         }
-        ViewGroup root = activity.findViewById(android.R.id.content);
-        if (root == null) {
-            call.reject("no content view");
-            return;
-        }
-        try {
-            if (stageView == null) {
-                stageView = new FoliaNativeStageView(activity);
-                root.addView(stageView, 0, new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT));
+        activity.runOnUiThread(() -> {
+            ViewGroup root = activity.findViewById(android.R.id.content);
+            if (root == null) {
+                call.reject("no content view");
+                return;
             }
-            stageView.setVisibility(FoliaNativeStageView.VISIBLE);
-            WebView webView = getBridge() == null ? null : getBridge().getWebView();
-            if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
-            getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();
-            JSObject result = new JSObject();
-            result.put("enabled", true);
-            call.resolve(result);
-        } catch (Throwable error) {
-            removeStage();
-            call.reject("native-stage-enable-failed: " + error);
-        }
+            try {
+                if (stageView == null) {
+                    stageView = new FoliaNativeStageView(activity);
+                    root.addView(stageView, 0, new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
+                }
+                stageView.setVisibility(FoliaNativeStageView.VISIBLE);
+                WebView webView = getBridge() == null ? null : getBridge().getWebView();
+                if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
+                getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();
+                JSObject result = new JSObject();
+                result.put("enabled", true);
+                call.resolve(result);
+            } catch (Throwable error) {
+                removeStage();
+                call.reject("native-stage-enable-failed: " + error);
+            }
+        });
     }
 
     @PluginMethod
@@ -76,24 +78,39 @@ public class FoliaNativeStagePlugin extends Plugin {
             call.resolve();
             return;
         }
-        try {
-            stageView.update(
-                    call.getString("line", ""),
-                    call.getString("nextLine", ""),
-                    call.getString("title", ""),
-                    call.getString("artist", ""),
-                    call.getString("accent", ""),
-                    Boolean.TRUE.equals(call.getBoolean("playing", true)));
+        Activity activity = getActivity();
+        if (activity == null) {
             call.resolve();
-        } catch (Throwable error) {
-            call.reject("native-stage-update-failed: " + error);
+            return;
         }
+        activity.runOnUiThread(() -> {
+            try {
+                stageView.update(
+                        call.getString("line", ""),
+                        call.getString("nextLine", ""),
+                        call.getString("title", ""),
+                        call.getString("artist", ""),
+                        call.getString("accent", ""),
+                        Boolean.TRUE.equals(call.getBoolean("playing", true)));
+                call.resolve();
+            } catch (Throwable error) {
+                call.reject("native-stage-update-failed: " + error);
+            }
+        });
     }
 
     @PluginMethod
     public void disable(PluginCall call) {
-        removeStage();
-        call.resolve();
+        Activity activity = getActivity();
+        if (activity == null) {
+            removeStage();
+            call.resolve();
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            removeStage();
+            call.resolve();
+        });
     }
 
     private void removeStage() {
