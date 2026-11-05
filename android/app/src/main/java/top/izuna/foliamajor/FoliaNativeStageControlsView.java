@@ -8,6 +8,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowInsets;
 
 /** 原生底部控制条：上一首、播放/暂停、下一首。只覆盖底部一条，其他区域仍由 WebView 接管。 */
 public class FoliaNativeStageControlsView extends View {
@@ -24,6 +25,8 @@ public class FoliaNativeStageControlsView extends View {
     private Listener listener;
     private boolean playing = true;
     private float progress = 0f;
+    private int accent = 0xFF7C9BFF;
+    private int bottomInset = 0;
 
     public FoliaNativeStageControlsView(Context context) {
         super(context);
@@ -46,6 +49,19 @@ public class FoliaNativeStageControlsView extends View {
         invalidate();
     }
 
+    public void setAccent(int accent) {
+        this.accent = accent;
+        invalidate();
+    }
+
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        bottomInset = insets.getSystemWindowInsetBottom();
+        requestLayout();
+        invalidate();
+        return super.onApplyWindowInsets(insets);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -53,8 +69,9 @@ public class FoliaNativeStageControlsView extends View {
         int height = getHeight();
         if (width <= 0 || height <= 0) return;
         float margin = dp(24);
-        float barHeight = Math.min(dp(64), height - dp(8));
-        rect.set(margin, (height - barHeight) / 2f, width - margin, (height + barHeight) / 2f);
+        float usableHeight = Math.max(dp(64), height - bottomInset);
+        float barHeight = Math.min(dp(64), usableHeight - dp(8));
+        rect.set(margin, (usableHeight - barHeight) / 2f, width - margin, (usableHeight + barHeight) / 2f);
         paint.setColor(0xCC101014);
         canvas.drawRoundRect(rect, barHeight / 2f, barHeight / 2f, paint);
         paint.setColor(0x55FFFFFF);
@@ -68,10 +85,10 @@ public class FoliaNativeStageControlsView extends View {
         float trackY = rect.top + dp(8);
         paint.setColor(0x33FFFFFF);
         canvas.drawRect(trackLeft, trackY, trackRight, trackY + dp(2), paint);
-        paint.setColor(0xCCFFFFFF);
+        paint.setColor(accent);
         canvas.drawRect(trackLeft, trackY, trackLeft + (trackRight - trackLeft) * progress, trackY + dp(2), paint);
 
-        float cy = height / 2f;
+        float cy = (height - bottomInset) / 2f;
         float left = width * 0.27f;
         float middle = width * 0.5f;
         float right = width * 0.73f;
@@ -110,7 +127,7 @@ public class FoliaNativeStageControlsView extends View {
         if (event.getAction() != MotionEvent.ACTION_UP) return true;
         int width = getWidth();
         float x = event.getX();
-        if (event.getY() < dp(32)) {
+        if (event.getY() < rect.top + dp(16)) {
             float margin = dp(24) + dp(22);
             float fraction = (x - margin) / Math.max(1f, width - margin * 2);
             if (listener != null) listener.onSeek(Math.max(0f, Math.min(1f, fraction)));

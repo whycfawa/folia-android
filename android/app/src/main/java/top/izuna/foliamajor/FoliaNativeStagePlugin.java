@@ -101,6 +101,11 @@ public class FoliaNativeStagePlugin extends Plugin {
         activity.runOnUiThread(() -> {
             try {
                 controlsView.setPlaying(Boolean.TRUE.equals(call.getBoolean("playing", true)));
+                try {
+                    String accent = call.getString("accent", "");
+                    if (accent != null && !accent.isEmpty()) controlsView.setAccent(Color.parseColor(accent));
+                } catch (IllegalArgumentException ignored) {
+                }
                 stageView.update(
                         call.getString("line", ""),
                         call.getString("nextLine", ""),
