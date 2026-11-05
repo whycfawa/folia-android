@@ -3,9 +3,9 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio } from '../../services/nativeStage';
+import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress } from '../../services/nativeStage';
 import { runNativeStageControl } from '../../services/nativeStageActions';
-import { audioBands, audioPower } from '../../stores/motionSignals';
+import { audioBands, audioPower, currentTime } from '../../stores/motionSignals';
 
 // src/components/visualizer/NativeStageBridge.tsx
 // 只做 opt-in 接线：开关打开时启用原生舞台并隐藏 WebView 视觉层；关闭时恢复原样。
@@ -38,6 +38,7 @@ const NativeStageBridge: React.FC = () => {
     const lyrics = usePlaybackStore(selectDisplayLyrics);
     const lineIndex = usePlaybackStore(state => state.currentLineIndex);
     const playerState = usePlaybackStore(state => state.playerState);
+    const duration = usePlaybackStore(state => state.duration);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW) return undefined;
@@ -81,9 +82,17 @@ const NativeStageBridge: React.FC = () => {
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
         let remove: (() => void) | undefined;
-        void addNativeStageControlListener(runNativeStageControl).then(cleanup => { remove = cleanup; });
+        void addNativeStageControlListener((action, value) => runNativeStageControl(action, value)).then(cleanup => { remove = cleanup; });
         return () => remove?.();
     }, [enabled]);
+
+    React.useEffect(() => {
+        if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;
+        const timer = window.setInterval(() => {
+            void updateNativeStageProgress({ position: currentTime.get(), duration }).catch(() => undefined);
+        }, 200);
+        return () => window.clearInterval(timer);
+    }, [duration, enabled]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled || playerState !== PlayerState.PLAYING) return undefined;

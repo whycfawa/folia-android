@@ -1566,12 +1566,6 @@ export default function App() {
         syncStageLyricsClock,
     });
 
-    useEffect(() => registerNativeStageActions({
-        toggle: togglePlay,
-        next: () => { void handleNextTrack(); },
-        previous: () => { void handlePrevTrack(); },
-    }), [handleNextTrack, handlePrevTrack, togglePlay]);
-
     const { personalFmSelection, personalFmSelectionLabel, isPersonalFmModeSupported, setPersonalFmSelection } = usePersonalFmModeController({
         isFmMode,
         currentSong,
@@ -2094,6 +2088,13 @@ export default function App() {
             void publishStagePlayerPlaybackUpdate();
         }
     }, [publishStagePlayerPlaybackUpdate]);
+
+    useEffect(() => registerNativeStageActions({
+        toggle: togglePlay,
+        next: () => { void handleNextTrack(); },
+        previous: () => { void handlePrevTrack(); },
+        seek: (fraction) => seekMainAudio(fraction * usePlaybackStore.getState().duration),
+    }), [handleNextTrack, handlePrevTrack, seekMainAudio, togglePlay]);
 
     const handleMonetLyricLineSeek = useCallback((lyricTimeSec: number) => {
         if (isNowPlayingControlDisabled) {

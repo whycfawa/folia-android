@@ -65,9 +65,10 @@ public class FoliaNativeStagePlugin extends Plugin {
                 if (controlsView == null) {
                     controlsView = new FoliaNativeStageControlsView(activity);
                     controlsView.setListener(new FoliaNativeStageControlsView.Listener() {
-                        @Override public void onPrevious() { emitControl("previous"); }
-                        @Override public void onToggle() { emitControl("toggle"); }
-                        @Override public void onNext() { emitControl("next"); }
+                        @Override public void onPrevious() { emitControl("previous", 0); }
+                        @Override public void onToggle() { emitControl("toggle", 0); }
+                        @Override public void onNext() { emitControl("next", 0); }
+                        @Override public void onSeek(float fraction) { emitControl("seek", fraction); }
                     });
                     FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT, (int) dp(88), Gravity.BOTTOM);
@@ -136,6 +137,22 @@ public class FoliaNativeStagePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void updateProgress(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null || controlsView == null) {
+            call.resolve();
+            return;
+        }
+        double position = call.getDouble("position", 0.0);
+        double duration = call.getDouble("duration", 0.0);
+        float progress = duration > 0 ? (float) (position / duration) : 0f;
+        activity.runOnUiThread(() -> {
+            if (controlsView != null) controlsView.setProgress(progress);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
     public void disable(PluginCall call) {
         Activity activity = getActivity();
         if (activity == null) {
@@ -149,9 +166,10 @@ public class FoliaNativeStagePlugin extends Plugin {
         });
     }
 
-    private void emitControl(String action) {
+    private void emitControl(String action, double value) {
         JSObject payload = new JSObject();
         payload.put("action", action);
+        payload.put("value", value);
         notifyListeners("control", payload);
     }
 
