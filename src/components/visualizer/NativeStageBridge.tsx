@@ -3,7 +3,8 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { disableNativeStage, enableNativeStage, updateNativeStage } from '../../services/nativeStage';
+import { disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio } from '../../services/nativeStage';
+import { audioBands, audioPower } from '../../stores/motionSignals';
 
 // src/components/visualizer/NativeStageBridge.tsx
 // 只做 opt-in 接线：开关打开时启用原生舞台并隐藏 WebView 视觉层；关闭时恢复原样。
@@ -72,6 +73,19 @@ const NativeStageBridge: React.FC = () => {
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
     }, [enabled, lineIndex, lyrics, playerState, song]);
+
+    React.useEffect(() => {
+        if (!IS_ANDROID_WEBVIEW || !enabled || playerState !== PlayerState.PLAYING) return undefined;
+        const timer = window.setInterval(() => {
+            void updateNativeStageAudio({
+                power: audioPower.get(),
+                bass: audioBands.bass.get(),
+                mid: audioBands.mid.get(),
+                treble: audioBands.treble.get(),
+            }).catch(() => undefined);
+        }, 50);
+        return () => window.clearInterval(timer);
+    }, [enabled, playerState]);
 
     return null;
 };

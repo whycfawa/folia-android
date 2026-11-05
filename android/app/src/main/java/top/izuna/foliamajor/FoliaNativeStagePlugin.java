@@ -100,6 +100,27 @@ public class FoliaNativeStagePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void updateAudio(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null || stageView == null) {
+            call.resolve();
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            try {
+                stageView.updateAudio(
+                        floatValue(call, "power"),
+                        floatValue(call, "bass"),
+                        floatValue(call, "mid"),
+                        floatValue(call, "treble"));
+                call.resolve();
+            } catch (Throwable error) {
+                call.reject("native-stage-audio-failed: " + error);
+            }
+        });
+    }
+
+    @PluginMethod
     public void disable(PluginCall call) {
         Activity activity = getActivity();
         if (activity == null) {
@@ -111,6 +132,11 @@ public class FoliaNativeStagePlugin extends Plugin {
             removeStage();
             call.resolve();
         });
+    }
+
+    private static float floatValue(PluginCall call, String key) {
+        Double value = call.getDouble(key, 0.0);
+        return value == null ? 0f : value.floatValue();
     }
 
     private void removeStage() {

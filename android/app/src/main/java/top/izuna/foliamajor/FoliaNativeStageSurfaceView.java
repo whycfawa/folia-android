@@ -28,6 +28,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private final TextPaint metaPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Object stateLock = new Object();
 
     private String line = "";
@@ -36,6 +37,10 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private String artist = "";
     private int accent = 0xFF7C9BFF;
     private boolean playing = true;
+    private float audioPower;
+    private float audioBass;
+    private float audioMid;
+    private float audioTreble;
     private boolean dirty = true;
     private volatile boolean running;
     private Thread renderThread;
@@ -80,6 +85,20 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    public void updateAudio(float power, float bass, float mid, float treble) {
+        synchronized (stateLock) {
+            this.audioPower = clampUnit(power);
+            this.audioBass = clampUnit(bass);
+            this.audioMid = clampUnit(mid);
+            this.audioTreble = clampUnit(treble);
+            this.dirty = true;
+        }
+    }
+
+    private static float clampUnit(float value) {
+        return Math.max(0f, Math.min(1f, value));
     }
 
     public void update(String line, String nextLine, String title, String artist, String accentHex, boolean playing) {
@@ -226,8 +245,24 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         glowPaint.setShader(glowGradient);
         canvas.save();
         canvas.translate(glowX, glowY);
-        canvas.drawCircle(0, 0, width * 0.55f, glowPaint);
+        canvas.drawCircle(0, 0, width * (0.55f + 0.12f * audioPower), glowPaint);
         canvas.restore();
+
+        // 原生频谱条：只消费 20Hz 的能量值，不在每帧做 FFT。
+        if (audioPower > 0.01f) {
+            int bars = 28;
+            float barWidth = width / (bars * 1.8f);
+            float gap = (width - bars * barWidth) / (bars + 1f);
+            float baseY = height * 0.88f;
+            barPaint.setColor(0x55FFFFFF);
+            for (int index = 0; index < bars; index++) {
+                float mix = index < bars / 3f ? audioBass : index < bars * 2f / 3f ? audioMid : audioTreble;
+                float wave = 0.55f + 0.45f * (float) Math.sin(t * Math.PI * 8 + index * 0.7f);
+                float barHeight = height * 0.08f * (0.15f + 0.85f * mix * wave);
+                float left = gap + index * (barWidth + gap);
+                canvas.drawRect(left, baseY - barHeight, left + barWidth, baseY, barPaint);
+            }
+        }
 
         float centerY = height * 0.5f;
         if (lyricLayout != null) {

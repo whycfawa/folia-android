@@ -13,6 +13,7 @@ interface FoliaNativeStagePlugin {
         accent: string;
         playing: boolean;
     }): Promise<void>;
+    updateAudio(options: { power: number; bass: number; mid: number; treble: number }): Promise<void>;
     disable(): Promise<void>;
 }
 
@@ -20,4 +21,5 @@ const FoliaNativeStage = registerPlugin<FoliaNativeStagePlugin>('FoliaNativeStag
 
 export const enableNativeStage = (): Promise<{ enabled?: boolean }> => FoliaNativeStage.enable();
 export const updateNativeStage = (options: Parameters<FoliaNativeStagePlugin['update']>[0]) => FoliaNativeStage.update(options);
+export const updateNativeStageAudio = (options: { power: number; bass: number; mid: number; treble: number }) => FoliaNativeStage.updateAudio(options);
 export const disableNativeStage = (): Promise<void> => FoliaNativeStage.disable();

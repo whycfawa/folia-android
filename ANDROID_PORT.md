@@ -586,3 +586,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 原生舞台改用 SurfaceView + 独立渲染线程，绘制不再占用 UI 线程。
 - 渐变/StaticLayout 继续缓存；无变化时休眠。
+
+### 0.7.25-android.326：原生舞台音频响应
+
+- JS 以 20Hz 推送 audioPower/bass/mid/treble，原生 SurfaceView 画频谱条和发光脉冲。
