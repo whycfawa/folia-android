@@ -3486,7 +3486,13 @@ export default {
       "orientationFitDesc": "Off locks portrait compatibility; on switches to and locks landscape compatibility. It only applies while Phone layout fit is enabled.",
       "orientationLandscape": "Current: landscape fit",
       "orientationPortrait": "Current: portrait fit",
-      "phoneFit": "Phone layout fit",
+      "phoneFit": "Phone fit",
+
+      "nativeStage": "Native player stage (experimental)",
+
+      "nativeStageDesc": "Draw the player background and lyrics with an Android native view to reduce WebView load",
+
+      "nativeStageDescSub": "Turn it off to return to the existing WebView stage; controls, settings and mods stay unchanged.",
       "phoneFitDesc": "Forces the compact phone layout so tabs, settings, and audio effects stay inside the screen on landscape or high-resolution phones. Off by default and does not alter the upstream desktop layout.",
 
       "autoHideCommandPaletteButton": "Auto-hide command palette button",

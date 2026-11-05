@@ -116,6 +116,7 @@ exports[`store contract > keeps every localStorage key the stores read or write 
   "mod_system_enabled",
   "monet_background_tuning",
   "monet_tuning",
+  "native_stage_enabled",
   "nebbia_tuning",
   "nomand_background_tuning",
   "open_player_on_launch",

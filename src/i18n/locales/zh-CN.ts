@@ -3487,6 +3487,12 @@ export default {
       "orientationLandscape": "当前：横屏兼容",
       "orientationPortrait": "当前：竖屏兼容",
       "phoneFit": "手机适配",
+
+      "nativeStage": "原生播放舞台（实验）",
+
+      "nativeStageDesc": "用 Android 原生 View 绘制播放页背景和歌词，减少 WebView 渲染压力",
+
+      "nativeStageDescSub": "关闭立即回退现有 WebView 舞台；播放控件、设置和模组全部保留。",
       "phoneFitDesc": "强制使用紧凑的手机布局，避免横屏或高分辨率手机上选项卡、设置和音频效果器超出屏幕。默认关闭，不影响上游原有桌面布局。",
 
       "autoHideCommandPaletteButton": "自动隐藏命令面板按钮",

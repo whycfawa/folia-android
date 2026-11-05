@@ -43,6 +43,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FoliaQishuiAudioPlugin.class);
         registerPlugin(FoliaAnalysisModelsPlugin.class);
         registerPlugin(FoliaModsPlugin.class);
+        registerPlugin(FoliaNativeStagePlugin.class);
         registerPlugin(top.izuna.foliamajor.coloros.FoliaColorOsLyricsPlugin.class);
         super.onCreate(savedInstanceState);
         CrashDiagnostics.recordText(

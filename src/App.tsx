@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
 import { loadCachedOrFetchCover } from './services/coverCache';
 import VisualizerRenderer from './components/visualizer/VisualizerRenderer';
+import NativeStageBridge from './components/visualizer/NativeStageBridge';
 import CommandPalette from './components/command-palette/CommandPalette';
 import AddToPlaylistHost from './components/app/AddToPlaylistHost';
 import { useCommandPalette } from './components/command-palette/useCommandPalette';
@@ -2909,6 +2910,7 @@ export default function App() {
                 onClick={handleContainerClick}
             >
                 <PlayerBottomBarLayoutContext.Provider value={currentView === 'player'}>
+                    <NativeStageBridge />
                     {shouldMountVisualizer && <VisualizerRenderer {...visualizerRendererModel} animateStyleSwitch />}
                 </PlayerBottomBarLayoutContext.Provider>
             </div>

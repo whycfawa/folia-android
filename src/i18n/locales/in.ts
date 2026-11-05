@@ -3486,7 +3486,13 @@ export default {
       "orientationPortrait": "Saat ini: potret",
       "keepScreenOn": "Layar tetap menyala",
       "keepScreenOnDesc": "Saat aktif layar tidak otomatis mati, jadi lirik tetap terlihat saat menyalin atau meletakkan ponsel; matikan untuk kembali ke pengaturan mati otomatis sistem.",
-      "phoneFit": "Tata letak ponsel",
+      "phoneFit": "Penyesuaian ponsel",
+
+      "nativeStage": "Panggung pemutar native (eksperimental)",
+
+      "nativeStageDesc": "Gambar latar dan lirik dengan View Android native untuk mengurangi beban WebView",
+
+      "nativeStageDescSub": "Matikan untuk kembali ke panggung WebView; kontrol, pengaturan, dan mod tetap ada.",
       "phoneFitDesc": "Memaksa tata letak ponsel yang ringkas agar tab, pengaturan, dan efek audio tetap muat di layar ponsel lanskap atau beresolusi tinggi. Nonaktif secara bawaan dan tidak mengubah tata letak desktop upstream.",
 
       "autoHideCommandPaletteButton": "Sembunyikan otomatis tombol palette perintah",

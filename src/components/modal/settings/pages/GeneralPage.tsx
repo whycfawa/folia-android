@@ -7,6 +7,7 @@ import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
 import type { AppLanguagePreference } from '../../../../i18n/config';
 import { useAudioSettingsStore } from '../../../../stores/useAudioSettingsStore';
 import { usePlayerChromeSettingsStore } from '../../../../stores/usePlayerChromeSettingsStore';
+import { useDesktopSettingsStore } from '../../../../stores/useDesktopSettingsStore';
 import { selectPonderSettingsSnapshot, usePonderStore } from '../../../../stores/usePonderStore';
 import { useSettingsModalStore } from '../../../../stores/useSettingsModalStore';
 import { Button, Group, Reveal, Row, Segmented, Select, Toggle, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
@@ -41,6 +42,7 @@ const O = {
     androidPhoneFit: option(ANDROID_SHELL, 'phoneFit', 'options.phoneFit'),
     androidOrientation: option(ANDROID_SHELL, 'orientationFit', 'options.orientationFit'),
     androidCommandPaletteAutoHide: option(ANDROID_SHELL, 'autoHideCommandPaletteButton', 'options.autoHideCommandPaletteButton'),
+    androidNativeStage: option(ANDROID_SHELL, 'nativeStage', 'options.nativeStage'),
 };
 
 export const OPTIONS: SettingsOptionDef[] = Object.values(O);
@@ -62,6 +64,8 @@ const GeneralPage: React.FC = () => {
     const setPhoneFitOrientation = useAndroidLayoutSettingsStore(state => state.setPhoneFitOrientation);
     const autoHideCommandPaletteButton = usePlayerChromeSettingsStore(state => state.autoHideCommandPaletteButton);
     const handleToggleAutoHideCommandPaletteButton = usePlayerChromeSettingsStore(state => state.handleToggleAutoHideCommandPaletteButton);
+    const nativeStageEnabled = useDesktopSettingsStore(state => state.nativeStageEnabled);
+    const setNativeStageEnabled = useDesktopSettingsStore(state => state.handleToggleNativeStage);
     const [adaptiveDisplayEnabled, setAdaptiveDisplayEnabled] = React.useState(false);
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW) return;
@@ -150,6 +154,9 @@ const GeneralPage: React.FC = () => {
                     </Row>
                     <Row option={O.androidPhoneFit} hint={t('options.phoneFitDesc')}>
                         <Toggle checked={phoneFitEnabled} onChange={setPhoneFitEnabled} />
+                    </Row>
+                    <Row option={O.androidNativeStage} hint={t('options.nativeStageDesc')} note={t('options.nativeStageDescSub')}>
+                        <Toggle checked={nativeStageEnabled} onChange={setNativeStageEnabled} />
                     </Row>
                     <Row option={O.androidCommandPaletteAutoHide} hint={t('options.autoHideCommandPaletteButtonDesc')}>
                         <Toggle

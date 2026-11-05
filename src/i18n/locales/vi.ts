@@ -1946,7 +1946,13 @@ export default {
     "orientationFitDesc": "Off locks portrait compatibility; on switches to and locks landscape compatibility. It only applies while Phone layout fit is enabled.",
     "orientationLandscape": "Current: landscape fit",
     "orientationPortrait": "Current: portrait fit",
-    "phoneFit": "Phone layout fit",
+    "phoneFit": "Vừa khung điện thoại",
+
+    "nativeStage": "Sân khấu phát native (thử nghiệm)",
+
+    "nativeStageDesc": "Vẽ nền và lời bài hát bằng View Android native để giảm tải WebView",
+
+    "nativeStageDescSub": "Tắt để quay lại sân khấu WebView; điều khiển, cài đặt và mô-đun vẫn giữ nguyên.",
     "phoneFitDesc": "Forces the compact phone layout so tabs, settings, and audio effects stay inside the screen on landscape or high-resolution phones. Off by default and does not alter the upstream desktop layout.",
     "autoHideCommandPaletteButton": "Auto-hide command palette button",
     "autoHideCommandPaletteButtonDesc": "The bottom command palette button hides when idle and comes back on touch.",
