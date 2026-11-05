@@ -3,7 +3,7 @@ import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
-import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress } from '../../services/nativeStage';
+import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
 import { runNativeStageControl } from '../../services/nativeStageActions';
 import { audioBands, audioPower, currentTime } from '../../stores/motionSignals';
 
@@ -94,6 +94,12 @@ const NativeStageBridge: React.FC = () => {
             const span = active ? Math.max(0.001, active.endTime - active.startTime) : 0;
             const lineProgress = active ? Math.max(0, Math.min(1, (position - active.startTime) / span)) : 0;
             void updateNativeStageProgress({ position, duration, lineProgress }).catch(() => undefined);
+            const words = (active?.words || []).map(word => ({
+                text: word.text,
+                startTime: word.startTime,
+                endTime: word.endTime,
+            }));
+            void updateNativeStageWords({ words: JSON.stringify(words), position }).catch(() => undefined);
         }, 200);
         return () => window.clearInterval(timer);
     }, [duration, enabled, lineIndex, lyrics]);

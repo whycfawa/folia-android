@@ -13,6 +13,9 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -68,6 +71,11 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private String layoutNext;
     private int layoutWidth = -1;
     private float layoutSize = -1f;
+    private String[] wordTexts = new String[0];
+    private float[] wordStarts = new float[0];
+    private float[] wordEnds = new float[0];
+    private float wordPosition = 0f;
+    private final TextPaint wordPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
     public FoliaNativeStageSurfaceView(Context context) {
         super(context);
@@ -97,6 +105,30 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    public void updateWords(String json, float position) {
+        synchronized (stateLock) {
+            try {
+                JSONArray array = new JSONArray(json == null ? "[]" : json);
+                int count = array.length();
+                String[] texts = new String[count];
+                float[] starts = new float[count];
+                float[] ends = new float[count];
+                for (int index = 0; index < count; index++) {
+                    JSONObject item = array.optJSONObject(index);
+                    texts[index] = item == null ? "" : item.optString("text", "");
+                    starts[index] = item == null ? 0f : (float) item.optDouble("startTime", 0);
+                    ends[index] = item == null ? 0f : (float) item.optDouble("endTime", 0);
+                }
+                wordTexts = texts;
+                wordStarts = starts;
+                wordEnds = ends;
+                wordPosition = position;
+                dirty = true;
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     public void setLineProgress(float progress) {
@@ -281,6 +313,23 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         }
     }
 
+    private boolean drawWords(Canvas canvas, int width, float centerY) {
+        if (wordTexts.length == 0 || layoutSize <= 0) return false;
+        wordPaint.setTextSize(layoutSize);
+        wordPaint.setTextAlign(Paint.Align.LEFT);
+        float total = 0f;
+        for (String word : wordTexts) total += wordPaint.measureText(word);
+        if (total <= 0f || total > width * 0.9f) return false;
+        float x = (width - total) / 2f;
+        float baseline = centerY - (wordPaint.ascent() + wordPaint.descent()) / 2f;
+        for (int index = 0; index < wordTexts.length; index++) {
+            wordPaint.setColor(wordPosition >= wordStarts[index] ? Color.WHITE : 0x55FFFFFF);
+            canvas.drawText(wordTexts[index], x, baseline, wordPaint);
+            x += wordPaint.measureText(wordTexts[index]);
+        }
+        return true;
+    }
+
     private void drawStage(Canvas canvas) {
         int width = getWidth();
         int height = getHeight();
@@ -319,7 +368,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         }
 
         float centerY = height * 0.5f;
-        if (lyricLayout != null) {
+        if (!drawWords(canvas, width, centerY) && lyricLayout != null) {
             float left = (width - width * 0.86f) / 2f;
             float top = centerY - lyricLayout.getHeight() / 2f;
             lyricPaint.setColor(0x55FFFFFF);

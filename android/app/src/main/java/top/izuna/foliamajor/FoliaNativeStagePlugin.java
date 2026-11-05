@@ -142,6 +142,21 @@ public class FoliaNativeStagePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void updateWords(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null || stageView == null) {
+            call.resolve();
+            return;
+        }
+        String words = call.getString("words", "[]");
+        double position = call.getDouble("position", 0.0);
+        activity.runOnUiThread(() -> {
+            if (stageView != null) stageView.updateWords(words, (float) position);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
     public void updateProgress(PluginCall call) {
         Activity activity = getActivity();
         if (activity == null || controlsView == null) {
