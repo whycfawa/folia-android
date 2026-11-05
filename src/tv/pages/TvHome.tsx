@@ -6,7 +6,6 @@ import type { ProviderCollection } from '../../types/onlineMusic';
 import { TvHeader } from '../components/TvHeader';
 import { TvHero } from '../components/TvHero';
 import { TvMediaRow } from '../components/TvMediaRow';
-import { TvNowPlayingStrip } from '../components/TvNowPlayingStrip';
 import { TvPlaylistCard } from '../components/TvPlaylistCard';
 import { TvSongCard } from '../components/TvSongCard';
 import type { TvAccountModel } from '../hooks/useTvAccount';
@@ -19,7 +18,6 @@ export const TvHome = ({
     player,
     onActivateHero,
     onOpenAccount,
-    onOpenPlayer,
     onPlayTracks,
     onOpenCollection,
     inert,
@@ -29,7 +27,6 @@ export const TvHome = ({
     player: TvPlayerModel;
     onActivateHero: () => void;
     onOpenAccount: () => void;
-    onOpenPlayer: () => void;
     onPlayTracks: (songs: SongResult[], startIndex: number) => void;
     onOpenCollection: (collection: ProviderCollection) => void;
     inert: boolean;
@@ -61,13 +58,7 @@ export const TvHome = ({
                 isAuthenticated={account.isAuthenticated}
                 onOpenAccount={onOpenAccount}
             />
-            <TvNowPlayingStrip
-                song={player.currentSong}
-                isPlaying={isPlaying}
-                onActivate={onOpenPlayer}
-                onToggle={player.togglePlayback}
-            />
-            <main className="tv-home-content">
+            <main className="tv-home-content" data-tv-focus-container="home-body">
                 <TvHero
                     song={player.currentSong}
                     isAuthenticated={account.isAuthenticated}

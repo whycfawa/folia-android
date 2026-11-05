@@ -23,6 +23,16 @@ const groupedRect = (
     groupAxis,
 });
 
+const scopedRect = (
+    id: string,
+    left: number,
+    top: number,
+    container: string,
+): TvFocusRect => ({
+    ...rect(id, left, top),
+    container,
+});
+
 describe('pickNextFocusRect', () => {
     const grid = [
         rect('top-left', 0, 0),
@@ -45,6 +55,34 @@ describe('pickNextFocusRect', () => {
             rect('diagonal', 180, 180),
         ];
         expect(pickNextFocusRect(rows, 'current', 'right')?.id).toBe('aligned');
+    });
+
+    it('moves from header controls into the nearest full-width section', () => {
+        const page = [
+            rect('account', 716, 27, 196, 52),
+            rect('hero', 48, 99, 864, 250),
+            rect('far-card', 708, 900, 200, 274),
+        ];
+
+        expect(pickNextFocusRect(page, 'account', 'down')?.id).toBe('hero');
+        expect(pickNextFocusRect(page, 'hero', 'up')?.id).toBe('account');
+    });
+
+    it('keeps vertical focus inside the scrolling home body before leaving to the header', () => {
+        const scrolledPage = [
+            rect('account', 716, 27, 196, 52),
+            scopedRect('hero', 48, -376, 'home-body'),
+            scopedRect('first-row', 48, 244, 'home-body'),
+        ];
+        const topPage = [
+            rect('account', 716, 27, 196, 52),
+            scopedRect('hero', 48, 99, 'home-body'),
+            scopedRect('first-row', 48, 405, 'home-body'),
+        ];
+
+        expect(pickNextFocusRect(scrolledPage, 'first-row', 'up')?.id).toBe('hero');
+        expect(pickNextFocusRect(topPage, 'first-row', 'up')?.id).toBe('hero');
+        expect(pickNextFocusRect(topPage, 'hero', 'up')?.id).toBe('account');
     });
 
     it('stays put at an edge and picks the first item without current focus', () => {

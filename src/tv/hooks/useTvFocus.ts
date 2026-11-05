@@ -19,6 +19,7 @@ const toRect = (element: HTMLElement): TvFocusRect | null => {
     const rect = element.getBoundingClientRect();
     const groupRoot = element.closest<HTMLElement>('[data-tv-focus-group]');
     const groupAxis = groupRoot?.dataset.tvFocusAxis;
+    const containerRoot = element.closest<HTMLElement>('[data-tv-focus-container]');
     return {
         id: key,
         left: rect.left,
@@ -29,6 +30,7 @@ const toRect = (element: HTMLElement): TvFocusRect | null => {
         groupAxis: groupAxis === 'horizontal' || groupAxis === 'vertical'
             ? groupAxis
             : undefined,
+        container: containerRoot?.dataset.tvFocusContainer,
     };
 };
 

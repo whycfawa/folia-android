@@ -18,7 +18,6 @@
     --tv-radius: 24px;
     --tv-safe-x: clamp(36px, 5vw, 96px);
     --tv-safe-y: clamp(14px, 5vh, 54px);
-    --tv-now-playing-h: clamp(76px, 8.2vh, 92px);
     --tv-card-w: clamp(200px, 11.5vw, 232px);
     --tv-control-dock-h: clamp(168px, 20.7vh, 224px);
     font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
@@ -115,7 +114,7 @@ img {
 .tv-home-page {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     overflow-x: hidden;
     overflow-y: hidden;
     background:
@@ -240,12 +239,12 @@ img {
 .tv-home-content {
     position: relative;
     z-index: 2;
-    grid-row: 3;
+    grid-row: 2;
     width: 100%;
     min-width: 0;
     min-height: 0;
     padding:
-        clamp(8px, 1.2vh, 14px)
+        clamp(16px, 2.2vh, 24px)
         var(--tv-safe-x)
         var(--tv-safe-y);
     display: flex;
@@ -572,101 +571,6 @@ img {
     background: rgba(18, 18, 29, 0.42);
     color: var(--tv-text-faint);
     font-size: clamp(17px, 0.95vw, 19px);
-}
-
-.tv-now-playing-strip {
-    position: relative;
-    z-index: 5;
-    height: var(--tv-now-playing-h);
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 0.8vw, 14px);
-    margin:
-        0
-        var(--tv-safe-x)
-        clamp(10px, 1.5vh, 16px);
-    padding:
-        clamp(7px, 0.9vh, 10px)
-        clamp(10px, 0.9vw, 14px)
-        clamp(7px, 0.9vh, 10px)
-        clamp(8px, 0.8vw, 11px);
-    border: 1px solid rgba(255, 255, 255, 0.13);
-    border-radius: clamp(18px, 1.25vw, 24px);
-    background:
-        linear-gradient(90deg, rgba(167, 139, 250, 0.08), transparent 38%),
-        rgba(14, 14, 23, 0.95);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-}
-
-.tv-now-playing-open {
-    min-width: 0;
-    flex: 1;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    gap: clamp(12px, 0.9vw, 17px);
-    padding: 0 12px 0 4px;
-    border: 1px solid transparent;
-    border-radius: 18px;
-}
-
-.tv-now-playing-open img {
-    width: calc(var(--tv-now-playing-h) - 20px);
-    height: calc(var(--tv-now-playing-h) - 20px);
-    flex: 0 0 calc(var(--tv-now-playing-h) - 20px);
-    border-radius: clamp(11px, 0.7vw, 14px);
-    object-fit: cover;
-}
-
-.tv-now-playing-open > span {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.tv-now-playing-open small {
-    color: var(--tv-accent);
-    font-size: clamp(11px, 0.63vw, 13px);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.tv-now-playing-open strong {
-    overflow: hidden;
-    color: var(--tv-text);
-    font-size: clamp(18px, 1.05vw, 21px);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tv-now-playing-open em {
-    overflow: hidden;
-    color: var(--tv-text-faint);
-    font-size: clamp(14px, 0.78vw, 16px);
-    font-style: normal;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tv-now-playing-toggle {
-    width: calc(var(--tv-now-playing-h) - 22px);
-    height: calc(var(--tv-now-playing-h) - 22px);
-    flex: 0 0 calc(var(--tv-now-playing-h) - 22px);
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.tv-now-playing-open:focus {
-    background: rgba(167, 139, 250, 0.1);
-}
-
-.tv-now-playing-toggle:focus {
-    background: rgba(167, 139, 250, 0.2);
 }
 
 /* Player */
@@ -2014,44 +1918,6 @@ img {
         font-size: 13px;
     }
 
-    .tv-now-playing-strip {
-        gap: 8px;
-        margin-bottom: 8px;
-        padding: 6px 8px 6px 7px;
-        border-radius: 16px;
-    }
-
-    .tv-now-playing-open {
-        gap: 10px;
-        padding-right: 8px;
-        border-radius: 13px;
-    }
-
-    .tv-now-playing-open img {
-        width: calc(var(--tv-now-playing-h) - 16px);
-        height: calc(var(--tv-now-playing-h) - 16px);
-        flex-basis: calc(var(--tv-now-playing-h) - 16px);
-        border-radius: 10px;
-    }
-
-    .tv-now-playing-open small {
-        font-size: 10px;
-    }
-
-    .tv-now-playing-open strong {
-        font-size: 16px;
-    }
-
-    .tv-now-playing-open em {
-        font-size: 12px;
-    }
-
-    .tv-now-playing-toggle {
-        width: calc(var(--tv-now-playing-h) - 18px);
-        height: calc(var(--tv-now-playing-h) - 18px);
-        flex-basis: calc(var(--tv-now-playing-h) - 18px);
-    }
-
     .tv-control-main {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
@@ -2300,7 +2166,6 @@ img {
 
 @media (max-height: 500px) {
     :root {
-        --tv-now-playing-h: 56px;
         --tv-control-dock-h: 112px;
     }
 
@@ -2355,18 +2220,6 @@ img {
         width: clamp(96px, 22vw, 136px);
         height: clamp(96px, 22vw, 136px);
         border-radius: 18px;
-    }
-
-    .tv-now-playing-open small {
-        display: none;
-    }
-
-    .tv-now-playing-open strong {
-        font-size: 15px;
-    }
-
-    .tv-now-playing-open em {
-        font-size: 11px;
     }
 
     .tv-player-page {
@@ -2724,10 +2577,6 @@ img {
         width: 92px;
         height: 92px;
         border-radius: 16px;
-    }
-
-    .tv-now-playing-strip {
-        margin-bottom: 6px;
     }
 
     .tv-control-dock {

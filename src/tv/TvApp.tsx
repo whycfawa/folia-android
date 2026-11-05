@@ -230,7 +230,6 @@ export const TvApp = () => {
                     player={player}
                     onActivateHero={activateHero}
                     onOpenAccount={openAccount}
-                    onOpenPlayer={openPlayer}
                     onPlayTracks={playTracks}
                     onOpenCollection={openCollection}
                     inert={route.overlay !== null}

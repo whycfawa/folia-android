@@ -12,6 +12,7 @@ export type TvFocusRect = {
     bottom: number;
     group?: string;
     groupAxis?: 'horizontal' | 'vertical';
+    container?: string;
 };
 
 const center = (rect: TvFocusRect) => ({
@@ -40,12 +41,19 @@ export const pickNextFocusRect = (
     const sameGroup = current.group
         ? rects.filter(rect => rect.group === current.group)
         : [];
+    const sameContainer = !horizontal && current.container
+        ? rects.filter(rect => rect.container === current.container)
+        : [];
     const lockedToGroup = Boolean(
         current.group
         && sameGroup.length > 0
         && current.groupAxis === groupAxis,
     );
-    const candidates = lockedToGroup ? sameGroup : rects;
+    const candidates = lockedToGroup
+        ? sameGroup
+        : sameContainer.length > 0
+            ? sameContainer
+            : rects;
     const sign = direction === 'right' || direction === 'down' ? 1 : -1;
 
     const findBest = (pool: readonly TvFocusRect[]): TvFocusRect | null => {
@@ -66,7 +74,12 @@ export const pickNextFocusRect = (
             const aligned = horizontal
                 ? overlap(current.top, current.bottom, rect.top, rect.bottom)
                 : overlap(current.left, current.right, rect.left, rect.right);
-            const score = primary + cross * 2.4 - aligned * 0.9;
+            const score = horizontal
+                ? primary + cross * 2.4 - aligned * 0.9
+                : Math.max(
+                    0,
+                    direction === 'down' ? rect.top - current.bottom : current.top - rect.bottom,
+                ) + cross * 0.25 - aligned * 0.1;
 
             if (
                 !bestRect
@@ -82,6 +95,7 @@ export const pickNextFocusRect = (
     };
 
     let next = findBest(candidates);
+    if (!next && candidates !== rects && !lockedToGroup) next = findBest(rects);
     if (!next && lockedToGroup && current.groupAxis === 'vertical') {
         next = findBest(rects.filter(rect => rect.group !== current.group));
     }
