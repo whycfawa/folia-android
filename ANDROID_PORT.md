@@ -581,3 +581,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 渐变/Paint/StaticLayout 按尺寸和歌词缓存，不再每帧新建。
 - 原生舞台限制 60fps；暂停/窗口不可见时停止 Choreographer。
 - 原生插件所有 View 操作切到 UI 线程。
+
+### 0.7.25-android.325：原生舞台 SurfaceView
+
+- 原生舞台改用 SurfaceView + 独立渲染线程，绘制不再占用 UI 线程。
+- 渐变/StaticLayout 继续缓存；无变化时休眠。

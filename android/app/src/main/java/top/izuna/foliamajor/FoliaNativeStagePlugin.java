@@ -20,7 +20,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class FoliaNativeStagePlugin extends Plugin {
     private static final String PREFS = "folia_native_stage";
     private static final String ACTIVE = "active";
-    private FoliaNativeStageView stageView;
+    private FoliaNativeStageSurfaceView stageView;
     private boolean guardChecked;
     private boolean unsafe;
 
@@ -53,12 +53,12 @@ public class FoliaNativeStagePlugin extends Plugin {
             }
             try {
                 if (stageView == null) {
-                    stageView = new FoliaNativeStageView(activity);
+                    stageView = new FoliaNativeStageSurfaceView(activity);
                     root.addView(stageView, 0, new ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
                 }
-                stageView.setVisibility(FoliaNativeStageView.VISIBLE);
+                stageView.setVisibility(FoliaNativeStageSurfaceView.VISIBLE);
                 WebView webView = getBridge() == null ? null : getBridge().getWebView();
                 if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
                 getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();
