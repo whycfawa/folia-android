@@ -50,6 +50,9 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private String title = "";
     private String artist = "";
     private int accent = 0xFF7C9BFF;
+    private int primary = 0xFFFFFFFF;
+    private int secondary = 0xFF7C9BFF;
+    private int background = 0xFF07070B;
     private boolean playing = true;
     private float lineProgress = 0f;
     private float audioPower;
@@ -105,6 +108,31 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    public void setThemeColors(String primaryHex, String secondaryHex, String backgroundHex) {
+        synchronized (stateLock) {
+            int nextPrimary = parseColor(primaryHex, primary);
+            int nextSecondary = parseColor(secondaryHex, secondary);
+            int nextBackground = parseColor(backgroundHex, background);
+            if (nextPrimary != primary || nextSecondary != secondary || nextBackground != background) {
+                primary = nextPrimary;
+                secondary = nextSecondary;
+                background = nextBackground;
+                backgroundGradient = null;
+                glowGradient = null;
+                gradientWidth = -1;
+                dirty = true;
+            }
+        }
+    }
+
+    private static int parseColor(String value, int fallback) {
+        try {
+            return value == null || value.isEmpty() ? fallback : Color.parseColor(value);
+        } catch (IllegalArgumentException ignored) {
+            return fallback;
+        }
     }
 
     public void updateWords(String json, float position) {
@@ -246,9 +274,10 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     private void ensureGradients(int width, int height) {
         if (backgroundGradient != null && gradientWidth == width && gradientHeight == height) return;
-        int accentSoft = (accent & 0x00FFFFFF) | 0x55000000;
+        int secondarySoft = (secondary & 0x00FFFFFF) | 0x55000000;
+        int backgroundDeep = (background & 0x00FFFFFF) | 0xFF000000;
         backgroundGradient = new LinearGradient(0, 0, width, height,
-                new int[]{0xFF07070B, accentSoft, 0xFF050508},
+                new int[]{backgroundDeep, secondarySoft, backgroundDeep},
                 new float[]{0f, 0.52f, 1f}, Shader.TileMode.CLAMP);
         glowGradient = new RadialGradient(0, 0, width * 0.55f,
                 new int[]{(accent & 0x00FFFFFF) | 0x33000000, 0x00000000},

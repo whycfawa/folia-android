@@ -6,7 +6,7 @@ import { loadCachedOrFetchCover } from './services/coverCache';
 import VisualizerRenderer from './components/visualizer/VisualizerRenderer';
 import NativeStageBridge from './components/visualizer/NativeStageBridge';
 import { registerNativeStageActions } from './services/nativeStageActions';
-import { setNativeStageAccent } from './services/nativeStageTheme';
+import { setNativeStageTheme } from './services/nativeStageTheme';
 import CommandPalette from './components/command-palette/CommandPalette';
 import AddToPlaylistHost from './components/app/AddToPlaylistHost';
 import { useCommandPalette } from './components/command-palette/useCommandPalette';
@@ -2091,8 +2091,13 @@ export default function App() {
     }, [publishStagePlayerPlaybackUpdate]);
 
     useEffect(() => {
-        setNativeStageAccent(theme.accentColor);
-    }, [theme.accentColor]);
+        setNativeStageTheme({
+            accent: theme.accentColor,
+            primary: theme.primaryColor,
+            secondary: theme.secondaryColor,
+            background: theme.backgroundColor,
+        });
+    }, [theme.accentColor, theme.backgroundColor, theme.primaryColor, theme.secondaryColor]);
 
     useEffect(() => registerNativeStageActions({
         toggle: togglePlay,

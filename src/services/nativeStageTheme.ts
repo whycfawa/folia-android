@@ -1,15 +1,29 @@
-let accent = '#7C9BFF';
+export type NativeStageTheme = {
+    accent: string;
+    primary: string;
+    secondary: string;
+    background: string;
+};
+
+let theme: NativeStageTheme = {
+    accent: '#7C9BFF',
+    primary: '#FFFFFF',
+    secondary: '#7C9BFF',
+    background: '#07070B',
+};
 const listeners = new Set<() => void>();
 
-export const getNativeStageAccent = (): string => accent;
+export const getNativeStageTheme = (): NativeStageTheme => theme;
 
-export const setNativeStageAccent = (next: string): void => {
-    if (!next || next === accent) return;
-    accent = next;
+export const setNativeStageTheme = (next: Partial<NativeStageTheme>): void => {
+    const merged = { ...theme, ...next };
+    if (merged.accent === theme.accent && merged.primary === theme.primary
+        && merged.secondary === theme.secondary && merged.background === theme.background) return;
+    theme = merged;
     listeners.forEach(listener => listener());
 };
 
-export const subscribeNativeStageAccent = (listener: () => void): (() => void) => {
+export const subscribeNativeStageTheme = (listener: () => void): (() => void) => {
     listeners.add(listener);
     return () => listeners.delete(listener);
 };

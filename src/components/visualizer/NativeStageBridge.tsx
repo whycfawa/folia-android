@@ -5,7 +5,7 @@ import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
 import { addNativeStageControlListener, disableNativeStage, enableNativeStage, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
 import { runNativeStageControl } from '../../services/nativeStageActions';
-import { getNativeStageAccent, subscribeNativeStageAccent } from '../../services/nativeStageTheme';
+import { getNativeStageTheme, subscribeNativeStageTheme } from '../../services/nativeStageTheme';
 import { audioBands, audioPower, currentTime } from '../../stores/motionSignals';
 
 // src/components/visualizer/NativeStageBridge.tsx
@@ -40,7 +40,7 @@ const NativeStageBridge: React.FC = () => {
     const lineIndex = usePlaybackStore(state => state.currentLineIndex);
     const playerState = usePlaybackStore(state => state.playerState);
     const duration = usePlaybackStore(state => state.duration);
-    const accent = React.useSyncExternalStore(subscribeNativeStageAccent, getNativeStageAccent, getNativeStageAccent);
+    const nativeTheme = React.useSyncExternalStore(subscribeNativeStageTheme, getNativeStageTheme, getNativeStageTheme);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW) return undefined;
@@ -76,10 +76,13 @@ const NativeStageBridge: React.FC = () => {
             nextLine,
             title,
             artist,
-            accent,
+            accent: nativeTheme.accent,
+            primary: nativeTheme.primary,
+            secondary: nativeTheme.secondary,
+            background: nativeTheme.background,
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
-    }, [accent, enabled, lineIndex, lyrics, playerState, song]);
+    }, [enabled, lineIndex, lyrics, nativeTheme, playerState, song]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;

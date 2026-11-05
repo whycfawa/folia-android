@@ -106,6 +106,10 @@ public class FoliaNativeStagePlugin extends Plugin {
                     if (accent != null && !accent.isEmpty()) controlsView.setAccent(Color.parseColor(accent));
                 } catch (IllegalArgumentException ignored) {
                 }
+                stageView.setThemeColors(
+                        call.getString("primary", "#FFFFFF"),
+                        call.getString("secondary", "#7C9BFF"),
+                        call.getString("background", "#07070B"));
                 stageView.update(
                         call.getString("line", ""),
                         call.getString("nextLine", ""),

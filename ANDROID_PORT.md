@@ -628,3 +628,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.335：原生舞台主题色联动
 
 - App 把当前 theme.accentColor 同步给原生舞台；渐变、粒子、控制条进度使用真实主题色。
+
+### 0.7.25-android.336：原生舞台完整主题色
+
+- 原生背景使用 theme.background/primary/secondary，发光与粒子使用 accent。
