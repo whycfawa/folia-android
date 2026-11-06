@@ -3229,11 +3229,11 @@ img {
     width: clamp(44px, 7.4vh, 50px);
     height: clamp(44px, 7.4vh, 50px);
     min-width: clamp(44px, 7.4vh, 50px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid transparent;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.94);
-    color: #09090e;
-    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.26);
+    background: transparent;
+    color: #fff;
+    box-shadow: none;
 }
 
 .tv-control-buttons button.is-primary svg {
@@ -3241,20 +3241,13 @@ img {
     height: 23px;
 }
 
-.tv-control-buttons button:focus {
-    transform: scale(1.05);
-    background: rgba(167, 139, 250, 0.2);
-    color: #fff;
-}
-
-.tv-control-buttons button.is-utility:focus {
+.tv-app .tv-control-buttons button[data-tv-focusable="true"]:focus {
+    transform: none;
     border-color: transparent;
-    color: #fff;
-}
-
-.tv-control-buttons button.is-primary:focus {
+    outline: none;
     background: #fff;
     color: #09090e;
+    box-shadow: none;
 }
 
 .tv-queue-overlay {
