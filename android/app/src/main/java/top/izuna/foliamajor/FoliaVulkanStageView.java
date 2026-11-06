@@ -130,6 +130,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         canvas.drawColor(Color.TRANSPARENT);
         if ("still".equals(mode)) {
             drawStillText(canvas, width, height);
+        } else if ("classic".equals(mode) && canvasStage != null) {
+            canvasStage.drawClassicLayer(canvas, width, height);
         } else if (canvasStage != null) {
             canvasStage.measure(
                     android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),

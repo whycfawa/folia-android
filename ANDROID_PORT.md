@@ -795,3 +795,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.371：Vulkan Still 文本
 
 - still 模式不再走整帧 Canvas，直接生成三行文字纹理；Vulkan 背景/粒子保留。
+
+### 0.7.25-android.372：Classic Vulkan 文字层
+
+- classic 只上传文字层，Vulkan 背景/粒子保留，不再整帧 Canvas。

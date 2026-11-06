@@ -502,6 +502,10 @@ public class FoliaNativeStageView extends View {
         }
     }
 
+    public void drawClassicLayer(Canvas canvas, int width, int height) {
+        drawClassic(canvas, width, height);
+    }
+
     private void drawClassic(Canvas canvas, int width, int height) {
         if (wordTexts.length == 0) return;
         float size = Math.max(dp(28), Math.min(dp(58), width * 0.055f));
