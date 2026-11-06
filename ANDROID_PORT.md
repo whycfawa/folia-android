@@ -882,3 +882,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.392：Still 尺寸对齐
 
 - still 当前行 40dp、非当前 30dp、翻译/间距按 CSS 尺寸。
+
+### 0.7.25-android.393：Vulkan 字形图集构建器
+
+- 新增 VulkanTextAtlas：字形栅格化、打包、UV/advance。
+- 尚未接入 still 的 Vulkan quad 管线。
