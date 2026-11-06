@@ -29,6 +29,20 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 10) {
+        // Tempera: dry brush strokes on canvas.
+        vec3 base = vec3(0.07, 0.06, 0.05);
+        float strokes = 0.0;
+        for (int i = 0; i < 18; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.31, fi * 0.17);
+            float y = hash(seed);
+            float thickness = 0.008 + hash(seed + vec2(3.0, 1.0)) * 0.02;
+            float wobble = sin(uv.x * (7.0 + fi) + pc.time * 0.1 + fi) * 0.006;
+            float d = abs(uv.y - y - wobble);
+            strokes += smoothstep(thickness, 0.0, d) * (0.12 + 0.2 * hash(seed + vec2(5.0, 2.0)));
+        }
+        color = base + pc.accent.rgb * strokes * 0.5 + vec3(0.06, 0.05, 0.04) * strokes;
     } else if (pc.mode == 9) {
         // Pendolo: a pendulum swinging through a dark hall.
         vec3 base = vec3(0.006, 0.007, 0.012);
