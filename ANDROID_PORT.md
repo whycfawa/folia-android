@@ -860,3 +860,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.387：Vulkan Cadenza 场景
 
 - cadenza 分支：五线谱与漂浮音符；文字层叠加。
+
+### 0.7.25-android.388：Vulkan Claddagh 场景
+
+- claddagh 分支：三个互锁圆环；文字层叠加。

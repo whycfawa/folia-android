@@ -29,6 +29,17 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 13) {
+        // Claddagh: interlocking celtic rings in a dark field.
+        vec3 base = vec3(0.018, 0.025, 0.022);
+        float rings = 0.0;
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            vec2 center = vec2(0.5 + 0.16 * cos(fi * 2.094), 0.5 + 0.16 * sin(fi * 2.094));
+            float d = abs(length(uv - center) - (0.12 + 0.008 * sin(pc.time * 0.3 + fi)));
+            rings += smoothstep(0.006, 0.0, d);
+        }
+        color = base + vec3(0.16, 0.13, 0.07) * rings * 0.7 + pc.accent.rgb * rings * 0.25;
     } else if (pc.mode == 12) {
         // Cadenza: manuscript staff and floating notes.
         vec3 base = vec3(0.055, 0.050, 0.045);
