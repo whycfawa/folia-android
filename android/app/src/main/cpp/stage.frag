@@ -29,6 +29,18 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 15) {
+        // Cappella: warm chat surface with floating bubbles.
+        vec3 base = mix(vec3(0.035, 0.030, 0.032), vec3(0.08, 0.055, 0.050), uv.y);
+        float bubbles = 0.0;
+        for (int i = 0; i < 10; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.27, fi * 0.43);
+            vec2 pos = vec2(hash(seed) + 0.02 * sin(pc.time * 0.1 + fi), hash(seed + vec2(4.0, 1.0)));
+            float d = length((uv - pos) * vec2(1.0, 0.7));
+            bubbles += smoothstep(0.035, 0.0, d) * 0.08;
+        }
+        color = base + pc.accent.rgb * bubbles * 0.5 + vec3(0.05, 0.035, 0.03) * bubbles;
     } else if (pc.mode == 14) {
         // Partita: composed columns with faint staff lines.
         vec3 base = vec3(0.012, 0.018, 0.030);
