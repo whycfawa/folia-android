@@ -21,6 +21,7 @@ interface FoliaNativeStagePlugin {
         background: string;
         daylight: boolean;
         playing: boolean;
+        chorus: boolean;
     }): Promise<void>;
     updateAudio(options: { power: number; bass: number; mid: number; treble: number }): Promise<void>;
     updateProgress(options: { position: number; duration: number; lineProgress: number }): Promise<void>;

@@ -99,6 +99,7 @@ const NativeStageBridge: React.FC = () => {
             background: nativeTheme.background,
             daylight: isDaylight,
             playing: playerState === PlayerState.PLAYING,
+            chorus: Boolean(lines[lineIndex]?.isChorus),
         }).catch(error => console.warn('[NativeStage] update failed', error));
     }, [enabled, isDaylight, lineIndex, lyrics, nativeTheme, playerState, song, visualizerMode]);
 

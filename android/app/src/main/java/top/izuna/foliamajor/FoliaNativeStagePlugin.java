@@ -124,7 +124,8 @@ public class FoliaNativeStagePlugin extends Plugin {
                         call.getString("title", ""),
                         call.getString("artist", ""),
                         call.getString("accent", ""),
-                        Boolean.TRUE.equals(call.getBoolean("playing", true)));
+                        Boolean.TRUE.equals(call.getBoolean("playing", true)),
+                        Boolean.TRUE.equals(call.getBoolean("chorus", false)));
                 call.resolve();
             } catch (Throwable error) {
                 call.reject("native-stage-update-failed: " + error);

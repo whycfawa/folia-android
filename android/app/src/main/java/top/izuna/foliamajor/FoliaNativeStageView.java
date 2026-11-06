@@ -58,6 +58,7 @@ public class FoliaNativeStageView extends View {
     private int secondary = 0xFF7C9BFF;
     private int background = 0xFF07070B;
     private boolean daylight = false;
+    private boolean chorus = false;
     private boolean stageLight = false;
     private float lineProgress = 0f;
     private float audioPower;
@@ -240,7 +241,8 @@ public class FoliaNativeStageView extends View {
         return playing;
     }
 
-    public void update(String mode, String line, String nextLine, String prevLine, String lineTranslation, String prevTranslation, String nextTranslation, String title, String artist, String accentHex, boolean playing) {
+    public void update(String mode, String line, String nextLine, String prevLine, String lineTranslation, String prevTranslation, String nextTranslation, String title, String artist, String accentHex, boolean playing, boolean chorus) {
+        this.chorus = chorus;
         this.mode = mode == null ? "classic" : mode;
         this.prevLine = prevLine == null ? "" : prevLine;
         this.lineTranslation = lineTranslation == null ? "" : lineTranslation;
@@ -423,6 +425,15 @@ public class FoliaNativeStageView extends View {
             int rgb = stageLight ? 0x111111 : 0xFFFFFF;
             lyricPaint.setColor((alpha << 24) | rgb);
             lyricPaint.setShadowLayer(wordPosition >= start && !passed ? dp(14) : 0f, 0f, 0f, accent);
+            if (chorus && wordPosition >= start && !passed) {
+                float rippleProgress = Math.max(0f, Math.min(1f, progress));
+                float rippleRadius = wordWidth * (0.45f + rippleProgress * 1.4f);
+                particlePaint.setStyle(Paint.Style.STROKE);
+                particlePaint.setStrokeWidth(dp(1));
+                particlePaint.setColor(((int) (0x99 * (1f - rippleProgress)) << 24) | (accent & 0x00FFFFFF));
+                canvas.drawCircle(baseX + wordWidth / 2f + offsetX, baseY + offsetY, rippleRadius, particlePaint);
+                particlePaint.setStyle(Paint.Style.FILL);
+            }
             canvas.save();
             canvas.translate(baseX + wordWidth / 2f + offsetX, baseY + offsetY);
             canvas.rotate(rotation);

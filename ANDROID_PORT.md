@@ -715,3 +715,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.353：Classic 逐字素
 
 - 桥接 grapheme 时间；classic 逐字素绘制、透明度和缩放。
+
+### 0.7.25-android.354：Classic chorus ripple
+
+- 桥接 isChorus；原生当前词绘制扩散圆环。
