@@ -53,6 +53,7 @@ struct State {
     VkFence inFlight{VK_NULL_HANDLE};
     float hue{0.0f};
     float accent[4]{0.49f, 0.61f, 1.0f, 1.0f};
+    float power{0.0f};
 };
 
 State* state = nullptr;
@@ -302,7 +303,7 @@ bool createPipeline(State& s) {
     VkPushConstantRange push{};
     push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     push.offset = 0;
-    push.size = 20;
+    push.size = 32;
     VkPipelineLayoutCreateInfo layout{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     layout.pushConstantRangeCount = 1;
     layout.pPushConstantRanges = &push;
@@ -395,7 +396,7 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
         VkRect2D scissor{{0, 0}, s.extent};
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         vkCmdSetScissor(cmd, 0, 1, &scissor);
-        struct Push { float time; float accent[4]; } push{time, {s.accent[0], s.accent[1], s.accent[2], s.accent[3]}};
+        struct Push { float time; float power; float pad[2]; float accent[4]; } push{time, s.power, {0.0f, 0.0f}, {s.accent[0], s.accent[1], s.accent[2], s.accent[3]}};
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
         vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
@@ -577,6 +578,12 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     ANativeWindow_release(window);
     state = s;
     return reinterpret_cast<jlong>(s);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeSetPower(JNIEnv*, jobject, jfloat power) {
+    State* s = state;
+    if (s) s->power = power < 0.0f ? 0.0f : (power > 1.0f ? 1.0f : power);
 }
 
 extern "C" JNIEXPORT void JNICALL

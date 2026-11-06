@@ -39,6 +39,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native boolean nativeRender();
     private native boolean nativeReady();
     private native void nativeSetAccent(int color);
+    private native void nativeSetPower(float power);
 
     public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
@@ -65,7 +66,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         } catch (Throwable ignored) {}
     }
     public void setDaylight(boolean daylight) { this.daylight = daylight; renderText(); }
-    public void updateAudio(float power, float bass, float mid, float treble) {}
+    public void updateAudio(float power, float bass, float mid, float treble) {
+        nativeSetPower(power);
+    }
     public void updateWords(String json, float position) {}
     public void setLineProgress(float progress) {}
     public long getFrameCount() { return frameCount; }
