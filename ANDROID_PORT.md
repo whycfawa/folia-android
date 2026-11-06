@@ -953,3 +953,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.408：Vulkan 验证回调
 
 - 有 validation layer 时启用；错误消息写入 vulkanError。
+
+### 0.7.25-android.409：背景管线最小回退
+
+- pipeline -3 时用 simple.vert/simple.frag 创建最小背景，避免黑屏；诊断记录 fallback。

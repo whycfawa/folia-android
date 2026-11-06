@@ -407,7 +407,20 @@ bool createPipeline(State& s) {
     info.layout = s.pipelineLayout;
     info.renderPass = s.renderPass;
     info.subpass = 0;
-    return ok(vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline), "pipeline");
+    VkResult pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
+    if (pipelineResult != VK_SUCCESS) {
+        s.vertModule = shaderModule(s, kSimpleVertSpv, kSimpleVertSpvSize);
+        s.fragModule = shaderModule(s, kSimpleFragSpv, kSimpleFragSpvSize);
+        stages[0].module = s.vertModule;
+        stages[1].module = s.fragModule;
+        pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
+        if (pipelineResult != VK_SUCCESS) {
+            lastError = "pipeline and simple pipeline failed: " + std::to_string((int) pipelineResult);
+            return false;
+        }
+        lastError = "pipeline fallback: simple";
+    }
+    return true;
 }
 
 void destroySwapchain(State& s) {
