@@ -68,6 +68,7 @@ public class FoliaAppleMusicPlugin extends Plugin {
         settings.setSupportMultipleWindows(true);
         settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         webView.addJavascriptInterface(new Bridge(), "FoliaAppleMusicBridge");
+        webView.setKeepScreenOn(true);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest request) {
                 for (String resource : request.getResources()) {
@@ -86,6 +87,8 @@ public class FoliaAppleMusicPlugin extends Plugin {
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 loading = false;
+                view.onResume();
+                view.resumeTimers();
                 injectBridge();
             }
         });

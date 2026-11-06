@@ -1034,3 +1034,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.26-android.427：Apple Music 请求超时
 
 - 20s 超时，避免 playSong 卡在“正在准备播放”。
+
+### 0.7.26-android.428：Apple Music WebView 恢复媒体计时器
+
+- onResume/resumeTimers/setKeepScreenOn，避免隐藏 WebView 音频被挂起。
