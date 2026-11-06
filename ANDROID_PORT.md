@@ -697,3 +697,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - Canvas View 接入 audioPower/bass/mid/treble，绘制频谱条和发光脉冲。
 - 预分配 64 粒子。
 - 解析 words，宽度允许时逐字点亮，否则回退逐行扫光。
+
+### 0.7.25-android.350：原生场景协议 + Still 1:1
+
+- 桥接 visualizerMode、前后行、翻译到原生。
+- Canvas 原生舞台按 mode 分支；首个移植 still。

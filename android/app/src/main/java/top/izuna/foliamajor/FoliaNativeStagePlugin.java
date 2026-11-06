@@ -114,8 +114,13 @@ public class FoliaNativeStagePlugin extends Plugin {
                         call.getString("secondary", "#7C9BFF"),
                         call.getString("background", "#07070B"));
                 stageView.update(
+                        call.getString("mode", "classic"),
                         call.getString("line", ""),
                         call.getString("nextLine", ""),
+                        call.getString("prevLine", ""),
+                        call.getString("lineTranslation", ""),
+                        call.getString("prevTranslation", ""),
+                        call.getString("nextTranslation", ""),
                         call.getString("title", ""),
                         call.getString("artist", ""),
                         call.getString("accent", ""),

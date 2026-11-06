@@ -44,11 +44,17 @@ public class FoliaNativeStageView extends View {
     private long lastSpawnAt;
     private long particleLastAt;
 
+    private String mode = "classic";
     private String line = "";
     private String nextLine = "";
+    private String prevLine = "";
+    private String lineTranslation = "";
+    private String prevTranslation = "";
+    private String nextTranslation = "";
     private String title = "";
     private String artist = "";
     private int accent = 0xFF7C9BFF;
+    private int primary = 0xFFFFFFFF;
     private int secondary = 0xFF7C9BFF;
     private int background = 0xFF07070B;
     private boolean daylight = false;
@@ -72,6 +78,7 @@ public class FoliaNativeStageView extends View {
 
     private LinearGradient backgroundGradient;
     private RadialGradient glowGradient;
+    private RadialGradient stillVignette;
     private int gradientWidth = -1;
     private int gradientHeight = -1;
 
@@ -126,9 +133,11 @@ public class FoliaNativeStageView extends View {
 
     public void setThemeColors(String primaryHex, String secondaryHex, String backgroundHex) {
         try {
+            int nextPrimary = Color.parseColor(primaryHex);
             int nextSecondary = Color.parseColor(secondaryHex);
             int nextBackground = Color.parseColor(backgroundHex);
-            if (nextSecondary != secondary || nextBackground != background) {
+            if (nextPrimary != primary || nextSecondary != secondary || nextBackground != background) {
+                primary = nextPrimary;
                 secondary = nextSecondary;
                 background = nextBackground;
                 backgroundGradient = null;
@@ -208,7 +217,12 @@ public class FoliaNativeStageView extends View {
         return playing;
     }
 
-    public void update(String line, String nextLine, String title, String artist, String accentHex, boolean playing) {
+    public void update(String mode, String line, String nextLine, String prevLine, String lineTranslation, String prevTranslation, String nextTranslation, String title, String artist, String accentHex, boolean playing) {
+        this.mode = mode == null ? "classic" : mode;
+        this.prevLine = prevLine == null ? "" : prevLine;
+        this.lineTranslation = lineTranslation == null ? "" : lineTranslation;
+        this.prevTranslation = prevTranslation == null ? "" : prevTranslation;
+        this.nextTranslation = nextTranslation == null ? "" : nextTranslation;
         String nextAccent = accentHex;
         try {
             if (nextAccent != null && !nextAccent.isEmpty()) {
@@ -336,6 +350,34 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void drawStill(Canvas canvas, int width, int height) {
+        if (stillVignette == null) {
+            stillVignette = new RadialGradient(width / 2f, height / 2f, Math.max(width, height) * 0.72f,
+                    new int[]{0x00000000, 0xAA000000}, new float[]{0.2f, 1f}, Shader.TileMode.CLAMP);
+        }
+        backgroundPaint.setShader(stillVignette);
+        canvas.drawRect(0, 0, width, height, backgroundPaint);
+        if (!title.isEmpty()) canvas.drawText(title, width / 2f, height * 0.08f, metaPaint);
+        float centerY = height * 0.5f;
+        drawStillLine(canvas, width, prevLine, prevTranslation, centerY - dp(120), dp(30), 0.30f);
+        drawStillLine(canvas, width, line, lineTranslation, centerY, dp(40), 1f);
+        drawStillLine(canvas, width, nextLine, nextTranslation, centerY + dp(120), dp(30), 0.30f);
+    }
+
+    private void drawStillLine(Canvas canvas, int width, String text, String translation, float centerY, float size, float alpha) {
+        if (text == null || text.isEmpty()) return;
+        lyricPaint.setTextAlign(Paint.Align.CENTER);
+        lyricPaint.setTextSize(size);
+        lyricPaint.setColor((Math.round(255 * alpha) << 24) | (stageLight ? 0x111111 : 0xFFFFFF));
+        canvas.drawText(text, width / 2f, centerY, lyricPaint);
+        if (translation != null && !translation.isEmpty()) {
+            nextPaint.setTextAlign(Paint.Align.CENTER);
+            nextPaint.setTextSize(size * 0.52f);
+            nextPaint.setColor((Math.round(255 * alpha * 0.8f) << 24) | (secondary & 0x00FFFFFF));
+            canvas.drawText(translation, width / 2f, centerY + size * 1.35f, nextPaint);
+        }
+    }
+
     private void updateParticles(long now, int width, int height) {
         float dt = particleLastAt == 0 ? 0.016f : Math.min(0.05f, (now - particleLastAt) / 1000f);
         particleLastAt = now;
@@ -400,6 +442,10 @@ public class FoliaNativeStageView extends View {
 
         backgroundPaint.setShader(backgroundGradient);
         canvas.drawRect(0, 0, width, height, backgroundPaint);
+        if ("still".equals(mode)) {
+            drawStill(canvas, width, height);
+            return;
+        }
 
         float t = ((SystemClock.uptimeMillis() - startedAt) % 24000L) / 24000f;
         float glowX = width * (0.5f + 0.16f * (float) Math.sin(t * Math.PI * 2 + 1.2f));

@@ -2,6 +2,7 @@ import React from 'react';
 import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { useThemeSettingsStore } from '../../stores/useThemeSettingsStore';
+import { useVisualizerSettingsStore } from '../../stores/useVisualizerSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
 import { addNativeStageControlListener, addNativeStageFallbackListener, disableNativeStage, enableNativeStage, getNativeStageStats, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
@@ -42,6 +43,7 @@ const NativeStageBridge: React.FC = () => {
     const playerState = usePlaybackStore(state => state.playerState);
     const duration = usePlaybackStore(state => state.duration);
     const isDaylight = useThemeSettingsStore(state => state.isDaylight);
+    const visualizerMode = useVisualizerSettingsStore(state => state.visualizerMode);
     const nativeTheme = React.useSyncExternalStore(subscribeNativeStageTheme, getNativeStageTheme, getNativeStageTheme);
 
     React.useEffect(() => {
@@ -74,11 +76,20 @@ const NativeStageBridge: React.FC = () => {
         const lines = lyrics?.lines ?? [];
         const line = lines[lineIndex]?.fullText || '';
         const nextLine = lines[lineIndex + 1]?.fullText || '';
+        const prevLine = lines[lineIndex - 1]?.fullText || '';
+        const lineTranslation = lines[lineIndex]?.translation || '';
+        const prevTranslation = lines[lineIndex - 1]?.translation || '';
+        const nextTranslation = lines[lineIndex + 1]?.translation || '';
         const title = song?.name || '';
         const artist = (song?.artists || []).map(artistItem => artistItem?.name).filter(Boolean).join(' / ');
         void updateNativeStage({
+            mode: visualizerMode,
             line,
             nextLine,
+            prevLine,
+            lineTranslation,
+            prevTranslation,
+            nextTranslation,
             title,
             artist,
             accent: nativeTheme.accent,
@@ -88,7 +99,7 @@ const NativeStageBridge: React.FC = () => {
             daylight: isDaylight,
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
-    }, [enabled, isDaylight, lineIndex, lyrics, nativeTheme, playerState, song]);
+    }, [enabled, isDaylight, lineIndex, lyrics, nativeTheme, playerState, song, visualizerMode]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;

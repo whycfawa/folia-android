@@ -6,8 +6,13 @@ import { registerPlugin } from '@capacitor/core';
 interface FoliaNativeStagePlugin {
     enable(): Promise<{ enabled?: boolean }>;
     update(options: {
+        mode: string;
         line: string;
         nextLine: string;
+        prevLine: string;
+        lineTranslation: string;
+        prevTranslation: string;
+        nextTranslation: string;
         title: string;
         artist: string;
         accent: string;
