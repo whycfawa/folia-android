@@ -393,7 +393,17 @@ public class FoliaNativeStageView extends View {
         if (text == null || text.isEmpty()) return;
         float bubbleWidth = Math.min(width * 0.72f, lyricPaint.measureText(text) + size * 2.4f);
         float bubbleHeight = size * (translation != null && !translation.isEmpty() ? 3.1f : 2.2f);
-        float x = active ? left + width - bubbleWidth : left + size * 3.2f;
+        float x = active ? left + width - bubbleWidth - size * 3.2f : left + size * 3.2f;
+        float avatarRadius = size * 1.35f;
+        float avatarX = active ? left + width - avatarRadius : left + avatarRadius;
+        float avatarY = top + avatarRadius + size * 0.35f;
+        particlePaint.setColor((Math.round(220 * alpha) << 24) | (secondary & 0x00FFFFFF));
+        canvas.drawCircle(avatarX, avatarY, avatarRadius, particlePaint);
+        lyricPaint.setTextAlign(Paint.Align.CENTER);
+        lyricPaint.setTextSize(size * 0.85f);
+        lyricPaint.setColor((Math.round(255 * alpha) << 24) | 0xFFFFFF);
+        String initial = title == null || title.isEmpty() ? "♪" : title.substring(0, 1);
+        canvas.drawText(initial, avatarX, avatarY + size * 0.3f, lyricPaint);
         float radius = size * 1.05f;
         Paint bubble = particlePaint;
         bubble.setColor(active ? ((Math.round(255 * alpha) << 24) | (accent & 0x00FFFFFF)) : ((Math.round(150 * alpha) << 24) | (stageLight ? 0xFFFFFF : 0x222222)));
