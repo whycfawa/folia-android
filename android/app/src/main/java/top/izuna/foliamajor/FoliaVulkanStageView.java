@@ -1,6 +1,7 @@
 package top.izuna.foliamajor;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -24,6 +25,16 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native long nativeCreate(Surface surface);
     private native boolean nativeRender();
     private native void nativeDestroy();
+    private native void nativeUpdateText(int width, int height, int[] pixels);
+
+    public void updateText(Bitmap bitmap) {
+        if (bitmap == null) return;
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        nativeUpdateText(width, height, pixels);
+    }
 
     @Override public void surfaceCreated(SurfaceHolder holder) {
         nativeCreate(holder.getSurface());

@@ -33,6 +33,18 @@ struct State {
     VkPipeline pipeline{VK_NULL_HANDLE};
     VkShaderModule vertModule{VK_NULL_HANDLE};
     VkShaderModule fragModule{VK_NULL_HANDLE};
+    VkShaderModule textFragModule{VK_NULL_HANDLE};
+    VkImage textImage{VK_NULL_HANDLE};
+    VkDeviceMemory textMemory{VK_NULL_HANDLE};
+    VkImageView textView{VK_NULL_HANDLE};
+    VkSampler textSampler{VK_NULL_HANDLE};
+    VkDescriptorSetLayout descriptorLayout{VK_NULL_HANDLE};
+    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
+    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+    VkPipelineLayout textPipelineLayout{VK_NULL_HANDLE};
+    VkPipeline textPipeline{VK_NULL_HANDLE};
+    uint32_t textWidth{1};
+    uint32_t textHeight{1};
     std::vector<VkFramebuffer> framebuffers;
     VkCommandPool commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer> commands;
@@ -62,6 +74,123 @@ uint32_t findQueue(VkPhysicalDevice device, VkSurfaceKHR surface) {
     return UINT32_MAX;
 }
 
+uint32_t memoryType(State& s, uint32_t bits, VkMemoryPropertyFlags flags) {
+    VkPhysicalDeviceMemoryProperties props{};
+    vkGetPhysicalDeviceMemoryProperties(s.physical, &props);
+    for (uint32_t i = 0; i < props.memoryTypeCount; ++i) {
+        if ((bits & (1u << i)) && (props.memoryTypes[i].propertyFlags & flags) == flags) return i;
+    }
+    return 0;
+}
+
+void destroyTexture(State& s) {
+    if (s.textView) vkDestroyImageView(s.device, s.textView, nullptr);
+    if (s.textImage) vkDestroyImage(s.device, s.textImage, nullptr);
+    if (s.textMemory) vkFreeMemory(s.device, s.textMemory, nullptr);
+    s.textView = VK_NULL_HANDLE;
+    s.textImage = VK_NULL_HANDLE;
+    s.textMemory = VK_NULL_HANDLE;
+}
+
+bool createTexture(State& s, uint32_t width, uint32_t height, const uint32_t* pixels) {
+    destroyTexture(s);
+    VkImageCreateInfo image{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    image.imageType = VK_IMAGE_TYPE_2D;
+    image.extent = {width, height, 1};
+    image.mipLevels = 1;
+    image.arrayLayers = 1;
+    image.format = VK_FORMAT_R8G8B8A8_UNORM;
+    image.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image.samples = VK_SAMPLE_COUNT_1_BIT;
+    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (!ok(vkCreateImage(s.device, &image, nullptr, &s.textImage), "textImage")) return false;
+    VkMemoryRequirements req{};
+    vkGetImageMemoryRequirements(s.device, s.textImage, &req);
+    VkMemoryAllocateInfo alloc{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    alloc.allocationSize = req.size;
+    alloc.memoryTypeIndex = memoryType(s, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (!ok(vkAllocateMemory(s.device, &alloc, nullptr, &s.textMemory), "textMemory")) return false;
+    vkBindImageMemory(s.device, s.textImage, s.textMemory, 0);
+    VkImageViewCreateInfo view{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    view.image = s.textImage;
+    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view.format = VK_FORMAT_R8G8B8A8_UNORM;
+    view.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    if (!ok(vkCreateImageView(s.device, &view, nullptr, &s.textView), "textView")) return false;
+    VkBuffer staging = VK_NULL_HANDLE;
+    VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+    VkBufferCreateInfo buffer{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    buffer.size = (VkDeviceSize) width * height * 4;
+    buffer.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (!ok(vkCreateBuffer(s.device, &buffer, nullptr, &staging), "staging")) return false;
+    VkMemoryRequirements stagingReq{};
+    vkGetBufferMemoryRequirements(s.device, staging, &stagingReq);
+    VkMemoryAllocateInfo stagingAlloc{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    stagingAlloc.allocationSize = stagingReq.size;
+    stagingAlloc.memoryTypeIndex = memoryType(s, stagingReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if (!ok(vkAllocateMemory(s.device, &stagingAlloc, nullptr, &stagingMemory), "stagingMemory")) return false;
+    vkBindBufferMemory(s.device, staging, stagingMemory, 0);
+    void* mapped = nullptr;
+    vkMapMemory(s.device, stagingMemory, 0, buffer.size, 0, &mapped);
+    if (pixels) memcpy(mapped, pixels, (size_t) buffer.size);
+    else memset(mapped, 0, (size_t) buffer.size);
+    vkUnmapMemory(s.device, stagingMemory);
+    VkCommandBuffer cmd = s.commands.empty() ? VK_NULL_HANDLE : s.commands[0];
+    if (cmd != VK_NULL_HANDLE) {
+        vkResetCommandBuffer(cmd, 0);
+        VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        vkBeginCommandBuffer(cmd, &begin);
+        VkImageMemoryBarrier toDst{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+        toDst.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        toDst.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        toDst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toDst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toDst.image = s.textImage;
+        toDst.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        toDst.srcAccessMask = 0;
+        toDst.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toDst);
+        VkBufferImageCopy copy{};
+        copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+        copy.imageExtent = {width, height, 1};
+        vkCmdCopyBufferToImage(cmd, staging, s.textImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+        VkImageMemoryBarrier toRead{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+        toRead.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        toRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        toRead.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toRead.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        toRead.image = s.textImage;
+        toRead.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        toRead.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        toRead.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toRead);
+        vkEndCommandBuffer(cmd);
+        VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        submit.commandBufferCount = 1;
+        submit.pCommandBuffers = &cmd;
+        vkQueueSubmit(s.queue, 1, &submit, VK_NULL_HANDLE);
+        vkQueueWaitIdle(s.queue);
+    }
+    vkDestroyBuffer(s.device, staging, nullptr);
+    vkFreeMemory(s.device, stagingMemory, nullptr);
+    s.textWidth = width;
+    s.textHeight = height;
+    if (s.descriptorSet != VK_NULL_HANDLE) {
+        VkDescriptorImageInfo imageInfo{s.textSampler, s.textView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        write.dstSet = s.descriptorSet;
+        write.dstBinding = 0;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        write.pImageInfo = &imageInfo;
+        vkUpdateDescriptorSets(s.device, 1, &write, 0, nullptr);
+    }
+    return true;
+}
+
 VkShaderModule shaderModule(State& s, const uint32_t* code, size_t size) {
     VkShaderModuleCreateInfo info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
     info.codeSize = size;
@@ -69,6 +198,100 @@ VkShaderModule shaderModule(State& s, const uint32_t* code, size_t size) {
     VkShaderModule module = VK_NULL_HANDLE;
     ok(vkCreateShaderModule(s.device, &info, nullptr, &module), "shaderModule");
     return module;
+}
+
+bool createTextResources(State& s) {
+    VkDescriptorSetLayoutBinding binding{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
+    VkDescriptorSetLayoutCreateInfo layout{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    layout.bindingCount = 1;
+    layout.pBindings = &binding;
+    if (!ok(vkCreateDescriptorSetLayout(s.device, &layout, nullptr, &s.descriptorLayout), "descriptorLayout")) return false;
+    VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    sampler.magFilter = VK_FILTER_LINEAR;
+    sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    if (!ok(vkCreateSampler(s.device, &sampler, nullptr, &s.textSampler), "sampler")) return false;
+    VkDescriptorPoolSize size{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1};
+    VkDescriptorPoolCreateInfo pool{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+    pool.maxSets = 1;
+    pool.poolSizeCount = 1;
+    pool.pPoolSizes = &size;
+    if (!ok(vkCreateDescriptorPool(s.device, &pool, nullptr, &s.descriptorPool), "descriptorPool")) return false;
+    VkDescriptorSetAllocateInfo alloc{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    alloc.descriptorPool = s.descriptorPool;
+    alloc.descriptorSetCount = 1;
+    alloc.pSetLayouts = &s.descriptorLayout;
+    if (!ok(vkAllocateDescriptorSets(s.device, &alloc, &s.descriptorSet), "descriptorSet")) return false;
+    return createTexture(s, 1, 1, nullptr);
+}
+
+bool createTextPipeline(State& s) {
+    if (!s.textFragModule) s.textFragModule = shaderModule(s, kTextFragSpv, kTextFragSpvSize);
+    if (!s.textFragModule) return false;
+    VkPushConstantRange push{};
+    push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    push.offset = 0;
+    push.size = 4;
+    VkPipelineLayoutCreateInfo layout{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    layout.setLayoutCount = 1;
+    layout.pSetLayouts = &s.descriptorLayout;
+    layout.pushConstantRangeCount = 1;
+    layout.pPushConstantRanges = &push;
+    if (!ok(vkCreatePipelineLayout(s.device, &layout, nullptr, &s.textPipelineLayout), "textPipelineLayout")) return false;
+    VkPipelineShaderStageCreateInfo stages[2]{};
+    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = s.vertModule;
+    stages[0].pName = "main";
+    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = s.textFragModule;
+    stages[1].pName = "main";
+    VkPipelineVertexInputStateCreateInfo vertex{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+    assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+    viewport.viewportCount = 1;
+    viewport.scissorCount = 1;
+    VkPipelineRasterizationStateCreateInfo raster{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+    raster.polygonMode = VK_POLYGON_MODE_FILL;
+    raster.cullMode = VK_CULL_MODE_NONE;
+    raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    raster.lineWidth = 1.0f;
+    VkPipelineMultisampleStateCreateInfo multisample{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkPipelineColorBlendAttachmentState blend{};
+    blend.blendEnable = VK_TRUE;
+    blend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend.colorBlendOp = VK_BLEND_OP_ADD;
+    blend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    blend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend.alphaBlendOp = VK_BLEND_OP_ADD;
+    blend.colorWriteMask = 0xF;
+    VkPipelineColorBlendStateCreateInfo color{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+    color.attachmentCount = 1;
+    color.pAttachments = &blend;
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    VkPipelineDynamicStateCreateInfo dynamic{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+    dynamic.dynamicStateCount = 2;
+    dynamic.pDynamicStates = dynamicStates;
+    VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    info.stageCount = 2;
+    info.pStages = stages;
+    info.pVertexInputState = &vertex;
+    info.pInputAssemblyState = &assembly;
+    info.pViewportState = &viewport;
+    info.pRasterizationState = &raster;
+    info.pMultisampleState = &multisample;
+    info.pColorBlendState = &color;
+    info.pDynamicState = &dynamic;
+    info.layout = s.textPipelineLayout;
+    info.renderPass = s.renderPass;
+    info.subpass = 0;
+    return ok(vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.textPipeline), "textPipeline");
 }
 
 bool createPipeline(State& s) {
@@ -135,6 +358,10 @@ void destroySwapchain(State& s) {
     vkDeviceWaitIdle(s.device);
     for (auto fb : s.framebuffers) vkDestroyFramebuffer(s.device, fb, nullptr);
     s.framebuffers.clear();
+    if (s.textPipeline) vkDestroyPipeline(s.device, s.textPipeline, nullptr);
+    s.textPipeline = VK_NULL_HANDLE;
+    if (s.textPipelineLayout) vkDestroyPipelineLayout(s.device, s.textPipelineLayout, nullptr);
+    s.textPipelineLayout = VK_NULL_HANDLE;
     if (s.pipeline) vkDestroyPipeline(s.device, s.pipeline, nullptr);
     s.pipeline = VK_NULL_HANDLE;
     if (s.pipelineLayout) vkDestroyPipelineLayout(s.device, s.pipelineLayout, nullptr);
@@ -171,6 +398,13 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
         vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
+        if (s.textPipeline != VK_NULL_HANDLE && s.descriptorSet != VK_NULL_HANDLE) {
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipeline);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipelineLayout, 0, 1, &s.descriptorSet, 0, nullptr);
+            float alpha = 1.0f;
+            vkCmdPushConstants(cmd, s.textPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &alpha);
+            vkCmdDraw(cmd, 3, 1, 0, 0);
+        }
     }
     vkCmdEndRenderPass(cmd);
     vkEndCommandBuffer(cmd);
@@ -259,6 +493,8 @@ bool createSwapchain(State& s) {
     alloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc.commandBufferCount = (uint32_t)s.commands.size();
     if (!ok(vkAllocateCommandBuffers(s.device, &alloc, s.commands.data()), "commands")) return false;
+    if (s.descriptorLayout == VK_NULL_HANDLE && !createTextResources(s)) return false;
+    if (!createTextPipeline(s)) return false;
     for (size_t i = 0; i < s.commands.size(); ++i) {
         VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         vkBeginCommandBuffer(s.commands[i], &begin);
@@ -372,6 +608,17 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeRender(JNIEnv*, jobject) {
     present.pImageIndices = &imageIndex;
     vkQueuePresentKHR(s->queue, &present);
     return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeUpdateText(JNIEnv* env, jobject, jint w, jint h, jintArray pixels) {
+    State* st = state;
+    if (!st || !st->device || !st->descriptorSet) return;
+    jint* data = env->GetIntArrayElements(pixels, nullptr);
+    if (!data) return;
+    vkDeviceWaitIdle(st->device);
+    createTexture(*st, (uint32_t) w, (uint32_t) h, reinterpret_cast<const uint32_t*>(data));
+    env->ReleaseIntArrayElements(pixels, data, JNI_ABORT);
 }
 
 extern "C" JNIEXPORT void JNICALL

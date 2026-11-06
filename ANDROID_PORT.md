@@ -750,3 +750,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 增加 SPIR-V 全屏 triangle + 渐变/glow fragment shader。
 - pipeline/push constant 构建成功；仍只用于后端验证。
+
+### 0.7.25-android.362：Vulkan 文字纹理管线
+
+- 增加 text.frag、descriptor set、sampler、texture、text pipeline。
+- 支持从 Bitmap 上传 RGBA 并全屏采样；仍未替换 Canvas 舞台。
