@@ -78,7 +78,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
                        String lineTranslation, String prevTranslation, String nextTranslation,
                        String title, String artist, String accentHex, boolean playing, boolean chorus) {
         this.mode = mode == null ? "classic" : mode;
-        nativeSetMode("lumiere".equals(this.mode) ? 1 : ("sonnet".equals(this.mode) ? 2 : ("nebbia".equals(this.mode) ? 3 : 0)));
+        nativeSetMode("lumiere".equals(this.mode) ? 1 : ("sonnet".equals(this.mode) ? 2 : ("nebbia".equals(this.mode) ? 3 : ("hanabi".equals(this.mode) ? 4 : 0))));
         this.line = line == null ? "" : line;
         this.prevLine = prevLine == null ? "" : prevLine;
         this.nextLine = nextLine == null ? "" : nextLine;
@@ -139,6 +139,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         } else if ("sonnet".equals(mode) && canvasStage != null) {
             canvasStage.drawLumiereLayer(canvas, width, height);
         } else if ("nebbia".equals(mode) && canvasStage != null) {
+            canvasStage.drawLumiereLayer(canvas, width, height);
+        } else if ("hanabi".equals(mode) && canvasStage != null) {
             canvasStage.drawLumiereLayer(canvas, width, height);
         } else if ("partita".equals(mode) && canvasStage != null) {
             canvasStage.drawPartitaLayer(canvas, width, height);

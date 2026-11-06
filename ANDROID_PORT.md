@@ -824,3 +824,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.378：Vulkan Nebbia 场景
 
 - nebbia 分支：深色雾层；文字层叠加。
+
+### 0.7.25-android.379：Vulkan Hanabi 场景
+
+- hanabi 分支：夜空烟花爆点；文字层叠加。

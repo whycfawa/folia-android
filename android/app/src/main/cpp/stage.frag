@@ -29,6 +29,24 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 4) {
+        // Hanabi: drifting night sky with burst sparks.
+        vec3 base = vec3(0.010, 0.010, 0.020);
+        float sparks = 0.0;
+        for (int b = 0; b < 3; b++) {
+            float fb = float(b);
+            vec2 center = vec2(0.25 + hash(vec2(fb, 1.0)) * 0.5, 0.30 + hash(vec2(fb, 7.0)) * 0.35);
+            float phase = fract(pc.time * 0.12 + fb * 0.37);
+            for (int i = 0; i < 10; i++) {
+                float fi = float(i);
+                float angle = fi * 0.628 + fb;
+                float radius = phase * 0.18;
+                vec2 pos = center + vec2(cos(angle), sin(angle)) * radius;
+                float d = distance(uv, pos);
+                sparks += exp(-d * d * 5000.0) * (1.0 - phase);
+            }
+        }
+        color = base + pc.accent.rgb * sparks * 0.8;
     } else if (pc.mode == 3) {
         // Nebbia: deep fog layers with slow drifting density.
         vec3 base = vec3(0.008, 0.012, 0.018);
