@@ -1030,3 +1030,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.26-android.426：授予 Widevine 权限
 
 - WebChromeClient 对 music.apple.com 的 RESOURCE_PROTECTED_MEDIA_ID 授权，完整音轨不再退回 preview。
+
+### 0.7.26-android.427：Apple Music 请求超时
+
+- 20s 超时，避免 playSong 卡在“正在准备播放”。

@@ -1,6 +1,8 @@
 package top.izuna.foliamajor;
 
 import android.app.Activity;
+import android.os.Handler;
+import android.os.Looper;
 import android.graphics.Color;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -40,6 +42,9 @@ public class FoliaAppleMusicPlugin extends Plugin {
     private boolean loading;
     private final Map<String, PluginCall> pending = new HashMap<>();
     private final List<Runnable> queued = new ArrayList<>();
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Map<String, Runnable> timeouts = new HashMap<>();
+    private static final long REQUEST_TIMEOUT_MS = 20_000L;
 
     private Activity activity() {
         return getActivity();
@@ -125,6 +130,9 @@ public class FoliaAppleMusicPlugin extends Plugin {
     private void dispatch(PluginCall call, String operation, JSObject params) {
         String id = UUID.randomUUID().toString().replace("-", "");
         pending.put(id, call);
+        Runnable timeout = () -> finishError(id, "timeout");
+        timeouts.put(id, timeout);
+        handler.postDelayed(timeout, REQUEST_TIMEOUT_MS);
         Runnable work = () -> {
             try {
                 JSONObject message = new JSONObject();
@@ -155,6 +163,8 @@ public class FoliaAppleMusicPlugin extends Plugin {
     }
 
     private void finishError(String id, String error) {
+        Runnable timeout = timeouts.remove(id);
+        if (timeout != null) handler.removeCallbacks(timeout);
         PluginCall call = pending.remove(id);
         if (call == null) return;
         JSObject result = new JSObject();
@@ -219,6 +229,8 @@ public class FoliaAppleMusicPlugin extends Plugin {
         public void resolve(String id, String json) {
             PluginCall call = pending.remove(id);
             if (call == null) return;
+            Runnable timeout = timeouts.remove(id);
+            if (timeout != null) handler.removeCallbacks(timeout);
             JSObject result = new JSObject();
             try {
                 JSONObject object = new JSONObject(json);
