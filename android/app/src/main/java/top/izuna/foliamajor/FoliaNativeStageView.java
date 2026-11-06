@@ -350,6 +350,40 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void drawClassic(Canvas canvas, int width, int height) {
+        if (wordTexts.length == 0) return;
+        float size = Math.max(dp(28), Math.min(dp(58), width * 0.055f));
+        lyricPaint.setTextSize(size);
+        lyricPaint.setTextAlign(Paint.Align.LEFT);
+        float gap = size * 0.12f;
+        float total = gap * Math.max(0, wordTexts.length - 1);
+        for (String word : wordTexts) total += lyricPaint.measureText(word);
+        float baseX = (width - total) / 2f;
+        float baseY = height * 0.5f + (float) Math.sin((SystemClock.uptimeMillis() - startedAt) / 7000.0) * dp(8);
+        long seed = (long) (wordStarts.length > 0 ? wordStarts[0] * 1000 : 0);
+        for (int index = 0; index < wordTexts.length; index++) {
+            float wordWidth = lyricPaint.measureText(wordTexts[index]);
+            float start = wordStarts[index];
+            float end = wordEnds[index];
+            float progress = Math.max(0f, Math.min(1f, (wordPosition - start) / Math.max(0.001f, end - start)));
+            boolean passed = wordPosition > end;
+            float scale = 1f + 0.12f * (float) Math.sin(progress * Math.PI) + (passed ? 0.02f : 0f);
+            float offsetX = (float) Math.sin(seed + index * 1.7f) * dp(4);
+            float offsetY = (float) Math.cos(seed + index * 2.3f) * dp(3);
+            float rotation = (float) Math.sin(seed + index * 0.9f) * (passed ? 4f : 1.5f);
+            int alpha = passed ? 0x99 : (wordPosition < start ? 0x55 : 0xFF);
+            int rgb = stageLight ? 0x111111 : 0xFFFFFF;
+            lyricPaint.setColor((alpha << 24) | rgb);
+            canvas.save();
+            canvas.translate(baseX + wordWidth / 2f + offsetX, baseY + offsetY);
+            canvas.rotate(rotation);
+            canvas.scale(scale, scale);
+            canvas.drawText(wordTexts[index], -wordWidth / 2f, 0f, lyricPaint);
+            canvas.restore();
+            baseX += wordWidth + gap;
+        }
+    }
+
     private void drawStill(Canvas canvas, int width, int height) {
         if (stillVignette == null) {
             stillVignette = new RadialGradient(width / 2f, height / 2f, Math.max(width, height) * 0.72f,
@@ -444,6 +478,10 @@ public class FoliaNativeStageView extends View {
         canvas.drawRect(0, 0, width, height, backgroundPaint);
         if ("still".equals(mode)) {
             drawStill(canvas, width, height);
+            return;
+        }
+        if ("classic".equals(mode)) {
+            drawClassic(canvas, width, height);
             return;
         }
 

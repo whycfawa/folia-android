@@ -702,3 +702,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 桥接 visualizerMode、前后行、翻译到原生。
 - Canvas 原生舞台按 mode 分支；首个移植 still。
+
+### 0.7.25-android.351：Classic 原生基础
+
+- 新增 classic 模式：逐词布局、缩放、旋转、呼吸浮动、按时间点亮。
+- 仍缺 GlowWord 的完整 glow/ripple/副字幕细节，继续补。
