@@ -205,7 +205,7 @@ describe('QQ explore page', () => {
         const explore = createQqExplore();
         const { first, sections } = await readWhole(explore);
         const newSongs = sections.find(section => section.id === 'qq-new-songs')!;
-        const radar = first.sections[1];
+        const radar = first.sections[0];
 
         const moreSongs = await explore.getSectionItems!(newSongs.moreCursor!);
         expect(moreSongs.items).toHaveLength(12);
@@ -229,7 +229,7 @@ describe('QQ explore page', () => {
         const one = (await readWhole(explore, [])).sections;
         const two = (await readWhole(explore, [])).sections;
 
-        const radarMids = (sections: ProviderExploreSection[]) => sections.find(section => section.id === 'qq-radar')!.items.map(item => item.kind === 'song' && item.song.qqMid);
+        const radarMids = (sections: ProviderExploreSection[]) => sections[0].items.map(item => item.kind === 'song' && item.song.qqMid);
         expect(radarMids(one)[0]).toBe('radar1-100');
         expect(radarMids(two)[0]).toBe('radar2-200');
         expect(titles(one).filter(title => title.startsWith('分类'))).toEqual(['分类 1', '分类 2', '分类 3']);
