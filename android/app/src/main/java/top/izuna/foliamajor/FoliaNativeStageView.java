@@ -37,6 +37,7 @@ public class FoliaNativeStageView extends View {
     private int secondary = 0xFF7C9BFF;
     private int background = 0xFF07070B;
     private boolean daylight = false;
+    private boolean stageLight = false;
     private float lineProgress = 0f;
     private long frameCount;
     private boolean playing = true;
@@ -109,16 +110,29 @@ public class FoliaNativeStageView extends View {
                 background = nextBackground;
                 backgroundGradient = null;
                 glowGradient = null;
+                applyStageTextColor();
             }
         } catch (Throwable ignored) {
         }
     }
 
+    private int stageBackground() {
+        float luminance = (Color.red(background) * 0.299f + Color.green(background) * 0.587f + Color.blue(background) * 0.114f) / 255f;
+        return luminance > 0.35f ? 0xFF07070B : background;
+    }
+
+    private void applyStageTextColor() {
+        int base = stageBackground();
+        float luminance = (Color.red(base) * 0.299f + Color.green(base) * 0.587f + Color.blue(base) * 0.114f) / 255f;
+        stageLight = luminance > 0.45f;
+        lyricPaint.setColor(stageLight ? 0xFF111111 : Color.WHITE);
+        nextPaint.setColor(stageLight ? 0x99111111 : 0x88FFFFFF);
+        metaPaint.setColor(stageLight ? 0xAA111111 : 0x99FFFFFF);
+    }
+
     public void setDaylight(boolean daylight) {
         this.daylight = daylight;
-        lyricPaint.setColor(daylight ? 0xFF111111 : Color.WHITE);
-        nextPaint.setColor(daylight ? 0x99111111 : 0x88FFFFFF);
-        metaPaint.setColor(daylight ? 0xAA111111 : 0x99FFFFFF);
+        applyStageTextColor();
         invalidate();
     }
 
@@ -227,9 +241,10 @@ public class FoliaNativeStageView extends View {
     private void ensureGradients(int width, int height) {
         if (backgroundGradient != null && gradientWidth == width && gradientHeight == height) return;
         int accentSoft = (secondary & 0x00FFFFFF) | 0x55000000;
+        int base = stageBackground();
         backgroundGradient = new LinearGradient(
                 0, 0, width, height,
-                new int[]{0xFF07070B, accentSoft, 0xFF050508},
+                new int[]{base, accentSoft, base},
                 new float[]{0f, 0.52f, 1f},
                 Shader.TileMode.CLAMP);
         glowGradient = new RadialGradient(0, 0, width * 0.55f,
@@ -299,12 +314,12 @@ public class FoliaNativeStageView extends View {
             canvas.save();
             float left = (width - width * 0.86f) / 2f;
             float top = centerY - lyricLayout.getHeight() / 2f;
-            lyricPaint.setColor(daylight ? 0x55111111 : 0x55FFFFFF);
+            lyricPaint.setColor(stageLight ? 0x55111111 : 0x55FFFFFF);
             canvas.save();
             canvas.translate(left, top);
             lyricLayout.draw(canvas);
             canvas.restore();
-            lyricPaint.setColor(daylight ? 0xFF111111 : Color.WHITE);
+            lyricPaint.setColor(stageLight ? 0xFF111111 : Color.WHITE);
             canvas.save();
             canvas.clipRect(left, 0f, left + width * 0.86f * lineProgress, height);
             canvas.translate(left, top);
