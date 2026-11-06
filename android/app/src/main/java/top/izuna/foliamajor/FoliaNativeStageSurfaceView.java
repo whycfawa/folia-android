@@ -5,8 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.RadialGradient;
+import android.graphics.SurfaceTexture;
 import android.graphics.Shader;
 import android.os.SystemClock;
 import android.text.Layout;
@@ -16,14 +16,13 @@ import android.util.AttributeSet;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.TextureView;
 
 /**
- * 原生舞台的 SurfaceView 版本：独立渲染线程，最高 120fps，不占用 WebView/UI 线程的 Canvas。
- * 只负责渐变背景和缓存后的歌词排版；SurfaceView 默认在窗口后面，WebView 透明时可见。
+ * 原生舞台的 TextureView 版本：独立渲染线程，最高 120fps。
+ * TextureView 是普通 View，和 WebView 在同一窗口合成，不依赖窗口透明或 Surface 层级。
  */
-public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+public class FoliaNativeStageSurfaceView extends TextureView implements TextureView.SurfaceTextureListener {
     private static final long FRAME_MS = 8L;
 
     private final TextPaint lyricPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -94,11 +93,9 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     }
 
     private void init() {
-        setZOrderOnTop(false);
-        setZOrderMediaOverlay(false);
+        setOpaque(false);
         setBackgroundColor(Color.TRANSPARENT);
-        getHolder().setFormat(PixelFormat.TRANSLUCENT);
-        getHolder().addCallback(this);
+        setSurfaceTextureListener(this);
         lyricPaint.setColor(Color.WHITE);
         lyricPaint.setTextAlign(Paint.Align.CENTER);
         applyTextColors();
@@ -209,7 +206,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         if (running) return;
         surfaceReady = true;
         running = true;
@@ -218,7 +215,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
         synchronized (stateLock) {
             gradientWidth = -1;
             gradientHeight = -1;
@@ -230,7 +227,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     }
 
     @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
+    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         surfaceReady = false;
         running = false;
         Thread thread = renderThread;
@@ -242,6 +239,11 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
                 Thread.currentThread().interrupt();
             }
         }
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
     }
 
     private void renderLoop() {
@@ -254,7 +256,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
             if (animate || dirty) {
                 Canvas canvas = null;
                 try {
-                    canvas = getHolder().lockCanvas();
+                    canvas = lockCanvas();
                     if (canvas != null) {
                         synchronized (stateLock) {
                             drawStage(canvas);
@@ -266,7 +268,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
                 } finally {
                     if (canvas != null) {
                         try {
-                            getHolder().unlockCanvasAndPost(canvas);
+                            unlockCanvasAndPost(canvas);
                         } catch (Throwable ignored) {
                         }
                     }

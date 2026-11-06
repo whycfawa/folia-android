@@ -667,3 +667,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 原生舞台启用时把 Activity 窗口背景设透明，关闭/回退时恢复。
 - HTML 根节点也设透明；解决 active=true/surface=true/frames>0 但仍白屏。
+
+### 0.7.25-android.344：原生舞台改 TextureView
+
+- 根因：SurfaceView 在 OnePlus/Android 17 上被窗口层盖住，窗口透明 hack 仍无法显示。
+- 改用 TextureView，普通 View 与 WebView 同窗口合成；独立渲染线程 lockCanvas。
