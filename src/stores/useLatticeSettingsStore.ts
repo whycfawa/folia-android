@@ -75,6 +75,10 @@ export const useLatticeSettingsStore = create<LatticeSettingsState>(set => ({
     latticePosterTintIntensity: getStoredPosterTintIntensity(),
     latticeBadgeCurrentOnly: getStoredBoolean(LATTICE_BADGE_CURRENT_ONLY_KEY, false),
     wallToolsQueueIslandOpen: getStoredBoolean(WALL_TOOLS_QUEUE_ISLAND_OPEN_KEY, false),
+    handleToggleLatticePerformanceMode: (enabled) => {
+        set({ latticePerformanceMode: enabled });
+        setStoredBoolean(LATTICE_PERFORMANCE_MODE_KEY, enabled);
+    },
     handleToggleLatticeVignette: (enabled) => {
         set({ latticeVignette: enabled });
         setStoredBoolean(LATTICE_VIGNETTE_KEY, enabled);

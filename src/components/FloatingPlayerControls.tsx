@@ -352,9 +352,6 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
 
     const handlePositionDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         // 触摸没有 hover，按下就展开，展开后这一次点击仍然落在同一颗胶囊上。
-        if (e.pointerType === 'touch') {
-            setIsTouchExpanded(true);
-        }
         if (!isPositioning) {
             return;
         }
@@ -488,18 +485,6 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
         };
     }, []);
 
-    // 触摸展开后不会收到 mouseleave，改为点到别处时收起。
-    useEffect(() => {
-        if (!isTouchExpanded) return undefined;
-        const handlePointerDownOutside = (event: PointerEvent) => {
-            if (event.pointerType !== 'touch') return;
-            const target = event.target as Element | null;
-            if (target?.closest?.('[data-ponder="player-bar"]')) return;
-            setIsTouchExpanded(false);
-        };
-        window.addEventListener('pointerdown', handlePointerDownOutside, true);
-        return () => window.removeEventListener('pointerdown', handlePointerDownOutside, true);
-    }, [isTouchExpanded]);
     const handleMouseEnter = () => {
         if (collapseTimeoutRef.current !== null) {
             window.clearTimeout(collapseTimeoutRef.current);

@@ -49,6 +49,6 @@ export const normalizeLumiereTuning = (value: unknown): LumiereTuning => {
         themeColorMix: clampNumber(raw.themeColorMix, d.themeColorMix, 0, 1),
         renderQuality: RENDER_QUALITIES.includes(raw.renderQuality as LumiereRenderQuality)
             ? raw.renderQuality as LumiereRenderQuality
-            : lumiereRenderQualityDefault(),
+            : d.renderQuality,
     };
 };

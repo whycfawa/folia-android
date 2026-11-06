@@ -321,11 +321,11 @@ export const createQqExplore = (): OnlineExploreProvider => {
 
     /** 每日 30 首：一次读取只要一次，第一页的「每日推荐」栏与相似歌曲的种子共用。 */
     const dailySongsOf = (read: Read): Promise<UnifiedSong[]> => {
-        if (!read.dailySongs) {
-            read.dailySongs = orEmpty(requestQq<any>('user_daily_songs'), null).then(answer => songsIn(answer));
-            read.dailySongs.catch(() => { read.dailySongs = undefined; });
+        if (!read.daily) {
+            read.daily = orEmpty(requestQq<any>('user_daily_songs'), null).then(answer => songsIn(answer));
+            read.daily.catch(() => { read.daily = undefined; });
         }
-        return read.dailySongs;
+        return read.daily;
     };
 
     const newPart = async (read: Read): Promise<ProviderExploreSection[]> => (await arrivedOf('the new songs and albums', [

@@ -139,6 +139,7 @@ const PlaylistSelectionDialog: React.FC<PlaylistSelectionDialogProps> = ({
             // 放进去的请求还在走（一组逐首点红心可能要好几秒）：先不让关，关了也停不下它。
             closeDisabled={busy}
             closeDisabledTitle={t('playlist.saving')}
+            phoneFitKind="playlist-selection"
         >
             {subject && (
                 <div className="mb-3.5 flex shrink-0 items-center gap-3" data-playlist-picker-subject="">
