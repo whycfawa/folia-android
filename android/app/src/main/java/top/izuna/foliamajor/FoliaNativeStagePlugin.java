@@ -22,7 +22,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class FoliaNativeStagePlugin extends Plugin {
     private static final String PREFS = "folia_native_stage";
     private static final String ACTIVE = "active";
-    private FoliaNativeStageView stageView;
+    private FoliaVulkanStageView stageView;
     private FoliaNativeStageControlsView controlsView;
     private boolean guardChecked;
     private boolean unsafe;
@@ -56,14 +56,14 @@ public class FoliaNativeStagePlugin extends Plugin {
             }
             try {
                 if (stageView == null) {
-                    stageView = new FoliaNativeStageView(activity);
+                    stageView = new FoliaVulkanStageView(activity);
                     root.addView(stageView, 0, new ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
                 }
-                stageView.setVisibility(FoliaNativeStageView.VISIBLE);
+                stageView.setVisibility(FoliaVulkanStageView.VISIBLE);
                 // 原生控制条暂不启用：保留 WebView 原有控制条，避免样式和交互被替换。
-                final FoliaNativeStageView currentStage = stageView;
+                final FoliaVulkanStageView currentStage = stageView;
                 root.postDelayed(() -> {
                     if (stageView == currentStage && currentStage.getFrameCount() == 0) {
                         removeStage();
@@ -158,7 +158,7 @@ public class FoliaNativeStagePlugin extends Plugin {
     public void stats(PluginCall call) {
         JSObject result = new JSObject();
         result.put("active", stageView != null);
-        result.put("renderer", "canvas");
+        result.put("renderer", "vulkan");
         result.put("frames", stageView == null ? 0 : stageView.getFrameCount());
         result.put("surface", stageView != null && stageView.isSurfaceReady());
         result.put("playing", stageView != null && stageView.isPlaying());

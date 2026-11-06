@@ -755,3 +755,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 增加 text.frag、descriptor set、sampler、texture、text pipeline。
 - 支持从 Bitmap 上传 RGBA 并全屏采样；仍未替换 Canvas 舞台。
+
+### 0.7.25-android.363：舞台切 Vulkan
+
+- FoliaNativeStagePlugin 改用 FoliaVulkanStageView。
+- 歌词用 Bitmap 纹理上传；Vulkan 背景 shader + 文字纹理。
+- 不做 GLES/Canvas 回退。
