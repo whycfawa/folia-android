@@ -707,3 +707,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 新增 classic 模式：逐词布局、缩放、旋转、呼吸浮动、按时间点亮。
 - 仍缺 GlowWord 的完整 glow/ripple/副字幕细节，继续补。
+
+### 0.7.25-android.352：Classic glow 与翻译
+
+- Classic 当前词加 shadow glow；行翻译居中显示。

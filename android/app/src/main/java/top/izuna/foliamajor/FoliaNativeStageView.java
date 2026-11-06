@@ -374,6 +374,7 @@ public class FoliaNativeStageView extends View {
             int alpha = passed ? 0x99 : (wordPosition < start ? 0x55 : 0xFF);
             int rgb = stageLight ? 0x111111 : 0xFFFFFF;
             lyricPaint.setColor((alpha << 24) | rgb);
+            lyricPaint.setShadowLayer(wordPosition >= start && !passed ? dp(14) : 0f, 0f, 0f, accent);
             canvas.save();
             canvas.translate(baseX + wordWidth / 2f + offsetX, baseY + offsetY);
             canvas.rotate(rotation);
@@ -381,6 +382,13 @@ public class FoliaNativeStageView extends View {
             canvas.drawText(wordTexts[index], -wordWidth / 2f, 0f, lyricPaint);
             canvas.restore();
             baseX += wordWidth + gap;
+        }
+        lyricPaint.clearShadowLayer();
+        if (lineTranslation != null && !lineTranslation.isEmpty()) {
+            nextPaint.setTextAlign(Paint.Align.CENTER);
+            nextPaint.setTextSize(size * 0.46f);
+            nextPaint.setColor((0xCC << 24) | (stageLight ? 0x111111 : 0xFFFFFF));
+            canvas.drawText(lineTranslation, width / 2f, height * 0.66f, nextPaint);
         }
     }
 
