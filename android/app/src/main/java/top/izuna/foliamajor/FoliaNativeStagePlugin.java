@@ -160,6 +160,7 @@ public class FoliaNativeStagePlugin extends Plugin {
         result.put("active", stageView != null);
         result.put("renderer", "vulkan");
         result.put("vulkan", stageView != null && stageView.isVulkanReady());
+        result.put("canvasMs", stageView == null ? 0 : stageView.getCanvasFrameMs());
         result.put("frames", stageView == null ? 0 : stageView.getFrameCount());
         result.put("surface", stageView != null && stageView.isSurfaceReady());
         result.put("playing", stageView != null && stageView.isPlaying());

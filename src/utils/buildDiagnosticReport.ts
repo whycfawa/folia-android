@@ -652,7 +652,7 @@ export const buildDiagnosticReport = async (): Promise<string> => {
         'graphics capability:',
         formatWebGL2DiagnosticsLine(collectWebGL2Diagnostics()),
         `mod resolution guard: enabled=${getModResolutionGuardStats().enabled} level=${getModResolutionGuardStats().level} scale=${getModResolutionGuardStats().scale} canvases=${getModResolutionGuardStats().canvases}`,
-        `native stage: enabled=${getNativeStageStatsSnapshot().enabled} active=${getNativeStageStatsSnapshot().active} renderer=${getNativeStageStatsSnapshot().renderer} vulkan=${getNativeStageStatsSnapshot().vulkan} surface=${getNativeStageStatsSnapshot().surface} playing=${getNativeStageStatsSnapshot().playing} frames=${getNativeStageStatsSnapshot().frames}`,
+        `native stage: enabled=${getNativeStageStatsSnapshot().enabled} active=${getNativeStageStatsSnapshot().active} renderer=${getNativeStageStatsSnapshot().renderer} vulkan=${getNativeStageStatsSnapshot().vulkan} canvasMs=${getNativeStageStatsSnapshot().canvasMs} surface=${getNativeStageStatsSnapshot().surface} playing=${getNativeStageStatsSnapshot().playing} frames=${getNativeStageStatsSnapshot().frames}`,
         '',
         'visualizer backgrounds:',
         ...readVisualizerBackgroundLines(),

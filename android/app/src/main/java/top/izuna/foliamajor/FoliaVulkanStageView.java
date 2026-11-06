@@ -19,6 +19,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private Thread renderThread;
     private volatile boolean running;
     private long frameCount;
+    private long lastCanvasFrameMs;
     private String mode = "classic";
     private String line = "";
     private String translation = "";
@@ -103,6 +104,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         if (canvasStage != null) canvasStage.setLineProgress(progress);
     }
     public long getFrameCount() { return frameCount; }
+    public long getCanvasFrameMs() { return lastCanvasFrameMs; }
     public boolean isSurfaceReady() { return surfaceReady; }
     public boolean isPlaying() { return playing; }
 
@@ -115,6 +117,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             framePixels = new int[width * height];
             frameCanvas = new Canvas(frameBitmap);
         }
+        long startedAt = android.os.SystemClock.uptimeMillis();
         Canvas canvas = frameCanvas;
         canvas.drawColor(Color.TRANSPARENT);
         if (canvasStage != null) {
@@ -126,6 +129,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         }
         frameBitmap.getPixels(framePixels, 0, width, 0, 0, width, height);
         nativeUpdateText(width, height, framePixels);
+        lastCanvasFrameMs = android.os.SystemClock.uptimeMillis() - startedAt;
     }
 
     public void updateText(Bitmap bitmap) {

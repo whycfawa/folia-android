@@ -787,3 +787,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - Canvas 舞台每帧重绘到复用 Bitmap，再上传 Vulkan。
 - 效果开始随时间/音频更新，不再只在换行时刷新。
+
+### 0.7.25-android.370：Vulkan Canvas 帧耗时诊断
+
+- 统计每帧 Canvas 绘制+纹理上传耗时，诊断输出 canvasMs。
