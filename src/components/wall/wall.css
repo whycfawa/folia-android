@@ -420,3 +420,34 @@
 }
 
 .lattice-root.is-performance .lattice-poster.is-current::before { transition: none; }
+
+/* ---------- 滑动中（data-wall-scrolling，由 components/wall/useWallMotionState 挂上） ---------- */
+/*
+ * 墙每帧真的在动的时候（拖动、滚轮、惯性、缝与相机补间）才挂这个属性，最后一帧之后约 150ms 撤掉；
+ * 不滚动时完全走上面的样式，静态外观不变。关掉的都是「跟着墙一起重新混合 / 重新栅格化」的整屏或每卡一层：
+ *   - 根节点 ::after 的颗粒（feTurbulence 图 + mix-blend-mode: soft-light）：整屏一层随墙重混合；
+ *   - 暗角 ::before：整屏一层 overdraw；
+ *   - 海报的 box-shadow / filter / 过渡：每张卡一层，阴影与滤镜在墙移动时要重新栅格化；
+ *   - 返回按钮、工具面板与队列浮岛的 backdrop-filter：背景一直在动，模糊取样每帧都要重算。
+ * 不动排布、尺寸、颜色变量与数据；焦点环保留成一圈描边（键盘可达性），正在播放的描边照旧。
+ */
+.lattice-root[data-wall-scrolling]::after { display: none; }
+.lattice-root[data-wall-scrolling].has-vignette::before { display: none; }
+
+.lattice-root[data-wall-scrolling] .lattice-poster {
+    box-shadow: none;
+    filter: none;
+    transition: none;
+}
+
+.lattice-root[data-wall-scrolling] .lattice-poster::after { display: none; }
+
+.lattice-root[data-wall-scrolling] .lattice-poster:is(.is-focused, :focus-visible) {
+    box-shadow: 0 0 0 2px var(--text-primary, #fff);
+}
+
+.lattice-root[data-wall-scrolling] .lattice-back,
+.lattice-root[data-wall-scrolling] .lattice-tools-panel,
+.lattice-root[data-wall-scrolling] .lattice-tools-island {
+    backdrop-filter: none;
+}

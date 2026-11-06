@@ -14,6 +14,7 @@ import { useLatticePosterSelection } from './useLatticePosterSelection';
 import { useWallKeyboardFocus } from './useWallKeyboardFocus';
 import { useWallPointerPan } from '../../wall/useWallPointerPan';
 import { formatWorldTransform } from '../../wall/wallView';
+import { useWallMotionState } from '../../wall/useWallMotionState';
 import type { LatticeTile } from './latticeModel';
 import LatticePoster from './LatticePoster';
 import LatticeHeading from './LatticeHeading';
@@ -107,6 +108,13 @@ export default function PosterWall({
         rect: Omit<ReflowTile, 'instanceId'> | null;
     }>({ enabled: false, rect: null });
     const currentPosterVisibleRef = useRef(true);
+    // 滑动 / 拖动性能态（与 BravaisStage 同一套）：属性挂在 .lattice-root 上，样式在 wall.css。
+    // applyCamera 是拖动、滚轮、惯性、定位补间的唯一出口，所以只在这一处标记。
+    const wallRootRef = useRef<HTMLElement | null>(null);
+    const markWallMoving = useWallMotionState(wallRootRef);
+    useLayoutEffect(() => {
+        wallRootRef.current = containerRef.current?.closest<HTMLElement>('.lattice-root') ?? null;
+    }, []);
     const [bounds, setBounds] = useState<Bounds>(() => getWorldBounds(cameraRef.current, viewportRef.current));
     // Nothing is drawn until the field reports its size: the seeded camera and the default
     // viewport would otherwise place the entering wave, and the playing song, off centre.
@@ -157,6 +165,7 @@ export default function PosterWall({
 
     const applyCamera = useCallback((next: LatticeCamera, updateBounds = false) => {
         cameraRef.current = next;
+        markWallMoving();
         if (worldRef.current) {
             worldRef.current.style.transform = formatWorldTransform(next.x, next.y, next.scale);
         }
@@ -167,7 +176,7 @@ export default function PosterWall({
             setBounds(getWorldBounds(cameraRef.current, viewportRef.current));
             frameRef.current = null;
         });
-    }, [publishCurrentPosterVisibility]);
+    }, [markWallMoving, publishCurrentPosterVisibility]);
 
     useEffect(() => {
         const container = containerRef.current;
