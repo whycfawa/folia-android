@@ -687,3 +687,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 原生舞台背景不再直接使用浅色主题背景；亮色背景钳制为暗色基底。
 - 文字颜色按舞台实际底色计算，避免白底白字。
+
+### 0.7.25-android.348：修复 AppShell 白底盖住原生舞台
+
+- AppShell 的 inline background 是最后一层白底；原生舞台开启时透明化 data-folia-app-shell。

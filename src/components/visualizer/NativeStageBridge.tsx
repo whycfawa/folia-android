@@ -23,7 +23,8 @@ const ensureStyle = () => {
     style.textContent = `
 html.folia-native-stage,
 html.folia-native-stage body,
-html.folia-native-stage #root {
+html.folia-native-stage #root,
+html.folia-native-stage [data-folia-app-shell="true"] {
   background: transparent !important;
 }
 html.folia-native-stage [data-testid="player-visual-surface"] {
