@@ -965,3 +965,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.411：无 push 最小管线
 
 - simple 管线使用独立无 push constant 布局；排除 pipeline layout 问题。
+
+### 0.7.25-android.412：显式深度状态
+
+- pipeline 提供 depth/stencil state，排除 Adreno 对空 pDepthStencilState 的 -3。

@@ -341,6 +341,10 @@ bool createTextPipeline(State& s) {
     VkPipelineDynamicStateCreateInfo dynamic{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
     dynamic.dynamicStateCount = 2;
     dynamic.pDynamicStates = dynamicStates;
+    VkPipelineDepthStencilStateCreateInfo depth{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+    depth.depthTestEnable = VK_FALSE;
+    depth.depthWriteEnable = VK_FALSE;
+    depth.stencilTestEnable = VK_FALSE;
     VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
     info.stageCount = 2;
     info.pStages = stages;
@@ -349,6 +353,7 @@ bool createTextPipeline(State& s) {
     info.pViewportState = &viewport;
     info.pRasterizationState = &raster;
     info.pMultisampleState = &multisample;
+    info.pDepthStencilState = &depth;
     info.pColorBlendState = &color;
     info.pDynamicState = &dynamic;
     info.layout = s.textPipelineLayout;
@@ -404,6 +409,10 @@ bool createPipeline(State& s) {
     VkPipelineDynamicStateCreateInfo dynamic{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
     dynamic.dynamicStateCount = 2;
     dynamic.pDynamicStates = dynamicStates;
+    VkPipelineDepthStencilStateCreateInfo depth{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+    depth.depthTestEnable = VK_FALSE;
+    depth.depthWriteEnable = VK_FALSE;
+    depth.stencilTestEnable = VK_FALSE;
     VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
     info.stageCount = 2;
     info.pStages = stages;
@@ -412,6 +421,7 @@ bool createPipeline(State& s) {
     info.pViewportState = &viewport;
     info.pRasterizationState = &raster;
     info.pMultisampleState = &multisample;
+    info.pDepthStencilState = &depth;
     info.pColorBlendState = &color;
     info.pDynamicState = &dynamic;
     info.layout = s.pipelineLayout;
