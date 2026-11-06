@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <chrono>
 #include <cmath>
+#include "stage_spv.h"
 
 #define LOG_TAG "FoliaVulkan"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -28,6 +29,10 @@ struct State {
     std::vector<VkImage> images;
     std::vector<VkImageView> views;
     VkRenderPass renderPass{VK_NULL_HANDLE};
+    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkPipeline pipeline{VK_NULL_HANDLE};
+    VkShaderModule vertModule{VK_NULL_HANDLE};
+    VkShaderModule fragModule{VK_NULL_HANDLE};
     std::vector<VkFramebuffer> framebuffers;
     VkCommandPool commandPool{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer> commands;
@@ -57,11 +62,83 @@ uint32_t findQueue(VkPhysicalDevice device, VkSurfaceKHR surface) {
     return UINT32_MAX;
 }
 
+VkShaderModule shaderModule(State& s, const uint32_t* code, size_t size) {
+    VkShaderModuleCreateInfo info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    info.codeSize = size;
+    info.pCode = code;
+    VkShaderModule module = VK_NULL_HANDLE;
+    ok(vkCreateShaderModule(s.device, &info, nullptr, &module), "shaderModule");
+    return module;
+}
+
+bool createPipeline(State& s) {
+    if (!s.vertModule) s.vertModule = shaderModule(s, kStageVertSpv, kStageVertSpvSize);
+    if (!s.fragModule) s.fragModule = shaderModule(s, kStageFragSpv, kStageFragSpvSize);
+    if (!s.vertModule || !s.fragModule) return false;
+    VkPushConstantRange push{};
+    push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    push.offset = 0;
+    push.size = 20;
+    VkPipelineLayoutCreateInfo layout{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    layout.pushConstantRangeCount = 1;
+    layout.pPushConstantRanges = &push;
+    if (!ok(vkCreatePipelineLayout(s.device, &layout, nullptr, &s.pipelineLayout), "pipelineLayout")) return false;
+    VkPipelineShaderStageCreateInfo stages[2]{};
+    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = s.vertModule;
+    stages[0].pName = "main";
+    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = s.fragModule;
+    stages[1].pName = "main";
+    VkPipelineVertexInputStateCreateInfo vertex{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+    assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+    viewport.viewportCount = 1;
+    viewport.scissorCount = 1;
+    VkPipelineRasterizationStateCreateInfo raster{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+    raster.polygonMode = VK_POLYGON_MODE_FILL;
+    raster.cullMode = VK_CULL_MODE_NONE;
+    raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    raster.lineWidth = 1.0f;
+    VkPipelineMultisampleStateCreateInfo multisample{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkPipelineColorBlendAttachmentState blend{};
+    blend.colorWriteMask = 0xF;
+    VkPipelineColorBlendStateCreateInfo color{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+    color.attachmentCount = 1;
+    color.pAttachments = &blend;
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    VkPipelineDynamicStateCreateInfo dynamic{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+    dynamic.dynamicStateCount = 2;
+    dynamic.pDynamicStates = dynamicStates;
+    VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    info.stageCount = 2;
+    info.pStages = stages;
+    info.pVertexInputState = &vertex;
+    info.pInputAssemblyState = &assembly;
+    info.pViewportState = &viewport;
+    info.pRasterizationState = &raster;
+    info.pMultisampleState = &multisample;
+    info.pColorBlendState = &color;
+    info.pDynamicState = &dynamic;
+    info.layout = s.pipelineLayout;
+    info.renderPass = s.renderPass;
+    info.subpass = 0;
+    return ok(vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline), "pipeline");
+}
+
 void destroySwapchain(State& s) {
     if (s.device == VK_NULL_HANDLE) return;
     vkDeviceWaitIdle(s.device);
     for (auto fb : s.framebuffers) vkDestroyFramebuffer(s.device, fb, nullptr);
     s.framebuffers.clear();
+    if (s.pipeline) vkDestroyPipeline(s.device, s.pipeline, nullptr);
+    s.pipeline = VK_NULL_HANDLE;
+    if (s.pipelineLayout) vkDestroyPipelineLayout(s.device, s.pipelineLayout, nullptr);
+    s.pipelineLayout = VK_NULL_HANDLE;
     if (s.renderPass) vkDestroyRenderPass(s.device, s.renderPass, nullptr);
     s.renderPass = VK_NULL_HANDLE;
     for (auto v : s.views) vkDestroyImageView(s.device, v, nullptr);
@@ -71,13 +148,13 @@ void destroySwapchain(State& s) {
     s.images.clear();
 }
 
-void recordClear(State& s, uint32_t imageIndex, float pulse) {
+void recordClear(State& s, uint32_t imageIndex, float time) {
     VkCommandBuffer cmd = s.commands[imageIndex];
     vkResetCommandBuffer(cmd, 0);
     VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     vkBeginCommandBuffer(cmd, &begin);
     VkClearValue clear{};
-    clear.color = {{0.02f + pulse * 0.03f, 0.025f + pulse * 0.02f, 0.04f + pulse * 0.05f, 1.0f}};
+    clear.color = {{0.015f, 0.018f, 0.028f, 1.0f}};
     VkRenderPassBeginInfo pass{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     pass.renderPass = s.renderPass;
     pass.framebuffer = s.framebuffers[imageIndex];
@@ -85,6 +162,16 @@ void recordClear(State& s, uint32_t imageIndex, float pulse) {
     pass.clearValueCount = 1;
     pass.pClearValues = &clear;
     vkCmdBeginRenderPass(cmd, &pass, VK_SUBPASS_CONTENTS_INLINE);
+    if (s.pipeline != VK_NULL_HANDLE) {
+        VkViewport viewport{0.0f, 0.0f, (float) s.extent.width, (float) s.extent.height, 0.0f, 1.0f};
+        VkRect2D scissor{{0, 0}, s.extent};
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+        struct Push { float time; float accent[4]; } push{time, {0.49f, 0.61f, 1.0f, 1.0f}};
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
+        vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+        vkCmdDraw(cmd, 3, 1, 0, 0);
+    }
     vkCmdEndRenderPass(cmd);
     vkEndCommandBuffer(cmd);
 }
@@ -165,6 +252,7 @@ bool createSwapchain(State& s) {
         fb.layers = 1;
         if (!ok(vkCreateFramebuffer(s.device, &fb, nullptr, &s.framebuffers[i]), "framebuffer")) return false;
     }
+    if (!createPipeline(s)) return false;
     s.commands.resize(s.images.size());
     VkCommandBufferAllocateInfo alloc{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     alloc.commandPool = s.commandPool;
@@ -265,7 +353,7 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeRender(JNIEnv*, jobject) {
     if (result != VK_SUCCESS) return JNI_FALSE;
     float seconds = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count() % 4000) / 4000.0f;
-    recordClear(*s, imageIndex, 0.5f + 0.5f * (float) std::sin(seconds * 6.2831853f));
+    recordClear(*s, imageIndex, seconds * 6.2831853f);
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.waitSemaphoreCount = 1;
@@ -297,6 +385,8 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeDestroy(JNIEnv*, jobject) {
         if (s->imageAvailable) vkDestroySemaphore(s->device, s->imageAvailable, nullptr);
         if (s->renderFinished) vkDestroySemaphore(s->device, s->renderFinished, nullptr);
         if (s->commandPool) vkDestroyCommandPool(s->device, s->commandPool, nullptr);
+        if (s->vertModule) vkDestroyShaderModule(s->device, s->vertModule, nullptr);
+        if (s->fragModule) vkDestroyShaderModule(s->device, s->fragModule, nullptr);
         vkDestroyDevice(s->device, nullptr);
     }
     if (s->surface) vkDestroySurfaceKHR(s->instance, s->surface, nullptr);

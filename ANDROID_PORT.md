@@ -745,3 +745,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.360：Vulkan 动态 clear
 
 - 每帧重录 render pass clear，按时间做暗色呼吸。
+
+### 0.7.25-android.361：Vulkan 全屏 shader
+
+- 增加 SPIR-V 全屏 triangle + 渐变/glow fragment shader。
+- pipeline/push constant 构建成功；仍只用于后端验证。
