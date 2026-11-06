@@ -812,3 +812,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.375：Lumiere 文字层修复
 
 - lumiere 不再走整帧 Canvas，避免盖住 Vulkan 灯束/尘埃。
+
+### 0.7.25-android.376：Lumiere 灯束/地光
+
+- lumiere 6 束灯、地面 glow、vignette。

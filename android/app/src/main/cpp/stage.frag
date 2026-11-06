@@ -11,11 +11,12 @@ void main() {
         // Lumiere dark field: soft stage beams and drifting dust.
         vec3 base = mix(vec3(0.008, 0.010, 0.018), vec3(0.020, 0.022, 0.040), uv.y);
         float beams = 0.0;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 6; i++) {
             float fi = float(i);
-            float x = 0.35 + fi * 0.15 + 0.08 * sin(pc.time * 0.25 + fi * 2.0);
+            float x = 0.22 + fi * 0.11 + 0.08 * sin(pc.time * 0.25 + fi * 2.0);
             float d = abs(uv.x - x);
-            beams += exp(-d * 28.0) * (0.35 + 0.25 * sin(pc.time * 0.4 + fi));
+            beams += exp(-d * 24.0) * (0.30 + 0.22 * sin(pc.time * 0.4 + fi));
+            beams += exp(-d * d * 1800.0) * 0.18;
         }
         float dust = 0.0;
         for (int i = 0; i < 14; i++) {
@@ -25,7 +26,9 @@ void main() {
             float d = distance(uv, pos);
             dust += exp(-d * d * 1200.0);
         }
-        color = base + pc.accent.rgb * (beams * 0.35 + dust * 0.4) + vec3(0.02, 0.025, 0.035) * beams;
+        float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
+        float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
+        color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
     } else {
         vec3 base = mix(vec3(0.015, 0.018, 0.028), vec3(0.030, 0.034, 0.050), uv.y);
         float glow = exp(-8.0 * distance(uv, vec2(0.5 + 0.15 * sin(pc.time * 0.6), 0.45)));
