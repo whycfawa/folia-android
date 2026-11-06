@@ -741,3 +741,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 安装 NDK/CMake，arm64-v8a。
 - 新增 FoliaVulkanStageView + libfolia_vulkan：Vulkan instance/device/swapchain/render pass/clear。
 - 当前未替换 Canvas 舞台，仅完成 Vulkan 后端可构建验证。
+
+### 0.7.25-android.360：Vulkan 动态 clear
+
+- 每帧重录 render pass clear，按时间做暗色呼吸。

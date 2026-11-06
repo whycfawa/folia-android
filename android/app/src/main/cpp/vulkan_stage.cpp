@@ -8,6 +8,8 @@
 #include <array>
 #include <cstring>
 #include <cstdint>
+#include <chrono>
+#include <cmath>
 
 #define LOG_TAG "FoliaVulkan"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -67,6 +69,24 @@ void destroySwapchain(State& s) {
     if (s.swapchain) vkDestroySwapchainKHR(s.device, s.swapchain, nullptr);
     s.swapchain = VK_NULL_HANDLE;
     s.images.clear();
+}
+
+void recordClear(State& s, uint32_t imageIndex, float pulse) {
+    VkCommandBuffer cmd = s.commands[imageIndex];
+    vkResetCommandBuffer(cmd, 0);
+    VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    vkBeginCommandBuffer(cmd, &begin);
+    VkClearValue clear{};
+    clear.color = {{0.02f + pulse * 0.03f, 0.025f + pulse * 0.02f, 0.04f + pulse * 0.05f, 1.0f}};
+    VkRenderPassBeginInfo pass{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    pass.renderPass = s.renderPass;
+    pass.framebuffer = s.framebuffers[imageIndex];
+    pass.renderArea = {{0, 0}, s.extent};
+    pass.clearValueCount = 1;
+    pass.pClearValues = &clear;
+    vkCmdBeginRenderPass(cmd, &pass, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdEndRenderPass(cmd);
+    vkEndCommandBuffer(cmd);
 }
 
 bool createSwapchain(State& s) {
@@ -243,6 +263,9 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeRender(JNIEnv*, jobject) {
     uint32_t imageIndex = 0;
     VkResult result = vkAcquireNextImageKHR(s->device, s->swapchain, UINT64_MAX, s->imageAvailable, VK_NULL_HANDLE, &imageIndex);
     if (result != VK_SUCCESS) return JNI_FALSE;
+    float seconds = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count() % 4000) / 4000.0f;
+    recordClear(*s, imageIndex, 0.5f + 0.5f * (float) std::sin(seconds * 6.2831853f));
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.waitSemaphoreCount = 1;
