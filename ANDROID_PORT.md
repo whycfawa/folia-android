@@ -791,3 +791,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.370：Vulkan Canvas 帧耗时诊断
 
 - 统计每帧 Canvas 绘制+纹理上传耗时，诊断输出 canvasMs。
+
+### 0.7.25-android.371：Vulkan Still 文本
+
+- still 模式不再走整帧 Canvas，直接生成三行文字纹理；Vulkan 背景/粒子保留。

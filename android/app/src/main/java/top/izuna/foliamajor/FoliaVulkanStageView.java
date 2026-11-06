@@ -22,7 +22,11 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private long lastCanvasFrameMs;
     private String mode = "classic";
     private String line = "";
+    private String prevLine = "";
+    private String nextLine = "";
     private String translation = "";
+    private String prevTranslation = "";
+    private String nextTranslation = "";
     private int accent = 0xFF7C9BFF;
     private boolean playing = true;
     private boolean daylight = false;
@@ -74,7 +78,11 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
                        String title, String artist, String accentHex, boolean playing, boolean chorus) {
         this.mode = mode == null ? "classic" : mode;
         this.line = line == null ? "" : line;
+        this.prevLine = prevLine == null ? "" : prevLine;
+        this.nextLine = nextLine == null ? "" : nextLine;
         this.translation = lineTranslation == null ? "" : lineTranslation;
+        this.prevTranslation = prevTranslation == null ? "" : prevTranslation;
+        this.nextTranslation = nextTranslation == null ? "" : nextTranslation;
         this.playing = playing;
         this.chorus = chorus;
         if (canvasStage != null) canvasStage.update(mode, line, nextLine, prevLine, lineTranslation, prevTranslation, nextTranslation, title, artist, accentHex, playing, chorus);
@@ -120,7 +128,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         long startedAt = android.os.SystemClock.uptimeMillis();
         Canvas canvas = frameCanvas;
         canvas.drawColor(Color.TRANSPARENT);
-        if (canvasStage != null) {
+        if ("still".equals(mode)) {
+            drawStillText(canvas, width, height);
+        } else if (canvasStage != null) {
             canvasStage.measure(
                     android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
                     android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY));
@@ -130,6 +140,28 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         frameBitmap.getPixels(framePixels, 0, width, 0, 0, width, height);
         nativeUpdateText(width, height, framePixels);
         lastCanvasFrameMs = android.os.SystemClock.uptimeMillis() - startedAt;
+    }
+
+    private void drawStillText(Canvas canvas, int width, int height) {
+        TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setFakeBoldText(true);
+        float centerY = height * 0.5f;
+        drawStillLine(canvas, paint, width, prevLine, prevTranslation, centerY - height * 0.12f, Math.max(24f, width * 0.034f), 0.3f);
+        drawStillLine(canvas, paint, width, line, translation, centerY, Math.max(30f, width * 0.045f), 1f);
+        drawStillLine(canvas, paint, width, nextLine, nextTranslation, centerY + height * 0.12f, Math.max(24f, width * 0.034f), 0.3f);
+    }
+
+    private void drawStillLine(Canvas canvas, TextPaint paint, int width, String text, String trans, float y, float size, float alpha) {
+        if (text == null || text.isEmpty()) return;
+        paint.setTextSize(size);
+        paint.setColor((Math.round(255 * alpha) << 24) | (daylight ? 0x111111 : 0xFFFFFF));
+        canvas.drawText(text, width / 2f, y, paint);
+        if (trans != null && !trans.isEmpty()) {
+            paint.setTextSize(size * 0.52f);
+            paint.setColor((Math.round(180 * alpha) << 24) | (daylight ? 0x111111 : 0xFFFFFF));
+            canvas.drawText(trans, width / 2f, y + size * 1.3f, paint);
+        }
     }
 
     public void updateText(Bitmap bitmap) {
