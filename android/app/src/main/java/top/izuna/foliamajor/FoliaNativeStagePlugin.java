@@ -3,7 +3,10 @@ package top.izuna.foliamajor;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.Window;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.webkit.WebView;
@@ -26,6 +29,8 @@ public class FoliaNativeStagePlugin extends Plugin {
     private FoliaNativeStageControlsView controlsView;
     private boolean guardChecked;
     private boolean unsafe;
+    private Drawable originalWindowBackground;
+    private boolean windowBackgroundChanged;
 
     /** 上一次进程没来得及 disable 就死了：清掉残留标记，但不再拒绝本次启用。 */
     private boolean consumeCrashGuard() {
@@ -62,6 +67,12 @@ public class FoliaNativeStagePlugin extends Plugin {
                             ViewGroup.LayoutParams.MATCH_PARENT));
                 }
                 stageView.setVisibility(FoliaNativeStageSurfaceView.VISIBLE);
+                Window window = activity.getWindow();
+                if (!windowBackgroundChanged) {
+                    originalWindowBackground = window.getDecorView().getBackground();
+                    window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                    windowBackgroundChanged = true;
+                }
                 // 原生控制条暂不启用：保留 WebView 原有控制条，避免样式和交互被替换。
                 final FoliaNativeStageSurfaceView currentStage = stageView;
                 root.postDelayed(() -> {
@@ -223,6 +234,12 @@ public class FoliaNativeStagePlugin extends Plugin {
     }
 
     private void removeStage() {
+        Activity activity = getActivity();
+        if (windowBackgroundChanged && activity != null) {
+            activity.getWindow().getDecorView().setBackground(originalWindowBackground);
+            windowBackgroundChanged = false;
+            originalWindowBackground = null;
+        }
         if (stageView == null) return;
         ViewGroup parent = (ViewGroup) stageView.getParent();
         if (parent != null) parent.removeView(stageView);

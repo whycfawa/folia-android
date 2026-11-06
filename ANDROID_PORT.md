@@ -662,3 +662,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 根因：崩溃保护把上次 ACTIVE 当成不安全，整个进程内所有 enable 都被拒绝，舞台永远 active=false。
 - 启动只清理 ACTIVE，不再拒绝本次启用。
 - 诊断增加 surface/playing。
+
+### 0.7.25-android.343：修复 SurfaceView 被窗口背景盖住
+
+- 原生舞台启用时把 Activity 窗口背景设透明，关闭/回退时恢复。
+- HTML 根节点也设透明；解决 active=true/surface=true/frames>0 但仍白屏。

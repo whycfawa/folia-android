@@ -21,6 +21,7 @@ const ensureStyle = () => {
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+html.folia-native-stage,
 html.folia-native-stage body,
 html.folia-native-stage #root {
   background: transparent !important;
