@@ -969,3 +969,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.412：显式深度状态
 
 - pipeline 提供 depth/stencil state，排除 Adreno 对空 pDepthStencilState 的 -3。
+
+### 0.7.25-android.413：静态管线状态
+
+- 背景管线去掉 dynamic state，使用静态 viewport/scissor。

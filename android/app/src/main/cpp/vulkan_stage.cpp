@@ -423,7 +423,6 @@ bool createPipeline(State& s) {
     info.pMultisampleState = &multisample;
     info.pDepthStencilState = &depth;
     info.pColorBlendState = &color;
-    info.pDynamicState = &dynamic;
     info.layout = s.pipelineLayout;
     info.renderPass = s.renderPass;
     info.subpass = 0;
