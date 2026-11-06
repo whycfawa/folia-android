@@ -163,8 +163,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         Canvas canvas = frameCanvas;
         canvas.drawColor(Color.TRANSPARENT);
         if ("still".equals(mode)) {
-            drawStillAtlas(width, height);
-            return;
+            if (drawStillAtlas(width, height)) return;
+            nativeUpdateQuads(new float[0], 0);
+            drawStillText(canvas, width, height);
         } else if ("classic".equals(mode) && canvasStage != null) {
             canvasStage.drawClassicLayer(canvas, width, height);
         } else if ("lumiere".equals(mode) && canvasStage != null) {
@@ -223,9 +224,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         return value * getResources().getDisplayMetrics().density;
     }
 
-    private void drawStillAtlas(int width, int height) {
+    private boolean drawStillAtlas(int width, int height) {
         String key = daylight + "\u0000" + prevLine + "\u0000" + line + "\u0000" + nextLine + "\u0000" + prevTranslation + "\u0000" + translation + "\u0000" + nextTranslation;
-        if (key.equals(atlasKey)) return;
+        if (key.equals(atlasKey)) return true;
         atlasKey = key;
         if (textAtlas == null) textAtlas = new VulkanTextAtlas();
         List<Float> vertices = new ArrayList<>();
@@ -243,6 +244,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         float[] data = new float[vertices.size()];
         for (int i = 0; i < data.length; i++) data[i] = vertices.get(i);
         nativeUpdateQuads(data, data.length / 8);
+        return !textAtlas.overflowed();
     }
 
     private void emitStillLine(List<Float> vertices, int width, int height, VulkanTextAtlas atlas, String text, String trans, float baselineY, float scale, float alpha) {

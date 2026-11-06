@@ -52,6 +52,7 @@ public final class VulkanTextAtlas {
     private int rowHeight = 0;
     private float size = 0f;
     private int weight = 700;
+    private boolean overflowed = false;
 
     public VulkanTextAtlas() {
         canvas.drawColor(Color.TRANSPARENT);
@@ -88,7 +89,7 @@ public final class VulkanTextAtlas {
             penX = PADDING;
             penY += rowHeight;
         }
-        if (penY + height + PADDING > SIZE) return null;
+        if (penY + height + PADDING > SIZE) { overflowed = true; return null; }
         float baseline = penY - bounds.top + PADDING;
         canvas.drawText(String.valueOf(character), penX - bounds.left + PADDING, baseline, paint);
         Glyph glyph = new Glyph(character, penX, penY, width, height, paint.measureText(String.valueOf(character)), baseline - penY);
@@ -102,6 +103,8 @@ public final class VulkanTextAtlas {
         bitmap.getPixels(out, 0, SIZE, 0, 0, SIZE, SIZE);
         return out;
     }
+
+    public boolean overflowed() { return overflowed; }
 
     public Bitmap bitmap() {
         return bitmap;

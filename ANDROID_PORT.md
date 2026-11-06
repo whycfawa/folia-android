@@ -932,3 +932,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.403：日间切换重建字形
 
 - atlasKey 包含 daylight，切日间/夜间会重建顶点颜色。
+
+### 0.7.25-android.404：图集溢出回退
+
+- VulkanTextAtlas 溢出标记；still 溢出时回退 Canvas 文字。
