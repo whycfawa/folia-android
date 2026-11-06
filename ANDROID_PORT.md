@@ -978,3 +978,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - simple shader 去掉所有接口/描述符，验证 pipeline 状态本身。
 - 文字管线失败不阻断背景出帧。
+
+### 0.7.25-android.415：禁用管线优化
+
+- VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT；排除 Adreno 优化器 -3。

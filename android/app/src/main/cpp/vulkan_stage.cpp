@@ -346,6 +346,7 @@ bool createTextPipeline(State& s) {
     depth.depthWriteEnable = VK_FALSE;
     depth.stencilTestEnable = VK_FALSE;
     VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    info.flags = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
     info.stageCount = 2;
     info.pStages = stages;
     info.pVertexInputState = &vertex;
@@ -414,6 +415,7 @@ bool createPipeline(State& s) {
     depth.depthWriteEnable = VK_FALSE;
     depth.stencilTestEnable = VK_FALSE;
     VkGraphicsPipelineCreateInfo info{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    info.flags = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
     info.stageCount = 2;
     info.pStages = stages;
     info.pVertexInputState = &vertex;
@@ -435,6 +437,7 @@ bool createPipeline(State& s) {
         stages[0].module = s.vertModule;
         stages[1].module = s.fragModule;
         info.layout = s.simplePipelineLayout;
+        s.pipeline = VK_NULL_HANDLE;
         pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
         if (pipelineResult != VK_SUCCESS) {
             lastError = "pipeline and simple pipeline failed: " + std::to_string((int) pipelineResult);
