@@ -995,3 +995,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.418：保留管线错误
 
 - 文字管线跳过不再覆盖背景 pipeline 错误。
+
+### 0.7.25-android.419：管线日志
+
+- LOGE 输出 background/simple/text pipeline 结果、format、extent。

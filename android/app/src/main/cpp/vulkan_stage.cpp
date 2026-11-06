@@ -360,7 +360,9 @@ bool createTextPipeline(State& s) {
     info.layout = s.textPipelineLayout;
     info.renderPass = s.renderPass;
     info.subpass = 0;
-    return ok(vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.textPipeline), "textPipeline");
+    VkResult textResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.textPipeline);
+    LOGE("text pipeline result=%d", (int) textResult);
+    return ok(textResult, "textPipeline");
 }
 
 bool createPipeline(State& s) {
@@ -429,6 +431,7 @@ bool createPipeline(State& s) {
     info.renderPass = s.renderPass;
     info.subpass = 0;
     VkResult pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
+    LOGE("background pipeline result=%d format=%d extent=%ux%u", (int) pipelineResult, (int) s.format, s.extent.width, s.extent.height);
     if (pipelineResult != VK_SUCCESS) {
         VkPipelineLayoutCreateInfo simpleLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         if (!ok(vkCreatePipelineLayout(s.device, &simpleLayoutInfo, nullptr, &s.simplePipelineLayout), "simplePipelineLayout")) return false;
@@ -439,6 +442,7 @@ bool createPipeline(State& s) {
         info.layout = s.simplePipelineLayout;
         s.pipeline = VK_NULL_HANDLE;
         pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
+        LOGE("simple pipeline result=%d format=%d extent=%ux%u", (int) pipelineResult, (int) s.format, s.extent.width, s.extent.height);
         if (pipelineResult != VK_SUCCESS) {
             lastError = "pipeline and simple pipeline failed: " + std::to_string((int) pipelineResult);
             s.pipeline = VK_NULL_HANDLE;
@@ -722,6 +726,7 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     }
     ANativeWindow_release(window);
     state = s;
+    LOGE("nativeCreate ok format=%d extent=%ux%u", (int) s->format, s->extent.width, s->extent.height);
     return reinterpret_cast<jlong>(s);
 }
 
