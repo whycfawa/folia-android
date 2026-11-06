@@ -63,15 +63,6 @@ public class FoliaNativeStagePlugin extends Plugin {
                 }
                 stageView.setVisibility(FoliaVulkanStageView.VISIBLE);
                 // 原生控制条暂不启用：保留 WebView 原有控制条，避免样式和交互被替换。
-                final FoliaVulkanStageView currentStage = stageView;
-                root.postDelayed(() -> {
-                    if (stageView == currentStage && currentStage.getFrameCount() == 0) {
-                        removeStage();
-                        JSObject payload = new JSObject();
-                        payload.put("reason", "no-frames");
-                        notifyListeners("fallback", payload);
-                    }
-                }, 3000L);
                 WebView webView = getBridge() == null ? null : getBridge().getWebView();
                 if (webView != null) webView.setBackgroundColor(Color.TRANSPARENT);
                 getContext().getSharedPreferences(PREFS, 0).edit().putBoolean(ACTIVE, true).apply();

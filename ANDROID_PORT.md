@@ -936,3 +936,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.404：图集溢出回退
 
 - VulkanTextAtlas 溢出标记；still 溢出时回退 Canvas 文字。
+
+### 0.7.25-android.405：修复自动关闭
+
+- 移除 3 秒 no-frames 自动移除/fallback。
+- surfaceChanged 时若 Vulkan 未就绪则重试 nativeCreate，处理 surfaceCreated 时尺寸为 0。

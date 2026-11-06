@@ -347,16 +347,27 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         nativeUpdateText(width, height, pixels);
     }
 
+    private void createVulkan(SurfaceHolder holder) {
+        if (nativeReady()) return;
+        nativeCreate(holder.getSurface());
+    }
+
     @Override public void surfaceCreated(SurfaceHolder holder) {
         surfaceReady = true;
-        nativeCreate(holder.getSurface());
-        running = true;
-        renderThread = new Thread(this, "FoliaVulkanStage");
-        renderThread.start();
+        createVulkan(holder);
+        if (!running) {
+            running = true;
+            renderThread = new Thread(this, "FoliaVulkanStage");
+            renderThread.start();
+        }
         scheduleFrame();
     }
 
-    @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) { renderText(); }
+    @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        // surfaceCreated 时窗口尺寸可能还是 0，swapchain 创建会失败；布局完成后再重试一次。
+        createVulkan(holder);
+        renderText();
+    }
     @Override public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceReady = false;
         running = false;
