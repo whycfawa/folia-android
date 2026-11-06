@@ -769,3 +769,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.365：Vulkan 主题色
 
 - JNI nativeSetAccent；shader push constant 使用当前 accent。
+
+### 0.7.25-android.366：Vulkan 程序化粒子
+
+- stage.frag 增加 18 个 GPU 粒子，随 time/accent 运动。
