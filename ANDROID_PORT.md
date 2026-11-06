@@ -901,3 +901,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.396：Still 最大宽度/换行
 
 - 896dp 最大宽度，按 glyph advance 换行；多行居中。
+
+### 0.7.25-android.397：字形基线修正
+
+- Glyph 记录 cell 内 baseline，quad top 按真实基线计算。

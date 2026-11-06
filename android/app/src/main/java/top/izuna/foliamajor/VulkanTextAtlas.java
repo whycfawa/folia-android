@@ -21,18 +21,20 @@ public final class VulkanTextAtlas {
         public final int width;
         public final int height;
         public final float advance;
+        public final float baseline;
         public final float u0;
         public final float v0;
         public final float u1;
         public final float v1;
 
-        Glyph(char character, int x, int y, int width, int height, float advance) {
+        Glyph(char character, int x, int y, int width, int height, float advance, float baseline) {
             this.character = character;
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
             this.advance = advance;
+            this.baseline = baseline;
             this.u0 = (float) x / SIZE;
             this.v0 = (float) y / SIZE;
             this.u1 = (float) (x + width) / SIZE;
@@ -75,7 +77,7 @@ public final class VulkanTextAtlas {
         if (penY + height + PADDING > SIZE) return null;
         float baseline = penY - bounds.top + PADDING;
         canvas.drawText(String.valueOf(character), penX - bounds.left + PADDING, baseline, paint);
-        Glyph glyph = new Glyph(character, penX, penY, width, height, paint.measureText(String.valueOf(character)));
+        Glyph glyph = new Glyph(character, penX, penY, width, height, paint.measureText(String.valueOf(character)), baseline - penY);
         glyphs.put(character, glyph);
         penX += width + PADDING;
         return glyph;

@@ -291,7 +291,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             if (glyph == null) continue;
             float w = glyph.width * scale;
             float h = glyph.height * scale;
-            float top = baselineY - h * 0.82f;
+            float top = baselineY - glyph.baseline * scale;
             float x0 = x / width;
             float x1 = (x + w) / width;
             float y0 = top / height;
