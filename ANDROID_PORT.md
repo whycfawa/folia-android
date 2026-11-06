@@ -691,3 +691,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.348：修复 AppShell 白底盖住原生舞台
 
 - AppShell 的 inline background 是最后一层白底；原生舞台开启时透明化 data-folia-app-shell。
+
+### 0.7.25-android.349：Canvas 舞台补回频谱/粒子/逐字
+
+- Canvas View 接入 audioPower/bass/mid/treble，绘制频谱条和发光脉冲。
+- 预分配 64 粒子。
+- 解析 words，宽度允许时逐字点亮，否则回退逐行扫光。

@@ -15,6 +15,9 @@ import android.util.AttributeSet;
 import android.view.Choreographer;
 import android.view.View;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * 实验性的原生播放舞台：只画渐变背景 + 当前/下一句歌词。
  * 由 FoliaNativeStagePlugin 放在 WebView 后面；WebView 透明，现有控件仍由 WebView 绘制。
@@ -28,6 +31,18 @@ public class FoliaNativeStageView extends View {
     private final TextPaint metaPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint particlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final int PARTICLE_COUNT = 64;
+    private final float[] particleX = new float[PARTICLE_COUNT];
+    private final float[] particleY = new float[PARTICLE_COUNT];
+    private final float[] particleVx = new float[PARTICLE_COUNT];
+    private final float[] particleVy = new float[PARTICLE_COUNT];
+    private final float[] particleLife = new float[PARTICLE_COUNT];
+    private final float[] particleSize = new float[PARTICLE_COUNT];
+    private int nextParticle;
+    private long lastSpawnAt;
+    private long particleLastAt;
 
     private String line = "";
     private String nextLine = "";
@@ -39,6 +54,14 @@ public class FoliaNativeStageView extends View {
     private boolean daylight = false;
     private boolean stageLight = false;
     private float lineProgress = 0f;
+    private float audioPower;
+    private float audioBass;
+    private float audioMid;
+    private float audioTreble;
+    private String[] wordTexts = new String[0];
+    private float[] wordStarts = new float[0];
+    private float[] wordEnds = new float[0];
+    private float wordPosition = 0f;
     private long frameCount;
     private boolean playing = true;
     private boolean attached = false;
@@ -137,11 +160,35 @@ public class FoliaNativeStageView extends View {
     }
 
     public void updateAudio(float power, float bass, float mid, float treble) {
-        // Canvas View 版本暂不绘制频谱，保留接口。
+        audioPower = clamp(power);
+        audioBass = clamp(bass);
+        audioMid = clamp(mid);
+        audioTreble = clamp(treble);
+    }
+
+    private static float clamp(float value) {
+        return Math.max(0f, Math.min(1f, value));
     }
 
     public void updateWords(String json, float position) {
-        // Canvas View 版本暂不绘制逐字，保留接口。
+        try {
+            JSONArray array = new JSONArray(json == null ? "[]" : json);
+            int count = array.length();
+            String[] texts = new String[count];
+            float[] starts = new float[count];
+            float[] ends = new float[count];
+            for (int index = 0; index < count; index++) {
+                JSONObject item = array.optJSONObject(index);
+                texts[index] = item == null ? "" : item.optString("text", "");
+                starts[index] = item == null ? 0f : (float) item.optDouble("startTime", 0);
+                ends[index] = item == null ? 0f : (float) item.optDouble("endTime", 0);
+            }
+            wordTexts = texts;
+            wordStarts = starts;
+            wordEnds = ends;
+            wordPosition = position;
+        } catch (Throwable ignored) {
+        }
     }
 
     public void setLineProgress(float progress) {
@@ -289,6 +336,60 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void updateParticles(long now, int width, int height) {
+        float dt = particleLastAt == 0 ? 0.016f : Math.min(0.05f, (now - particleLastAt) / 1000f);
+        particleLastAt = now;
+        for (int index = 0; index < PARTICLE_COUNT; index++) {
+            if (particleLife[index] <= 0f) continue;
+            particleLife[index] -= dt;
+            particleX[index] += particleVx[index] * dt;
+            particleY[index] += particleVy[index] * dt;
+            particleVy[index] += 14f * dt;
+        }
+        if (audioPower > 0.06f && now - lastSpawnAt > 55L) {
+            lastSpawnAt = now;
+            int index = nextParticle;
+            nextParticle = (nextParticle + 1) % PARTICLE_COUNT;
+            particleX[index] = (float) Math.random() * width;
+            particleY[index] = height * (0.42f + (float) Math.random() * 0.28f);
+            particleVx[index] = ((float) Math.random() - 0.5f) * width * 0.025f;
+            particleVy[index] = -height * (0.01f + (float) Math.random() * 0.02f);
+            particleLife[index] = 1.2f + (float) Math.random() * 1.8f;
+            particleSize[index] = dp(1.2f + (float) Math.random() * 2.4f);
+        }
+    }
+
+    private void drawParticles(Canvas canvas) {
+        for (int index = 0; index < PARTICLE_COUNT; index++) {
+            if (particleLife[index] <= 0f) continue;
+            int alpha = (int) Math.min(160f, particleLife[index] * 90f);
+            particlePaint.setColor((secondary & 0x00FFFFFF) | (alpha << 24));
+            canvas.drawCircle(particleX[index], particleY[index], particleSize[index], particlePaint);
+        }
+    }
+
+    private boolean drawWords(Canvas canvas, int width, float centerY) {
+        if (wordTexts.length == 0 || layoutLyricSize <= 0) return false;
+        TextPaint paint = lyricPaint;
+        paint.setTextSize(layoutLyricSize);
+        paint.setTextAlign(Paint.Align.LEFT);
+        float total = 0f;
+        for (String word : wordTexts) total += paint.measureText(word);
+        if (total <= 0f || total > width * 0.9f) return false;
+        float x = (width - total) / 2f;
+        float baseline = centerY - (paint.ascent() + paint.descent()) / 2f;
+        for (int index = 0; index < wordTexts.length; index++) {
+            float span = Math.max(0.001f, wordEnds[index] - wordStarts[index]);
+            float progress = Math.max(0f, Math.min(1f, (wordPosition - wordStarts[index]) / span));
+            int alpha = 0x55 + Math.round((0xFF - 0x55) * progress);
+            int rgb = stageLight ? 0x111111 : 0xFFFFFF;
+            paint.setColor((alpha << 24) | rgb);
+            canvas.drawText(wordTexts[index], x, baseline, paint);
+            x += paint.measureText(wordTexts[index]);
+        }
+        return true;
+    }
+
     private void drawStage(Canvas canvas) {
         super.onDraw(canvas);
         int width = getWidth();
@@ -306,11 +407,30 @@ public class FoliaNativeStageView extends View {
         glowPaint.setShader(glowGradient);
         canvas.save();
         canvas.translate(glowX, glowY);
-        canvas.drawCircle(0, 0, width * 0.55f, glowPaint);
+        canvas.drawCircle(0, 0, width * (0.55f + 0.12f * audioPower), glowPaint);
         canvas.restore();
 
+        updateParticles(SystemClock.uptimeMillis(), width, height);
+        drawParticles(canvas);
+
+        if (audioPower > 0.01f) {
+            int bars = 28;
+            float barWidth = width / (bars * 1.8f);
+            float gap = (width - bars * barWidth) / (bars + 1f);
+            float baseY = height * 0.88f;
+            barPaint.setColor(stageLight ? 0x33111111 : 0x55FFFFFF);
+            for (int index = 0; index < bars; index++) {
+                float mix = index < bars / 3f ? audioBass : index < bars * 2f / 3f ? audioMid : audioTreble;
+                float wave = 0.55f + 0.45f * (float) Math.sin(t * Math.PI * 8 + index * 0.7f);
+                float barHeight = height * 0.08f * (0.15f + 0.85f * mix * wave);
+                float left = gap + index * (barWidth + gap);
+                canvas.drawRect(left, baseY - barHeight, left + barWidth, baseY, barPaint);
+            }
+        }
+
         float centerY = height * 0.5f;
-        if (lyricLayout != null) {
+        if (!drawWords(canvas, width, centerY) && lyricLayout != null) {
+            lyricPaint.setTextAlign(Paint.Align.CENTER);
             canvas.save();
             float left = (width - width * 0.86f) / 2f;
             float top = centerY - lyricLayout.getHeight() / 2f;
