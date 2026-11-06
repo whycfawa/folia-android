@@ -1022,3 +1022,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 不再伪造 window.electron（会把所有 isElectron 判定变成 true）。
 - Apple Music 改走 window.foliaAppleMusicRequest。
+
+### 0.7.26-android.425：Apple Music WebView 保持 1x1 可见
+
+- 隐藏 WebView 不再 GONE，改为 1x1/alpha 0.01，避免 Chromium 挂起媒体/DRM。

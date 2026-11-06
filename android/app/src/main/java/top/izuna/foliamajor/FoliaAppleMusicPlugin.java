@@ -50,7 +50,8 @@ public class FoliaAppleMusicPlugin extends Plugin {
         if (activity == null) return;
         container = new FrameLayout(activity);
         container.setBackgroundColor(Color.BLACK);
-        container.setVisibility(ViewGroup.GONE);
+        container.setAlpha(0.01f);
+        container.setVisibility(ViewGroup.VISIBLE);
         webView = new WebView(activity);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -69,8 +70,7 @@ public class FoliaAppleMusicPlugin extends Plugin {
         container.addView(webView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         ViewGroup root = activity.findViewById(android.R.id.content);
-        if (root != null) root.addView(container, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (root != null) root.addView(container, new FrameLayout.LayoutParams(1, 1));
         loadHome();
     }
 
@@ -172,6 +172,9 @@ public class FoliaAppleMusicPlugin extends Plugin {
         activity.runOnUiThread(() -> {
             ensureWebView();
             if (container != null) {
+                container.setAlpha(1f);
+                container.setLayoutParams(new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 container.setVisibility(ViewGroup.VISIBLE);
                 container.bringToFront();
             }
@@ -185,7 +188,11 @@ public class FoliaAppleMusicPlugin extends Plugin {
         Activity activity = activity();
         if (activity == null) { call.resolve(); return; }
         activity.runOnUiThread(() -> {
-            if (container != null) container.setVisibility(ViewGroup.GONE);
+            if (container != null) {
+                container.setAlpha(0.01f);
+                container.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
+                container.setVisibility(ViewGroup.VISIBLE);
+            }
             call.resolve();
         });
     }
