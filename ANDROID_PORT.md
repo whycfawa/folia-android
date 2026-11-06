@@ -982,3 +982,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.415：禁用管线优化
 
 - VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT；排除 Adreno 优化器 -3。
+
+### 0.7.25-android.416：SPIR-V 1.0
+
+- shader 改 --target-env=vulkan1.0，排除 SPIR-V 1.3 驱动兼容。
