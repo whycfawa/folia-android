@@ -247,6 +247,36 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
 
     private void emitTextRun(List<Float> vertices, int width, int height, String text, float baselineY, float scale, float alpha) {
         if (text == null || text.isEmpty()) return;
+        List<String> lines = wrapText(text, scale);
+        float lineHeight = dp(52) * scale;
+        float startY = baselineY - (lines.size() - 1) * lineHeight * 0.5f;
+        for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+            emitGlyphLine(vertices, width, height, lines.get(lineIndex), startY + lineIndex * lineHeight, scale, alpha);
+        }
+    }
+
+    private List<String> wrapText(String text, float scale) {
+        List<String> lines = new ArrayList<>();
+        float maxWidth = dp(896);
+        StringBuilder current = new StringBuilder();
+        float currentWidth = 0f;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            VulkanTextAtlas.Glyph glyph = textAtlas.get(c);
+            float advance = glyph == null ? 0f : glyph.advance * scale;
+            if (currentWidth + advance > maxWidth && current.length() > 0) {
+                lines.add(current.toString());
+                current.setLength(0);
+                currentWidth = 0f;
+            }
+            current.append(c);
+            currentWidth += advance;
+        }
+        if (current.length() > 0) lines.add(current.toString());
+        return lines;
+    }
+
+    private void emitGlyphLine(List<Float> vertices, int width, int height, String text, float baselineY, float scale, float alpha) {
         float total = 0f;
         for (int i = 0; i < text.length(); i++) {
             VulkanTextAtlas.Glyph glyph = textAtlas.get(text.charAt(i));

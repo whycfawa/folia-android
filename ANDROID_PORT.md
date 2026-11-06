@@ -897,3 +897,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - glyph 顶点带颜色和 alpha；当前/非当前行透明度进 shader。
 - 翻译副行进 glyph run。
+
+### 0.7.25-android.396：Still 最大宽度/换行
+
+- 896dp 最大宽度，按 glyph advance 换行；多行居中。
