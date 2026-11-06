@@ -51,13 +51,16 @@ const NativeStageBridge: React.FC = () => {
             return undefined;
         }
         ensureStyle();
-        document.documentElement.classList.add('folia-native-stage');
-        void enableNativeStage().catch(error => {
+        let cancelled = false;
+        void enableNativeStage().then(() => {
+            if (!cancelled) document.documentElement.classList.add('folia-native-stage');
+        }).catch(error => {
             console.warn('[NativeStage] enable failed', error);
             document.documentElement.classList.remove('folia-native-stage');
             useDesktopSettingsStore.getState().handleToggleNativeStage(false);
         });
         return () => {
+            cancelled = true;
             document.documentElement.classList.remove('folia-native-stage');
             document.getElementById(STYLE_ID)?.remove();
             void disableNativeStage().catch(() => undefined);
@@ -90,6 +93,8 @@ const NativeStageBridge: React.FC = () => {
         let removeFallback: (() => void) | undefined;
         void addNativeStageFallbackListener(() => {
             console.warn('[NativeStage] surface produced no frames, falling back to WebView');
+            document.documentElement.classList.remove('folia-native-stage');
+            document.getElementById(STYLE_ID)?.remove();
             useDesktopSettingsStore.getState().handleToggleNativeStage(false);
         }).then(cleanup => { removeFallback = cleanup; });
         return () => removeFallback?.();
@@ -100,12 +105,22 @@ const NativeStageBridge: React.FC = () => {
         let remove: (() => void) | undefined;
         void addNativeStageControlListener((action, value) => runNativeStageControl(action, value)).then(cleanup => { remove = cleanup; });
         setNativeStageStats({ enabled: true });
+        const enabledAt = Date.now();
         const timer = window.setInterval(() => {
-            void getNativeStageStats().then(stats => setNativeStageStats({
-                active: Boolean(stats?.active),
-                renderer: String(stats?.renderer || 'none'),
-                frames: Number(stats?.frames || 0),
-            })).catch(() => undefined);
+            void getNativeStageStats().then(stats => {
+                const active = Boolean(stats?.active);
+                setNativeStageStats({
+                    active,
+                    renderer: String(stats?.renderer || 'none'),
+                    frames: Number(stats?.frames || 0),
+                });
+                if (!active && Date.now() - enabledAt > 3500) {
+                    console.warn('[NativeStage] plugin inactive, restoring WebView');
+                    document.documentElement.classList.remove('folia-native-stage');
+                    document.getElementById(STYLE_ID)?.remove();
+                    useDesktopSettingsStore.getState().handleToggleNativeStage(false);
+                }
+            }).catch(() => undefined);
         }, 1000);
         return () => {
             window.clearInterval(timer);
