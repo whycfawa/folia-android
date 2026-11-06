@@ -29,6 +29,24 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 12) {
+        // Cadenza: manuscript staff and floating notes.
+        vec3 base = vec3(0.055, 0.050, 0.045);
+        float staff = 0.0;
+        for (int i = 0; i < 5; i++) {
+            float y = 0.32 + float(i) * 0.055;
+            staff += smoothstep(0.0025, 0.0, abs(uv.y - y));
+        }
+        float notes = 0.0;
+        for (int i = 0; i < 9; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.37, fi * 0.23);
+            float nx = fract(hash(seed) + pc.time * 0.02);
+            float ny = 0.30 + floor(hash(seed + vec2(2.0, 1.0)) * 5.0) * 0.055;
+            float d = length((uv - vec2(nx, ny)) * vec2(2.4, 1.0));
+            notes += smoothstep(0.012, 0.0, d);
+        }
+        color = base + vec3(0.10, 0.09, 0.075) * staff * 0.6 + pc.accent.rgb * notes * 0.65;
     } else if (pc.mode == 11) {
         // Tilt: intersecting geometric planes in low light.
         vec3 base = vec3(0.012, 0.014, 0.022);
