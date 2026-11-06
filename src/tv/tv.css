@@ -2961,7 +2961,7 @@ img {
 
 .tv-header .tv-hero {
     position: relative;
-    width: clamp(280px, 24vw, 440px);
+    width: clamp(140px, 12vw, 220px);
     max-width: 100%;
     min-height: 0;
     height: clamp(68px, 8.8vh, 84px);
