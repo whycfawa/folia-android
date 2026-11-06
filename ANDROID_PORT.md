@@ -852,3 +852,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.385：Vulkan Tempera 场景
 
 - tempera 分支：干笔刷横纹；文字层叠加。
+
+### 0.7.25-android.386：Vulkan Tilt 场景
+
+- tilt 分支：低光交叠几何平面；文字层叠加。
