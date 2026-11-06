@@ -456,6 +456,14 @@ public class FoliaNativeStageView extends View {
             }
             wordIndex += count;
         }
+        barPaint.setStyle(Paint.Style.STROKE);
+        barPaint.setStrokeWidth(dp(1));
+        barPaint.setColor(stageLight ? 0x18111111 : 0x22FFFFFF);
+        for (int row = 0; row < rows; row++) {
+            float guideY = startY + row * rowGap + size * 0.95f;
+            canvas.drawLine(width * 0.18f, guideY, width * 0.82f, guideY, barPaint);
+        }
+        barPaint.setStyle(Paint.Style.FILL);
         lyricPaint.clearShadowLayer();
         if (lineTranslation != null && !lineTranslation.isEmpty()) {
             nextPaint.setTextAlign(Paint.Align.CENTER);
