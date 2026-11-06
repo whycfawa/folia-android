@@ -928,3 +928,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - JNI nativeSetDaylight；push constant pad 传 daylight。
 - still 日间背景压暗。
+
+### 0.7.25-android.403：日间切换重建字形
+
+- atlasKey 包含 daylight，切日间/夜间会重建顶点颜色。

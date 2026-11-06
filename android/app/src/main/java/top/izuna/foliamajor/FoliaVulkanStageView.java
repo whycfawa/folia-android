@@ -224,7 +224,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     }
 
     private void drawStillAtlas(int width, int height) {
-        String key = prevLine + "\u0000" + line + "\u0000" + nextLine + "\u0000" + prevTranslation + "\u0000" + translation + "\u0000" + nextTranslation;
+        String key = daylight + "\u0000" + prevLine + "\u0000" + line + "\u0000" + nextLine + "\u0000" + prevTranslation + "\u0000" + translation + "\u0000" + nextTranslation;
         if (key.equals(atlasKey)) return;
         atlasKey = key;
         if (textAtlas == null) textAtlas = new VulkanTextAtlas();
