@@ -799,3 +799,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.372：Classic Vulkan 文字层
 
 - classic 只上传文字层，Vulkan 背景/粒子保留，不再整帧 Canvas。
+
+### 0.7.25-android.373：全部现有模式文字层
+
+- partita/cappella 也只上传文字层，Vulkan 背景/粒子保留。

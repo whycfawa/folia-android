@@ -404,6 +404,10 @@ public class FoliaNativeStageView extends View {
         }
     }
 
+    public void drawPartitaLayer(Canvas canvas, int width, int height) { drawPartita(canvas, width, height); }
+
+    public void drawCappellaLayer(Canvas canvas, int width, int height) { drawCappella(canvas, width, height); }
+
     private void drawCappella(Canvas canvas, int width, int height) {
         float size = Math.max(dp(16), Math.min(dp(26), width * 0.022f));
         float panelWidth = Math.min(width - dp(32), dp(820));

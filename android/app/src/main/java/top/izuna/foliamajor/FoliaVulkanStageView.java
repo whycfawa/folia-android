@@ -132,6 +132,10 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             drawStillText(canvas, width, height);
         } else if ("classic".equals(mode) && canvasStage != null) {
             canvasStage.drawClassicLayer(canvas, width, height);
+        } else if ("partita".equals(mode) && canvasStage != null) {
+            canvasStage.drawPartitaLayer(canvas, width, height);
+        } else if ("cappella".equals(mode) && canvasStage != null) {
+            canvasStage.drawCappellaLayer(canvas, width, height);
         } else if (canvasStage != null) {
             canvasStage.measure(
                     android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
