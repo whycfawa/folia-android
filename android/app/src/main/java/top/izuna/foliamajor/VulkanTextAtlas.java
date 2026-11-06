@@ -45,11 +45,12 @@ public final class VulkanTextAtlas {
     private final Bitmap bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
     private final Canvas canvas = new Canvas(bitmap);
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Map<Character, Glyph> glyphs = new HashMap<>();
+    private final Map<String, Glyph> glyphs = new HashMap<>();
     private final Rect bounds = new Rect();
     private int penX = PADDING;
     private int penY = PADDING;
     private int rowHeight = 0;
+    private float size = 0f;
 
     public VulkanTextAtlas() {
         canvas.drawColor(Color.TRANSPARENT);
@@ -59,13 +60,15 @@ public final class VulkanTextAtlas {
     }
 
     public void setTextSize(float size) {
+        this.size = size;
         paint.setTextSize(size);
         paint.getTextBounds("Ag", 0, 2, bounds);
         rowHeight = Math.max(bounds.height(), (int) size) + PADDING * 2;
     }
 
     public Glyph get(char character) {
-        Glyph existing = glyphs.get(character);
+        String key = size + "#" + character;
+        Glyph existing = glyphs.get(key);
         if (existing != null) return existing;
         paint.getTextBounds(String.valueOf(character), 0, 1, bounds);
         int width = Math.max(1, bounds.width() + PADDING * 2);
@@ -78,7 +81,7 @@ public final class VulkanTextAtlas {
         float baseline = penY - bounds.top + PADDING;
         canvas.drawText(String.valueOf(character), penX - bounds.left + PADDING, baseline, paint);
         Glyph glyph = new Glyph(character, penX, penY, width, height, paint.measureText(String.valueOf(character)), baseline - penY);
-        glyphs.put(character, glyph);
+        glyphs.put(key, glyph);
         penX += width + PADDING;
         return glyph;
     }
