@@ -375,6 +375,40 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void drawCappella(Canvas canvas, int width, int height) {
+        float size = Math.max(dp(16), Math.min(dp(26), width * 0.022f));
+        float panelWidth = Math.min(width - dp(32), dp(820));
+        float left = (width - panelWidth) / 2f;
+        float y = height * 0.16f;
+        lyricPaint.setTextSize(size);
+        nextPaint.setTextAlign(Paint.Align.LEFT);
+        drawCappellaRow(canvas, left, y, panelWidth, prevLine, prevTranslation, size, false, 0.55f);
+        y += size * 5.4f;
+        drawCappellaRow(canvas, left, y, panelWidth, line, lineTranslation, size, true, 1f);
+        y += size * 5.4f;
+        drawCappellaRow(canvas, left, y, panelWidth, nextLine, nextTranslation, size, false, 0.55f);
+    }
+
+    private void drawCappellaRow(Canvas canvas, float left, float top, float width, String text, String translation, float size, boolean active, float alpha) {
+        if (text == null || text.isEmpty()) return;
+        float bubbleWidth = Math.min(width * 0.72f, lyricPaint.measureText(text) + size * 2.4f);
+        float bubbleHeight = size * (translation != null && !translation.isEmpty() ? 3.1f : 2.2f);
+        float x = active ? left + width - bubbleWidth : left + size * 3.2f;
+        float radius = size * 1.05f;
+        Paint bubble = particlePaint;
+        bubble.setColor(active ? ((Math.round(255 * alpha) << 24) | (accent & 0x00FFFFFF)) : ((Math.round(150 * alpha) << 24) | (stageLight ? 0xFFFFFF : 0x222222)));
+        canvas.drawRoundRect(x, top, x + bubbleWidth, top + bubbleHeight, radius, radius, bubble);
+        int textColor = active ? (stageLight ? 0xFF111111 : 0xFFFFFFFF) : (stageLight ? 0xFF111111 : 0xFFDDDDDD);
+        lyricPaint.setColor((Math.round(255 * alpha) << 24) | (textColor & 0x00FFFFFF));
+        lyricPaint.setTextAlign(Paint.Align.LEFT);
+        canvas.drawText(text, x + size * 1.2f, top + size * 1.5f, lyricPaint);
+        if (translation != null && !translation.isEmpty()) {
+            nextPaint.setTextSize(size * 0.72f);
+            nextPaint.setColor((Math.round(180 * alpha) << 24) | (stageLight ? 0x55111111 : 0xCCFFFFFF));
+            canvas.drawText(translation, x + size * 1.2f, top + size * 2.6f, nextPaint);
+        }
+    }
+
     private void drawPartita(Canvas canvas, int width, int height) {
         if (wordTexts.length == 0) return;
         float size = Math.max(dp(26), Math.min(dp(52), width * 0.045f));
@@ -599,6 +633,10 @@ public class FoliaNativeStageView extends View {
         }
         if ("partita".equals(mode)) {
             drawPartita(canvas, width, height);
+            return;
+        }
+        if ("cappella".equals(mode)) {
+            drawCappella(canvas, width, height);
             return;
         }
 
