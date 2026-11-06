@@ -957,3 +957,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.409：背景管线最小回退
 
 - pipeline -3 时用 simple.vert/simple.frag 创建最小背景，避免黑屏；诊断记录 fallback。
+
+### 0.7.25-android.410：显式 viewport/scissor
+
+- pipeline 提供静态 viewport/scissor，排除 Adreno 对空 pViewports 的 -3。

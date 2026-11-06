@@ -309,9 +309,13 @@ bool createTextPipeline(State& s) {
     vertex.pVertexAttributeDescriptions = attrs;
     VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkViewport staticViewport{0.0f, 0.0f, (float) s.extent.width, (float) s.extent.height, 0.0f, 1.0f};
+    VkRect2D staticScissor{{0, 0}, s.extent};
     VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
     viewport.viewportCount = 1;
+    viewport.pViewports = &staticViewport;
     viewport.scissorCount = 1;
+    viewport.pScissors = &staticScissor;
     VkPipelineRasterizationStateCreateInfo raster{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     raster.polygonMode = VK_POLYGON_MODE_FILL;
     raster.cullMode = VK_CULL_MODE_NONE;
@@ -375,9 +379,13 @@ bool createPipeline(State& s) {
     VkPipelineVertexInputStateCreateInfo vertex{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkViewport staticViewport{0.0f, 0.0f, (float) s.extent.width, (float) s.extent.height, 0.0f, 1.0f};
+    VkRect2D staticScissor{{0, 0}, s.extent};
     VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
     viewport.viewportCount = 1;
+    viewport.pViewports = &staticViewport;
     viewport.scissorCount = 1;
+    viewport.pScissors = &staticScissor;
     VkPipelineRasterizationStateCreateInfo raster{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     raster.polygonMode = VK_POLYGON_MODE_FILL;
     raster.cullMode = VK_CULL_MODE_NONE;
