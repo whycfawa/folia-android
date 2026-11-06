@@ -887,3 +887,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 新增 VulkanTextAtlas：字形栅格化、打包、UV/advance。
 - 尚未接入 still 的 Vulkan quad 管线。
+
+### 0.7.25-android.394：Still Vulkan 字形 quad
+
+- VulkanTextAtlas 接入 still：atlas 上传 + glyph 顶点缓冲 + 实例化文字管线。
+- still 不再每帧上传整张 Canvas 文字纹理。

@@ -7,6 +7,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.TextPaint;
 import android.view.Choreographer;
+
+import java.util.ArrayList;
+import java.util.List;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -33,6 +36,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private boolean surfaceReady;
     private boolean chorus;
     private FoliaNativeStageView canvasStage;
+    private VulkanTextAtlas textAtlas;
+    private String atlasKey = "";
     private Bitmap frameBitmap;
     private int[] framePixels;
     private Canvas frameCanvas;
@@ -73,6 +78,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
     private native void nativeUpdateText(int width, int height, int[] pixels);
+    private native void nativeUpdateAtlas(int width, int height, int[] pixels);
+    private native void nativeUpdateQuads(float[] vertices, int count);
 
     private int sceneMode(String mode) {
         switch (mode) {
@@ -154,7 +161,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         Canvas canvas = frameCanvas;
         canvas.drawColor(Color.TRANSPARENT);
         if ("still".equals(mode)) {
-            drawStillText(canvas, width, height);
+            drawStillAtlas(width, height);
+            return;
         } else if ("classic".equals(mode) && canvasStage != null) {
             canvasStage.drawClassicLayer(canvas, width, height);
         } else if ("lumiere".equals(mode) && canvasStage != null) {
@@ -211,6 +219,55 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    private void drawStillAtlas(int width, int height) {
+        String key = prevLine + "\u0000" + line + "\u0000" + nextLine + "\u0000" + prevTranslation + "\u0000" + translation + "\u0000" + nextTranslation;
+        if (key.equals(atlasKey)) return;
+        atlasKey = key;
+        if (textAtlas == null) textAtlas = new VulkanTextAtlas();
+        textAtlas.setTextSize(dp(40));
+        List<Float> vertices = new ArrayList<>();
+        float centerY = height * 0.5f;
+        emitStillLine(vertices, width, height, prevLine, prevTranslation, centerY - dp(118), 30f / 40f, 0.3f);
+        emitStillLine(vertices, width, height, line, translation, centerY, 1f, 1f);
+        emitStillLine(vertices, width, height, nextLine, nextTranslation, centerY + dp(118), 30f / 40f, 0.3f);
+        nativeUpdateAtlas(VulkanTextAtlas.SIZE, VulkanTextAtlas.SIZE, textAtlas.pixels());
+        float[] data = new float[vertices.size()];
+        for (int i = 0; i < data.length; i++) data[i] = vertices.get(i);
+        nativeUpdateQuads(data, data.length / 4);
+    }
+
+    private void emitStillLine(List<Float> vertices, int width, int height, String text, String trans, float baselineY, float scale, float alpha) {
+        if (text == null || text.isEmpty()) return;
+        float total = 0f;
+        for (int i = 0; i < text.length(); i++) {
+            VulkanTextAtlas.Glyph glyph = textAtlas.get(text.charAt(i));
+            if (glyph != null) total += glyph.advance;
+        }
+        float x = (width - total * scale) / 2f;
+        for (int i = 0; i < text.length(); i++) {
+            VulkanTextAtlas.Glyph glyph = textAtlas.get(text.charAt(i));
+            if (glyph == null) continue;
+            float w = glyph.width * scale;
+            float h = glyph.height * scale;
+            float top = baselineY - h * 0.82f;
+            float x0 = x / width;
+            float x1 = (x + w) / width;
+            float y0 = top / height;
+            float y1 = (top + h) / height;
+            addQuad(vertices, x0, y0, x1, y1, glyph.u0, glyph.v0, glyph.u1, glyph.v1);
+            x += glyph.advance * scale;
+        }
+    }
+
+    private void addQuad(List<Float> v, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
+        v.add(x0); v.add(y0); v.add(u0); v.add(v0);
+        v.add(x1); v.add(y0); v.add(u1); v.add(v0);
+        v.add(x1); v.add(y1); v.add(u1); v.add(v1);
+        v.add(x0); v.add(y0); v.add(u0); v.add(v0);
+        v.add(x1); v.add(y1); v.add(u1); v.add(v1);
+        v.add(x0); v.add(y1); v.add(u0); v.add(v1);
     }
 
     private void drawStillLine(Canvas canvas, TextPaint paint, int width, String text, String trans, float y, float size, float alpha) {

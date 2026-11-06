@@ -33,7 +33,12 @@ struct State {
     VkPipeline pipeline{VK_NULL_HANDLE};
     VkShaderModule vertModule{VK_NULL_HANDLE};
     VkShaderModule fragModule{VK_NULL_HANDLE};
+    VkShaderModule textVertModule{VK_NULL_HANDLE};
     VkShaderModule textFragModule{VK_NULL_HANDLE};
+    VkBuffer textVertexBuffer{VK_NULL_HANDLE};
+    VkDeviceMemory textVertexMemory{VK_NULL_HANDLE};
+    VkDeviceSize textVertexCapacity{0};
+    uint32_t textVertexCount{0};
     VkImage textImage{VK_NULL_HANDLE};
     VkDeviceMemory textMemory{VK_NULL_HANDLE};
     VkImageView textView{VK_NULL_HANDLE};
@@ -230,13 +235,37 @@ bool createTextResources(State& s) {
     return createTexture(s, 1, 1, nullptr);
 }
 
+bool ensureTextBuffer(State& s, VkDeviceSize size) {
+    if (size <= s.textVertexCapacity && s.textVertexBuffer != VK_NULL_HANDLE) return true;
+    if (s.textVertexBuffer) vkDestroyBuffer(s.device, s.textVertexBuffer, nullptr);
+    if (s.textVertexMemory) vkFreeMemory(s.device, s.textVertexMemory, nullptr);
+    s.textVertexBuffer = VK_NULL_HANDLE;
+    s.textVertexMemory = VK_NULL_HANDLE;
+    VkDeviceSize capacity = size < 4096 ? 4096 : size;
+    VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    info.size = capacity;
+    info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (!ok(vkCreateBuffer(s.device, &info, nullptr, &s.textVertexBuffer), "textVertexBuffer")) return false;
+    VkMemoryRequirements req{};
+    vkGetBufferMemoryRequirements(s.device, s.textVertexBuffer, &req);
+    VkMemoryAllocateInfo alloc{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    alloc.allocationSize = req.size;
+    alloc.memoryTypeIndex = memoryType(s, req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if (!ok(vkAllocateMemory(s.device, &alloc, nullptr, &s.textVertexMemory), "textVertexMemory")) return false;
+    vkBindBufferMemory(s.device, s.textVertexBuffer, s.textVertexMemory, 0);
+    s.textVertexCapacity = capacity;
+    return true;
+}
+
 bool createTextPipeline(State& s) {
+    if (!s.textVertModule) s.textVertModule = shaderModule(s, kTextVertSpv, kTextVertSpvSize);
     if (!s.textFragModule) s.textFragModule = shaderModule(s, kTextFragSpv, kTextFragSpvSize);
-    if (!s.textFragModule) return false;
+    if (!s.textVertModule || !s.textFragModule) return false;
     VkPushConstantRange push{};
-    push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     push.offset = 0;
-    push.size = 4;
+    push.size = 16;
     VkPipelineLayoutCreateInfo layout{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     layout.setLayoutCount = 1;
     layout.pSetLayouts = &s.descriptorLayout;
@@ -246,13 +275,21 @@ bool createTextPipeline(State& s) {
     VkPipelineShaderStageCreateInfo stages[2]{};
     stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = s.vertModule;
+    stages[0].module = s.textVertModule;
     stages[0].pName = "main";
     stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     stages[1].module = s.textFragModule;
     stages[1].pName = "main";
+    VkVertexInputBindingDescription binding{0, 16, VK_VERTEX_INPUT_RATE_VERTEX};
+    VkVertexInputAttributeDescription attrs[2]{};
+    attrs[0] = {0, 0, VK_FORMAT_R32G32_SFLOAT, 0};
+    attrs[1] = {1, 0, VK_FORMAT_R32G32_SFLOAT, 8};
     VkPipelineVertexInputStateCreateInfo vertex{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    vertex.vertexBindingDescriptionCount = 1;
+    vertex.pVertexBindingDescriptions = &binding;
+    vertex.vertexAttributeDescriptionCount = 2;
+    vertex.pVertexAttributeDescriptions = attrs;
     VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkPipelineViewportStateCreateInfo viewport{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
@@ -401,12 +438,14 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
         vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
-        if (s.textPipeline != VK_NULL_HANDLE && s.descriptorSet != VK_NULL_HANDLE) {
+        if (s.textPipeline != VK_NULL_HANDLE && s.descriptorSet != VK_NULL_HANDLE && s.textVertexCount > 0) {
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipeline);
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipelineLayout, 0, 1, &s.descriptorSet, 0, nullptr);
-            float alpha = 1.0f;
-            vkCmdPushConstants(cmd, s.textPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &alpha);
-            vkCmdDraw(cmd, 3, 1, 0, 0);
+            VkDeviceSize offset = 0;
+            vkCmdBindVertexBuffers(cmd, 0, 1, &s.textVertexBuffer, &offset);
+            float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+            vkCmdPushConstants(cmd, s.textPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), color);
+            vkCmdDraw(cmd, s.textVertexCount, 1, 0, 0);
         }
     }
     vkCmdEndRenderPass(cmd);
@@ -653,6 +692,29 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeUpdateText(JNIEnv* env, job
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeUpdateAtlas(JNIEnv* env, jobject, jint width, jint height, jintArray pixels) {
+    State* s = state;
+    if (!s || !s->device || !pixels) return;
+    jint* data = env->GetIntArrayElements(pixels, nullptr);
+    vkDeviceWaitIdle(s->device);
+    createTexture(*s, (uint32_t) width, (uint32_t) height, reinterpret_cast<const uint32_t*>(data));
+    env->ReleaseIntArrayElements(pixels, data, JNI_ABORT);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeUpdateQuads(JNIEnv* env, jobject, jfloatArray data, jint count) {
+    State* s = state;
+    if (!s || !s->device || !data || count <= 0) return;
+    VkDeviceSize size = (VkDeviceSize) count * 4 * sizeof(float);
+    if (!ensureTextBuffer(*s, size)) return;
+    void* mapped = nullptr;
+    vkMapMemory(s->device, s->textVertexMemory, 0, size, 0, &mapped);
+    env->GetFloatArrayRegion(data, 0, count * 4, reinterpret_cast<jfloat*>(mapped));
+    vkUnmapMemory(s->device, s->textVertexMemory);
+    s->textVertexCount = (uint32_t) count;
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeDestroy(JNIEnv*, jobject) {
     State* s = state;
     if (!s) return;
@@ -665,6 +727,10 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeDestroy(JNIEnv*, jobject) {
         if (s->commandPool) vkDestroyCommandPool(s->device, s->commandPool, nullptr);
         if (s->vertModule) vkDestroyShaderModule(s->device, s->vertModule, nullptr);
         if (s->fragModule) vkDestroyShaderModule(s->device, s->fragModule, nullptr);
+        if (s->textVertModule) vkDestroyShaderModule(s->device, s->textVertModule, nullptr);
+        if (s->textFragModule) vkDestroyShaderModule(s->device, s->textFragModule, nullptr);
+        if (s->textVertexBuffer) vkDestroyBuffer(s->device, s->textVertexBuffer, nullptr);
+        if (s->textVertexMemory) vkFreeMemory(s->device, s->textVertexMemory, nullptr);
         vkDestroyDevice(s->device, nullptr);
     }
     if (s->surface) vkDestroySurfaceKHR(s->instance, s->surface, nullptr);
