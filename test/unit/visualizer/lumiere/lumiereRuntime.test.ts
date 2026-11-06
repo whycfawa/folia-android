@@ -5,6 +5,7 @@ import { compileLumiereProgram } from '@/components/visualizer/lumiere/lumierePr
 import {
     LUMIERE_QUALITY_PROFILES,
     LUMIERE_LIVE_SCENE_KEYS,
+    LUMIERE_REDUCED_RENDER_RESOLUTION,
     requiresLumiereSceneRebuild,
     resolveLumiereBloomLevelDrop,
     resolveLumiereGraphicsResolution,
@@ -13,6 +14,7 @@ import {
 } from '@/components/visualizer/lumiere/lumiereRuntimeTuning';
 import { resolveLumiereSceneFrames } from '@/components/visualizer/lumiere/lumiereSceneFrames';
 import { LUMIERE_TRANSITIONS } from '@/components/visualizer/lumiere/lumiereTransitions';
+import { budgetStarfallSpec } from '@/components/visualizer/lumiere/light/starfall';
 import {
     createLumiereAudioSampler,
     normalizeLumiereAudioValue,
@@ -46,15 +48,35 @@ describe('绘光 tuning → 场景 tuning', () => {
         expect(requiresLumiereSceneRebuild(hidden, base)).toBe(false);
     });
 
-    it('画质档封顶倍频、低画质减浮尘', () => {
+    it('画质档封顶倍频、低画质减浮尘并限制星空粒子', () => {
         const tuning = { ...DEFAULT_LUMIERE_TUNING, fogOctaves: 6, moteAmount: 1 };
         expect(toLumiereSceneTuning({ ...tuning, renderQuality: 'full' }, { showText: true }).fogOctaves).toBe(6);
         expect(toLumiereSceneTuning({ ...tuning, renderQuality: 'balanced' }, { showText: true }).fogOctaves).toBe(4);
         const low = toLumiereSceneTuning({ ...tuning, renderQuality: 'low' }, { showText: true });
         expect(low.fogOctaves).toBe(3);
         expect(low.moteAmount).toBeCloseTo(LUMIERE_QUALITY_PROFILES.low.moteScale);
+        expect(low.starfallScale).toBe(LUMIERE_QUALITY_PROFILES.low.starfallScale);
+        expect(low.starfallMaxStars).toBe(LUMIERE_QUALITY_PROFILES.low.maxStarfallStars);
+        expect(low.starfallMaxRain).toBe(LUMIERE_QUALITY_PROFILES.low.maxStarfallRain);
         // 用户设得比上限低时按用户的。
         expect(toLumiereSceneTuning({ ...tuning, fogOctaves: 2, renderQuality: 'low' }, { showText: true }).fogOctaves).toBe(2);
+    });
+
+    it('低画质把光位默认的数百个星空粒子压到场景预算内', () => {
+        const source = {
+            stars: 620,
+            opening: 3.2,
+            rain: 220,
+            rainSpeed: 0.45,
+            rainSpread: 1.4,
+            brightness: 1.1,
+        };
+        const budgeted = budgetStarfallSpec(source, {
+            scale: LUMIERE_QUALITY_PROFILES.low.starfallScale,
+            maxStars: LUMIERE_QUALITY_PROFILES.low.maxStarfallStars,
+            maxRain: LUMIERE_QUALITY_PROFILES.low.maxStarfallRain,
+        });
+        expect(budgeted).toMatchObject({ stars: 80, rain: 12, opening: 3.2, brightness: 1.1 });
     });
 
     it('每帧现读的字段不重建，烘焙进场景的字段与 bloom 跨 0 才重建', () => {
@@ -67,6 +89,7 @@ describe('绘光 tuning → 场景 tuning', () => {
         expect(requiresLumiereSceneRebuild(base, { ...base, themeIcons: false })).toBe(true);
         expect(requiresLumiereSceneRebuild(base, { ...base, textOnly: true })).toBe(true);
         expect(requiresLumiereSceneRebuild(base, { ...base, themeColorMix: 0.2 })).toBe(true);
+        expect(requiresLumiereSceneRebuild(base, { ...base, starfallScale: 0.3 })).toBe(true);
         expect(requiresLumiereSceneRebuild(base, { ...base, overlayFrame: false })).toBe(false);
     });
 });
@@ -77,8 +100,8 @@ describe('绘光画质档的分辨率', () => {
         expect(resolveLumiereRenderResolution(0.5)).toBe(1);
         expect(resolveLumiereRenderResolution(1.25)).toBe(1.25);
         expect(resolveLumiereRenderResolution(3)).toBe(2);
-        expect(resolveLumiereRenderResolution(2, true)).toBe(1);
-        expect(resolveLumiereRenderResolution(3, true)).toBe(1);
+        expect(resolveLumiereRenderResolution(2, true)).toBe(LUMIERE_REDUCED_RENDER_RESOLUTION);
+        expect(resolveLumiereRenderResolution(3, true)).toBe(LUMIERE_REDUCED_RENDER_RESOLUTION);
         expect(resolveLumiereRenderResolution(1.25, false)).toBe(1.25);
     });
 

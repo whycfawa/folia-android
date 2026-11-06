@@ -6,6 +6,9 @@ import { LUMIERE_BRIGHT_DARK_FIELD_FLOOR, resolveLumiereDarkField } from '@/comp
 import { resolveLumierePalette } from '@/components/visualizer/lumiere/scene';
 import { frameBand } from '@/components/visualizer/lumiere/text/lineWrap';
 import { createLyricWindow, type WindowTypography } from '@/components/visualizer/lumiere/text/lyricWindow';
+import { createWindowGeometry } from '@/components/visualizer/lumiere/text/windowGeometry';
+import { resolveLinePrebuildLimit, shouldPrebuildLine } from '@/components/visualizer/lumiere/text/windowLineStore';
+import { LEAD, resolveEffectHandoffWeight } from '@/components/visualizer/lumiere/text/windowTiming';
 import { installFakeTextMeasure } from './lumiereFixtures';
 
 // test/unit/visualizer/lumiere/lumiereLyricWindow.test.ts
@@ -130,6 +133,99 @@ describe('歌词窗口的排版', () => {
     const band = frameBand(WIDTH, HEIGHT);
     // 标准光位：字号 0.085 个画面高的第一个。
     const standard = LUMIERE_PROFILES.findIndex(profile => profile.heroSize === 0.085);
+
+    it('低画质邻行档只遍历上一行与当前行', () => {
+        const lines = Array.from({ length: 9 }, (_, index) => line('歌', index * 5));
+        const profile = LUMIERE_PROFILES[standard]!;
+        const height = HEIGHT;
+        const band = frameBand(WIDTH, height);
+        const geometry = createWindowGeometry({
+            options: {
+                width: WIDTH,
+                height,
+                lines,
+                font: 'sans-serif',
+                weight: 500,
+                resolution: 1,
+                region: {
+                    cx: profile.region.cx * aspect,
+                    cy: profile.region.cy,
+                    w: profile.region.w * aspect,
+                    h: profile.region.h,
+                },
+                heroPx: profile.heroSize * height,
+                neighbors: 1,
+                typography: 'horizontal',
+                decay: profile.decay,
+                seed: 'reduced-reach',
+                sprites,
+            },
+            lineCount: lines.length,
+            band,
+            columnCap: (band.bottom - band.top) * height,
+            maxWidthOf: () => (band.right - band.left) * height,
+            nextAlpha: 0,
+            lineOf: () => {
+                throw new Error('activeRange should not build line views');
+            },
+        });
+        const range = geometry.activeRange(lines[4]!.startTime + 1);
+        expect(range.high).toBe(range.current);
+        expect(range.low).toBe(range.current - 1);
+    });
+
+    it('低画质换句时保留旧句到淡出结束，并让局部字效平滑交接', () => {
+        const lines = Array.from({ length: 9 }, (_, index) => line('歌', 2 + index * 4));
+        const profile = LUMIERE_PROFILES[standard]!;
+        const geometry = createWindowGeometry({
+            options: {
+                width: WIDTH,
+                height: HEIGHT,
+                lines,
+                font: 'sans-serif',
+                weight: 500,
+                resolution: 1,
+                region: {
+                    cx: profile.region.cx * aspect,
+                    cy: profile.region.cy,
+                    w: profile.region.w * aspect,
+                    h: profile.region.h,
+                },
+                heroPx: profile.heroSize * HEIGHT,
+                neighbors: 1,
+                typography: 'horizontal',
+                decay: profile.decay,
+                seed: 'reduced-fade',
+                sprites,
+            },
+            lineCount: lines.length,
+            band,
+            columnCap: (band.bottom - band.top) * HEIGHT,
+            maxWidthOf: () => (band.right - band.left) * HEIGHT,
+            nextAlpha: 0,
+            lineOf: () => {
+                throw new Error('activeRange should not build line views');
+            },
+        });
+        const activation = lines[4]!.startTime - LEAD;
+
+        expect(geometry.activeRange(activation)).toMatchObject({ current: 4, low: 2, high: 4 });
+        expect(geometry.activeRange(activation + 0.91)).toMatchObject({ current: 4, low: 3, high: 4 });
+        expect(geometry.activeRange(lines[0]!.startTime - LEAD)).toMatchObject({ current: 0, low: 0, high: 0 });
+        expect(resolveEffectHandoffWeight(lines, 4, 4, activation)).toBe(0);
+        expect(resolveEffectHandoffWeight(lines, 4, 3, activation)).toBe(1);
+        expect(resolveEffectHandoffWeight(lines, 4, 4, activation + 0.18)).toBe(1);
+        expect(resolveEffectHandoffWeight(lines, 4, 3, activation + 0.18)).toBe(0);
+    });
+
+    it('低画质只预建下一句，并等到接近换句再构建', () => {
+        const nextLine = line('歌', 12);
+        expect(resolveLinePrebuildLimit(1)).toBe(1);
+        expect(resolveLinePrebuildLimit(2)).toBe(2);
+        expect(shouldPrebuildLine(nextLine, nextLine.startTime - LEAD - 0.6, 1)).toBe(false);
+        expect(shouldPrebuildLine(nextLine, nextLine.startTime - LEAD - 0.5, 1)).toBe(true);
+        expect(shouldPrebuildLine(nextLine, 0, 2)).toBe(true);
+    });
 
     it.each(profiles)('%s：当前行（含长句）落在画框里（文字区只定中心，不限行长）', (_kind, profileIndex) => {
         for (const typography of ['horizontal', 'vertical', 'crossed'] as const) {

@@ -31,12 +31,35 @@ export interface StarfallSpec {
     brightness: number;
 }
 
+export interface StarfallBudget {
+    scale: number;
+    maxStars: number;
+    maxRain: number;
+}
+
+/** Applies a quality budget without changing a rig's opening or light response. */
+export const budgetStarfallSpec = (spec: StarfallSpec, budget: StarfallBudget): StarfallSpec => ({
+    ...spec,
+    stars: Math.min(budget.maxStars, Math.max(1, Math.round(spec.stars * budget.scale))),
+    rain: spec.rain > 0
+        ? Math.min(budget.maxRain, Math.max(1, Math.round(spec.rain * budget.scale)))
+        : 0,
+});
+
 /** 主光柱在开场的什么时刻点亮（相对镜头开始，秒）。 */
 export const starfallIgnition = (spec: StarfallSpec) => spec.opening * (0.45 + LUMIERE_NEUTRAL_OFFSET);
 
-interface Star {
+interface VisibleState {
+    visible: boolean;
+    trailVisible: boolean;
+    tint: number;
+}
+
+interface Star extends VisibleState {
     sprite: Sprite;
     trail: Sprite;
+    pointScale: number;
+    trailBaseScaleY: number;
     x: number;
     y: number;
     fromY: number;
@@ -48,9 +71,11 @@ interface Star {
     twinkleFreq: number;
 }
 
-interface Drop {
+interface Drop extends VisibleState {
     sprite: Sprite;
     trail: Sprite;
+    pointScale: number;
+    trailBaseScaleY: number;
     x: number;
     period: number;
     phase: number;
@@ -79,6 +104,10 @@ export const createStarfall = (
     const trails = new pixi.Container();
     const points = new pixi.Container();
     view.addChild(trails, points);
+    const dotWidth = Math.max(1, options.dot.width);
+    const starWidth = Math.max(1, options.star.width);
+    const streakWidth = Math.max(1, options.streak.width);
+    const streakHeight = Math.max(1, options.streak.height);
 
     const makeTrail = () => {
         const trail = new pixi.Sprite(options.streak);
@@ -93,17 +122,28 @@ export const createStarfall = (
         const sprite = new pixi.Sprite(bright ? options.star : options.dot);
         sprite.anchor.set(0.5);
         points.addChild(sprite);
+        const x = rng() * aspect;
+        // 上密下疏。
+        const y = 0.02 + rng() ** 1.7 * 0.9;
+        const fromY = -0.05 - rng() * 0.25;
+        // 倾泻：大多数在开场前段落下，少数拖到后段。
+        const delay = spec.opening * (0.02 + 0.7 * rng() ** 1.4);
+        const fall = 0.45 + rng() * 0.7;
+        const size = bright ? 0.018 + rng() * 0.02 : 0.003 + rng() * 0.006;
         return {
             sprite,
             trail: makeTrail(),
-            x: rng() * aspect,
-            // 上密下疏。
-            y: 0.02 + rng() ** 1.7 * 0.9,
-            fromY: -0.05 - rng() * 0.25,
-            // 倾泻：大多数在开场前段落下，少数拖到后段。
-            delay: spec.opening * (0.02 + 0.7 * rng() ** 1.4),
-            fall: 0.45 + rng() * 0.7,
-            size: bright ? 0.018 + rng() * 0.02 : 0.003 + rng() * 0.006,
+            pointScale: (size * height) / (bright ? starWidth : dotWidth),
+            trailBaseScaleY: (Math.max(1.5, size * height * 0.7)) / streakHeight,
+            visible: true,
+            trailVisible: true,
+            tint: -1,
+            x,
+            y,
+            fromY,
+            delay,
+            fall,
+            size,
             bright,
             twinklePhase: rng() * Math.PI * 2,
             twinkleFreq: 0.4 + rng() * 1.8,
@@ -116,33 +156,55 @@ export const createStarfall = (
         points.addChild(sprite);
         // 横向：集中在画面中线（光柱）附近，近似正态。
         const spread = (rng() + rng() + rng() - 1.5) / 1.5;
+        const x = aspect * (0.5 + spread * spec.rainSpread * 0.5);
+        const period = (1.25 / Math.max(spec.rainSpeed, 0.01)) * (0.7 + rng() * 0.6);
+        const phase = rng();
+        const size = 0.003 + rng() * 0.005;
+        const sway = (rng() - 0.5) * 0.02;
         return {
             sprite,
             trail: makeTrail(),
-            x: aspect * (0.5 + spread * spec.rainSpread * 0.5),
-            period: (1.25 / Math.max(spec.rainSpeed, 0.01)) * (0.7 + rng() * 0.6),
-            phase: rng(),
-            size: 0.003 + rng() * 0.005,
-            sway: (rng() - 0.5) * 0.02,
+            pointScale: (size * height) / dotWidth,
+            trailBaseScaleY: (Math.max(1.5, size * height * 0.7)) / streakHeight,
+            visible: true,
+            trailVisible: true,
+            tint: -1,
+            x,
+            period,
+            phase,
+            size,
+            sway,
         };
     });
 
-    const place = (sprite: Sprite, trail: Sprite, x: number, y: number, size: number, alpha: number, speed: number, color: number) => {
-        sprite.visible = alpha > 0.004;
-        trail.visible = sprite.visible && speed > 0.05;
-        if (!sprite.visible) return;
-        sprite.position.set(x * height, y * height);
-        sprite.width = size * height;
-        sprite.height = size * height;
-        sprite.alpha = alpha;
-        sprite.tint = color;
-        if (trail.visible) {
+    const place = (item: Star | Drop, x: number, y: number, scale: number, alpha: number, speed: number, color: number) => {
+        const visible = alpha > 0.004;
+        if (item.visible !== visible) {
+            item.sprite.visible = visible;
+            item.visible = visible;
+        }
+        const trailVisible = visible && speed > 0.05;
+        if (item.trailVisible !== trailVisible) {
+            item.trail.visible = trailVisible;
+            item.trailVisible = trailVisible;
+        }
+        if (!visible) return;
+        item.sprite.position.set(x * height, y * height);
+        item.sprite.scale.set(item.pointScale * scale);
+        item.sprite.alpha = alpha;
+        if (item.tint !== color) {
+            item.sprite.tint = color;
+            item.trail.tint = color;
+            item.tint = color;
+        }
+        if (trailVisible) {
             // 拖尾长度随速度，朝上（锚点在尾端 = 光点处）。
-            trail.position.set(x * height, y * height);
-            trail.width = Math.min(0.25, speed * 0.09) * height;
-            trail.height = Math.max(1.5, size * height * 0.7);
-            trail.alpha = alpha * 0.6;
-            trail.tint = color;
+            item.trail.position.set(x * height, y * height);
+            item.trail.scale.set(
+                (Math.min(0.25, speed * 0.09) * height) / streakWidth,
+                item.trailBaseScaleY,
+            );
+            item.trail.alpha = alpha * 0.6;
         }
     };
 
@@ -152,6 +214,9 @@ export const createStarfall = (
             if (progress <= 0) {
                 star.sprite.visible = false;
                 star.trail.visible = false;
+                // Keep the cached state in sync so the first visible frame after the delay can turn the sprite back on.
+                star.visible = false;
+                star.trailVisible = false;
                 continue;
             }
             const eased = easeOutCubic(progress);
@@ -164,7 +229,7 @@ export const createStarfall = (
             const lit = compressLight(lightAt(beams, star.x, y));
             const base = progress < 1 ? 0.9 : (star.bright ? 0.7 : 0.45) * twinkle;
             const alpha = clamp01((base + lit * 0.8 + flash) * spec.brightness * fade);
-            place(star.sprite, star.trail, star.x, y, star.size * (1 + flash * 1.5), alpha, speed, color);
+            place(star, star.x, y, 1 + flash * 1.5, alpha, speed, color);
         }
         // 光雨：开场之后才开始，渐强。
         const rainIn = clamp01((local - spec.opening * 0.6) / 1.5);
@@ -175,7 +240,7 @@ export const createStarfall = (
             const lit = compressLight(lightAt(beams, x, y));
             const edge = clamp01(cycle / 0.08) * clamp01((1 - cycle) / 0.15);
             const alpha = clamp01((0.18 + lit * 1.1) * edge * rainIn * fade * spec.brightness);
-            place(drop.sprite, drop.trail, x, y, drop.size, alpha, 1.25 / drop.period, color);
+            place(drop, x, y, 1, alpha, 1.25 / drop.period, color);
         }
     };
 

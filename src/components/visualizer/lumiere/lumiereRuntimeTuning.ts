@@ -19,6 +19,12 @@ export interface LumiereQualityProfile {
     maxFogOctaves: number;
     /** 浮尘数量倍率（乘在用户设置上）。 */
     moteScale: number;
+    /** 星空与光雨数量倍率。 */
+    starfallScale: number;
+    /** 单场景星空粒子上限。 */
+    maxStarfallStars: number;
+    /** 单场景光雨粒子上限。 */
+    maxStarfallRain: number;
 }
 
 /**
@@ -30,18 +36,43 @@ export interface LumiereQualityProfile {
  *   最小一级与 full 完全同尺寸，辉光宽度不变。
  */
 export const LUMIERE_QUALITY_PROFILES: Record<LumiereRenderQuality, LumiereQualityProfile> = {
-    full: { graphicsScale: 1, maxFogOctaves: 6, moteScale: 1 },
-    balanced: { graphicsScale: 0.7, maxFogOctaves: 4, moteScale: 1 },
-    low: { graphicsScale: 0.5, maxFogOctaves: 3, moteScale: 0.6 },
+    full: {
+        graphicsScale: 1,
+        maxFogOctaves: 6,
+        moteScale: 1,
+        starfallScale: 1,
+        maxStarfallStars: Number.POSITIVE_INFINITY,
+        maxStarfallRain: Number.POSITIVE_INFINITY,
+    },
+    balanced: {
+        graphicsScale: 0.7,
+        maxFogOctaves: 4,
+        moteScale: 1,
+        starfallScale: 1,
+        maxStarfallStars: Number.POSITIVE_INFINITY,
+        maxStarfallRain: Number.POSITIVE_INFINITY,
+    },
+    low: {
+        graphicsScale: 0.5,
+        maxFogOctaves: 3,
+        moteScale: 0.6,
+        starfallScale: 0.3,
+        maxStarfallStars: 80,
+        maxStarfallRain: 12,
+    },
 };
 
 /** 渲染分辨率上限：再高的屏幕也按 2 倍画，4K / 高 DPI 下整屏光场的开销是按像素数涨的。 */
 export const LUMIERE_MAX_RENDER_RESOLUTION = 2;
+/** TV 低配档的画面缓冲上限：整块歌词舞台按 0.8 倍合成，投屏距离下保留可读性。 */
+export const LUMIERE_REDUCED_RENDER_RESOLUTION = 0.8;
 
-/** 画布（文字、画框）的渲染分辨率：devicePixelRatio 钳在 1..2。 */
+/** 画布（文字、画框）的渲染分辨率：普通宿主钳在 1..2，低配 TV 另有 0.8 倍像素预算。 */
 export const resolveLumiereRenderResolution = (devicePixelRatio: number | undefined, reducedEffects = false) => {
     const ratio = typeof devicePixelRatio === 'number' && Number.isFinite(devicePixelRatio) ? devicePixelRatio : 1;
-    return Math.min(reducedEffects ? 1 : LUMIERE_MAX_RENDER_RESOLUTION, Math.max(1, ratio));
+    return reducedEffects
+        ? LUMIERE_REDUCED_RENDER_RESOLUTION
+        : Math.min(LUMIERE_MAX_RENDER_RESOLUTION, Math.max(1, ratio));
 };
 
 /**
@@ -87,6 +118,9 @@ export const toLumiereSceneTuning = (
         fogDensity: tuning.fogDensity,
         darkField: tuning.darkField,
         moteAmount: tuning.moteAmount * profile.moteScale,
+        starfallScale: profile.starfallScale,
+        starfallMaxStars: profile.maxStarfallStars,
+        starfallMaxRain: profile.maxStarfallRain,
         bloom: tuning.bloom,
         textBloom: tuning.textBloom,
         unlitOpacity: tuning.unlitOpacity,
@@ -140,6 +174,9 @@ const crossesZero = (previous: number, next: number) => (previous > 0) !== (next
  */
 export const requiresLumiereSceneRebuild = (previous: LumiereSceneTuning, next: LumiereSceneTuning) => (
     previous.moteAmount !== next.moteAmount
+    || previous.starfallScale !== next.starfallScale
+    || previous.starfallMaxStars !== next.starfallMaxStars
+    || previous.starfallMaxRain !== next.starfallMaxRain
     || previous.windowNeighbors !== next.windowNeighbors
     || previous.decay !== next.decay
     || previous.echo !== next.echo

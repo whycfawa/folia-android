@@ -116,6 +116,12 @@ float fog(vec2 p, float t) {
     vec2 drift = uFogB.xy * t;
     vec2 q = (p - drift) * uFogA.z;
     float octaves = uFogB.w;
+    // 低画质只有 2 个倍频：跳过两组额外 3 倍频域扭曲，直接采样基础烟层。
+    // 这片光场本来就是低频柔光，投影仪上几乎看不出轮廓损失，却能省下最多的大块片元计算。
+    if (octaves < 2.5) {
+        float n = fbm(q, octaves);
+        return smoothstep(0.28, 0.82, n);
+    }
     vec2 w = vec2(
         fbm(q + vec2(0.0, t * 0.07), 3.0),
         fbm(q + vec2(5.2, 1.3) - vec2(t * 0.05, 0.0), 3.0)

@@ -12,6 +12,12 @@ describe('TV performance profile', () => {
         expect(tuning.bloom).toBe(0);
         expect(tuning.textBloom).toBe(0);
         expect(tuning.frontBokeh).toBe(false);
+        expect(tuning.moteAmount).toBe(0);
+        expect(tuning.fogOctaves).toBe(2);
+        expect(tuning.lineArt).toBe(false);
+        expect(tuning.themeIcons).toBe(false);
+        expect(tuning.windowNeighbors).toBe(1);
+        expect(tuning.hideTrails).toBe(true);
         expect(tuning.textOnly).toBe(false);
         expect(tuning.lightIntensity).toBeGreaterThan(0);
         expect(resolveTvLumiereTuning(false).renderQuality).toBe('balanced');

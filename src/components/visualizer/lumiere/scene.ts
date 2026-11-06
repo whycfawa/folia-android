@@ -9,7 +9,7 @@ import { BURST_DURATION, burstLightBoost, createCrossBurst, MAX_BURSTS, planBurs
 import { createLightField } from './light/lightFieldShader';
 import { createMotes, type MotesLayer } from './light/motes';
 import { MAX_BEAMS, resolveBeams, type LightRig, type ResolvedBeam } from './light/rig';
-import { createStarfall, starfallIgnition } from './light/starfall';
+import { budgetStarfallSpec, createStarfall, starfallIgnition } from './light/starfall';
 import type { LightSprites } from './light/sprites';
 import { createLineArt, showLineArtLayer, type LineArtLayer } from './lineart/lineArt';
 import { buildShotIconArts } from './lineart/themeIcons';
@@ -211,11 +211,13 @@ export const createLumiereScene = (pixi: PixiModule, options: LumiereSceneOption
     // 运镜最多把边缘露出约 1.4%（手持浮动 0.6% + 呼吸缩放 0.4% + 平移超出推近的部分 + 旋转），外扩 2% 盖住。
     const overscan = Math.ceil(Math.max(width, height) * 0.02);
     const field = createLightField(pixi, width, height, overscan);
-    const lineArts: LineArtLayer[] = shots.map((shot, index) => createLineArt(pixi, {
-        height,
-        spec: shot.profile.lineArt({ aspect, random: createRng(`${options.seed}:${index}:${shot.profile.kind}:art`) }),
-        starTexture: sprites.star,
-    }));
+    const lineArts: LineArtLayer[] = tuning.lineArt && !tuning.textOnly
+        ? shots.map((shot, index) => createLineArt(pixi, {
+            height,
+            spec: shot.profile.lineArt({ aspect, random: createRng(`${options.seed}:${index}:${shot.profile.kind}:art`) }),
+            starTexture: sprites.star,
+        }))
+        : [];
     const lineArtHolder = new pixi.Container();
     lineArts.forEach(layer => lineArtHolder.addChild(layer.view));
     lineArtHolder.visible = tuning.lineArt;
@@ -241,9 +243,18 @@ export const createLumiereScene = (pixi: PixiModule, options: LumiereSceneOption
     const unitDuration = options.endTime - options.startTime;
     // 只画字（textOnly）时没有开场（光一开始就是满的，字按满光算明暗）。
     const canOpen = options.opening && unitDuration >= 2 && !tuning.textOnly;
-    const starfallSpec = baseStarfall && canOpen
-        ? { ...baseStarfall, opening: Math.min(baseStarfall.opening, Math.max(0.8, unitDuration * 0.4)) }
-        : baseStarfall;
+    const starfallSpec = baseStarfall
+        ? {
+            ...budgetStarfallSpec(baseStarfall, {
+                scale: tuning.starfallScale,
+                maxStars: tuning.starfallMaxStars,
+                maxRain: tuning.starfallMaxRain,
+            }),
+            opening: canOpen
+                ? Math.min(baseStarfall.opening, Math.max(0.8, unitDuration * 0.4))
+                : baseStarfall.opening,
+        }
+        : null;
     const starfall = starfallSpec
         ? createStarfall(pixi, {
             width, height, seed: options.seed, spec: starfallSpec,

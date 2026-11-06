@@ -61,6 +61,9 @@ export const createWindowGeometry = ({
     options, lineCount, band, columnCap, maxWidthOf, nextAlpha, lineOf,
 }: WindowGeometryDeps) => {
     const { height, region, heroPx, typography, decay } = options;
+    // 单邻行档只会显示上一句；下一句槽位本身就是透明，不必提前构建和逐字更新。
+    const previousReach = options.neighbors <= 1 ? 1 : WINDOW_REACH;
+    const nextReach = options.neighbors <= 1 ? 0 : WINDOW_REACH;
     const fontH = heroPx / height;
     const driftScale = options.drift ?? 1;
     /** 第 c 行成为当前行时的排版（c = −1 即第一行之前，按第一行的排版）。 */
@@ -352,12 +355,13 @@ export const createWindowGeometry = ({
      * 槽位要看当前行 ±2 行的排版，更远的行透明度都是 0。只由时刻决定。
      */
     const activeRange = (time: number) => {
-        const { current } = resolveWindowCursor(options.lines, time);
+        const { current, phase } = resolveWindowCursor(options.lines, time);
         const first = firstLiveChange(time, current);
+        const fadingPrevious = options.neighbors <= 1 && current > 0 && phase < 0.6 ? 1 : 0;
         return {
             current,
-            low: Math.max(0, Math.min(current, first) - WINDOW_REACH),
-            high: Math.min(lineCount - 1, Math.max(current, 0) + WINDOW_REACH),
+            low: Math.max(0, Math.min(current, first) - previousReach - fadingPrevious),
+            high: Math.min(lineCount - 1, Math.max(current, 0) + nextReach),
         };
     };
 

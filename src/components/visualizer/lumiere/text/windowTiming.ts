@@ -53,11 +53,29 @@ const SPOT_SAMPLES = 8;
 /** 未唱的行从开始滑动前多久开始聚拢、聚拢多久。 */
 export const GATHER_LEAD = 1.6;
 export const GATHER = 1.8;
+/** 换行时，当前句与上一句的局部字效在这么短时间内交接。 */
+export const EFFECT_HANDOFF = 0.18;
 
 export const smooth = (value: number) => {
     const t = Math.min(1, Math.max(0, value));
     return t * t * (3 - 2 * t);
 };
+
+/**
+ * 当前句局部字效（光晕、闪点）的交接权重。
+ * 新句短暂淡入时，上一句同步淡出，避免换行边界把仍在发光的字效一帧截断。
+ */
+export const resolveEffectHandoffWeight = (
+    lines: readonly Line[],
+    current: number,
+    index: number,
+    time: number,
+) => {
+    if (current < 0 || index < current - 1 || index > current) return 0;
+    const handoff = smooth((time - (lines[current]!.startTime - LEAD)) / EFFECT_HANDOFF);
+    return index === current ? handoff : 1 - handoff;
+};
+
 export const easeInOutCubic = (value: number) => {
     const t = Math.min(1, Math.max(0, value));
     return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;

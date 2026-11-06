@@ -82,6 +82,12 @@ export interface LumiereSceneTuning {
     darkField: number;
     /** 浮尘数量倍率。 */
     moteAmount: number;
+    /** 星空与光雨的粒子数量倍率。 */
+    starfallScale: number;
+    /** 星空粒子绝对上限（低画质投影仪不能按光位默认值创建数百个 Sprite）。 */
+    starfallMaxStars: number;
+    /** 光雨粒子绝对上限。 */
+    starfallMaxRain: number;
     /** 图形组（光场、线稿、浮尘）bloom 强度倍率（乘在默认的高值上）。 */
     bloom: number;
     /** 文字组 bloom 强度倍率。 */
@@ -123,6 +129,9 @@ export const DEFAULT_LUMIERE_SCENE_TUNING: LumiereSceneTuning = {
     fogDensity: 1,
     darkField: 0.75,
     moteAmount: 1,
+    starfallScale: 1,
+    starfallMaxStars: Number.POSITIVE_INFINITY,
+    starfallMaxRain: Number.POSITIVE_INFINITY,
     bloom: 1,
     textBloom: 1,
     unlitOpacity: 0.22,

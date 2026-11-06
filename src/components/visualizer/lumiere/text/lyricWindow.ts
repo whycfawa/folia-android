@@ -19,6 +19,7 @@ import {
     lerp,
     lerpPoint,
     LIGHT_UP,
+    resolveEffectHandoffWeight,
     resolveSpotX,
     SLIDE,
     smooth,
@@ -44,8 +45,8 @@ import { createWindowProtection } from './windowProtection';
 // 间隙（lineClearance）：邻行的漂移不朝当前行走，当前行只在槽位附近绕小圈；非当前行的字落进当前行的
 // 墨迹框（外扩一点）时压暗，当前行始终清楚。
 //
-// 按需构建（windowLines）：只有当前行附近几行（还在滑动的行往前再多三行、往后三行）有字形纹理、排版与精灵，
-// 往后预先建两行（每帧最多一行），离开后释放；整首歌一个单元时构建也只花几行的钱。
+// 按需构建（windowLines）：只有当前行附近几行（还在滑动的行往前再多三行、往后三行）有字形纹理、排版与精灵；
+// 完整排版往后预建两行，低配单邻行档只预建下一句，离开后释放；整首歌一个单元时构建也只花几行的钱。
 //
 // 点亮：每个字的亮度 = 点亮进度 × (底光 + 该字位置的光场强度)，唱到的一瞬有四芒闪点，受光强的字
 // 下面垫一层柔光晕——这就是参考图里化学式被光柱照到的部分局部发光。全部是 t 的纯函数。
@@ -230,6 +231,8 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
             const view = lines.viewAt(index)!;
             const transform = frameTransforms[index]!;
             const { current, scale } = transform;
+            const currentLine = index === current;
+            const effectHandoff = resolveEffectHandoffWeight(options.lines, current, index, time);
             const lineAlpha = transform.alpha * intensity;
             const visible = lineAlpha > 0.003;
             view.holder.visible = visible;
@@ -282,19 +285,22 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
                 glyph.glyph.tint = hexOf(mixRgb(cold, hot, lit));
 
                 // bloom 已经很强，光晕与闪点只做「局部更亮」的那一点，不能叠成一团白。
+                // 附加 Sprite 默认只让当前句承担；换句的短暂交接期让上一句残留淡出，之后不再逐字更新。
                 const haloAlpha = glyphAlpha * lit * (0.03 + 0.14 * illumination + 0.08 * flash) * (tints ? KEYWORD_HALO_GAIN : 1);
-                glyph.halo.visible = haloAlpha > 0.003;
+                const handedHaloAlpha = haloAlpha * effectHandoff;
+                glyph.halo.visible = handedHaloAlpha > 0.003;
                 if (glyph.halo.visible) {
                     glyph.halo.position.set(gx, gy);
                     const size = fontPx * (2.2 + 0.8 * illumination);
                     glyph.halo.width = size;
                     glyph.halo.height = size * 0.9;
-                    glyph.halo.alpha = haloAlpha;
+                    glyph.halo.alpha = handedHaloAlpha;
                     glyph.halo.tint = tints ? tints.halo : litHex;
                 }
 
                 const starAlpha = lineAlpha * flash * 0.55 * shield;
-                glyph.star.visible = starAlpha > 0.003;
+                const handedStarAlpha = starAlpha * effectHandoff;
+                glyph.star.visible = handedStarAlpha > 0.003;
                 if (glyph.star.visible) {
                     // 亮点避开笔画中心，按种子上下错落；闪的过程中略微转动。
                     const star = glyph.starShape;
@@ -303,14 +309,14 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
                     const size = fontPx * star.size * (0.8 + 0.5 * flash);
                     glyph.star.width = size;
                     glyph.star.height = size;
-                    glyph.star.alpha = starAlpha;
+                    glyph.star.alpha = handedStarAlpha;
                     glyph.star.tint = tints ? tints.star : starHex;
                 }
             }
 
             // 追字光斑：沿行内连续移动，并对过去 SPOT_WINDOW 秒的位置取平均（仍只由 t 决定），
             // 字与字之间的停顿、快慢变化都被抹平；唱前 0.3s 淡入，唱完 0.6s 淡出。
-            const spotAlpha = visible
+            const spotAlpha = visible && (currentLine || index === cursor - 1)
                 ? lineAlpha * smooth((time - view.singStart + 0.3) / 0.3) * (1 - smooth((time - view.singEnd) / 0.6))
                 : 0;
             view.spot.visible = spotAlpha > 0.003;
@@ -336,7 +342,7 @@ export const createLyricWindow = (pixi: PixiModule, options: LyricWindowOptions)
                 view.spot.tint = litHex;
             }
         }
-        lines.prebuild(high);
+        lines.prebuild(high, time);
     };
 
     return {

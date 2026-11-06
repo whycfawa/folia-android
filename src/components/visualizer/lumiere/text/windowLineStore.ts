@@ -4,7 +4,7 @@ import { createRng, createRngAt } from '../lumiereRandom';
 import type { Rgb } from '../color';
 import { keywordTints } from './keywordColors';
 import { buildLineMetas, buildLineView, type LineView } from './windowLines';
-import { DRIFT_SPEED } from './windowTiming';
+import { DRIFT_SPEED, LEAD } from './windowTiming';
 import { freePlacements } from './windowSlots';
 import type { LyricWindowOptions } from './lyricWindow';
 import type { TextMeasurer } from './lineWrap';
@@ -17,7 +17,20 @@ type PixiModule = typeof import('pixi.js');
 
 /** 按需构建：当前行前后各画几行、往后预先建几行、离开窗口多远才释放。 */
 const PREBUILD = 2;
+const PREBUILD_LEAD = 0.5;
 const KEEP_MARGIN = 2;
+
+/** 低配 TV 只预建下一句；完整排版仍保留原来的两句预建提前量。 */
+export const resolveLinePrebuildLimit = (neighbors: LyricWindowOptions['neighbors']) => (
+    neighbors <= 1 ? 1 : PREBUILD
+);
+
+/** 单邻行档等到下一句接近滑入时再预建，避免空闲期反复构造看不到的字形。 */
+export const shouldPrebuildLine = (
+    line: LyricWindowOptions['lines'][number],
+    time: number,
+    neighbors: LyricWindowOptions['neighbors'],
+) => neighbors > 1 || time >= line.startTime - LEAD - PREBUILD_LEAD;
 
 export interface WindowLineStoreDeps {
     pixi: PixiModule;
@@ -121,8 +134,12 @@ export const createWindowLineStore = ({
         }
     };
     /** 往后预先建几行（每帧最多一行），当前行换过去时不用当场构建。 */
-    const prebuild = (high: number) => {
-        for (let index = high + 1; index <= Math.min(lineCount - 1, high + PREBUILD); index += 1) {
+    const prebuild = (high: number, time: number) => {
+        const first = high + 1;
+        const next = options.lines[first];
+        if (!next || !shouldPrebuildLine(next, time, options.neighbors)) return;
+        const last = Math.min(lineCount - 1, high + resolveLinePrebuildLimit(options.neighbors));
+        for (let index = first; index <= last; index += 1) {
             if (views[index]) continue;
             buildLine(index);
             const lineView = views[index]!;

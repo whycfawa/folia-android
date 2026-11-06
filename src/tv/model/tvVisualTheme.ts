@@ -30,9 +30,13 @@ const TV_LUMIERE_CONSTRAINED: LumiereTuning = {
     bloom: 0,
     textBloom: 0,
     frontBokeh: false,
-    moteAmount: 0.35,
+    moteAmount: 0,
     echo: 0,
+    fogOctaves: 2,
+    lineArt: false,
+    themeIcons: false,
     windowNeighbors: 1,
+    hideTrails: true,
 };
 const TV_LUMIERE_BALANCED: LumiereTuning = {
     ...DEFAULT_LUMIERE_TUNING,
