@@ -949,3 +949,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.407：修复 Vulkan surface 泄漏
 
 - nativeCreate 失败时销毁 VkSurface/Instance/Device，避免重试报 NATIVE_WINDOW_IN_USE。
+
+### 0.7.25-android.408：Vulkan 验证回调
+
+- 有 validation layer 时启用；错误消息写入 vulkanError。

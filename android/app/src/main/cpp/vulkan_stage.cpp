@@ -52,6 +52,7 @@ struct State {
     uint32_t textHeight{1};
     std::vector<VkFramebuffer> framebuffers;
     VkCommandPool commandPool{VK_NULL_HANDLE};
+    VkDebugUtilsMessengerEXT debugMessenger{VK_NULL_HANDLE};
     std::vector<VkCommandBuffer> commands;
     VkSemaphore imageAvailable{VK_NULL_HANDLE};
     VkSemaphore renderFinished{VK_NULL_HANDLE};
@@ -65,6 +66,15 @@ struct State {
 
 State* state = nullptr;
 std::string lastError;
+
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT,
+        VkDebugUtilsMessageTypeFlagsEXT,
+        const VkDebugUtilsMessengerCallbackDataEXT* data,
+        void*) {
+    if (data && data->pMessage) lastError = std::string("validation: ") + data->pMessage;
+    return VK_FALSE;
+}
 
 bool ok(VkResult result, const char* what) {
     if (result != VK_SUCCESS) {
@@ -600,6 +610,24 @@ bool createDevice(State& s, ANativeWindow* window) {
 }
 } // namespace
 
+static bool hasInstanceLayer(const char* name) {
+    uint32_t count = 0;
+    vkEnumerateInstanceLayerProperties(&count, nullptr);
+    std::vector<VkLayerProperties> layers(count);
+    vkEnumerateInstanceLayerProperties(&count, layers.data());
+    for (auto& layer : layers) if (strcmp(layer.layerName, name) == 0) return true;
+    return false;
+}
+
+static bool hasInstanceExtension(const char* name) {
+    uint32_t count = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+    std::vector<VkExtensionProperties> extensions(count);
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data());
+    for (auto& extension : extensions) if (strcmp(extension.extensionName, name) == 0) return true;
+    return false;
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject, jobject surface) {
     if (!surface) { lastError = "null surface"; return 0; }
@@ -609,11 +637,23 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app.pApplicationName = "Folia";
     app.apiVersion = VK_API_VERSION_1_1;
+    std::vector<const char*> extensions = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
+    std::vector<const char*> layers;
+    bool validation = hasInstanceLayer("VK_LAYER_KHRONOS_validation");
+    if (validation) layers.push_back("VK_LAYER_KHRONOS_validation");
+    bool debugUtils = hasInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (debugUtils) extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    VkDebugUtilsMessengerCreateInfoEXT debugInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
+    debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+    debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debugInfo.pfnUserCallback = debugCallback;
     VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     info.pApplicationInfo = &app;
-    const char* extensions[] = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
-    info.enabledExtensionCount = 2;
-    info.ppEnabledExtensionNames = extensions;
+    info.enabledExtensionCount = (uint32_t) extensions.size();
+    info.ppEnabledExtensionNames = extensions.data();
+    info.enabledLayerCount = (uint32_t) layers.size();
+    info.ppEnabledLayerNames = layers.empty() ? nullptr : layers.data();
+    if (validation && debugUtils) info.pNext = &debugInfo;
     if (!ok(vkCreateInstance(&info, nullptr, &s->instance), "instance") ||
         !createDevice(*s, window)) {
         if (s->device) {
@@ -632,6 +672,10 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
         delete s;
         ANativeWindow_release(window);
         return 0;
+    }
+    if (validation && debugUtils) {
+        auto createMessenger = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(s->instance, "vkCreateDebugUtilsMessengerEXT");
+        if (createMessenger) createMessenger(s->instance, &debugInfo, nullptr, &s->debugMessenger);
     }
     ANativeWindow_release(window);
     state = s;
@@ -761,6 +805,10 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeDestroy(JNIEnv*, jobject) {
         if (s->textVertexBuffer) vkDestroyBuffer(s->device, s->textVertexBuffer, nullptr);
         if (s->textVertexMemory) vkFreeMemory(s->device, s->textVertexMemory, nullptr);
         vkDestroyDevice(s->device, nullptr);
+    }
+    if (s->debugMessenger) {
+        auto destroyMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(s->instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (destroyMessenger) destroyMessenger(s->instance, s->debugMessenger, nullptr);
     }
     if (s->surface) vkDestroySurfaceKHR(s->instance, s->surface, nullptr);
     if (s->instance) vkDestroyInstance(s->instance, nullptr);
