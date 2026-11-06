@@ -29,6 +29,17 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 9) {
+        // Pendolo: a pendulum swinging through a dark hall.
+        vec3 base = vec3(0.006, 0.007, 0.012);
+        float swing = 0.5 + 0.22 * sin(pc.time * 0.55);
+        float lamp = exp(-distance(uv, vec2(swing, 0.24)) * 14.0);
+        float cone = 0.0;
+        if (uv.y > 0.24) {
+            float spread = (uv.y - 0.24) * 0.45;
+            cone = smoothstep(spread, spread * 0.2, abs(uv.x - swing)) * (1.0 - (uv.y - 0.24) * 1.2);
+        }
+        color = base + pc.accent.rgb * (lamp * 0.5 + cone * 0.18);
     } else if (pc.mode == 8) {
         // Diorama: layered paper ridges under a warm sky.
         vec3 sky = mix(vec3(0.08, 0.07, 0.12), vec3(0.18, 0.10, 0.09), uv.y);
