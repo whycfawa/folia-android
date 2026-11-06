@@ -986,3 +986,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.416：SPIR-V 1.0
 
 - shader 改 --target-env=vulkan1.0，排除 SPIR-V 1.3 驱动兼容。
+
+### 0.7.25-android.417：管线失败不阻断清屏
+
+- API 1.0；pipeline 失败仍渲染 clear color，避免黑屏。
+- 诊断新增 pipeline 布尔。

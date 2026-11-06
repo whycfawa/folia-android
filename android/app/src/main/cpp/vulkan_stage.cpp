@@ -441,7 +441,8 @@ bool createPipeline(State& s) {
         pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
         if (pipelineResult != VK_SUCCESS) {
             lastError = "pipeline and simple pipeline failed: " + std::to_string((int) pipelineResult);
-            return false;
+            s.pipeline = VK_NULL_HANDLE;
+            return true;
         }
         s.simplePipeline = true;
         lastError = "pipeline fallback: simple";
@@ -583,7 +584,7 @@ bool createSwapchain(State& s) {
         fb.layers = 1;
         if (!ok(vkCreateFramebuffer(s.device, &fb, nullptr, &s.framebuffers[i]), "framebuffer")) return false;
     }
-    if (!createPipeline(s)) return false;
+    createPipeline(s);
     s.commands.resize(s.images.size());
     VkCommandBufferAllocateInfo alloc{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     alloc.commandPool = s.commandPool;
@@ -678,7 +679,7 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     State* s = new State();
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app.pApplicationName = "Folia";
-    app.apiVersion = VK_API_VERSION_1_1;
+    app.apiVersion = VK_API_VERSION_1_0;
     std::vector<const char*> extensions = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
     std::vector<const char*> layers;
     bool validation = hasInstanceLayer("VK_LAYER_KHRONOS_validation");
@@ -755,6 +756,12 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeSetAccent(JNIEnv*, jobject,
 extern "C" JNIEXPORT jstring JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeLastError(JNIEnv* env, jobject) {
     return env->NewStringUTF(lastError.c_str());
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeHasPipeline(JNIEnv*, jobject) {
+    State* s = state;
+    return (s != nullptr && s->pipeline != VK_NULL_HANDLE) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL

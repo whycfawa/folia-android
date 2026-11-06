@@ -72,6 +72,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native long nativeCreate(Surface surface);
     private native boolean nativeRender();
     private native boolean nativeReady();
+    private native boolean nativeHasPipeline();
     private native String nativeLastError();
     private native void nativeSetAccent(int color);
     private native void nativeSetPower(float power);
@@ -79,6 +80,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native void nativeSetDaylight(boolean daylight);
 
     public boolean isVulkanReady() { return nativeReady(); }
+    public boolean hasVulkanPipeline() { return nativeHasPipeline(); }
     public String getVulkanError() { return nativeLastError(); }
     private native void nativeDestroy();
     private native void nativeUpdateText(int width, int height, int[] pixels);
