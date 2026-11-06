@@ -29,6 +29,19 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 7) {
+        // Monet: impressionist water-lily colour washes.
+        vec3 base = mix(vec3(0.05, 0.07, 0.08), vec3(0.10, 0.12, 0.13), uv.y);
+        float petals = 0.0;
+        for (int i = 0; i < 16; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.19, fi * 0.37);
+            vec2 pos = vec2(hash(seed), hash(seed + vec2(4.0, 2.0)));
+            float d = length((uv - pos) * vec2(1.0, 1.4));
+            petals += smoothstep(0.10, 0.0, d) * (0.15 + 0.35 * hash(seed + vec2(9.0, 3.0)));
+        }
+        float shimmer = 0.5 + 0.5 * sin(uv.x * 9.0 + pc.time * 0.3 + uv.y * 5.0);
+        color = base + pc.accent.rgb * petals * 0.5 + vec3(0.04, 0.09, 0.07) * shimmer * 0.4;
     } else if (pc.mode == 6) {
         // Fume: ink smoke curling through a dark field.
         vec3 base = vec3(0.012, 0.014, 0.020);

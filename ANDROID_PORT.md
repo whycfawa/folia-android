@@ -836,3 +836,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.381：Vulkan Fume 场景
 
 - fume 分支：墨烟流体；文字层叠加。
+
+### 0.7.25-android.382：Vulkan Monet 场景
+
+- monet 分支：印象派水面/花瓣色块；文字层叠加。
