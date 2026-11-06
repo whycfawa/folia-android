@@ -67,6 +67,9 @@ public class FoliaNativeStageView extends View {
     private String[] wordTexts = new String[0];
     private float[] wordStarts = new float[0];
     private float[] wordEnds = new float[0];
+    private String[][] charTexts = new String[0][];
+    private float[][] charStarts = new float[0][];
+    private float[][] charEnds = new float[0][];
     private float wordPosition = 0f;
     private long frameCount;
     private boolean playing = true;
@@ -186,15 +189,35 @@ public class FoliaNativeStageView extends View {
             String[] texts = new String[count];
             float[] starts = new float[count];
             float[] ends = new float[count];
+            String[][] chars = new String[count][];
+            float[][] charStartsLocal = new float[count][];
+            float[][] charEndsLocal = new float[count][];
             for (int index = 0; index < count; index++) {
                 JSONObject item = array.optJSONObject(index);
                 texts[index] = item == null ? "" : item.optString("text", "");
                 starts[index] = item == null ? 0f : (float) item.optDouble("startTime", 0);
                 ends[index] = item == null ? 0f : (float) item.optDouble("endTime", 0);
+                JSONArray charArray = item == null ? null : item.optJSONArray("chars");
+                int charCount = charArray == null ? 0 : charArray.length();
+                String[] charText = new String[charCount];
+                float[] charStart = new float[charCount];
+                float[] charEnd = new float[charCount];
+                for (int c = 0; c < charCount; c++) {
+                    JSONObject charItem = charArray.optJSONObject(c);
+                    charText[c] = charItem == null ? "" : charItem.optString("char", "");
+                    charStart[c] = charItem == null ? 0f : (float) charItem.optDouble("startTime", 0);
+                    charEnd[c] = charItem == null ? 0f : (float) charItem.optDouble("endTime", 0);
+                }
+                chars[index] = charText;
+                charStartsLocal[index] = charStart;
+                charEndsLocal[index] = charEnd;
             }
             wordTexts = texts;
             wordStarts = starts;
             wordEnds = ends;
+            charTexts = chars;
+            charStarts = charStartsLocal;
+            charEnds = charEndsLocal;
             wordPosition = position;
         } catch (Throwable ignored) {
         }
@@ -371,6 +394,31 @@ public class FoliaNativeStageView extends View {
             float offsetX = (float) Math.sin(seed + index * 1.7f) * dp(4);
             float offsetY = (float) Math.cos(seed + index * 2.3f) * dp(3);
             float rotation = (float) Math.sin(seed + index * 0.9f) * (passed ? 4f : 1.5f);
+            String[] chars = index < charTexts.length ? charTexts[index] : null;
+            if (chars != null && chars.length > 1) {
+                float charX = baseX;
+                for (int c = 0; c < chars.length; c++) {
+                    float charWidth = lyricPaint.measureText(chars[c]);
+                    float charStart = charStarts[index][c];
+                    float charEnd = charEnds[index][c];
+                    float charProgress = Math.max(0f, Math.min(1f, (wordPosition - charStart) / Math.max(0.001f, charEnd - charStart)));
+                    boolean charPassed = wordPosition > charEnd;
+                    float charScale = 1f + 0.12f * (float) Math.sin(charProgress * Math.PI);
+                    int charAlpha = charPassed ? 0x99 : (wordPosition < charStart ? 0x55 : 0xFF);
+                    int charRgb = stageLight ? 0x111111 : 0xFFFFFF;
+                    lyricPaint.setColor((charAlpha << 24) | charRgb);
+                    lyricPaint.setShadowLayer(wordPosition >= charStart && !charPassed ? dp(14) : 0f, 0f, 0f, accent);
+                    canvas.save();
+                    canvas.translate(charX + charWidth / 2f + offsetX, baseY + offsetY);
+                    canvas.rotate(rotation);
+                    canvas.scale(charScale, charScale);
+                    canvas.drawText(chars[c], -charWidth / 2f, 0f, lyricPaint);
+                    canvas.restore();
+                    charX += charWidth;
+                }
+                baseX += wordWidth + gap;
+                continue;
+            }
             int alpha = passed ? 0x99 : (wordPosition < start ? 0x55 : 0xFF);
             int rgb = stageLight ? 0x111111 : 0xFFFFFF;
             lyricPaint.setColor((alpha << 24) | rgb);

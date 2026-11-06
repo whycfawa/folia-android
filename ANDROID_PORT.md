@@ -711,3 +711,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.352：Classic glow 与翻译
 
 - Classic 当前词加 shadow glow；行翻译居中显示。
+
+### 0.7.25-android.353：Classic 逐字素
+
+- 桥接 grapheme 时间；classic 逐字素绘制、透明度和缩放。

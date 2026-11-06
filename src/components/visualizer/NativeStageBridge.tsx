@@ -10,6 +10,7 @@ import { setNativeStageStats } from '../../services/nativeStageDiagnostics';
 import { runNativeStageControl } from '../../services/nativeStageActions';
 import { getNativeStageTheme, subscribeNativeStageTheme } from '../../services/nativeStageTheme';
 import { audioBands, audioPower, currentTime } from '../../stores/motionSignals';
+import { buildWordGraphemeTimings } from '../../utils/lyrics/graphemeTiming';
 
 // src/components/visualizer/NativeStageBridge.tsx
 // 只做 opt-in 接线：开关打开时启用原生舞台并隐藏 WebView 视觉层；关闭时恢复原样。
@@ -156,6 +157,7 @@ const NativeStageBridge: React.FC = () => {
                 text: word.text,
                 startTime: word.startTime,
                 endTime: word.endTime,
+                chars: buildWordGraphemeTimings(word),
             }));
             void updateNativeStageWords({ words: JSON.stringify(words), position }).catch(() => undefined);
         }, 200);
