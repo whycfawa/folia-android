@@ -892,3 +892,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - VulkanTextAtlas 接入 still：atlas 上传 + glyph 顶点缓冲 + 实例化文字管线。
 - still 不再每帧上传整张 Canvas 文字纹理。
+
+### 0.7.25-android.395：Still 字形颜色/翻译
+
+- glyph 顶点带颜色和 alpha；当前/非当前行透明度进 shader。
+- 翻译副行进 glyph run。

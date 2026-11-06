@@ -281,14 +281,15 @@ bool createTextPipeline(State& s) {
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     stages[1].module = s.textFragModule;
     stages[1].pName = "main";
-    VkVertexInputBindingDescription binding{0, 16, VK_VERTEX_INPUT_RATE_VERTEX};
-    VkVertexInputAttributeDescription attrs[2]{};
+    VkVertexInputBindingDescription binding{0, 32, VK_VERTEX_INPUT_RATE_VERTEX};
+    VkVertexInputAttributeDescription attrs[3]{};
     attrs[0] = {0, 0, VK_FORMAT_R32G32_SFLOAT, 0};
     attrs[1] = {1, 0, VK_FORMAT_R32G32_SFLOAT, 8};
+    attrs[2] = {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 16};
     VkPipelineVertexInputStateCreateInfo vertex{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertex.vertexBindingDescriptionCount = 1;
     vertex.pVertexBindingDescriptions = &binding;
-    vertex.vertexAttributeDescriptionCount = 2;
+    vertex.vertexAttributeDescriptionCount = 3;
     vertex.pVertexAttributeDescriptions = attrs;
     VkPipelineInputAssemblyStateCreateInfo assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -443,8 +444,6 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipelineLayout, 0, 1, &s.descriptorSet, 0, nullptr);
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(cmd, 0, 1, &s.textVertexBuffer, &offset);
-            float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-            vkCmdPushConstants(cmd, s.textPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), color);
             vkCmdDraw(cmd, s.textVertexCount, 1, 0, 0);
         }
     }
@@ -705,11 +704,11 @@ extern "C" JNIEXPORT void JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeUpdateQuads(JNIEnv* env, jobject, jfloatArray data, jint count) {
     State* s = state;
     if (!s || !s->device || !data || count <= 0) return;
-    VkDeviceSize size = (VkDeviceSize) count * 4 * sizeof(float);
+    VkDeviceSize size = (VkDeviceSize) count * 8 * sizeof(float);
     if (!ensureTextBuffer(*s, size)) return;
     void* mapped = nullptr;
     vkMapMemory(s->device, s->textVertexMemory, 0, size, 0, &mapped);
-    env->GetFloatArrayRegion(data, 0, count * 4, reinterpret_cast<jfloat*>(mapped));
+    env->GetFloatArrayRegion(data, 0, count * 8, reinterpret_cast<jfloat*>(mapped));
     vkUnmapMemory(s->device, s->textVertexMemory);
     s->textVertexCount = (uint32_t) count;
 }

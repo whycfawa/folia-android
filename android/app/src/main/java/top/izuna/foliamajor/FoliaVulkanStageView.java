@@ -235,10 +235,17 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         nativeUpdateAtlas(VulkanTextAtlas.SIZE, VulkanTextAtlas.SIZE, textAtlas.pixels());
         float[] data = new float[vertices.size()];
         for (int i = 0; i < data.length; i++) data[i] = vertices.get(i);
-        nativeUpdateQuads(data, data.length / 4);
+        nativeUpdateQuads(data, data.length / 8);
     }
 
     private void emitStillLine(List<Float> vertices, int width, int height, String text, String trans, float baselineY, float scale, float alpha) {
+        emitTextRun(vertices, width, height, text, baselineY, scale, alpha);
+        if (trans != null && !trans.isEmpty()) {
+            emitTextRun(vertices, width, height, trans, baselineY + dp(34) * scale, scale * 0.6f, alpha * 0.75f);
+        }
+    }
+
+    private void emitTextRun(List<Float> vertices, int width, int height, String text, float baselineY, float scale, float alpha) {
         if (text == null || text.isEmpty()) return;
         float total = 0f;
         for (int i = 0; i < text.length(); i++) {
@@ -246,6 +253,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             if (glyph != null) total += glyph.advance;
         }
         float x = (width - total * scale) / 2f;
+        float r = daylight ? 0.07f : 1f;
+        float g = daylight ? 0.07f : 1f;
+        float b = daylight ? 0.07f : 1f;
         for (int i = 0; i < text.length(); i++) {
             VulkanTextAtlas.Glyph glyph = textAtlas.get(text.charAt(i));
             if (glyph == null) continue;
@@ -256,18 +266,23 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             float x1 = (x + w) / width;
             float y0 = top / height;
             float y1 = (top + h) / height;
-            addQuad(vertices, x0, y0, x1, y1, glyph.u0, glyph.v0, glyph.u1, glyph.v1);
+            addQuad(vertices, x0, y0, x1, y1, glyph.u0, glyph.v0, glyph.u1, glyph.v1, r, g, b, alpha);
             x += glyph.advance * scale;
         }
     }
 
-    private void addQuad(List<Float> v, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1) {
-        v.add(x0); v.add(y0); v.add(u0); v.add(v0);
-        v.add(x1); v.add(y0); v.add(u1); v.add(v0);
-        v.add(x1); v.add(y1); v.add(u1); v.add(v1);
-        v.add(x0); v.add(y0); v.add(u0); v.add(v0);
-        v.add(x1); v.add(y1); v.add(u1); v.add(v1);
-        v.add(x0); v.add(y1); v.add(u0); v.add(v1);
+    private void addQuad(List<Float> v, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float r, float g, float b, float a) {
+        addVertex(v, x0, y0, u0, v0, r, g, b, a);
+        addVertex(v, x1, y0, u1, v0, r, g, b, a);
+        addVertex(v, x1, y1, u1, v1, r, g, b, a);
+        addVertex(v, x0, y0, u0, v0, r, g, b, a);
+        addVertex(v, x1, y1, u1, v1, r, g, b, a);
+        addVertex(v, x0, y1, u0, v1, r, g, b, a);
+    }
+
+    private void addVertex(List<Float> v, float x, float y, float u, float vv, float r, float g, float b, float a) {
+        v.add(x); v.add(y); v.add(u); v.add(vv);
+        v.add(r); v.add(g); v.add(b); v.add(a);
     }
 
     private void drawStillLine(Canvas canvas, TextPaint paint, int width, String text, String trans, float y, float size, float alpha) {
