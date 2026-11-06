@@ -25,6 +25,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private boolean playing = true;
     private boolean daylight = false;
     private boolean surfaceReady;
+    private boolean chorus;
+    private FoliaNativeStageView canvasStage;
 
     public FoliaVulkanStageView(Context context) { super(context); init(); }
     public FoliaVulkanStageView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
@@ -33,6 +35,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         getHolder().addCallback(this);
         setBackgroundColor(0xFF07070B);
         setZOrderMediaOverlay(false);
+        canvasStage = new FoliaNativeStageView(getContext());
     }
 
     private native long nativeCreate(Surface surface);
@@ -52,11 +55,14 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         this.line = line == null ? "" : line;
         this.translation = lineTranslation == null ? "" : lineTranslation;
         this.playing = playing;
+        this.chorus = chorus;
+        if (canvasStage != null) canvasStage.update(mode, line, nextLine, prevLine, lineTranslation, prevTranslation, nextTranslation, title, artist, accentHex, playing, chorus);
         try { if (accentHex != null && !accentHex.isEmpty()) { accent = Color.parseColor(accentHex); nativeSetAccent(accent); } } catch (Throwable ignored) {}
         renderText();
     }
 
     public void setThemeColors(String primary, String secondary, String background) {
+        if (canvasStage != null) canvasStage.setThemeColors(primary, secondary, background);
         try {
             if (primary != null && !primary.isEmpty()) {
                 accent = Color.parseColor(primary);
@@ -65,12 +71,17 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             }
         } catch (Throwable ignored) {}
     }
-    public void setDaylight(boolean daylight) { this.daylight = daylight; renderText(); }
+    public void setDaylight(boolean daylight) { this.daylight = daylight; if (canvasStage != null) canvasStage.setDaylight(daylight); renderText(); }
     public void updateAudio(float power, float bass, float mid, float treble) {
         nativeSetPower(power);
+        if (canvasStage != null) canvasStage.updateAudio(power, bass, mid, treble);
     }
-    public void updateWords(String json, float position) {}
-    public void setLineProgress(float progress) {}
+    public void updateWords(String json, float position) {
+        if (canvasStage != null) canvasStage.updateWords(json, position);
+    }
+    public void setLineProgress(float progress) {
+        if (canvasStage != null) canvasStage.setLineProgress(progress);
+    }
     public long getFrameCount() { return frameCount; }
     public boolean isSurfaceReady() { return surfaceReady; }
     public boolean isPlaying() { return playing; }
@@ -82,16 +93,12 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(Color.TRANSPARENT);
-        TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextAlign(Paint.Align.CENTER);
-        paint.setColor(daylight ? 0xFF111111 : 0xFFFFFFFF);
-        paint.setTextSize(Math.max(28f, Math.min(64f, width * 0.055f)));
-        paint.setFakeBoldText(true);
-        if (!line.isEmpty()) canvas.drawText(line, width / 2f, height * 0.52f, paint);
-        if (!translation.isEmpty()) {
-            paint.setTextSize(Math.max(14f, paint.getTextSize() * 0.44f));
-            paint.setColor(daylight ? 0x99111111 : 0x99FFFFFF);
-            canvas.drawText(translation, width / 2f, height * 0.6f, paint);
+        if (canvasStage != null) {
+            canvasStage.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY));
+            canvasStage.layout(0, 0, width, height);
+            canvasStage.draw(canvas);
         }
         updateText(bitmap);
         bitmap.recycle();

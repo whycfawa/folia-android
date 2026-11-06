@@ -777,3 +777,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.367：Vulkan 音频能量
 
 - JNI nativeSetPower；push constant 增加 power，glow/粒子亮度随 audioPower。
+
+### 0.7.25-android.368：Vulkan 纹理承接 Canvas 效果
+
+- FoliaVulkanStageView 持有 Canvas 舞台，离屏绘制到 Bitmap 后上传 Vulkan 纹理。
+- still/classic/partita/cappella 现有 Canvas 效果进入 Vulkan 输出。
