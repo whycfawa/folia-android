@@ -29,6 +29,17 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 3) {
+        // Nebbia: deep fog layers with slow drifting density.
+        vec3 base = vec3(0.008, 0.012, 0.018);
+        float fog = 0.0;
+        for (int i = 0; i < 5; i++) {
+            float fi = float(i);
+            vec2 q = uv * (1.0 + fi * 0.35);
+            float n = sin(q.x * 3.1 + pc.time * 0.10 + fi) * cos(q.y * 2.7 - pc.time * 0.08 + fi * 1.3);
+            fog += smoothstep(0.2, 1.0, n) * (0.10 - fi * 0.012);
+        }
+        color = base + pc.accent.rgb * fog * 0.55 + vec3(0.02, 0.03, 0.045) * fog;
     } else if (pc.mode == 2) {
         // Sonnet: warm paper, ink wash and drifting specks.
         vec3 paper = mix(vec3(0.055, 0.048, 0.042), vec3(0.11, 0.095, 0.080), uv.y);
