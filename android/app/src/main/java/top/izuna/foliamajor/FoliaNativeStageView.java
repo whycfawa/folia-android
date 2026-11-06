@@ -375,6 +375,35 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void drawNebbia(Canvas canvas, int width, int height) {
+        backgroundPaint.setShader(null);
+        backgroundPaint.setColor(0xFF05070A);
+        canvas.drawRect(0, 0, width, height, backgroundPaint);
+        float t = (SystemClock.uptimeMillis() - startedAt) / 1000f;
+        for (int i = 0; i < 6; i++) {
+            float cx = width * (0.5f + 0.28f * (float) Math.sin(t * 0.11f + i * 1.7f));
+            float cy = height * (0.5f + 0.22f * (float) Math.cos(t * 0.09f + i * 1.1f));
+            glowPaint.setShader(new RadialGradient(cx, cy, width * (0.28f + 0.04f * i),
+                    new int[]{(secondary & 0x00FFFFFF) | 0x22000000, 0x00000000},
+                    new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawCircle(cx, cy, width * (0.28f + 0.04f * i), glowPaint);
+        }
+        if (!line.isEmpty()) {
+            lyricPaint.setTextAlign(Paint.Align.CENTER);
+            lyricPaint.setTextSize(Math.max(dp(28), Math.min(dp(62), width * 0.06f)));
+            lyricPaint.setColor(stageLight ? 0xFF111111 : 0xFFFFFFFF);
+            lyricPaint.setShadowLayer(dp(18), 0, 0, accent);
+            canvas.drawText(line, width / 2f, height * 0.52f, lyricPaint);
+            lyricPaint.clearShadowLayer();
+        }
+        if (!lineTranslation.isEmpty()) {
+            nextPaint.setTextAlign(Paint.Align.CENTER);
+            nextPaint.setTextSize(dp(22));
+            nextPaint.setColor(stageLight ? 0x99111111 : 0x99FFFFFF);
+            canvas.drawText(lineTranslation, width / 2f, height * 0.62f, nextPaint);
+        }
+    }
+
     private void drawCappella(Canvas canvas, int width, int height) {
         float size = Math.max(dp(16), Math.min(dp(26), width * 0.022f));
         float panelWidth = Math.min(width - dp(32), dp(820));
@@ -655,6 +684,10 @@ public class FoliaNativeStageView extends View {
         }
         if ("cappella".equals(mode)) {
             drawCappella(canvas, width, height);
+            return;
+        }
+        if ("nebbia".equals(mode)) {
+            drawNebbia(canvas, width, height);
             return;
         }
 
