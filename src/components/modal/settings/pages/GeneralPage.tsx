@@ -41,7 +41,6 @@ const O = {
     androidKeepScreenOn: option(ANDROID_SHELL, 'keepScreenOn', 'options.keepScreenOn'),
     androidPhoneFit: option(ANDROID_SHELL, 'phoneFit', 'options.phoneFit'),
     androidOrientation: option(ANDROID_SHELL, 'orientationFit', 'options.orientationFit'),
-    androidCommandPaletteAutoHide: option(ANDROID_SHELL, 'autoHideCommandPaletteButton', 'options.autoHideCommandPaletteButton'),
     androidNativeStage: option(ANDROID_SHELL, 'nativeStage', 'options.nativeStage'),
 };
 
@@ -62,8 +61,6 @@ const GeneralPage: React.FC = () => {
     const setPhoneFitEnabled = useAndroidLayoutSettingsStore(state => state.setPhoneFitEnabled);
     const phoneFitOrientation = useAndroidLayoutSettingsStore(state => state.phoneFitOrientation);
     const setPhoneFitOrientation = useAndroidLayoutSettingsStore(state => state.setPhoneFitOrientation);
-    const autoHideCommandPaletteButton = usePlayerChromeSettingsStore(state => state.autoHideCommandPaletteButton);
-    const handleToggleAutoHideCommandPaletteButton = usePlayerChromeSettingsStore(state => state.handleToggleAutoHideCommandPaletteButton);
     const nativeStageEnabled = useDesktopSettingsStore(state => state.nativeStageEnabled);
     const setNativeStageEnabled = useDesktopSettingsStore(state => state.handleToggleNativeStage);
     const [adaptiveDisplayEnabled, setAdaptiveDisplayEnabled] = React.useState(false);
@@ -158,12 +155,7 @@ const GeneralPage: React.FC = () => {
                     <Row option={O.androidNativeStage} hint={t('options.nativeStageDesc')} note={t('options.nativeStageDescSub')}>
                         <Toggle checked={nativeStageEnabled} onChange={setNativeStageEnabled} />
                     </Row>
-                    <Row option={O.androidCommandPaletteAutoHide} hint={t('options.autoHideCommandPaletteButtonDesc')}>
-                        <Toggle
-                            checked={autoHideCommandPaletteButton}
-                            onChange={handleToggleAutoHideCommandPaletteButton}
-                        />
-                    </Row>                    <AnalysisModelsGroup />
+                    <AnalysisModelsGroup />
                     {phoneFitEnabled && (
                         <Row option={O.androidOrientation} hint={t('options.orientationFitDesc')}>
                             <Segmented

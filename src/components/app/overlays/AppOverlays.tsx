@@ -4,7 +4,6 @@ import SearchWorkspace from '../search/SearchWorkspace';
 import DevDebugOverlay from '../../DevDebugOverlay';
 import MemoryMonitorWindow from '../../debug/MemoryMonitorWindow';
 import NowPlayingToast from './NowPlayingToast';
-import BottomCommandPaletteButton from './BottomCommandPaletteButton';
 import HifiSignalPathPanel from '../../hifi/HifiSignalPathPanel';
 import type { AppOverlaysModel } from './buildAppOverlaysModel';
 import { countRender } from '../../../dev/renderCount';
@@ -28,8 +27,6 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
 
     return (
         <>
-            {/* Android：底部命令面板按钮（跟随原版「自动隐藏播放控制条」的显隐联动）。 */}
-            <BottomCommandPaletteButton />
             {searchOverlay && <SearchWorkspace {...searchOverlay} />}
 
             {debugOverlay && <DevDebugOverlay {...debugOverlay} />}
