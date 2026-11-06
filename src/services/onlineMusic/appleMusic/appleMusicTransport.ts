@@ -15,7 +15,7 @@ export type AppleMusicBridgeResult =
 export const getAppleMusicTransportAvailability = (): ProviderAvailability => {
     const bridge = typeof window !== 'undefined' ? window.electron : undefined;
     if (typeof bridge?.appleMusicRequest !== 'function') return { configured: false, reason: 'runtime-unavailable' };
-    if (bridge.platform === 'darwin' || bridge.platform === 'win32') return { configured: true };
+    if (bridge.platform === 'darwin' || bridge.platform === 'win32' || bridge.platform === 'android') return { configured: true };
     if (bridge.platform === 'linux') return { configured: false, reason: 'not-configured', messageKey: 'home.appleMusicLinuxUnsupported' };
     return { configured: false, reason: 'runtime-unavailable' };
 };

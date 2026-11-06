@@ -1011,3 +1011,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.26-android.422：移除命令面板按钮
 
 - 删除底部命令面板按钮与“自动隐藏命令面板按钮”设置。
+
+### 0.7.26-android.423：Apple Music Android companion
+
+- FoliaAppleMusic 插件：隐藏 WebView 加载 music.apple.com，注入 desktop companion 的 requestExpression。
+- JS 端 window.electron.appleMusicRequest 走 Capacitor 插件。
+- 命令面板按钮/自动隐藏设置已移除。

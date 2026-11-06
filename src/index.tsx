@@ -7,6 +7,7 @@ import { installCrashDiagnostics } from './utils/crashDiagnostics';
 import { installChunkLoadRecovery } from './utils/chunkLoadRecovery';
 import { installFrameTimingDiagnostics } from './utils/frameTimingDiagnostics';
 import { installNativeAndroidBridge } from './services/nativeAndroidBridge';
+import { installAppleMusicAndroidBridge } from './services/appleMusicAndroidBridge';
 import { installAndroidPhoneFitPreference } from './services/androidPhoneLayout';
 import { installKeepScreenOnPreference } from './services/androidKeepScreenOn';
 // import { installCoverSizeAudit } from './services/debug/coverSizeSamples';
@@ -39,6 +40,7 @@ installAndroidPhoneFitPreference();
 installKeepScreenOnPreference();
 // 原生桥：替换 fetch / 模拟扩展的 chrome.cookies / chrome.storage，所有在线请求走它。
 void installNativeAndroidBridge();
+installAppleMusicAndroidBridge();
 
 void import('./bootstrap');
 // window.__foliaDev and the ?skipStartup / ?mockSong launch flags (src/dev/devLaunchFlags.ts).
