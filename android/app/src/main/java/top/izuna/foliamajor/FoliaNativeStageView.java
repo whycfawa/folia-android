@@ -375,6 +375,52 @@ public class FoliaNativeStageView extends View {
         if (shouldAnimate()) scheduleFrame();
     }
 
+    private void drawPartita(Canvas canvas, int width, int height) {
+        if (wordTexts.length == 0) return;
+        float size = Math.max(dp(26), Math.min(dp(52), width * 0.045f));
+        lyricPaint.setTextSize(size);
+        lyricPaint.setTextAlign(Paint.Align.LEFT);
+        int rows = Math.min(5, Math.max(1, (wordTexts.length + 1) / 2));
+        float rowGap = size * 1.55f;
+        float startY = height * 0.5f - (rows - 1) * rowGap / 2f;
+        int wordIndex = 0;
+        for (int row = 0; row < rows; row++) {
+            int remainingRows = rows - row;
+            int remainingWords = wordTexts.length - wordIndex;
+            int count = Math.max(1, Math.min(remainingWords, (int) Math.ceil((float) remainingWords / remainingRows)));
+            float total = 0f;
+            for (int i = 0; i < count; i++) total += lyricPaint.measureText(wordTexts[wordIndex + i]) + size * 0.12f;
+            float x = (width - total) / 2f + (row % 2 == 0 ? -dp(10) : dp(10));
+            float y = startY + row * rowGap + (float) Math.sin(row * 1.7f) * dp(2);
+            for (int i = 0; i < count; i++) {
+                int index = wordIndex + i;
+                float wordWidth = lyricPaint.measureText(wordTexts[index]);
+                float progress = Math.max(0f, Math.min(1f, (wordPosition - wordStarts[index]) / Math.max(0.001f, wordEnds[index] - wordStarts[index])));
+                boolean passed = wordPosition > wordEnds[index];
+                int alpha = passed ? 0x99 : (wordPosition < wordStarts[index] ? 0x55 : 0xFF);
+                int rgb = stageLight ? 0x111111 : 0xFFFFFF;
+                lyricPaint.setColor((alpha << 24) | rgb);
+                lyricPaint.setShadowLayer(wordPosition >= wordStarts[index] && !passed ? dp(12) : 0f, 0f, 0f, accent);
+                float scale = 1f + 0.10f * (float) Math.sin(progress * Math.PI);
+                canvas.save();
+                canvas.translate(x + wordWidth / 2f, y);
+                canvas.rotate((row % 2 == 0 ? -1f : 1f) * (passed ? 3f : 1f));
+                canvas.scale(scale, scale);
+                canvas.drawText(wordTexts[index], -wordWidth / 2f, 0f, lyricPaint);
+                canvas.restore();
+                x += wordWidth + size * 0.12f;
+            }
+            wordIndex += count;
+        }
+        lyricPaint.clearShadowLayer();
+        if (lineTranslation != null && !lineTranslation.isEmpty()) {
+            nextPaint.setTextAlign(Paint.Align.CENTER);
+            nextPaint.setTextSize(size * 0.48f);
+            nextPaint.setColor((0xCC << 24) | (stageLight ? 0x111111 : 0xFFFFFF));
+            canvas.drawText(lineTranslation, width / 2f, height * 0.72f, nextPaint);
+        }
+    }
+
     private void drawClassic(Canvas canvas, int width, int height) {
         if (wordTexts.length == 0) return;
         float size = Math.max(dp(28), Math.min(dp(58), width * 0.055f));
@@ -549,6 +595,10 @@ public class FoliaNativeStageView extends View {
         }
         if ("classic".equals(mode)) {
             drawClassic(canvas, width, height);
+            return;
+        }
+        if ("partita".equals(mode)) {
+            drawPartita(canvas, width, height);
             return;
         }
 

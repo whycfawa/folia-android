@@ -719,3 +719,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.354：Classic chorus ripple
 
 - 桥接 isChorus；原生当前词绘制扩散圆环。
+
+### 0.7.25-android.355：Partita 基础
+
+- 新增 partita 模式：当前行按行分块，垂直堆叠、交错偏移、逐词点亮。
