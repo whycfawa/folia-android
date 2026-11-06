@@ -54,6 +54,7 @@ struct State {
     float hue{0.0f};
     float accent[4]{0.49f, 0.61f, 1.0f, 1.0f};
     float power{0.0f};
+    int mode{0};
 };
 
 State* state = nullptr;
@@ -396,7 +397,7 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
         VkRect2D scissor{{0, 0}, s.extent};
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         vkCmdSetScissor(cmd, 0, 1, &scissor);
-        struct Push { float time; float power; float pad[2]; float accent[4]; } push{time, s.power, {0.0f, 0.0f}, {s.accent[0], s.accent[1], s.accent[2], s.accent[3]}};
+        struct Push { float time; float power; int mode; float pad; float accent[4]; } push{time, s.power, s.mode, 0.0f, {s.accent[0], s.accent[1], s.accent[2], s.accent[3]}};
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
         vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
@@ -578,6 +579,12 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     ANativeWindow_release(window);
     state = s;
     return reinterpret_cast<jlong>(s);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeSetMode(JNIEnv*, jobject, jint mode) {
+    State* s = state;
+    if (s) s->mode = mode;
 }
 
 extern "C" JNIEXPORT void JNICALL

@@ -803,3 +803,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.373：全部现有模式文字层
 
 - partita/cappella 也只上传文字层，Vulkan 背景/粒子保留。
+
+### 0.7.25-android.374：Vulkan Lumiere 场景
+
+- stage.frag 增加 lumiere 分支：暗场、灯束、尘埃。
+- Java 传 mode；Vulkan push constant 选择场景。

@@ -68,6 +68,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native boolean nativeReady();
     private native void nativeSetAccent(int color);
     private native void nativeSetPower(float power);
+    private native void nativeSetMode(int mode);
 
     public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
@@ -77,6 +78,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
                        String lineTranslation, String prevTranslation, String nextTranslation,
                        String title, String artist, String accentHex, boolean playing, boolean chorus) {
         this.mode = mode == null ? "classic" : mode;
+        nativeSetMode("lumiere".equals(this.mode) ? 1 : 0);
         this.line = line == null ? "" : line;
         this.prevLine = prevLine == null ? "" : prevLine;
         this.nextLine = nextLine == null ? "" : nextLine;
