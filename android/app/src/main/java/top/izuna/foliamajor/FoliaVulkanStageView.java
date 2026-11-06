@@ -229,10 +229,13 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         if (textAtlas == null) textAtlas = new VulkanTextAtlas();
         List<Float> vertices = new ArrayList<>();
         float centerY = height * 0.5f;
+        textAtlas.setWeight(600);
         textAtlas.setTextSize(dp(30));
         emitStillLine(vertices, width, height, textAtlas, prevLine, prevTranslation, centerY - dp(118), 1f, 0.3f);
+        textAtlas.setWeight(700);
         textAtlas.setTextSize(dp(40));
         emitStillLine(vertices, width, height, textAtlas, line, translation, centerY, 1f, 1f);
+        textAtlas.setWeight(600);
         textAtlas.setTextSize(dp(30));
         emitStillLine(vertices, width, height, textAtlas, nextLine, nextTranslation, centerY + dp(118), 1f, 0.3f);
         nativeUpdateAtlas(VulkanTextAtlas.SIZE, VulkanTextAtlas.SIZE, textAtlas.pixels());
@@ -244,6 +247,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private void emitStillLine(List<Float> vertices, int width, int height, VulkanTextAtlas atlas, String text, String trans, float baselineY, float scale, float alpha) {
         emitTextRun(vertices, width, height, atlas, text, baselineY, scale, alpha);
         if (trans != null && !trans.isEmpty()) {
+            atlas.setWeight(500);
             atlas.setTextSize(dp(24));
             emitTextRun(vertices, width, height, atlas, trans, baselineY + dp(34) * scale, 1f, alpha * 0.75f);
         }

@@ -51,12 +51,13 @@ public final class VulkanTextAtlas {
     private int penY = PADDING;
     private int rowHeight = 0;
     private float size = 0f;
+    private int weight = 700;
 
     public VulkanTextAtlas() {
         canvas.drawColor(Color.TRANSPARENT);
         paint.setColor(Color.WHITE);
         paint.setTextAlign(Paint.Align.LEFT);
-        paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        paint.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD));
     }
 
     public void setTextSize(float size) {
@@ -66,8 +67,18 @@ public final class VulkanTextAtlas {
         rowHeight = Math.max(bounds.height(), (int) size) + PADDING * 2;
     }
 
+    public void setWeight(int weight) {
+        this.weight = weight;
+        android.graphics.Typeface typeface = weight >= 700
+                ? android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+                : (weight >= 600
+                    ? android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+                    : android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL));
+        paint.setTypeface(typeface);
+    }
+
     public Glyph get(char character) {
-        String key = size + "#" + character;
+        String key = weight + "#" + size + "#" + character;
         Glyph existing = glyphs.get(key);
         if (existing != null) return existing;
         paint.getTextBounds(String.valueOf(character), 0, 1, bounds);
