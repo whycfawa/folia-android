@@ -782,3 +782,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - FoliaVulkanStageView 持有 Canvas 舞台，离屏绘制到 Bitmap 后上传 Vulkan 纹理。
 - still/classic/partita/cappella 现有 Canvas 效果进入 Vulkan 输出。
+
+### 0.7.25-android.369：Vulkan 帧循环纹理
+
+- Canvas 舞台每帧重绘到复用 Bitmap，再上传 Vulkan。
+- 效果开始随时间/音频更新，不再只在换行时刷新。

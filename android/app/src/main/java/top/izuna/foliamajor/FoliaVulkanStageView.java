@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.TextPaint;
+import android.view.Choreographer;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -27,6 +28,25 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private boolean surfaceReady;
     private boolean chorus;
     private FoliaNativeStageView canvasStage;
+    private Bitmap frameBitmap;
+    private int[] framePixels;
+    private Canvas frameCanvas;
+    private boolean frameScheduled;
+
+    private final Choreographer.FrameCallback frameCallback = new Choreographer.FrameCallback() {
+        @Override public void doFrame(long frameTimeNanos) {
+            frameScheduled = false;
+            if (!running || !surfaceReady) return;
+            renderText();
+            scheduleFrame();
+        }
+    };
+
+    private void scheduleFrame() {
+        if (frameScheduled || !running || !surfaceReady) return;
+        frameScheduled = true;
+        Choreographer.getInstance().postFrameCallback(frameCallback);
+    }
 
     public FoliaVulkanStageView(Context context) { super(context); init(); }
     public FoliaVulkanStageView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
@@ -90,8 +110,12 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         int width = getWidth();
         int height = getHeight();
         if (width <= 0 || height <= 0) return;
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
+        if (frameBitmap == null || frameBitmap.getWidth() != width || frameBitmap.getHeight() != height) {
+            frameBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            framePixels = new int[width * height];
+            frameCanvas = new Canvas(frameBitmap);
+        }
+        Canvas canvas = frameCanvas;
         canvas.drawColor(Color.TRANSPARENT);
         if (canvasStage != null) {
             canvasStage.measure(
@@ -100,8 +124,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             canvasStage.layout(0, 0, width, height);
             canvasStage.draw(canvas);
         }
-        updateText(bitmap);
-        bitmap.recycle();
+        frameBitmap.getPixels(framePixels, 0, width, 0, 0, width, height);
+        nativeUpdateText(width, height, framePixels);
     }
 
     public void updateText(Bitmap bitmap) {
@@ -119,12 +143,15 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         running = true;
         renderThread = new Thread(this, "FoliaVulkanStage");
         renderThread.start();
+        scheduleFrame();
     }
 
     @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) { renderText(); }
     @Override public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceReady = false;
         running = false;
+        Choreographer.getInstance().removeFrameCallback(frameCallback);
+        frameScheduled = false;
         try { if (renderThread != null) renderThread.join(800); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
         renderThread = null;
         nativeDestroy();
