@@ -91,6 +91,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             case "claddagh": return 13;
             case "partita": return 14;
             case "cappella": return 15;
+            case "classic": return 16;
+            case "still": return 17;
             default: return 0;
         }
     }

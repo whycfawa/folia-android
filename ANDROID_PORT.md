@@ -872,3 +872,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.390：Vulkan Cappella 背景
 
 - cappella 分支：暖色聊天背景与浮动气泡；文字层已有。
+
+### 0.7.25-android.391：Vulkan Classic/Still 背景
+
+- classic 分支：中性暗场呼吸光。
+- still 分支：静态暗角。
+- 所有内置歌词模式都有独立 Vulkan 背景。

@@ -29,6 +29,16 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 16) {
+        // Classic: neutral dark stage, subtle breathing glow.
+        vec3 base = mix(vec3(0.012, 0.012, 0.018), vec3(0.025, 0.024, 0.032), uv.y);
+        float glow = exp(-distance(uv, vec2(0.5, 0.45)) * 7.0);
+        color = base + pc.accent.rgb * glow * (0.12 + pc.power * 0.18);
+    } else if (pc.mode == 17) {
+        // Still: quiet vignette, almost static.
+        vec3 base = vec3(0.010, 0.011, 0.015);
+        float vignette = smoothstep(0.95, 0.25, distance(uv, vec2(0.5)));
+        color = base * (0.45 + 0.55 * vignette) + pc.accent.rgb * 0.015;
     } else if (pc.mode == 15) {
         // Cappella: warm chat surface with floating bubbles.
         vec3 base = mix(vec3(0.035, 0.030, 0.032), vec3(0.08, 0.055, 0.050), uv.y);
