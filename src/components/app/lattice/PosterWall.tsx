@@ -49,6 +49,8 @@ type PosterWallProps = {
     /** Only for playback focus and visibility tracking; the chrome reads transport state from context. */
     currentSong: SongResult | null;
     onPlay: (tile: LatticeTile) => void;
+    /** A double click on a poster (#834). */
+    onPlayFromWall: (tile: LatticeTile) => void;
     onTogglePlayback: () => void;
     onSeek: (time: number) => void;
     onOpenPlayer: () => void;
@@ -91,6 +93,7 @@ export default function PosterWall({
     startTileId = null,
     currentSong,
     onPlay,
+    onPlayFromWall,
     onTogglePlayback,
     onSeek,
     onOpenPlayer,
@@ -484,6 +487,7 @@ export default function PosterWall({
                             didDragRef={didDragRef}
                             onExpand={expandPoster}
                             onPlay={onPlay}
+                            onPlayFromWall={onPlayFromWall}
                             onTogglePlayback={onTogglePlayback}
                             onSeek={onSeek}
                             onOpenPlayer={onOpenPlayer}

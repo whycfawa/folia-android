@@ -149,6 +149,9 @@ export const buildSettingsCommandContext = (
         toggleLatticeVignette: () => useLatticeSettingsStore.getState().handleToggleLatticeVignette(
             !useLatticeSettingsStore.getState().latticeVignette,
         ),
+        toggleLatticeBadgeCurrentOnly: () => useLatticeSettingsStore.getState().handleToggleLatticeBadgeCurrentOnly(
+            !useLatticeSettingsStore.getState().latticeBadgeCurrentOnly,
+        ),
         toggleReduceLatticeMotion: () => {
             const motion = useMotionSettingsStore.getState();
             motion.handleToggleReducedMotionSurface('lattice', !motion.reducedMotionSurfaces.lattice);
@@ -207,6 +210,10 @@ export const buildSettingsCommandContext = (
         togglePlaybackReport: () => audio.handleToggleNeteaseScrobble(
             !useAudioSettingsStore.getState().neteaseScrobbleEnabled,
         ),
+        toggleAutoAiLyricSegmentation: () => {
+            const lyric = useLyricSettingsStore.getState();
+            lyric.handleToggleAutoAiLyricSegmentation(!lyric.autoAiLyricSegmentation);
+        },
         voiceInputPauseSupported: deps.voiceInputPauseSupported,
         modSystemEnabled: desktop.modSystemEnabled,
         toggleVoiceInputPause: () => desktop.handleToggleVoiceInputPause(
@@ -236,6 +243,9 @@ export const buildSettingsCommandContext = (
         unlockRemoteControl: () => desktop.handleToggleRemoteControlClickThrough(false),
         toggleObsKeepMainWindowAnimation: () => useStageSettingsStore.getState().handleToggleObsKeepMainWindowAnimation(
             !useStageSettingsStore.getState().obsKeepMainWindowAnimation,
+        ),
+        toggleTrackCardInObs: () => useStageSettingsStore.getState().handleToggleStageTrackPillInObs(
+            !useStageSettingsStore.getState().stageTrackPillInObs,
         ),
         toggleWallpaperMacAutohideDock: () => desktop.handleToggleWallpaperMacAutohideDock(
             !useDesktopSettingsStore.getState().wallpaperMacAutohideDock,

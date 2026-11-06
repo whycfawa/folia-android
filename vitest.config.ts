@@ -27,11 +27,8 @@ export default defineConfig({
     // 第二消费者始终参与单测；test.env 与 vi.stubEnv 使用同一入口，可覆写验证关闭/生产边界。
     // 初始选择钉在 grid：现有用例都假设没选过 suite 的人看到网格（开发阶段的初始选择是 bravais）。
     env: { VITE_LIBRARY_TUI: 'true', VITE_LIBRARY_INITIAL_SUITE: 'grid' },
-    // 默认 5 秒预算对这套用例偏紧：transport / provider / integration 几组会真串起来跑。单独跑不到
-    // 1 秒，整套并发时会漂到 4~10 秒，表现为「随机几个用例超时失败、单独重跑全过」。超时应该意味着
-    // 真的卡住，而不是「机器正好忙」。
-    testTimeout: 20_000,
-    hookTimeout: 20_000,
-    include: ['test/unit/**/*.test.ts']
+    include: ['test/unit/**/*.test.ts'],
+    // Node 25 起自带的 localStorage 占位会盖住 jsdom 的那份：jsdom 用例在这里统一补内存实现，node 用例删掉占位。
+    setupFiles: ['test/unit/jsdomLocalStorage.ts']
   }
 });

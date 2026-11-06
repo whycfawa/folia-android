@@ -60,6 +60,13 @@ describe('the platform column', () => {
         expect(filterRows(rows, '  ')).toHaveLength(3);
         expect(filterRows(rows, 'none')).toEqual([]);
     });
+
+    it('also finds a row by the name shown on screen, which may be a translated one', () => {
+        const rows = [row('alpha'), row('beta', { shortName: '波点', displayName: '波点音乐' })];
+        const shownName = (entry: ProviderAccountSummary) => (entry.providerId === 'beta' ? 'Bodian' : entry.shortName);
+        expect(filterRows(rows, 'bodian', shownName).map(entry => entry.providerId)).toEqual(['beta']);
+        expect(filterRows(rows, 'bodian')).toEqual([]);
+    });
 });
 
 // Rules the old switcher and the old row of badges had tests for; the parts are gone, the rules stay.
@@ -341,7 +348,7 @@ describe('the texts the window can ask for', () => {
     it('declares a second line of its own only where the sentence names that platform\'s own thing', () => {
         const notes = Object.fromEntries(listOnlineMusicProviders().map(provider => [provider.id, omni.getLoginTexts(provider.id)?.caseNotes ?? null]));
         expect(notes).toEqual({
-            netease: null, kugou: null, bodian: null, qishui: null,
+            netease: null, kugou: null, bodian: null, fnmusic: null, qishui: null, appleMusic: null,
             // 扫错 App 的那一句按后端有没有 QQ 音乐 App 扫码说（这里还没问到后端）。
             qq: { 'local-service-unavailable': 'home.loginCaseQqRestart', 'wrong-scan-app': 'home.loginCaseQqWrongScanAppMobileOnly', 'device-limit': 'home.loginCaseQqDeviceLimit' },
             ytm: { 'browser-unfinished': 'home.loginCaseYtmUnfinished', 'no-browser': 'home.loginNoBrowserYtm' },

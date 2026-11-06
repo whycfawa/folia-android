@@ -48,6 +48,7 @@
 // get a device at all is remembered for the session - that is the machine, not the moment - while
 // a lost device or a failed run only drops this worker, and the next track tries a fresh one.
 
+import { noteGpuAnalysisUnit } from './gpuActivity';
 import { createScheduler, watchFrames, type UnitRequest } from './scheduler';
 import { isCapacitorAndroid } from '../../platform/runtime';
 import { loadAndroidModelWeights } from './androidModelWeights';
@@ -186,6 +187,7 @@ const makeRoom = (model: GpuModel) => {
 const scheduler = createScheduler({
     isLoaded: kind => (kind === 'percussive' ? worker !== null : ready.has(kind as GpuModel)),
     frames: watchFrames(),
+    onUnit: active => noteGpuAnalysisUnit(active),
 });
 
 /** Who asks for a GPU run and how urgently: the scheduler's fields bar the work itself. */
