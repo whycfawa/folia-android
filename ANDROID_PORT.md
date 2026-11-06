@@ -991,3 +991,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - API 1.0；pipeline 失败仍渲染 clear color，避免黑屏。
 - 诊断新增 pipeline 布尔。
+
+### 0.7.25-android.418：保留管线错误
+
+- 文字管线跳过不再覆盖背景 pipeline 错误。
