@@ -832,3 +832,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.380：Vulkan Machi 场景
 
 - machi 分支：暖色城市 bokeh；文字层叠加。
+
+### 0.7.25-android.381：Vulkan Fume 场景
+
+- fume 分支：墨烟流体；文字层叠加。

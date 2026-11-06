@@ -29,6 +29,17 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 6) {
+        // Fume: ink smoke curling through a dark field.
+        vec3 base = vec3(0.012, 0.014, 0.020);
+        float smoke = 0.0;
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            vec2 q = uv * (2.0 + fi * 0.6) + vec2(pc.time * 0.02, -pc.time * 0.015);
+            float n = sin(q.x + sin(q.y * 2.3 + fi)) * cos(q.y * 1.7 - pc.time * 0.1);
+            smoke += smoothstep(0.15, 0.95, n) * (0.10 - fi * 0.015);
+        }
+        color = base + pc.accent.rgb * smoke * 0.7 + vec3(0.03, 0.035, 0.05) * smoke;
     } else if (pc.mode == 5) {
         // Machi: warm city bokeh and window lights.
         vec3 base = mix(vec3(0.02, 0.015, 0.018), vec3(0.08, 0.045, 0.035), uv.y);
