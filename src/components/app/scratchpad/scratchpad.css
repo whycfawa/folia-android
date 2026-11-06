@@ -947,3 +947,21 @@
 .scratchpad-root.is-calm .scratchpad-card-play { scale: none !important; }
 
 .scratchpad-root.is-calm .scratchpad-tab { transition: opacity 0.15s ease; }
+
+/* 触屏没有 hover：把手必须自己常驻展开，否则左缘只剩 6px 的半透明线，用户看不到速记簿入口。 */
+@media (pointer: coarse) {
+    .scratchpad-edge {
+        width: 44px;
+    }
+
+    .scratchpad-handle,
+    .scratchpad-edge.has-entries .scratchpad-handle {
+        width: 28px;
+        height: 68px;
+        opacity: 0.82;
+    }
+
+    .scratchpad-handle > * {
+        opacity: 1;
+    }
+}

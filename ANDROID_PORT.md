@@ -1003,3 +1003,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.420：TextureView 宿主
 
 - 原生舞台从 SurfaceView 改为 TextureView，修复 Surface 缓冲 dequeue 超时/设备丢失。
+
+### 0.7.26-android.421：触屏速记簿把手
+
+- pointer: coarse 时常显 28px 把手，不再只留 6px 边线。
