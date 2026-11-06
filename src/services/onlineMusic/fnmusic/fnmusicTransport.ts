@@ -39,13 +39,22 @@ export interface FnMusicBridgeStatus {
 
 const text = (value: unknown): string => (value == null ? '' : String(value));
 
+// 桌面端走 Electron 主进程桥；安卓走 FoliaFnMusic 原生插件（同样只发操作）。
 const hasElectronBridge = (): boolean => typeof window !== 'undefined' && Boolean((window as any).electron?.fnmusicRequest);
+const hasAndroidBridge = (): boolean => typeof window !== 'undefined' && typeof (window as any).foliaFnMusicRequest === 'function';
+const hasBridge = (): boolean => hasElectronBridge() || hasAndroidBridge();
+
+const bridgeCall = (operation: string, params: FnMusicBridgeParams): Promise<FnMusicBridgeResult> => (
+    hasElectronBridge()
+        ? (window as any).electron.fnmusicRequest(operation, params) as Promise<FnMusicBridgeResult>
+        : ((window as any).foliaFnMusicRequest(operation, params) as Promise<FnMusicBridgeResult>)
+);
 
 /** 异步查询桥状态（base/username 供登录表单回填）。走异步 IPC（getStatus），不阻塞渲染主线程。 */
 export const fnMusicBridgeStatus = async (): Promise<FnMusicBridgeStatus | null> => {
-    if (!hasElectronBridge()) return null;
+    if (!hasBridge()) return null;
     try {
-        const result = await (window as any).electron.fnmusicRequest('getStatus', {} as FnMusicBridgeParams) as FnMusicBridgeResult;
+        const result = await bridgeCall('getStatus', {} as FnMusicBridgeParams);
         if (!result.ok || !result.data) return null;
         return result.data as FnMusicBridgeStatus;
     } catch {
@@ -86,22 +95,22 @@ export async function fnmusicRequest<T = unknown>(
     params?: Record<string, string | number | boolean | undefined>,
     options?: { method?: 'GET' | 'POST'; body?: Record<string, unknown>; signal?: AbortSignal },
 ): Promise<T> {
-    if (!hasElectronBridge()) {
-        throw new OnlineProviderError('unavailable', '飞牛音乐仅支持桌面端（需主进程桥）', 'fnmusic');
+    if (!hasBridge()) {
+        throw new OnlineProviderError('unavailable', '飞牛音乐缺少本机桥', 'fnmusic');
     }
-    const result = await (window as any).electron.fnmusicRequest('request', {
+    const result = await bridgeCall('request', {
         path, method: options?.method ?? 'GET', params, body: options?.body,
-    } as FnMusicBridgeParams) as FnMusicBridgeResult;
+    } as FnMusicBridgeParams);
     if (!result.ok) throw bridgeError(result, path);
     return result.data as T;
 }
 
 /** 播放地址：主进程返回 folia-fnmusic:// 协议 URL（协议 handler 实时转发，URL 不带凭据）。回的是原始文件，不分音质。 */
 export async function fnMusicStreamSource(trackId: string): Promise<string> {
-    if (!hasElectronBridge()) {
-        throw new OnlineProviderError('unavailable', '飞牛音乐仅支持桌面端（需主进程桥）', 'fnmusic');
+    if (!hasBridge()) {
+        throw new OnlineProviderError('unavailable', '飞牛音乐缺少本机桥', 'fnmusic');
     }
-    const result = await (window as any).electron.fnmusicRequest('stream', { trackId } as FnMusicBridgeParams) as FnMusicBridgeResult;
+    const result = await bridgeCall('stream', { trackId } as FnMusicBridgeParams);
     if (!result.ok) throw bridgeError(result, 'track/stream');
     const data = result.data as { url?: string } | null;
     const url = text(data?.url);
@@ -116,6 +125,11 @@ export async function fnMusicStreamSource(trackId: string): Promise<string> {
 export function fnMusicCoverUrl(coverId: string, size = 600): string {
     if (!coverId) return '';
     const q = new URLSearchParams({ coverId, size: String(size) });
+    // 安卓没有自定义协议：封面走原生插件的回环代理（带 Cookie 转发）。
+    const origin = typeof window === 'undefined'
+        ? null
+        : (window as unknown as { __foliaFnMusicOrigin?: string | null }).__foliaFnMusicOrigin;
+    if (typeof origin === 'string' && origin) return `${origin}/cover?${q.toString()}`;
     return `folia-fnmusic://cover?${q.toString()}`;
 }
 
@@ -125,10 +139,10 @@ export function fnMusicCoverUrl(coverId: string, size = 600): string {
  * deviceId 不在渲染层生成：主进程桥复用已存设备或生成（避免每次登录注册新设备）。
  */
 export async function fnMusicLogin(config: { base: string; username: string; password: string }): Promise<{ user: unknown }> {
-    if (!hasElectronBridge()) {
-        throw new OnlineProviderError('unavailable', '飞牛音乐仅支持桌面端（需主进程桥）', 'fnmusic');
+    if (!hasBridge()) {
+        throw new OnlineProviderError('unavailable', '飞牛音乐缺少本机桥', 'fnmusic');
     }
-    const result = await (window as any).electron.fnmusicRequest('login', config as FnMusicBridgeParams) as FnMusicBridgeResult;
+    const result = await bridgeCall('login', config as FnMusicBridgeParams);
     if (!result.ok) throw bridgeError(result, 'user/password-login');
     const data = result.data as { user?: unknown } | null;
     if (!data?.user) throw new OnlineProviderError('invalid-response', '登录响应缺少用户信息', 'fnmusic');
@@ -137,9 +151,9 @@ export async function fnMusicLogin(config: { base: string; username: string; pas
 
 /** 登出：主进程调登出接口并清配置、停代理。 */
 export async function fnMusicLogout(): Promise<void> {
-    if (!hasElectronBridge()) return;
+    if (!hasBridge()) return;
     try {
-        await (window as any).electron.fnmusicRequest('logout', {} as FnMusicBridgeParams);
+        await bridgeCall('logout', {} as FnMusicBridgeParams);
     } catch {
         // 登出失败不阻塞
     }

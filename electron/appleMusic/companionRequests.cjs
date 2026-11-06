@@ -10,14 +10,14 @@ const REQUEST_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 const RESOURCE_ID = /^[a-zA-Z0-9._-]{1,200}$/;
 // Folia chooses the order; the companion may prepare a bounded tail but cannot invent next tracks.
 const PLAYBACK_COMMANDS = new Set(['playStation', 'playSong', 'pause', 'resume', 'seek', 'setVolume', 'prepareNext']);
-const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
+const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'diagnostics', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
 
 function validateRequest(message) {
     if (!message || typeof message !== 'object' || Array.isArray(message)) return null;
     const { id, operation, params = {} } = message;
     if (typeof id !== 'string' || !REQUEST_ID.test(id) || !OPERATIONS.has(operation)) return null;
     if (!params || typeof params !== 'object' || Array.isArray(params)) return null;
-    if (['showWindow', 'hideWindow', 'logout', 'accountStatus'].includes(operation)) return { id, operation, params: {} };
+    if (['showWindow', 'hideWindow', 'logout', 'accountStatus', 'diagnostics'].includes(operation)) return { id, operation, params: {} };
     if (operation === 'stations') return { id, operation, params: { limit: 20, offset: 0 } };
     if (operation === 'station' || operation === 'playStation') {
         if (typeof params.stationId !== 'string' || !/^ra\.[a-zA-Z0-9._-]{1,196}$/.test(params.stationId)) return null;
@@ -97,7 +97,174 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             : typeof legacy?.music === 'function' ? (path, query, options) => options
                 ? legacy.music(path, query, options.fetchOptions) : legacy.music(path, query)
                 : null;
-        if (!call) return { ok: false, error: 'not-ready' };
+        // The catalog ids Folia holds come from the account's storefront, and MusicKit plays a song
+        // only against the page's own storefront: a page opened in another region accepts the queue
+        // and then never starts it. The host that owns the page hands that storefront in
+        // (window.__foliaAccountStorefront); the desktop companion moves the page by URL instead and
+        // never sets it, so this stays out of its way.
+        const alignStorefront = async () => {
+            let storefront = typeof window.__foliaAccountStorefront === 'string' ? window.__foliaAccountStorefront : '';
+            // The Android host asks for the switch, so the page may look the account's storefront up
+            // itself; the desktop companion moves the page by URL and never sets this marker.
+            if (!/^[a-z]{2}$/.test(storefront) && window.__foliaCompanionHost === 'android') {
+                try {
+                    const answer = await call('v1/me/storefront');
+                    const id = answer?.data?.data?.[0]?.id;
+                    if (typeof id === 'string' && /^[a-z]{2}$/.test(id)) storefront = id;
+                } catch { /* Play in whatever region the page has; the queue reports what happened. */ }
+                if (/^[a-z]{2}$/.test(storefront)) {
+                    window.__foliaAccountStorefront = storefront;
+                    try {
+                        if (typeof window.FoliaAppleMusicBridge?.storefront === 'function') window.FoliaAppleMusicBridge.storefront(storefront);
+                    } catch { /* The host only needs it to open the right URL next time. */ }
+                }
+            }
+            if (!/^[a-z]{2}$/.test(storefront) || !mk) return null;
+            const before = String(mk.storefrontId || '').toLowerCase();
+            if (before !== storefront) {
+                // The page keeps this property writable; an older player throws and is reported below.
+                try { mk.storefrontId = storefront; } catch { /* Read-only on older players. */ }
+            }
+            const after = String(mk.storefrontId || '').toLowerCase();
+            console.info('[AppleMusic] playback storefront', { account: storefront, page: after, matched: after === storefront });
+            return { account: storefront, page: after, matched: after === storefront };
+        };
+        // Why a start never begins is usually here: the page can only decrypt Widevine, and the WebView
+        // that hosts it may offer no CDM at all. Asked once, before the first start.
+        const readDrm = async () => {
+            const cached = window.__foliaDrm;
+            // A supported CDM stays supported; a failure may be a moment's provisioning and is retried.
+            if (cached && (cached.widevine === true || Date.now() - Number(cached.at || 0) < 60000)) return cached;
+            const report = {
+                eme: typeof navigator.requestMediaKeySystemAccess === 'function',
+                mediaSource: typeof MediaSource !== 'undefined',
+                secure: window.isSecureContext === true,
+                widevine: false,
+                robustness: '',
+                error: '',
+            };
+            const configuration = robustness => [{ initDataTypes: ['cenc'],
+                audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"', ...(robustness ? { robustness } : {}) }] }];
+            if (report.eme) {
+                for (const robustness of ['SW_SECURE_CRYPTO', '']) {
+                    try {
+                        // Support is the answer the report needs; creating keys would provision the
+                        // CDM on the player's own origin and is left to the page.
+                        await navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(robustness));
+                        report.widevine = true;
+                        report.robustness = robustness || 'default';
+                        break;
+                    } catch (error) {
+                        if (!report.error) report.error = String(error?.name || error?.message || 'rejected').slice(0, 80);
+                    }
+                }
+            }
+            report.at = Date.now();
+            window.__foliaDrm = report;
+            return report;
+        };
+        // The page's own media element is the only thing that sounds; its error is the clearest word a
+        // failed start has. No address and no words leave this page.
+        const readAudio = () => {
+            const element = document.querySelector('audio');
+            const error = element?.error || null;
+            return {
+                elements: document.querySelectorAll('audio,video').length,
+                paused: element ? element.paused === true : null,
+                readyState: element ? element.readyState : null,
+                networkState: element ? element.networkState : null,
+                currentTime: element && Number.isFinite(element.currentTime) ? Math.round(element.currentTime * 10) / 10 : null,
+                muted: element ? element.muted === true : null,
+                volume: element && Number.isFinite(element.volume) ? Math.round(element.volume * 100) / 100 : null,
+                hasSource: element ? Boolean(element.currentSrc || element.src) : false,
+                errorCode: error ? error.code : null,
+                errorText: error && error.message ? scrubText(error.message) : '',
+            };
+        };
+        // A queue that reports "playing" while nothing sounds is decided by the page's own media
+        // events and by which host it stopped talking to: a stalled segment fetch and a refused
+        // license look identical from outside. Only event names, numbers and hosts leave this page.
+        const scrubText = value => String(value)
+            .replace(/https?:\/\/[^\s"'<>]+/g, link => {
+                try { return new URL(link).host; } catch { return 'url'; }
+            })
+            .replace(/[A-Za-z0-9_\-]{40,}/g, '<blob>')
+            .slice(0, 200);
+        const hasDom = () => typeof document !== 'undefined' && typeof document.querySelectorAll === 'function';
+        const watchMedia = () => {
+            if (!hasDom()) return;
+            if (!Array.isArray(window.__foliaMedia)) window.__foliaMedia = [];
+            const list = document.querySelectorAll('audio,video');
+            for (let index = 0; index < list.length; index++) {
+                const element = list[index];
+                if (element.__foliaWatched) continue;
+                element.__foliaWatched = true;
+                for (const type of ['loadstart', 'loadedmetadata', 'waiting', 'stalled', 'playing', 'pause', 'error', 'suspend']) {
+                    element.addEventListener(type, () => {
+                        window.__foliaMedia.push({ at: Date.now(), index, type,
+                            t: Math.round((element.currentTime || 0) * 10) / 10,
+                            ready: element.readyState, network: element.networkState,
+                            error: element.error ? element.error.code : null });
+                        if (window.__foliaMedia.length > 80) window.__foliaMedia.shift();
+                    }, true);
+                }
+            }
+        };
+        const watchPlayer = () => {
+            if (window.__foliaStateWatched || !mk || typeof mk.addEventListener !== 'function') return;
+            window.__foliaStateWatched = true;
+            window.__foliaStates = [];
+            try {
+                mk.addEventListener('playbackStateDidChange', () => {
+                    window.__foliaStates.push({ at: Date.now(), state: Number(mk.playbackState), playing: mk.isPlaying === true });
+                    if (window.__foliaStates.length > 40) window.__foliaStates.shift();
+                });
+            } catch { /* A player without events still answers playbackStatus. */ }
+        };
+        const readMediaTable = () => {
+            if (!hasDom()) return { total: 0, rows: [] };
+            const list = document.querySelectorAll('audio,video');
+            const rows = [];
+            for (let index = 0; index < list.length && rows.length < 8; index++) {
+                const element = list[index];
+                rows.push({ index, paused: element.paused === true,
+                    t: Math.round((element.currentTime || 0) * 10) / 10,
+                    ready: element.readyState, network: element.networkState,
+                    error: element.error ? element.error.code : null,
+                    source: Boolean(element.currentSrc || element.src) });
+            }
+            return { total: list.length, rows };
+        };
+        const readHosts = () => {
+            const hosts = {};
+            if (typeof performance === 'undefined' || typeof performance.getEntriesByType !== 'function') return hosts;
+            try {
+                for (const entry of performance.getEntriesByType('resource')) {
+                    let host = '';
+                    try { host = new URL(entry.name).host; } catch { continue; }
+                    // Artwork and analytics are noise; the player's own hosts are the signal.
+                    if (!/(^|\.)(apple\.com|itunes\.apple\.com|applemusic\.com)$/.test(host) || host === 'xp.apple.com') continue;
+                    const row = hosts[host] || (hosts[host] = { count: 0, maxMs: 0 });
+                    row.count += 1;
+                    const ms = Math.round(entry.duration || 0);
+                    if (ms > row.maxMs) row.maxMs = ms;
+                }
+            } catch { /* Resource timing is a bonus. */ }
+            return hosts;
+        };
+        watchMedia();
+        watchPlayer();
+        if (request.operation !== 'diagnostics' && (!call || !mk)) return { ok: false, error: 'not-ready' };
+        if (request.operation === 'logout') {
+            // The page owns the Apple session: dropping its music-user token is what signs out here.
+            if (typeof mk.unauthorize === 'function') {
+                try { await mk.unauthorize(); } catch { /* Nothing left to sign out of. */ }
+            }
+            window.__foliaAccountStorefront = '';
+            window.__foliaStart = null;
+            window.__foliaPreparedQueue = [];
+            return { ok: true, data: {} };
+        }
         if (request.operation === 'addPlaylistTracks') return await addPlaylistTracks(call, request.params);
         if (request.operation === 'likeSong') return await updateFavorite(call, request.params);
         if (request.operation === 'prepareNext') return await controlQueue(mk, request.operation, request.params);
@@ -111,7 +278,27 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 pendingStart.cancelled = true;
                 pendingStart.failed = true;
             }
-            if (window.__foliaStart?.failed) return { ok: false, error: 'playback-failed', playbackStage: 'play' };
+            // A start the page accepted but never began: one nudge, observed by the poll that is already
+            // running for this song rather than a timer of its own. Only a player that is stopped or
+            // never initialized qualifies: loading, buffering, a pause, a seek and a finished track
+            // all have their own meaning and must not be restarted.
+            const elapsed = Date.now() - Number(pendingStart?.startedAt || 0);
+            const playerState = Number(mk.playbackState);
+            if (pendingStart && !pendingStart.cancelled && !pendingStart.failed && pendingStart.nudged !== true
+                && elapsed >= 4000 && elapsed < 15000
+                && mk.isPlaying !== true && (playerState === 0 || playerState === 4)) {
+                pendingStart.nudged = true;
+                console.warn('[AppleMusic] start did not begin; asking the player again', { state: Number(mk.playbackState) });
+                Promise.resolve(mk.play()).catch(error => {
+                    pendingStart.error = String(error?.name || error?.message || error || 'rejected').slice(0, 160);
+                });
+            }
+            // A start the player actually performed is never a failure, whatever its promise said.
+            if (pendingStart?.failed && mk.isPlaying === true) pendingStart.failed = false;
+            if (window.__foliaStart?.failed) {
+                console.warn('[AppleMusic] start rejected', { stage: 'play', error: String(window.__foliaStart.error || '').slice(0, 120) });
+                return { ok: false, error: 'playback-failed', playbackStage: 'play' };
+            }
             const item = mk.nowPlayingItem;
             const params = item?.attributes?.playParams || {};
             const liveStation = typeof window.__foliaLiveStation === 'string' ? window.__foliaLiveStation : '';
@@ -137,10 +324,63 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0,
             } };
         }
+        // One read-only answer for the app's diagnostics report: what the page, the player and the CDM
+        // say about a start that did not sound. No id, no words, no address.
+        if (request.operation === 'diagnostics') {
+            const start = window.__foliaStart;
+            const queue = mk?.queue;
+            return { ok: true, data: {
+                drm: await readDrm(),
+                page: {
+                    // Origin and the region segment only: a deeper path names an album or a playlist.
+                    url: location.origin + '/' + (location.pathname.split('/')[1] || ''),
+                    visibility: document.visibilityState,
+                    viewport: window.innerWidth + 'x' + window.innerHeight,
+                    userAgent: navigator.userAgent,
+                },
+                player: mk ? {
+                    authorized: mk.isAuthorized === true,
+                    previewOnly: mk.previewOnly === true,
+                    storefront: String(mk.storefrontId || ''),
+                    country: String(mk.storefrontCountryCode || ''),
+                    state: Number.isInteger(mk.playbackState) ? mk.playbackState : null,
+                    isPlaying: mk.isPlaying === true,
+                    volume: typeof mk.volume === 'number' ? Math.round(mk.volume * 100) / 100 : null,
+                    itemIdLength: typeof mk.nowPlayingItem?.id === 'string' ? mk.nowPlayingItem.id.length : 0,
+                    queueLength: Number.isInteger(queue?.length) ? queue.length : Array.isArray(queue?.items) ? queue.items.length : null,
+                    queuePosition: Number.isInteger(queue?.position) ? queue.position : null,
+                    canSetQueue: typeof mk.setQueue === 'function',
+                    canPlay: typeof mk.play === 'function',
+                    canSeek: typeof mk.seekToTime === 'function',
+                } : null,
+                accountStorefront: typeof window.__foliaAccountStorefront === 'string' ? window.__foliaAccountStorefront : '',
+                start: start ? {
+                    pending: start.pending === true,
+                    failed: start.failed === true,
+                    cancelled: start.cancelled === true,
+                    nudged: start.nudged === true,
+                    stage: String(start.stage || ''),
+                    error: String(start.error || '').replace(/https?:\/\/\S+/g, 'url').slice(0, 160),
+                    ageMs: Math.max(0, Date.now() - Number(start.startedAt || 0)),
+                } : null,
+                audio: readAudio(),
+                media: readMediaTable(),
+                mediaLog: Array.isArray(window.__foliaMedia) ? window.__foliaMedia.slice(-30) : null,
+                states: Array.isArray(window.__foliaStates) ? window.__foliaStates.slice(-20) : null,
+                eme: Array.isArray(window.__foliaEme) ? window.__foliaEme.slice(-20) : null,
+                hosts: readHosts(),
+                online: navigator.onLine === true,
+                log: Array.isArray(window.__foliaLog) ? window.__foliaLog.slice(-40).map(scrubText) : null,
+            } };
+        }
         if (request.operation === 'playStation') {
             window.__foliaStart = null;
             if (typeof mk.setQueue !== 'function' || typeof mk.play !== 'function') return { ok: false, error: 'unsupported' };
+            let stationStage = 'storefront';
             try {
+                // A station is played from the account's region like a catalog song.
+                await alignStorefront();
+                stationStage = 'queue';
                 // Programme metadata changes do not replace the queue; an explicit page queue selection does.
                 if (mk.setQueue !== window.__foliaStationQueueHook) {
                     const originalSetQueue = mk.setQueue;
@@ -154,9 +394,10 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 await mk.setQueue({ station: request.params.stationId, startPlaying: false });
                 window.__foliaLiveStation = request.params.stationId;
                 window.__foliaPreparedQueue = [];
+                stationStage = 'play';
                 await mk.play();
                 return { ok: true, data: {} };
-            } catch { return { ok: false, error: 'playback-failed' }; }
+            } catch { return { ok: false, error: 'playback-failed', playbackStage: stationStage }; }
         }
         if (request.operation === 'setVolume') {
             // Apple's audio plays here, outside Folia's gain: the page's player owns the level.
@@ -169,6 +410,7 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             if (typeof mk.setQueue !== 'function' || typeof mk.play !== 'function') return { ok: false, error: 'unsupported' };
             window.__foliaStart = null;
             let playbackStage = 'prepared-queue';
+            let storefront = null;
             try {
                 const reused = await controlQueue(mk, request.operation, request.params);
                 if (reused) return reused;
@@ -176,23 +418,53 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 playbackStage = 'configure';
                 if (typeof mk.setShuffleMode === 'function') mk.setShuffleMode(0);
                 if (typeof mk.setRepeatMode === 'function') mk.setRepeatMode(0);
+                // The account's storefront, not the one the page happened to open in: another region
+                // queues the id and then never sounds it.
+                playbackStage = 'storefront';
+                storefront = await alignStorefront();
                 // Set the queue without auto-start so queue resolution and DRM playback are distinct stages.
                 playbackStage = 'queue';
                 console.info('[AppleMusic] Playback stage: queue');
                 window.__foliaLiveStation = '';
-                await mk.setQueue({ song: request.params.catalogId, startPlaying: false, startTime: request.params.startSec });
+                // The embedded Android page starts with the queue itself, the way the one Android player
+                // that works does; the desktop companion keeps its own order (queue, then play).
+                const android = window.__foliaCompanionHost === 'android';
+                const queueOptions = { song: request.params.catalogId, startPlaying: android };
+                if (!android || request.params.startSec > 0) queueOptions.startTime = request.params.startSec;
+                await mk.setQueue(queueOptions);
                 playbackStage = 'play';
                 console.info('[AppleMusic] Playback stage: play');
-                const attempt = { failed: false, cancelled: false, sought: false, pending: true, startedAt: Date.now() };
+                const attempt = { failed: false, cancelled: false, sought: false, pending: true, nudged: false, stage: 'play', error: '', startedAt: Date.now() };
                 window.__foliaStart = attempt;
+                const noteStartError = error => {
+                    attempt.error = String(error?.name || error?.message || error || 'rejected').slice(0, 160);
+                };
+                // A queue that started by itself needs no second start; asking again would restart its
+                // loading pipeline.
+                if (android && (mk.playbackState === 2 || mk.isPlaying === true)) {
+                    attempt.pending = false;
+                    window.__foliaLastPlay = { requestKey: request.params.requestKey, catalogId: request.params.catalogId };
+                    return { ok: true, data: {
+                        state: Number.isInteger(mk.playbackState) ? mk.playbackState : null,
+                        isPlaying: mk.isPlaying === true,
+                        itemId: typeof mk.nowPlayingItem?.id === 'string' ? mk.nowPlayingItem.id : '',
+                        queueKeys: mk.queue ? Object.keys(mk.queue).slice(0, 12) : null,
+                        storefront: storefront ? storefront.page : '',
+                        storefrontMatched: storefront ? storefront.matched : null,
+                        previewOnly: mk.previewOnly === true,
+                    } };
+                }
                 // Buffering may take longer than the IPC budget. Observe completion without holding the control queue.
                 Promise.resolve(mk.play()).then(async () => {
                     if (window.__foliaStart !== attempt) return;
                     if (attempt.cancelled) { await mk.pause(); return; }
                     if (!attempt.sought && request.params.startSec > 0 && typeof mk.seekToTime === 'function'
                         && !(Number(mk.currentPlaybackTime) >= request.params.startSec - 1)) await mk.seekToTime(request.params.startSec);
-                }).catch(() => {
-                    if (window.__foliaStart === attempt && !attempt.cancelled) attempt.failed = true;
+                }).catch(error => {
+                    noteStartError(error);
+                    // Only a rejection that left nothing sounding is a failure: a nudge racing the
+                    // first play rejects the first promise while the song plays fine.
+                    if (window.__foliaStart === attempt && !attempt.cancelled && mk.isPlaying !== true) attempt.failed = true;
                 }).finally(() => { attempt.pending = false; });
             } catch {
                 console.warn('[AppleMusic] Playback command rejected', { operation: request.operation });
@@ -205,6 +477,9 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 isPlaying: mk.isPlaying === true,
                 itemId: typeof mk.nowPlayingItem?.id === 'string' ? mk.nowPlayingItem.id : '',
                 queueKeys: mk.queue ? Object.keys(mk.queue).slice(0, 12) : null,
+                storefront: storefront ? storefront.page : '',
+                storefrontMatched: storefront ? storefront.matched : null,
+                previewOnly: mk.previewOnly === true,
             } };
         }
         if (Object.prototype.hasOwnProperty.call(methods, request.operation)) {

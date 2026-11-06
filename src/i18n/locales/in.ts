@@ -1751,6 +1751,8 @@ export default {
     "loginTitleFnMusic": "Masuk ke fnOS Music",
     "loginNoteFnMusic": "Masukkan alamat server dan akun fnOS Music untuk memutar musik NAS Anda",
     "loginTitleYtm": "Masuk ke YouTube Music",
+    "ytmSignInCancel": "Batal",
+    "ytmSignInDone": "Selesai",
     "loginTitleAppleMusic": "Masuk ke Apple Music",
     "loginNoteAppleMusic": "Masuk melalui jendela Apple. Kata sandi Anda hanya diberikan kepada Apple.",
     "appleMusicLinuxUnsupported": "Linux belum didukung",
@@ -2007,6 +2009,8 @@ export default {
     "communityQqHint": "{{number}} · klik untuk menyalin",
     "qqGroupNumberCopied": "Nomor grup disalin",
       "copyDiagnostics": "Salin diagnostik",
+      "openAppleMusicWindow": "Buka jendela Apple Music",
+      "openAppleMusicWindowDescription": "Halaman Apple sendiri, layar penuh, untuk memutar lagu secara manual dan melihat apakah halamannya bisa berbunyi di sini.",
       "copyDiagnosticsDescription": "Menyusun laporan versi dan status runtime untuk laporan bug.",
 
       "exportDiagnostics": "Ekspor diagnostik",

@@ -1752,6 +1752,8 @@ export default {
     "loginTitleFnMusic": "Đăng nhập fnOS Music",
     "loginNoteFnMusic": "Nhập địa chỉ máy chủ và tài khoản fnOS Music để phát nhạc từ NAS của bạn",
     "loginTitleYtm": "Đăng nhập YouTube Music",
+    "ytmSignInCancel": "Hủy",
+    "ytmSignInDone": "Xong",
     "loginTitleAppleMusic": "Đăng nhập Apple Music",
     "loginNoteAppleMusic": "Đăng nhập trong cửa sổ Apple. Mật khẩu của bạn chỉ được gửi cho Apple.",
     "appleMusicLinuxUnsupported": "Chưa hỗ trợ Linux",
@@ -1973,6 +1975,8 @@ export default {
     "chaotic": "Hỗn loạn"
   },
   "help": {
+    "openAppleMusicWindow": "Mở cửa sổ Apple Music",
+    "openAppleMusicWindowDescription": "Mở trang Apple ở chế độ toàn màn hình để tự phát một bài và xem trang đó có phát được âm thanh ở đây không.",
     "copyDiagnostics": "Copy diagnostics",
     "copyDiagnosticsDescription": "Builds a report of the current version and runtime state for bug reports.",
     "exportDiagnostics": "Export diagnostics",

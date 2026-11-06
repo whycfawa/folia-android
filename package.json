@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.26-android.428",
+  "version": "0.7.26-android.443",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -265,6 +265,12 @@
     }
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@google/genai": "^2.24.0",
     "@neteasecloudmusicapienhanced/api": "4.41.1",
     "@xhayper/discord-rpc": "^1.5.1",
@@ -283,15 +289,12 @@
     "music-metadata": "^11.16.1",
     "qishui-music-api": "0.2.2",
     "ws": "^8.21.3",
-    "youtubei.js": "18.1.0",
-    "@capacitor/android": "^8.4.2",
-    "@capacitor/browser": "^8.0.4",
-    "@capacitor/core": "^8.4.2",
-    "@capacitor/splash-screen": "^8.0.2",
-    "@capacitor/status-bar": "^8.0.3"
+    "youtubei.js": "18.1.0"
   },
   "devDependencies": {
     "@applemusic-like-lyrics/ttml": "^1.0.1",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.2",
     "@chenglou/pretext": "^0.0.9",
     "@emnapi/core": "1.11.3",
     "@emnapi/runtime": "1.11.3",
@@ -343,9 +346,7 @@
     "vitest": "^4.1.11",
     "wait-on": "^9.1.0",
     "wanakana": "^5.3.1",
-    "zustand": "^5.0.15",
-    "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.4.2"
+    "zustand": "^5.0.15"
   },
   "overrides": {
     "@babel/plugin-transform-runtime": "7.29.7",

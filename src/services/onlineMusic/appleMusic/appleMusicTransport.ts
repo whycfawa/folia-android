@@ -4,7 +4,7 @@ import type { ProviderAvailability, ProviderErrorCode } from '../../../types/onl
 // The provider's sole renderer-side boundary to the isolated desktop companion.
 // The queue is Folia's: no next/previous of the companion's own.
 export type AppleMusicOperation = 'showWindow' | 'hideWindow' | 'logout' | 'accountStatus' | 'search' | 'playlists' | 'playlistTracks' | 'playlistTrackCount' | 'lyrics'
-    | 'songOriginal' | 'catalogSong' | 'catalogAlbum' | 'catalogAlbumTracks' | 'catalogArtist' | 'catalogArtistSongs' | 'catalogArtistAlbums' | 'libraryAlbums' | 'libraryAlbumTracks' | 'stations' | 'station' | 'playStation' | 'personalFm' | 'addPlaylistTracks' | 'likeSong' | 'prepareNext' | 'playbackStatus' | 'playSong' | 'pause' | 'resume' | 'seek' | 'setVolume';
+    | 'songOriginal' | 'catalogSong' | 'catalogAlbum' | 'catalogAlbumTracks' | 'catalogArtist' | 'catalogArtistSongs' | 'catalogArtistAlbums' | 'libraryAlbums' | 'libraryAlbumTracks' | 'stations' | 'station' | 'playStation' | 'personalFm' | 'addPlaylistTracks' | 'likeSong' | 'prepareNext' | 'playbackStatus' | 'diagnostics' | 'playSong' | 'pause' | 'resume' | 'seek' | 'setVolume';
 export type AppleMusicParams = Record<string, string | number | boolean | string[] | undefined>;
 export type AppleMusicBridgeResult =
     | { ok: true; data: unknown }
@@ -51,7 +51,7 @@ export async function requestAppleMusic<T>(operation: AppleMusicOperation, param
     }
     if (!result.ok) {
         // Only fixed stage names enter the error; never forward remote exception text or URLs.
-        const stages = ['prepared-queue', 'configure', 'queue', 'play', 'seek'];
+        const stages = ['prepared-queue', 'configure', 'storefront', 'queue', 'play', 'seek'];
         const stage = result.error === 'playback-failed' && stages.includes(result.playbackStage ?? '') ? result.playbackStage : undefined;
         throw new OnlineProviderError(errorCode(result.error), `Apple Music companion request failed${stage ? ` (stage: ${stage})` : ''}`, 'appleMusic', result.error, result.httpStatus ?? undefined);
     }

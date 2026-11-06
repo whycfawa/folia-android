@@ -1751,6 +1751,8 @@ export default {
     "loginTitleFnMusic": "Sign in to fnOS Music",
     "loginNoteFnMusic": "Enter your fnOS Music server address and account to play your NAS music library",
     "loginTitleYtm": "Sign in to YouTube Music",
+    "ytmSignInCancel": "Cancel",
+    "ytmSignInDone": "Done",
     "loginTitleAppleMusic": "Sign in to Apple Music",
     "loginNoteAppleMusic": "Sign in using the Apple window. Your password stays with Apple.",
     "appleMusicLinuxUnsupported": "Not supported on Linux yet",
@@ -2007,6 +2009,8 @@ export default {
     "communityQqHint": "{{number}} · click to copy",
     "qqGroupNumberCopied": "Group number copied",
       "copyDiagnostics": "Copy diagnostics",
+      "openAppleMusicWindow": "Open the Apple Music window",
+      "openAppleMusicWindowDescription": "Apple's own page, full screen, to play a song by hand and see whether the page itself can sound here.",
       "copyDiagnosticsDescription": "Builds a report of the current version and runtime state for bug reports.",
 
       "exportDiagnostics": "Export diagnostics",

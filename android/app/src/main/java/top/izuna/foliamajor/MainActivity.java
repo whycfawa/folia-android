@@ -1,6 +1,7 @@
 package top.izuna.foliamajor;
 
 import android.content.ComponentCallbacks2;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -9,8 +10,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.PluginHandle;
 import com.getcapacitor.WebViewListener;
 
 import java.io.File;
@@ -34,6 +38,8 @@ public class MainActivity extends BridgeActivity {
     private long lastUserLeaveRecordAt = 0L;
     private long lastTrimMemoryRecordAt = 0L;
     private int lastTrimMemoryLevel = Integer.MIN_VALUE;
+    /** YouTube Music 的登录屏是一个独立 Activity：结果从这条通道交回插件。 */
+    private ActivityResultLauncher<Intent> ytmSignInLauncher;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -45,8 +51,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FoliaModsPlugin.class);
         registerPlugin(FoliaNativeStagePlugin.class);
         registerPlugin(FoliaAppleMusicPlugin.class);
+        registerPlugin(FoliaYtmPlugin.class);
+        registerPlugin(FoliaFnMusicPlugin.class);
         registerPlugin(top.izuna.foliamajor.coloros.FoliaColorOsLyricsPlugin.class);
         super.onCreate(savedInstanceState);
+        attachYtmSignInLauncher();
         CrashDiagnostics.recordText(
             getApplicationContext(),
             "activity-lifecycle",
@@ -145,6 +154,27 @@ public class MainActivity extends BridgeActivity {
      * app, but only after several rebuilds inside a minute: closing on the second one turned a
      * recoverable renderer kill into the app disappearing mid-use.
      */
+    /**
+     * 给 YouTube Music 登录屏注册一个 Activity Result 通道：登录结果（cookie 与 UA）从
+     * YtmSignInActivity 交回 FoliaYtm 插件，插件再把 Bridge 的调用收尾。
+     */
+    private void attachYtmSignInLauncher() {
+        ytmSignInLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                PluginHandle handle = getBridge().getPlugin("FoliaYtm");
+                if (handle != null && handle.getInstance() instanceof FoliaYtmPlugin) {
+                    ((FoliaYtmPlugin) handle.getInstance())
+                        .onSignInActivityResult(result.getResultCode(), result.getData());
+                }
+            }
+        );
+        PluginHandle ytm = getBridge().getPlugin("FoliaYtm");
+        if (ytm != null && ytm.getInstance() instanceof FoliaYtmPlugin) {
+            ((FoliaYtmPlugin) ytm.getInstance()).attachSignInLauncher(ytmSignInLauncher);
+        }
+    }
+
     private void installWebViewRendererGuard() {
         getBridge().addWebViewListener(new WebViewListener() {
             @Override

@@ -11,6 +11,7 @@ import {
 import { appleMusicLiveStationId, getAppleMusicLiveStations, getAppleMusicLiveStationTracks } from './appleMusicRadio';
 import { getAppleMusicLyricSearchAlias } from './appleMusicOriginal';
 import { normalizeAppleMusicPlaylist, normalizeAppleMusicSong, normalizeAppleMusicUser } from './appleMusicNormalize';
+import { noteAppleMusicPlayFailure, noteAppleMusicPlayStarted } from './appleMusicDiagnostics';
 import { getAppleMusicTransportAvailability, requestAppleMusic } from './appleMusicTransport';
 
 // MusicKit's PlaybackStates: ended is 5 and completed is 10 (waiting is 8, stalled is 9). A
@@ -259,8 +260,14 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 if (stationId) {
                     playback = null;
                     handoffId = null;
-                    await requestAppleMusic('playStation', { stationId });
+                    try {
+                        await requestAppleMusic('playStation', { stationId });
+                    } catch (error) {
+                        noteAppleMusicPlayFailure(error);
+                        throw error;
+                    }
                     liveStationId = stationId;
+                    noteAppleMusicPlayStarted({});
                     console.info('[AppleMusic] Live station started');
                     return;
                 }
@@ -280,10 +287,12 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                     result = await requestAppleMusic('playSong', { catalogId, startSec: Math.round(seconds * 1000) / 1000, requestKey, ...(adoptCurrent ? { adoptCurrent: true } : {}) });
                 } catch (error) {
                     if (playback === attempt) playback = null;
+                    noteAppleMusicPlayFailure(error);
                     throw error;
                 }
                 // A start the player accepted but did not begin looks like this; the state and the
                 // queue's own keys are the facts worth keeping, the song's words never are.
+                noteAppleMusicPlayStarted(result);
                 console.info('[AppleMusic] play started', result);
             },
             async pause() {

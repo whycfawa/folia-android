@@ -163,7 +163,7 @@ export const PLATFORM_NAME_PLACES: Record<string, PlatformNamePlace> = {
     "src/nativeBridge/api/weather.js": { n: { netease: 3 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质' },
     "src/services/nativeAndroidBridge.ts": { n: { kugou: 6, netease: 1, qq: 12, spotify: 3, qishui: 2 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质；Spotify / 汽水的主机在原生代理白名单' },
     "src/services/nativeRemoteAudio.ts": { n: { bodian: 1 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质' },
-    "src/utils/buildDiagnosticReport.ts": { n: { kugou: 1, netease: 2, qq: 3 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质' },
+    'src/utils/buildDiagnosticReport.ts': { n: { kugou: 1, netease: 2, qq: 3, appleMusic: 4 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质；appleMusic 的四行是伴随播放器的一节诊断（源在平台目录里）' },
     "src/utils/mediaDiagnostics.ts": { n: { netease: 1 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge，与桌面版的 server entry 同性质' },
     'src/services/foliaExtensionBridge.ts': { n: { bodian: 1, kugou: 2, netease: 2, qq: 2, spotify: 1, ytm: 1, qishui: 1 }, kind: 'main', why: 'Android 原生桥：该平台的协议实现住在 nativeBridge / extension bridge，与桌面版 server entry 同性质' },
     'src/nativeBridge/api/spotify.js': { n: { spotify: 70 }, kind: 'main', why: 'Spotify 的安卓侧桥实现，与桌面 electron/spotify 同性质' },

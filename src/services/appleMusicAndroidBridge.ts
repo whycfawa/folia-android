@@ -3,7 +3,7 @@ import type { AppleMusicBridgeResult, AppleMusicOperation, AppleMusicParams } fr
 
 type AppleMusicPlugin = {
     request: (options: { operation: string; params?: Record<string, unknown> }) => Promise<AppleMusicBridgeResult>;
-    showWindow: () => Promise<void>;
+    showWindow: (options?: { manual?: boolean }) => Promise<void>;
     hideWindow: () => Promise<void>;
 };
 
@@ -32,4 +32,21 @@ export const installAppleMusicAndroidBridge = (): void => {
             return { ok: false, error: 'request-failed' };
         }
     };
+};
+
+/**
+ * Opens Apple's own page full screen, on a page the listener can use, and leaves it open: the same
+ * WebView the app plays through, so a song that sounds here and not under the app's controls is a
+ * problem in our wiring, and a song that does not sound here either is the page's own.
+ * A close button floats over it; nothing inside the login flow hides this window.
+ */
+export const openAppleMusicPlayerWindow = async (): Promise<boolean> => {
+    if (Capacitor.getPlatform() !== 'android' || typeof window === 'undefined') return false;
+    try {
+        await AppleMusic.showWindow({ manual: true });
+        return true;
+    } catch (error) {
+        console.warn('[AppleMusic] could not open the player window', error);
+        return false;
+    }
 };

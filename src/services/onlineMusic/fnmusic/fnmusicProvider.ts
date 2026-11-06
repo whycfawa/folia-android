@@ -323,7 +323,10 @@ export const fnmusicProvider: OnlineMusicProvider = {
     mark: { letter: '飞', color: '#0891b2' },
     // 仅桌面端（Electron 主进程桥）可用：网页/Docker 下浏览器丢 Cookie 受限头且受 CORS 限制。
     getAvailability: () => {
-        if (typeof window !== 'undefined' && !(window as any).electron?.fnmusicRequest) {
+        // 桌面端是 Electron 主进程桥，安卓是 FoliaFnMusic 原生插件：有其一即可用。
+        const bridged = typeof window !== 'undefined'
+            && (Boolean((window as any).electron?.fnmusicRequest) || typeof (window as any).foliaFnMusicRequest === 'function');
+        if (typeof window !== 'undefined' && !bridged) {
             return { configured: false, reason: 'runtime-unavailable' as const };
         }
         // 桌面端：有主进程桥即可用（与其它桌面端平台一致，configured 恒 true，

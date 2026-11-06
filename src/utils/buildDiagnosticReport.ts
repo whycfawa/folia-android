@@ -10,6 +10,7 @@ import { isNeutralAudioEffects } from './audioEffects';
 import { getCollectionOrderDiagnosticLines } from './collectionOrderDiagnostics';
 import { getOnlineMutationDiagnosticLines } from './onlineMutationDiagnostics';
 import { getOnlinePlaybackDiagnosticLines } from './onlinePlaybackDiagnostics';
+import { readAppleMusicDiagnosticLines } from '../services/onlineMusic/appleMusic/appleMusicDiagnostics';
 import { getLyricsDiagnosticLines } from './lyricsDiagnostics';
 import { getLocalLibraryDiagnosticLines } from './localLibraryDiagnostics';
 import {
@@ -692,6 +693,11 @@ export const buildDiagnosticReport = async (): Promise<string> => {
     const playbackLines = getOnlinePlaybackDiagnosticLines();
     lines.push('', 'online playback trace:');
     lines.push(...(playbackLines.length ? playbackLines : ['  (none)']));
+
+    // Apple Music 在 Android 只在隐藏 WebView 里出声：起播没声音时，这一节是唯一的现场。
+    lines.push('', 'apple music (android webview):');
+    // 第一次要等页面把 Widevine 探完，比其它只读快照慢。
+    lines.push(...(await withDeadline(readAppleMusicDiagnosticLines(), 8000, ['  (timed out)'])));
 
     const lyricsLines = getLyricsDiagnosticLines();
     lines.push('', 'lyrics pipeline trace:');

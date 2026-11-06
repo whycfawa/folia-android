@@ -1751,6 +1751,8 @@ export default {
     "loginTitleFnMusic": "登录飞牛音乐",
     "loginNoteFnMusic": "填入你的飞牛音乐服务器地址与账号，畅听 NAS 私有音乐库",
     "loginTitleYtm": "登录 YouTube Music",
+    "ytmSignInCancel": "取消",
+    "ytmSignInDone": "完成",
     "loginTitleAppleMusic": "登录 Apple Music",
     "loginNoteAppleMusic": "请在 Apple 窗口中登录，密码只会交给 Apple。",
     "appleMusicLinuxUnsupported": "Linux 暂未支援",
@@ -2007,6 +2009,8 @@ export default {
     "communityQqHint": "{{number}} · 点击复制群号",
     "qqGroupNumberCopied": "群号已复制",
       "copyDiagnostics": "复制诊断数据",
+      "openAppleMusicWindow": "打开 Apple Music 窗口",
+      "openAppleMusicWindowDescription": "全屏打开 Apple 自己的页面，手动放一首歌，用来区分页面本身能不能出声。",
       "copyDiagnosticsDescription": "把当前版本与运行状态整理成报告，贴进反馈里能帮我们定位问题。",
 
       "exportDiagnostics": "导出诊断数据",
