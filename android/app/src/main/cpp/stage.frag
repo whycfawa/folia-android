@@ -29,6 +29,20 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 2) {
+        // Sonnet: warm paper, ink wash and drifting specks.
+        vec3 paper = mix(vec3(0.055, 0.048, 0.042), vec3(0.11, 0.095, 0.080), uv.y);
+        float wash = 0.5 + 0.5 * sin(uv.x * 5.0 + pc.time * 0.08 + uv.y * 3.0);
+        float ink = exp(-distance(uv, vec2(0.32 + 0.05 * sin(pc.time * 0.1), 0.55)) * 5.0);
+        float specks = 0.0;
+        for (int i = 0; i < 12; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.29, fi * 0.53);
+            vec2 pos = vec2(hash(seed), fract(hash(seed + vec2(1.0, 2.0)) - pc.time * 0.006));
+            float d = distance(uv, pos);
+            specks += exp(-d * d * 2400.0) * 0.25;
+        }
+        color = paper * (0.8 + 0.15 * wash) + pc.accent.rgb * (ink * 0.10 + specks * 0.2);
     } else {
         vec3 base = mix(vec3(0.015, 0.018, 0.028), vec3(0.030, 0.034, 0.050), uv.y);
         float glow = exp(-8.0 * distance(uv, vec2(0.5 + 0.15 * sin(pc.time * 0.6), 0.45)));
