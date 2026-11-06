@@ -29,6 +29,19 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 5) {
+        // Machi: warm city bokeh and window lights.
+        vec3 base = mix(vec3(0.02, 0.015, 0.018), vec3(0.08, 0.045, 0.035), uv.y);
+        float bokeh = 0.0;
+        for (int i = 0; i < 14; i++) {
+            float fi = float(i);
+            vec2 seed = vec2(fi * 0.23, fi * 0.41);
+            vec2 pos = vec2(hash(seed) + 0.02 * sin(pc.time * 0.12 + fi), hash(seed + vec2(3.0, 1.0)));
+            float radius = 0.012 + hash(seed + vec2(5.0, 2.0)) * 0.03;
+            float d = length((uv - pos) * vec2(1.0, 0.72));
+            bokeh += smoothstep(radius, radius * 0.2, d) * (0.25 + 0.5 * hash(seed + vec2(7.0, 4.0)));
+        }
+        color = base + pc.accent.rgb * bokeh * 0.55 + vec3(0.08, 0.035, 0.02) * bokeh;
     } else if (pc.mode == 4) {
         // Hanabi: drifting night sky with burst sparks.
         vec3 base = vec3(0.010, 0.010, 0.020);
