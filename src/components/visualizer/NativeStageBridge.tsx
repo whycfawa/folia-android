@@ -1,6 +1,7 @@
 import React from 'react';
 import { IS_ANDROID_WEBVIEW } from '../../utils/platform';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
+import { useThemeSettingsStore } from '../../stores/useThemeSettingsStore';
 import { PlayerState } from '../../types';
 import { selectDisplayLyrics, usePlaybackStore } from '../../stores/usePlaybackStore';
 import { addNativeStageControlListener, addNativeStageFallbackListener, disableNativeStage, enableNativeStage, getNativeStageStats, updateNativeStage, updateNativeStageAudio, updateNativeStageProgress, updateNativeStageWords } from '../../services/nativeStage';
@@ -27,9 +28,6 @@ html.folia-native-stage #root {
 html.folia-native-stage [data-testid="player-visual-surface"] {
   opacity: 0 !important;
 }
-html.folia-native-stage [data-folia-player-controls] {
-  display: none !important;
-}
 `;
     document.head.appendChild(style);
 };
@@ -41,6 +39,7 @@ const NativeStageBridge: React.FC = () => {
     const lineIndex = usePlaybackStore(state => state.currentLineIndex);
     const playerState = usePlaybackStore(state => state.playerState);
     const duration = usePlaybackStore(state => state.duration);
+    const isDaylight = useThemeSettingsStore(state => state.isDaylight);
     const nativeTheme = React.useSyncExternalStore(subscribeNativeStageTheme, getNativeStageTheme, getNativeStageTheme);
 
     React.useEffect(() => {
@@ -81,9 +80,10 @@ const NativeStageBridge: React.FC = () => {
             primary: nativeTheme.primary,
             secondary: nativeTheme.secondary,
             background: nativeTheme.background,
+            daylight: isDaylight,
             playing: playerState === PlayerState.PLAYING,
         }).catch(error => console.warn('[NativeStage] update failed', error));
-    }, [enabled, lineIndex, lyrics, nativeTheme, playerState, song]);
+    }, [enabled, isDaylight, lineIndex, lyrics, nativeTheme, playerState, song]);
 
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW || !enabled) return undefined;

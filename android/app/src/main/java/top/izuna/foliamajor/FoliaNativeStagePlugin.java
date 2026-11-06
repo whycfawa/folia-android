@@ -62,21 +62,10 @@ public class FoliaNativeStagePlugin extends Plugin {
                             ViewGroup.LayoutParams.MATCH_PARENT));
                 }
                 stageView.setVisibility(FoliaNativeStageSurfaceView.VISIBLE);
-                if (controlsView == null) {
-                    controlsView = new FoliaNativeStageControlsView(activity);
-                    controlsView.setListener(new FoliaNativeStageControlsView.Listener() {
-                        @Override public void onPrevious() { emitControl("previous", 0); }
-                        @Override public void onToggle() { emitControl("toggle", 0); }
-                        @Override public void onNext() { emitControl("next", 0); }
-                        @Override public void onSeek(float fraction) { emitControl("seek", fraction); }
-                    });
-                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT, (int) dp(88), Gravity.BOTTOM);
-                    root.addView(controlsView, params);
-                }
+                // 原生控制条暂不启用：保留 WebView 原有控制条，避免样式和交互被替换。
                 final FoliaNativeStageSurfaceView currentStage = stageView;
                 root.postDelayed(() -> {
-                    if (stageView == currentStage && currentStage.isPlaying() && currentStage.getFrameCount() == 0) {
+                    if (stageView == currentStage && currentStage.getFrameCount() == 0) {
                         removeStage();
                         JSObject payload = new JSObject();
                         payload.put("reason", "no-frames");
@@ -109,10 +98,15 @@ public class FoliaNativeStagePlugin extends Plugin {
         }
         activity.runOnUiThread(() -> {
             try {
-                controlsView.setPlaying(Boolean.TRUE.equals(call.getBoolean("playing", true)));
+                boolean daylight = Boolean.TRUE.equals(call.getBoolean("daylight", false));
+                if (controlsView != null) {
+                    controlsView.setPlaying(Boolean.TRUE.equals(call.getBoolean("playing", true)));
+                    controlsView.setDaylight(daylight);
+                }
+                stageView.setDaylight(daylight);
                 try {
                     String accent = call.getString("accent", "");
-                    if (accent != null && !accent.isEmpty()) controlsView.setAccent(Color.parseColor(accent));
+                    if (controlsView != null && accent != null && !accent.isEmpty()) controlsView.setAccent(Color.parseColor(accent));
                 } catch (IllegalArgumentException ignored) {
                 }
                 stageView.setThemeColors(

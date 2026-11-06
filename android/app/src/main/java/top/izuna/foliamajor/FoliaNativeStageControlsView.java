@@ -27,6 +27,7 @@ public class FoliaNativeStageControlsView extends View {
     private float progress = 0f;
     private int accent = 0xFF7C9BFF;
     private int bottomInset = 0;
+    private boolean daylight = false;
 
     public FoliaNativeStageControlsView(Context context) {
         super(context);
@@ -54,6 +55,11 @@ public class FoliaNativeStageControlsView extends View {
         invalidate();
     }
 
+    public void setDaylight(boolean daylight) {
+        this.daylight = daylight;
+        invalidate();
+    }
+
     @Override
     public WindowInsets onApplyWindowInsets(WindowInsets insets) {
         bottomInset = insets.getSystemWindowInsetBottom();
@@ -74,9 +80,9 @@ public class FoliaNativeStageControlsView extends View {
         float usableHeight = Math.max(dp(64), height - bottomInset);
         float barHeight = Math.min(dp(64), usableHeight - dp(8));
         rect.set(barLeft, (usableHeight - barHeight) / 2f, barLeft + barWidth, (usableHeight + barHeight) / 2f);
-        paint.setColor(0xCC101014);
+        paint.setColor(daylight ? 0xE6FFFFFF : 0xCC101014);
         canvas.drawRoundRect(rect, barHeight / 2f, barHeight / 2f, paint);
-        paint.setColor(0x55FFFFFF);
+        paint.setColor(daylight ? 0x22000000 : 0x55FFFFFF);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(dp(1));
         canvas.drawRoundRect(rect, barHeight / 2f, barHeight / 2f, paint);
@@ -85,7 +91,7 @@ public class FoliaNativeStageControlsView extends View {
         float trackLeft = rect.left + dp(22);
         float trackRight = rect.right - dp(22);
         float trackY = rect.top + dp(8);
-        paint.setColor(0x33FFFFFF);
+        paint.setColor(daylight ? 0x22000000 : 0x33FFFFFF);
         canvas.drawRect(trackLeft, trackY, trackRight, trackY + dp(2), paint);
         paint.setColor(accent);
         canvas.drawRect(trackLeft, trackY, trackLeft + (trackRight - trackLeft) * progress, trackY + dp(2), paint);
@@ -94,7 +100,7 @@ public class FoliaNativeStageControlsView extends View {
         float left = rect.left + barWidth * 0.27f;
         float middle = rect.left + barWidth * 0.5f;
         float right = rect.left + barWidth * 0.73f;
-        paint.setColor(Color.WHITE);
+        paint.setColor(daylight ? 0xFF111111 : Color.WHITE);
         // prev
         path.reset();
         path.moveTo(left - dp(7), cy); path.lineTo(left + dp(5), cy - dp(9)); path.lineTo(left + dp(5), cy + dp(9)); path.close();

@@ -54,6 +54,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private int primary = 0xFFFFFFFF;
     private int secondary = 0xFF7C9BFF;
     private int background = 0xFF07070B;
+    private boolean daylight = false;
     private boolean playing = true;
     private float lineProgress = 0f;
     private float audioPower;
@@ -99,12 +100,14 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         getHolder().addCallback(this);
         lyricPaint.setColor(Color.WHITE);
         lyricPaint.setTextAlign(Paint.Align.CENTER);
+        applyTextColors();
         lyricPaint.setFakeBoldText(true);
         nextPaint.setColor(0x88FFFFFF);
         nextPaint.setTextAlign(Paint.Align.CENTER);
         metaPaint.setColor(0x99FFFFFF);
         metaPaint.setTextAlign(Paint.Align.CENTER);
         metaPaint.setTextSize(dp(13));
+        applyTextColors();
     }
 
     private float dp(float value) {
@@ -356,6 +359,22 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         }
     }
 
+    public void setDaylight(boolean daylight) {
+        synchronized (stateLock) {
+            if (this.daylight == daylight) return;
+            this.daylight = daylight;
+            applyTextColors();
+            dirty = true;
+        }
+    }
+
+    private void applyTextColors() {
+        int text = daylight ? 0xFF111111 : Color.WHITE;
+        lyricPaint.setColor(text);
+        nextPaint.setColor(daylight ? 0x99111111 : 0x88FFFFFF);
+        metaPaint.setColor(daylight ? 0xAA111111 : 0x99FFFFFF);
+    }
+
     private boolean drawWords(Canvas canvas, int width, float centerY) {
         if (wordTexts.length == 0 || layoutSize <= 0) return false;
         wordPaint.setTextSize(layoutSize);
@@ -369,7 +388,8 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
             float span = Math.max(0.001f, wordEnds[index] - wordStarts[index]);
             float wordProgress = Math.max(0f, Math.min(1f, (wordPosition - wordStarts[index]) / span));
             int alpha = 0x55 + Math.round((0xFF - 0x55) * wordProgress);
-            wordPaint.setColor((alpha << 24) | 0x00FFFFFF);
+            int rgb = daylight ? 0x111111 : 0xFFFFFF;
+            wordPaint.setColor((alpha << 24) | rgb);
             canvas.drawText(wordTexts[index], x, baseline, wordPaint);
             x += wordPaint.measureText(wordTexts[index]);
         }
@@ -403,7 +423,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
             float barWidth = width / (bars * 1.8f);
             float gap = (width - bars * barWidth) / (bars + 1f);
             float baseY = height * 0.88f;
-            barPaint.setColor(0x55FFFFFF);
+            barPaint.setColor(daylight ? 0x33111111 : 0x55FFFFFF);
             for (int index = 0; index < bars; index++) {
                 float mix = index < bars / 3f ? audioBass : index < bars * 2f / 3f ? audioMid : audioTreble;
                 float wave = 0.55f + 0.45f * (float) Math.sin(t * Math.PI * 8 + index * 0.7f);
@@ -417,12 +437,12 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
         if (!drawWords(canvas, width, centerY) && lyricLayout != null) {
             float left = (width - width * 0.86f) / 2f;
             float top = centerY - lyricLayout.getHeight() / 2f;
-            lyricPaint.setColor(0x55FFFFFF);
+            lyricPaint.setColor(daylight ? 0x55111111 : 0x55FFFFFF);
             canvas.save();
             canvas.translate(left, top);
             lyricLayout.draw(canvas);
             canvas.restore();
-            lyricPaint.setColor(Color.WHITE);
+            lyricPaint.setColor(daylight ? 0xFF111111 : Color.WHITE);
             canvas.save();
             canvas.clipRect(left, 0f, left + width * 0.86f * lineProgress, height);
             canvas.translate(left, top);
