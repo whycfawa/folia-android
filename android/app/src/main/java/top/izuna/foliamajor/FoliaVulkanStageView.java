@@ -74,11 +74,31 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native void nativeDestroy();
     private native void nativeUpdateText(int width, int height, int[] pixels);
 
+    private int sceneMode(String mode) {
+        switch (mode) {
+            case "lumiere": return 1;
+            case "sonnet": return 2;
+            case "nebbia": return 3;
+            case "hanabi": return 4;
+            case "machi": return 5;
+            case "fume": return 6;
+            case "monet": return 7;
+            case "diorama": return 8;
+            case "pendolo": return 9;
+            case "tempera": return 10;
+            case "tilt": return 11;
+            case "cadenza": return 12;
+            case "claddagh": return 13;
+            case "partita": return 14;
+            default: return 0;
+        }
+    }
+
     public void update(String mode, String line, String nextLine, String prevLine,
                        String lineTranslation, String prevTranslation, String nextTranslation,
                        String title, String artist, String accentHex, boolean playing, boolean chorus) {
         this.mode = mode == null ? "classic" : mode;
-        nativeSetMode("lumiere".equals(this.mode) ? 1 : ("sonnet".equals(this.mode) ? 2 : ("nebbia".equals(this.mode) ? 3 : ("hanabi".equals(this.mode) ? 4 : ("machi".equals(this.mode) ? 5 : ("fume".equals(this.mode) ? 6 : ("monet".equals(this.mode) ? 7 : ("diorama".equals(this.mode) ? 8 : ("pendolo".equals(this.mode) ? 9 : ("tempera".equals(this.mode) ? 10 : ("tilt".equals(this.mode) ? 11 : ("cadenza".equals(this.mode) ? 12 : ("claddagh".equals(this.mode) ? 13 : 0)))))))))))));
+        nativeSetMode(sceneMode(this.mode));
         this.line = line == null ? "" : line;
         this.prevLine = prevLine == null ? "" : prevLine;
         this.nextLine = nextLine == null ? "" : nextLine;

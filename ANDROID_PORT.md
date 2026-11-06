@@ -864,3 +864,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.388：Vulkan Claddagh 场景
 
 - claddagh 分支：三个互锁圆环；文字层叠加。
+
+### 0.7.25-android.389：Vulkan Partita 背景
+
+- partita 分支：竖列+横线背景；文字层已有。

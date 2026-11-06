@@ -29,6 +29,20 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 14) {
+        // Partita: composed columns with faint staff lines.
+        vec3 base = vec3(0.012, 0.018, 0.030);
+        float columns = 0.0;
+        for (int i = 0; i < 3; i++) {
+            float x = 0.36 + float(i) * 0.14;
+            columns += smoothstep(0.003, 0.0, abs(uv.x - x));
+        }
+        float rows = 0.0;
+        for (int i = 0; i < 4; i++) {
+            float y = 0.32 + float(i) * 0.11;
+            rows += smoothstep(0.0018, 0.0, abs(uv.y - y));
+        }
+        color = base + pc.accent.rgb * (columns * 0.10 + rows * 0.06);
     } else if (pc.mode == 13) {
         // Claddagh: interlocking celtic rings in a dark field.
         vec3 base = vec3(0.018, 0.025, 0.022);
