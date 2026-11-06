@@ -14,11 +14,9 @@ const AppleMusic = registerPlugin<AppleMusicPlugin>('FoliaAppleMusic');
 // provider already calls, backed by the FoliaAppleMusic WebView companion.
 export const installAppleMusicAndroidBridge = (): void => {
     if (Capacitor.getPlatform() !== 'android' || typeof window === 'undefined') return;
-    const target = window as Window & { electron?: Record<string, unknown> };
-    const bridge = (target.electron ?? {}) as Record<string, unknown>;
-    if (typeof bridge.appleMusicRequest === 'function') return;
-    bridge.platform = 'android';
-    bridge.appleMusicRequest = async (operation: AppleMusicOperation, params: AppleMusicParams = {}): Promise<AppleMusicBridgeResult> => {
+    const target = window as Window & { foliaAppleMusicRequest?: (operation: AppleMusicOperation, params?: AppleMusicParams) => Promise<AppleMusicBridgeResult> };
+    if (typeof target.foliaAppleMusicRequest === 'function') return;
+    target.foliaAppleMusicRequest = async (operation: AppleMusicOperation, params: AppleMusicParams = {}): Promise<AppleMusicBridgeResult> => {
         try {
             if (operation === 'showWindow') {
                 await AppleMusic.showWindow();
@@ -34,5 +32,4 @@ export const installAppleMusicAndroidBridge = (): void => {
             return { ok: false, error: 'request-failed' };
         }
     };
-    target.electron = bridge as Window['electron'];
 };

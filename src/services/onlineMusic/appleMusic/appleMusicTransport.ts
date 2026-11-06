@@ -14,9 +14,15 @@ export type AppleMusicBridgeResult =
 // Linux stays visible with a provider-owned explanation and never starts an unsupported player.
 export const getAppleMusicTransportAvailability = (): ProviderAvailability => {
     const bridge = typeof window !== 'undefined' ? window.electron : undefined;
-    if (typeof bridge?.appleMusicRequest !== 'function') return { configured: false, reason: 'runtime-unavailable' };
-    if (bridge.platform === 'darwin' || bridge.platform === 'win32' || bridge.platform === 'android') return { configured: true };
-    if (bridge.platform === 'linux') return { configured: false, reason: 'not-configured', messageKey: 'home.appleMusicLinuxUnsupported' };
+    const androidRequest = typeof window !== 'undefined'
+        ? (window as Window & { foliaAppleMusicRequest?: unknown }).foliaAppleMusicRequest
+        : undefined;
+    if (typeof bridge?.appleMusicRequest !== 'function' && typeof androidRequest !== 'function') {
+        return { configured: false, reason: 'runtime-unavailable' };
+    }
+    if (typeof androidRequest === 'function') return { configured: true };
+    if (bridge?.platform === 'darwin' || bridge?.platform === 'win32') return { configured: true };
+    if (bridge?.platform === 'linux') return { configured: false, reason: 'not-configured', messageKey: 'home.appleMusicLinuxUnsupported' };
     return { configured: false, reason: 'runtime-unavailable' };
 };
 
@@ -32,7 +38,9 @@ const errorCode = (error: string): ProviderErrorCode => {
 };
 
 export async function requestAppleMusic<T>(operation: AppleMusicOperation, params: AppleMusicParams = {}): Promise<T> {
-    const request = typeof window !== 'undefined' ? window.electron?.appleMusicRequest : undefined;
+    const request = typeof window !== 'undefined'
+        ? (window.electron?.appleMusicRequest ?? (window as Window & { foliaAppleMusicRequest?: (operation: AppleMusicOperation, params?: AppleMusicParams) => Promise<AppleMusicBridgeResult> }).foliaAppleMusicRequest)
+        : undefined;
     if (!request) throw new OnlineProviderError('unavailable', 'Apple Music companion is unavailable', 'appleMusic');
     let result: AppleMusicBridgeResult;
     try {

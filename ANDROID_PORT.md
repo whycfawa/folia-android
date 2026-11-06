@@ -1017,3 +1017,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - FoliaAppleMusic 插件：隐藏 WebView 加载 music.apple.com，注入 desktop companion 的 requestExpression。
 - JS 端 window.electron.appleMusicRequest 走 Capacitor 插件。
 - 命令面板按钮/自动隐藏设置已移除。
+
+### 0.7.26-android.424：修复 Apple Music 桥导致黑屏
+
+- 不再伪造 window.electron（会把所有 isElectron 判定变成 true）。
+- Apple Music 改走 window.foliaAppleMusicRequest。
