@@ -30,6 +30,8 @@ struct State {
     std::vector<VkImageView> views;
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkPipelineLayout simplePipelineLayout{VK_NULL_HANDLE};
+    bool simplePipeline{false};
     VkPipeline pipeline{VK_NULL_HANDLE};
     VkShaderModule vertModule{VK_NULL_HANDLE};
     VkShaderModule fragModule{VK_NULL_HANDLE};
@@ -417,15 +419,19 @@ bool createPipeline(State& s) {
     info.subpass = 0;
     VkResult pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
     if (pipelineResult != VK_SUCCESS) {
+        VkPipelineLayoutCreateInfo simpleLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+        if (!ok(vkCreatePipelineLayout(s.device, &simpleLayoutInfo, nullptr, &s.simplePipelineLayout), "simplePipelineLayout")) return false;
         s.vertModule = shaderModule(s, kSimpleVertSpv, kSimpleVertSpvSize);
         s.fragModule = shaderModule(s, kSimpleFragSpv, kSimpleFragSpvSize);
         stages[0].module = s.vertModule;
         stages[1].module = s.fragModule;
+        info.layout = s.simplePipelineLayout;
         pipelineResult = vkCreateGraphicsPipelines(s.device, VK_NULL_HANDLE, 1, &info, nullptr, &s.pipeline);
         if (pipelineResult != VK_SUCCESS) {
             lastError = "pipeline and simple pipeline failed: " + std::to_string((int) pipelineResult);
             return false;
         }
+        s.simplePipeline = true;
         lastError = "pipeline fallback: simple";
     }
     return true;
@@ -443,6 +449,7 @@ void destroySwapchain(State& s) {
     if (s.pipeline) vkDestroyPipeline(s.device, s.pipeline, nullptr);
     s.pipeline = VK_NULL_HANDLE;
     if (s.pipelineLayout) vkDestroyPipelineLayout(s.device, s.pipelineLayout, nullptr);
+    if (s.simplePipelineLayout) vkDestroyPipelineLayout(s.device, s.simplePipelineLayout, nullptr);
     s.pipelineLayout = VK_NULL_HANDLE;
     if (s.renderPass) vkDestroyRenderPass(s.device, s.renderPass, nullptr);
     s.renderPass = VK_NULL_HANDLE;
@@ -474,7 +481,7 @@ void recordClear(State& s, uint32_t imageIndex, float time) {
         vkCmdSetScissor(cmd, 0, 1, &scissor);
         struct Push { float time; float power; int mode; float pad; float accent[4]; } push{time, s.power, s.mode, s.daylight ? 1.0f : 0.0f, {s.accent[0], s.accent[1], s.accent[2], s.accent[3]}};
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.pipeline);
-        vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+        if (!s.simplePipeline) vkCmdPushConstants(cmd, s.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
         if (s.textPipeline != VK_NULL_HANDLE && s.descriptorSet != VK_NULL_HANDLE && s.textVertexCount > 0) {
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s.textPipeline);

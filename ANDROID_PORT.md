@@ -961,3 +961,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.410：显式 viewport/scissor
 
 - pipeline 提供静态 viewport/scissor，排除 Adreno 对空 pViewports 的 -3。
+
+### 0.7.25-android.411：无 push 最小管线
+
+- simple 管线使用独立无 push constant 布局；排除 pipeline layout 问题。
