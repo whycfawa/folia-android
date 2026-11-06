@@ -21,6 +21,8 @@ import { useTvPlayer } from './hooks/useTvPlayer';
 import { useTvRemote } from './hooks/useTvRemote';
 import { clickFocusedTvElement } from './input/focusDom';
 import { isTvDirection, type TvRemoteAction } from './input/tvKeys';
+import { createTvTrackSkipGesture } from './input/tvTrackSkipGesture';
+import { shouldRevealTvPlayerChrome } from './model/tvPlayerChrome';
 import { resolveTvBackRoute, resolveTvLayer, TV_HOME_ROUTE, type TvRoute } from './model/tvRoute';
 import { TvHome } from './pages/TvHome';
 import { TvPlayer } from './pages/TvPlayer';
@@ -33,6 +35,7 @@ export const TvApp = () => {
     const performanceProfile = useTvPerformanceProfile();
     const account = useTvAccount({ onProviderSwitch: player.pause });
     const library = useTvLibrary(account);
+    const trackSkipGestureRef = useRef(createTvTrackSkipGesture());
     const [route, setRoute] = useState<TvRoute>(TV_HOME_ROUTE);
     const [collection, setCollection] = useState<ProviderCollection | null>(null);
     const [loginError, setLoginError] = useState<string | null>(null);
@@ -116,26 +119,41 @@ export const TvApp = () => {
         action: TvRemoteAction,
         { repeat }: { repeat: boolean },
     ): boolean => {
-        if (action === 'back') return goBack();
+        if (action === 'back') {
+            trackSkipGestureRef.current.clear();
+            return goBack();
+        }
 
         if (route.page === 'player' && !route.overlay) {
-            if (action === 'ok') {
-                player.togglePlayback();
-                return true;
-            }
-            if (action === 'left' || action === 'right') {
-                if (repeat) return true;
-                player.seekBy(action === 'left' ? -10 : 10);
-                return true;
-            }
-            if (action === 'up' || action === 'down') {
+            if (shouldRevealTvPlayerChrome(action)) {
+                if (!repeat && (action === 'left' || action === 'right')) {
+                    trackSkipGestureRef.current.press(action, performance.now());
+                } else {
+                    trackSkipGestureRef.current.clear();
+                }
                 setRoute(current => ({ ...current, overlay: 'controls' }));
                 return true;
             }
         }
 
+        if (
+            route.page === 'player'
+            && route.overlay === 'controls'
+            && !repeat
+            && (action === 'left' || action === 'right')
+        ) {
+            if (trackSkipGestureRef.current.press(action, performance.now())) {
+                if (action === 'left') player.skipPrevious();
+                else player.next();
+                return true;
+            }
+        } else {
+            trackSkipGestureRef.current.clear();
+        }
+
         if (action === 'ok') return clickFocusedTvElement();
         if (isTvDirection(action)) return moveFocus(action);
+        if (action === 'menu') return false;
         return false;
     }, [goBack, player, route, moveFocus]);
 

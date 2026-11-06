@@ -1,8 +1,8 @@
 // src/tv/input/tvKeys.ts
-// Maps the several key names Android TV WebViews produce onto the five remote actions the TV UI
+// Maps the several key names Android TV WebViews produce onto the remote actions the TV UI
 // understands. Kept pure so the hardware-key assumptions can be tested without a device.
 
-export type TvRemoteAction = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back';
+export type TvRemoteAction = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'menu';
 
 type TvKeyboardLike = {
     key: string;
@@ -54,6 +54,15 @@ export const resolveTvRemoteAction = (event: TvKeyboardLike): TvRemoteAction | n
         || keyCode === 4
     ) {
         return 'back';
+    }
+
+    if (
+        key === 'ContextMenu'
+        || key === 'Menu'
+        || code === 'ContextMenu'
+        || keyCode === 82
+    ) {
+        return 'menu';
     }
 
     return null;

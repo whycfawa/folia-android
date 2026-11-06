@@ -56,6 +56,7 @@ export type TvPlaybackQueueModel = {
     pause: () => void;
     next: () => void;
     previous: () => void;
+    skipPrevious: () => void;
     seekBy: (deltaSeconds: number) => void;
     setVisualizerMode: (mode: VisualizerMode) => void;
     setBackgroundMode: (mode: VisualizerBackgroundMode) => void;
@@ -191,6 +192,13 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
         playQueue(songs, previousIndex);
     }, [playQueue, seekTransport, transport.currentTime]);
 
+    const skipPrevious = useCallback(() => {
+        const songs = queueRef.current;
+        if (songs.length === 0) return;
+        const previousIndex = (indexRef.current - 1 + songs.length) % songs.length;
+        playQueue(songs, previousIndex);
+    }, [playQueue]);
+
     const seekBy = useCallback((deltaSeconds: number) => {
         seekTransport(deltaSeconds);
     }, [seekTransport]);
@@ -262,6 +270,7 @@ export const useTvPlaybackQueue = (transport: TvAudioTransport): TvPlaybackQueue
         pause,
         next,
         previous,
+        skipPrevious,
         seekBy,
         setVisualizerMode,
         setBackgroundMode,

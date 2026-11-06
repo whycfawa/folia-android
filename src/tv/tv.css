@@ -555,17 +555,23 @@ img {
 
 .tv-player-page {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     overflow: hidden;
-    padding:
-        var(--tv-safe-y)
-        var(--tv-safe-x)
-        var(--tv-safe-y);
+    padding: 0;
     background: #07070c;
 }
 
 .tv-player-page > .tv-backdrop {
     z-index: 0;
+}
+
+.tv-player-page > .tv-player-header,
+.tv-player-page > .tv-visualizer-stage,
+.tv-player-page > .tv-lyric-stage,
+.tv-player-page > .tv-control-dock {
+    grid-area: 1 / 1;
+    min-width: 0;
+    min-height: 0;
 }
 
 .tv-backdrop {
@@ -589,13 +595,18 @@ img {
 }
 
 .tv-player-header {
-    position: relative;
+    align-self: start;
     z-index: 8;
     min-width: 0;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: clamp(18px, 1.5vw, 28px);
+    margin:
+        var(--tv-safe-y)
+        var(--tv-safe-x)
+        0;
+    pointer-events: none;
 }
 
 .tv-player-song {
@@ -691,12 +702,6 @@ img {
         clamp(16px, 2.8vh, 36px);
     text-align: center;
     transition: padding 180ms ease;
-}
-
-.tv-player-page.has-controls .tv-lyric-stage {
-    padding-bottom: calc(
-        var(--tv-control-dock-h) + var(--tv-safe-y) + clamp(10px, 2vh, 24px)
-    );
 }
 
 .tv-lyric-focus {
@@ -2102,10 +2107,6 @@ img {
         height: 56px;
     }
 
-    .tv-player-page.has-controls .tv-lyric-focus {
-        min-height: 0;
-    }
-
     .tv-lyric-empty-mark {
         width: 52px;
         height: 52px;
@@ -2166,7 +2167,7 @@ img {
     }
 
     .tv-player-page {
-        padding-block: var(--tv-safe-y);
+        padding: 0;
     }
 
     .tv-player-header {
@@ -2196,11 +2197,6 @@ img {
     .tv-player-mode em {
         padding-left: 6px;
         font-size: 11px;
-    }
-
-    .tv-player-page.has-controls .tv-lyric-stage {
-        padding-top: 8px;
-        padding-bottom: calc(var(--tv-control-dock-h) + 8px);
     }
 
     .tv-lyric-tokens {
@@ -2965,11 +2961,11 @@ img {
 
 .tv-header .tv-hero {
     position: relative;
-    width: 100%;
+    width: clamp(280px, 24vw, 440px);
     max-width: 100%;
     min-height: 0;
     height: clamp(68px, 8.8vh, 84px);
-    justify-self: stretch;
+    justify-self: start;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
@@ -3106,6 +3102,7 @@ img {
 }
 
 .tv-control-dock {
+    align-self: end;
     min-height: var(--tv-control-dock-h);
     height: var(--tv-control-dock-h);
     display: grid;
@@ -3117,10 +3114,6 @@ img {
     border-radius: 0;
     background: linear-gradient(180deg, rgba(11, 11, 18, 0.92), rgba(5, 5, 9, 0.995) 38%);
     box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.24);
-}
-
-.tv-player-page.has-controls .tv-lyric-stage {
-    padding-bottom: calc(var(--tv-control-dock-h) + clamp(8px, 1.4vh, 16px));
 }
 
 .tv-control-progress {

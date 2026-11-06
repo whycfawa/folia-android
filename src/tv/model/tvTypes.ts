@@ -42,6 +42,7 @@ export type TvPlayerModel = {
     pause: () => void;
     next: () => void;
     previous: () => void;
+    skipPrevious: () => void;
     seekBy: (deltaSeconds: number) => void;
     setVisualizerMode: (mode: VisualizerMode) => void;
     setBackgroundMode: (mode: VisualizerBackgroundMode) => void;

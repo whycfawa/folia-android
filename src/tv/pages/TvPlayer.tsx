@@ -61,7 +61,8 @@ export const TvPlayer = ({
         <div
             id="tv-layer-player"
             data-tv-layer="player"
-            className={`tv-page tv-player-page${controlsOpen ? ' has-controls' : ''}`}
+            data-tv-player-chrome={controlsOpen ? 'visible' : 'hidden'}
+            className="tv-page tv-player-page"
             inert={inert || undefined}
         >
             <TvBackdrop
@@ -74,19 +75,21 @@ export const TvPlayer = ({
                 paused={player.status !== 'playing'}
                 staticMode={constrained}
             />
-            <header className="tv-player-header">
-                <div className="tv-player-song">
-                    <strong>{song?.name || t('tv.player.noSong')}</strong>
-                    <small>{[artist, album].filter(Boolean).join(' · ') || t('tv.home.chooseSong')}</small>
-                </div>
-                {statusLabel && (
-                    <div className="tv-player-mode tv-player-status" aria-live="polite">
-                        <em className={player.status === 'error' ? 'is-error' : undefined}>
-                            {statusLabel}
-                        </em>
+            {controlsOpen && (
+                <header className="tv-player-header" data-tv-player-chrome-part="header">
+                    <div className="tv-player-song">
+                        <strong>{song?.name || t('tv.player.noSong')}</strong>
+                        <small>{[artist, album].filter(Boolean).join(' · ') || t('tv.home.chooseSong')}</small>
                     </div>
-                )}
-            </header>
+                    {statusLabel && (
+                        <div className="tv-player-mode tv-player-status" aria-live="polite">
+                            <em className={player.status === 'error' ? 'is-error' : undefined}>
+                                {statusLabel}
+                            </em>
+                        </div>
+                    )}
+                </header>
+            )}
             {song && player.lyrics && player.lyrics.lines.length > 0 && player.status !== 'error' ? (
                 <TvVisualizerStage
                     key={song.id}
@@ -99,6 +102,7 @@ export const TvPlayer = ({
                     audioBands={audio.audioBands}
                     constrained={constrained}
                     currentTime={player.currentTime}
+                    isPlayerChromeHidden={!controlsOpen}
                 />
             ) : (
                 <TvLyricStage

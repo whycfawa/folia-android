@@ -56,6 +56,7 @@ export const TvVisualizerStage = memo(({
     audioPower,
     audioBands,
     constrained,
+    isPlayerChromeHidden = false,
 }: {
     song: SongResult;
     lyrics: LyricData;
@@ -66,6 +67,7 @@ export const TvVisualizerStage = memo(({
     audioPower: MotionValue<number>;
     audioBands: AudioBands;
     constrained: boolean;
+    isPlayerChromeHidden?: boolean;
 }) => {
     const currentLineIndex = useTvActiveLyricLine(lyrics, currentTime);
     const artist = getSongArtistLabel(song);
@@ -104,6 +106,7 @@ export const TvVisualizerStage = memo(({
                     }
                     subtitleFontScale={0.92}
                     isPreviewMode
+                    isPlayerChromeHidden={isPlayerChromeHidden}
                     paused={status !== 'playing'}
                     hideTranslationSubtitle
                     showHarmonySubtitle={false}

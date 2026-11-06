@@ -329,6 +329,95 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
         };
     }, [resolvedClassicTuning.breathingFloatMultiplier, theme.animationIntensity, props.reducedEffects]);
 
+    const renderedWords = activeLine
+        ? displayWords.map((word, idx) => {
+            const config = wordConfigs[idx] || {
+                id: `fallback-${idx}`,
+                x: 0,
+                y: 0,
+                rotate: 0,
+                scale: 1,
+                marginRight: '0.5rem',
+                alignSelf: 'auto',
+                passedRotate: 0,
+            };
+            const activeColor = resolveWordColor(word.text, theme.wordColors, theme.accentColor);
+
+            return (
+                <GlowWord
+                    key={`${word.text}-${idx}-${activeLine.startTime}`}
+                    word={word}
+                    config={config}
+                    currentTime={currentTime}
+                    theme={theme}
+                    layoutVariants={layoutVariants}
+                    bodyVariants={bodyVariants}
+                    baseColor={theme.primaryColor}
+                    activeColor={activeColor}
+                    renderProfile={activeWordRenderProfile!}
+                    isChorus={activeLine.isChorus}
+                    reducedEffects={props.reducedEffects}
+                    fontSize={mainFontSize}
+                    layoutStyle={{ marginRight: config.marginRight, alignSelf: config.alignSelf }}
+                />
+            );
+        })
+        : null;
+
+    const lyricContent = props.reducedEffects ? (
+        showText && activeLine ? (
+            <div
+                key={activeLine.startTime}
+                className={`flex flex-wrap w-full max-w-6xl content-center ${lineConfig.justifyContent} ${lineConfig.alignItems}`}
+                style={{ minHeight: '300px' }}
+            >
+                {renderedWords}
+            </div>
+        ) : showText ? (
+            <div
+                key="empty"
+                className="text-2xl opacity-50 absolute"
+                style={{
+                    color: theme.secondaryColor,
+                    fontSize: emptyFontSize,
+                }}
+            >
+                {t('ui.waitingForMusic')}
+            </div>
+        ) : null
+    ) : (
+        <AnimatePresence mode="popLayout">
+            {showText && activeLine && (
+                <motion.div
+                    key={activeLine.startTime}
+                    initial={activeLineContainerMotion.initial}
+                    animate={activeLineContainerMotion.animate}
+                    exit={activeLineContainerMotion.exit}
+                    className={`flex flex-wrap w-full max-w-6xl content-center ${lineConfig.justifyContent} ${lineConfig.alignItems}`}
+                    style={{ perspective: `${lineConfig.perspective}px`, minHeight: '300px' }}
+                >
+                    {renderedWords}
+                </motion.div>
+            )}
+
+            {showText && !activeLine && (
+                <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-2xl opacity-50 absolute"
+                    style={{
+                        color: theme.secondaryColor,
+                        fontSize: emptyFontSize,
+                    }}
+                >
+                    {t('ui.waitingForMusic')}
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
     return (
         <VisualizerShell
             theme={theme}
@@ -337,69 +426,29 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
             sharedProps={props}
         >
             {/* Main Container */}
-            <motion.div
-                ref={stageContentRef}
-                className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none will-change-transform"
-                animate={lyricContainerFloat?.animate}
-                transition={lyricContainerFloat?.transition}
-                style={{
-                    '--tv-visualizer-primary-font-size': mainFontSize,
-                } as React.CSSProperties}
-            >
-                <AnimatePresence mode='popLayout'>
-                    {showText && activeLine && (
-                        <motion.div
-                            key={activeLine.startTime}
-                            initial={activeLineContainerMotion.initial}
-                            animate={activeLineContainerMotion.animate}
-                            exit={activeLineContainerMotion.exit}
-                            className={`flex flex-wrap w-full max-w-6xl content-center ${lineConfig.justifyContent} ${lineConfig.alignItems}`}
-                            style={{ perspective: `${lineConfig.perspective}px`, minHeight: '300px' }}
-                        >
-                            {displayWords.map((word, idx) => {
-                                const config = wordConfigs[idx] || { id: `fallback-${idx}`, x: 0, y: 0, rotate: 0, scale: 1, marginRight: '0.5rem', alignSelf: 'auto', passedRotate: 0 };
-
-                                const activeColor = resolveWordColor(word.text, theme.wordColors, theme.accentColor);
-
-                                return (
-                                    <GlowWord
-                                        key={`${word.text}-${idx}-${activeLine.startTime}`}
-                                        word={word}
-                                        config={config}
-                                        currentTime={currentTime}
-                                        theme={theme}
-                                        layoutVariants={layoutVariants}
-                                        bodyVariants={bodyVariants}
-                                        baseColor={theme.primaryColor}
-                                        activeColor={activeColor}
-                                        renderProfile={activeWordRenderProfile!}
-                                        isChorus={activeLine.isChorus}
-                                        reducedEffects={props.reducedEffects}
-                                        fontSize={mainFontSize}
-                                        layoutStyle={{ marginRight: config.marginRight, alignSelf: config.alignSelf }}
-                                    />
-                                );
-                            })}
-                        </motion.div>
-                    )}
-
-                    {showText && !activeLine && (
-                        <motion.div
-                            key="empty"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="text-2xl opacity-50 absolute"
-                            style={{
-                                color: theme.secondaryColor,
-                                fontSize: emptyFontSize,
-                            }}
-                        >
-                            {t('ui.waitingForMusic')}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
+            {props.reducedEffects ? (
+                <div
+                    ref={stageContentRef}
+                    className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none"
+                    style={{
+                        '--tv-visualizer-primary-font-size': mainFontSize,
+                    } as React.CSSProperties}
+                >
+                    {lyricContent}
+                </div>
+            ) : (
+                <motion.div
+                    ref={stageContentRef}
+                    className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none will-change-transform"
+                    animate={lyricContainerFloat?.animate}
+                    transition={lyricContainerFloat?.transition}
+                    style={{
+                        '--tv-visualizer-primary-font-size': mainFontSize,
+                    } as React.CSSProperties}
+                >
+                    {lyricContent}
+                </motion.div>
+            )}
 
             <VisualizerSubtitleOverlay
                 showText={showText}

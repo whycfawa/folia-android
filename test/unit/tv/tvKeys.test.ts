@@ -18,6 +18,8 @@ describe('resolveTvRemoteAction', () => {
         expect(resolveTvRemoteAction({ key: 'DPAD_CENTER' })).toBe('ok');
         expect(resolveTvRemoteAction({ key: 'BrowserBack' })).toBe('back');
         expect(resolveTvRemoteAction({ key: 'Escape' })).toBe('back');
+        expect(resolveTvRemoteAction({ key: 'ContextMenu' })).toBe('menu');
+        expect(resolveTvRemoteAction({ key: 'Unidentified', keyCode: 82 })).toBe('menu');
     });
 
     it('leaves unrelated keys to the browser', () => {
@@ -32,6 +34,7 @@ describe('isTvDirection', () => {
         expect(isTvDirection('down')).toBe(true);
         expect(isTvDirection('ok')).toBe(false);
         expect(isTvDirection('back')).toBe(false);
+        expect(isTvDirection('menu')).toBe(false);
     });
 });
 
