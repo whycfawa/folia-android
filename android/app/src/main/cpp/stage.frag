@@ -29,6 +29,18 @@ void main() {
         float floorGlow = exp(-pow((uv.y - 0.78) * 6.0, 2.0)) * 0.10;
         float vignette = smoothstep(0.95, 0.35, distance(uv, vec2(0.5)));
         color = (base + pc.accent.rgb * (beams * 0.38 + dust * 0.45) + vec3(0.02, 0.025, 0.035) * beams + pc.accent.rgb * floorGlow) * (0.55 + 0.45 * vignette);
+    } else if (pc.mode == 8) {
+        // Diorama: layered paper ridges under a warm sky.
+        vec3 sky = mix(vec3(0.08, 0.07, 0.12), vec3(0.18, 0.10, 0.09), uv.y);
+        float sun = exp(-distance(uv, vec2(0.68, 0.28)) * 9.0);
+        float ridges = 0.0;
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            float base = 0.42 + fi * 0.10;
+            float ridge = base + 0.05 * sin(uv.x * (3.0 + fi) + fi * 2.0) + 0.02 * sin(uv.x * 9.0 - fi);
+            ridges += smoothstep(ridge, ridge - 0.006, uv.y) * (0.22 - fi * 0.035);
+        }
+        color = sky + pc.accent.rgb * sun * 0.25 + vec3(0.04, 0.035, 0.045) * ridges;
     } else if (pc.mode == 7) {
         // Monet: impressionist water-lily colour washes.
         vec3 base = mix(vec3(0.05, 0.07, 0.08), vec3(0.10, 0.12, 0.13), uv.y);
