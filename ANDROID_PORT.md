@@ -672,3 +672,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 根因：SurfaceView 在 OnePlus/Android 17 上被窗口层盖住，窗口透明 hack 仍无法显示。
 - 改用 TextureView，普通 View 与 WebView 同窗口合成；独立渲染线程 lockCanvas。
+
+### 0.7.25-android.345：TextureView 直接用 Surface 锁画布
+
+- 不再用 TextureView.lockCanvas，改为 new Surface(surfaceTexture).lockCanvas。
+- 解决 TextureView 渲染线程不出帧导致自动关闭。

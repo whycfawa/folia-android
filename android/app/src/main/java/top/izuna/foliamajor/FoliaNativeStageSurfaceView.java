@@ -16,6 +16,7 @@ import android.util.AttributeSet;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import android.view.Surface;
 import android.view.TextureView;
 
 /**
@@ -45,6 +46,7 @@ public class FoliaNativeStageSurfaceView extends TextureView implements TextureV
     private long lastSpawnAt;
     private volatile long frameCount;
     private volatile boolean surfaceReady;
+    private volatile Surface renderSurface;
 
     private String line = "";
     private String nextLine = "";
@@ -208,6 +210,7 @@ public class FoliaNativeStageSurfaceView extends TextureView implements TextureV
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         if (running) return;
+        renderSurface = new Surface(surface);
         surfaceReady = true;
         running = true;
         renderThread = new Thread(this::renderLoop, "FoliaNativeStage");
@@ -230,6 +233,9 @@ public class FoliaNativeStageSurfaceView extends TextureView implements TextureV
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         surfaceReady = false;
         running = false;
+        Surface oldSurface = renderSurface;
+        renderSurface = null;
+        if (oldSurface != null) oldSurface.release();
         Thread thread = renderThread;
         renderThread = null;
         if (thread != null) {
@@ -256,7 +262,8 @@ public class FoliaNativeStageSurfaceView extends TextureView implements TextureV
             if (animate || dirty) {
                 Canvas canvas = null;
                 try {
-                    canvas = lockCanvas();
+                    Surface target = renderSurface;
+                    canvas = target == null ? null : target.lockCanvas(null);
                     if (canvas != null) {
                         synchronized (stateLock) {
                             drawStage(canvas);
@@ -268,7 +275,8 @@ public class FoliaNativeStageSurfaceView extends TextureView implements TextureV
                 } finally {
                     if (canvas != null) {
                         try {
-                            unlockCanvasAndPost(canvas);
+                            Surface target = renderSurface;
+                            if (target != null) target.unlockCanvasAndPost(canvas);
                         } catch (Throwable ignored) {
                         }
                     }
