@@ -204,9 +204,13 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setFakeBoldText(true);
         float centerY = height * 0.5f;
-        drawStillLine(canvas, paint, width, prevLine, prevTranslation, centerY - height * 0.12f, Math.max(24f, width * 0.034f), 0.3f);
-        drawStillLine(canvas, paint, width, line, translation, centerY, Math.max(30f, width * 0.045f), 1f);
-        drawStillLine(canvas, paint, width, nextLine, nextTranslation, centerY + height * 0.12f, Math.max(24f, width * 0.034f), 0.3f);
+        drawStillLine(canvas, paint, width, prevLine, prevTranslation, centerY - dp(118), dp(30), 0.3f);
+        drawStillLine(canvas, paint, width, line, translation, centerY, dp(40), 1f);
+        drawStillLine(canvas, paint, width, nextLine, nextTranslation, centerY + dp(118), dp(30), 0.3f);
+    }
+
+    private float dp(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 
     private void drawStillLine(Canvas canvas, TextPaint paint, int width, String text, String trans, float y, float size, float alpha) {
