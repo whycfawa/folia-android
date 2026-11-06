@@ -923,3 +923,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.401：Still 字重
 
 - 700/600/500 使用独立 Typeface，atlas key 含字重。
+
+### 0.7.25-android.402：原生日间状态
+
+- JNI nativeSetDaylight；push constant pad 传 daylight。
+- still 日间背景压暗。

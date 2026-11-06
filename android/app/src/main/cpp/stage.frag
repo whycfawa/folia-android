@@ -39,6 +39,7 @@ void main() {
         vec3 base = vec3(0.010, 0.011, 0.015);
         float vignette = smoothstep(0.95, 0.25, distance(uv, vec2(0.5)));
         color = base * (0.45 + 0.55 * vignette) + pc.accent.rgb * 0.015;
+        if (pc.pad > 0.5) color *= 0.55;
     } else if (pc.mode == 15) {
         // Cappella: warm chat surface with floating bubbles.
         vec3 base = mix(vec3(0.035, 0.030, 0.032), vec3(0.08, 0.055, 0.050), uv.y);

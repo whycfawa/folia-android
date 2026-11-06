@@ -75,6 +75,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native void nativeSetAccent(int color);
     private native void nativeSetPower(float power);
     private native void nativeSetMode(int mode);
+    private native void nativeSetDaylight(boolean daylight);
 
     public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
@@ -133,7 +134,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
             }
         } catch (Throwable ignored) {}
     }
-    public void setDaylight(boolean daylight) { this.daylight = daylight; if (canvasStage != null) canvasStage.setDaylight(daylight); renderText(); }
+    public void setDaylight(boolean daylight) { this.daylight = daylight; nativeSetDaylight(daylight); if (canvasStage != null) canvasStage.setDaylight(daylight); renderText(); }
     public void updateAudio(float power, float bass, float mid, float treble) {
         nativeSetPower(power);
         if (canvasStage != null) canvasStage.updateAudio(power, bass, mid, treble);
