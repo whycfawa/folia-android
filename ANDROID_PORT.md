@@ -765,3 +765,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.364：Vulkan 诊断
 
 - 诊断输出 vulkan ready 状态。
+
+### 0.7.25-android.365：Vulkan 主题色
+
+- JNI nativeSetAccent；shader push constant 使用当前 accent。

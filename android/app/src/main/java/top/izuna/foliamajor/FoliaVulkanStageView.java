@@ -38,6 +38,7 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private native long nativeCreate(Surface surface);
     private native boolean nativeRender();
     private native boolean nativeReady();
+    private native void nativeSetAccent(int color);
 
     public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
@@ -50,11 +51,19 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         this.line = line == null ? "" : line;
         this.translation = lineTranslation == null ? "" : lineTranslation;
         this.playing = playing;
-        try { if (accentHex != null && !accentHex.isEmpty()) accent = Color.parseColor(accentHex); } catch (Throwable ignored) {}
+        try { if (accentHex != null && !accentHex.isEmpty()) { accent = Color.parseColor(accentHex); nativeSetAccent(accent); } } catch (Throwable ignored) {}
         renderText();
     }
 
-    public void setThemeColors(String primary, String secondary, String background) {}
+    public void setThemeColors(String primary, String secondary, String background) {
+        try {
+            if (primary != null && !primary.isEmpty()) {
+                accent = Color.parseColor(primary);
+                nativeSetAccent(accent);
+                renderText();
+            }
+        } catch (Throwable ignored) {}
+    }
     public void setDaylight(boolean daylight) { this.daylight = daylight; renderText(); }
     public void updateAudio(float power, float bass, float mid, float treble) {}
     public void updateWords(String json, float position) {}
