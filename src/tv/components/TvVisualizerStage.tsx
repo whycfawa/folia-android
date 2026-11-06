@@ -11,6 +11,7 @@ import type {
 } from '../../types';
 import { findTvActiveLineIndex } from '../model/tvLyricTimeline';
 import type { TvPlaybackStatus } from '../model/tvTypes';
+import { resolveTvLumiereTuning } from '../model/tvVisualTheme';
 import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
 import '../styles/tv-visualizer.css';
 
@@ -89,6 +90,7 @@ export const TvVisualizerStage = memo(({
                     audioBands={audioBands}
                     showText
                     reducedEffects
+                    lumiereTuning={resolveTvLumiereTuning(constrained)}
                     songTitle={song.name}
                     songArtist={artist}
                     songAlbum={album}

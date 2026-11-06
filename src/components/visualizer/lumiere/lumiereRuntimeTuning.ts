@@ -39,9 +39,9 @@ export const LUMIERE_QUALITY_PROFILES: Record<LumiereRenderQuality, LumiereQuali
 export const LUMIERE_MAX_RENDER_RESOLUTION = 2;
 
 /** 画布（文字、画框）的渲染分辨率：devicePixelRatio 钳在 1..2。 */
-export const resolveLumiereRenderResolution = (devicePixelRatio: number | undefined) => {
+export const resolveLumiereRenderResolution = (devicePixelRatio: number | undefined, reducedEffects = false) => {
     const ratio = typeof devicePixelRatio === 'number' && Number.isFinite(devicePixelRatio) ? devicePixelRatio : 1;
-    return Math.min(LUMIERE_MAX_RENDER_RESOLUTION, Math.max(1, ratio));
+    return Math.min(reducedEffects ? 1 : LUMIERE_MAX_RENDER_RESOLUTION, Math.max(1, ratio));
 };
 
 /**

@@ -1,4 +1,4 @@
-import type { Theme } from '../../types';
+import { DEFAULT_LUMIERE_TUNING, type LumiereTuning, type Theme } from '../../types';
 
 // src/tv/model/tvVisualTheme.ts
 // TV keeps one projector-safe dark theme; constrained devices only lower the shared motion budget.
@@ -21,4 +21,24 @@ const TV_VISUAL_THEME_CONSTRAINED: Theme = {
 
 export const resolveTvVisualTheme = (constrained: boolean): Theme => (
     constrained ? TV_VISUAL_THEME_CONSTRAINED : TV_VISUAL_THEME
+);
+
+// Low-tier projectors cannot sustain the desktop bloom pyramid at their native pixel ratio.
+const TV_LUMIERE_CONSTRAINED: LumiereTuning = {
+    ...DEFAULT_LUMIERE_TUNING,
+    renderQuality: 'low',
+    bloom: 0,
+    textBloom: 0,
+    frontBokeh: false,
+    moteAmount: 0.35,
+    echo: 0,
+    windowNeighbors: 1,
+};
+const TV_LUMIERE_BALANCED: LumiereTuning = {
+    ...DEFAULT_LUMIERE_TUNING,
+    renderQuality: 'balanced',
+};
+
+export const resolveTvLumiereTuning = (constrained: boolean): LumiereTuning => (
+    constrained ? TV_LUMIERE_CONSTRAINED : TV_LUMIERE_BALANCED
 );

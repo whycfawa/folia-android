@@ -165,6 +165,8 @@ Visualizer 消费已解析的 `LyricData` / `Line` / `Word`，不负责解析 `.
 
 TV 播放页通过 `reducedEffects` 为 classic / partita 启用轻量歌词：逐字动态光晕改为整词固定半径光晕与透明度动画，正文和切句不使用模糊，也不持续缩放整行。词级时间、高亮、布局及入场动作保持共用；其他宿主默认保留完整效果。低配置 TV 还会将背景的 `staticMode` 打开，复用各背景已有的静态展示路径，减少与歌词争用绘制资源。
 
+绘光在 TV 上同样消费 `reducedEffects`，将输出画布限制为一倍逻辑像素；共享 Pixi 上下文内可直接切换该预算。TV 画质由 `src/tv/model/tvVisualTheme.ts` 提供：低配置启用低画质图形组、关闭两套多遍 bloom 与前景散景，并减少浮尘、背景歌词及邻行；普通 TV 使用均衡画质。歌词时间轴、排版、光束与运镜仍由原绘光运行时负责。
+
 ## Runtime guardrails
 
 - 连续播放时间优先使用 MotionValue、ref、CSS/Motion、canvas 或 Pixi draw loop；不要每帧写 React state/store。

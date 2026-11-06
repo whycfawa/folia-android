@@ -25,7 +25,11 @@ export const TvHeader = ({
         : `${t('tv.home.login')} · ${providerLabel}`;
 
     return (
-        <header className="tv-header">
+        <header
+            className="tv-header"
+            data-tv-focus-group="home-header"
+            data-tv-focus-axis="horizontal"
+        >
             {children}
             <button
                 type="button"

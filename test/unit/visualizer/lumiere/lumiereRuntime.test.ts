@@ -77,6 +77,9 @@ describe('绘光画质档的分辨率', () => {
         expect(resolveLumiereRenderResolution(0.5)).toBe(1);
         expect(resolveLumiereRenderResolution(1.25)).toBe(1.25);
         expect(resolveLumiereRenderResolution(3)).toBe(2);
+        expect(resolveLumiereRenderResolution(2, true)).toBe(1);
+        expect(resolveLumiereRenderResolution(3, true)).toBe(1);
+        expect(resolveLumiereRenderResolution(1.25, false)).toBe(1.25);
     });
 
     it('满画质图形组与屏幕同分辨率；降档后更低，且不超过倍率', () => {

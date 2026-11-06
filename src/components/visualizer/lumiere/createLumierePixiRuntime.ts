@@ -60,6 +60,7 @@ export interface LumiereRuntimeOptions {
     staticMode: boolean;
     showText: boolean;
     paused: boolean;
+    reducedEffects?: boolean;
     metadata: LumiereSongMetadata;
     signal?: AbortSignal;
 }
@@ -124,7 +125,7 @@ export class LumierePixiRuntime {
         const app = new pixi.Application();
         const width = Math.max(options.host.clientWidth, MIN_WIDTH);
         const height = Math.max(options.host.clientHeight, MIN_HEIGHT);
-        const resolution = resolveLumiereRenderResolution(window.devicePixelRatio);
+        const resolution = resolveLumiereRenderResolution(window.devicePixelRatio, options.reducedEffects);
         await app.init({
             width,
             height,
@@ -183,7 +184,7 @@ export class LumierePixiRuntime {
         if (this.destroyed) return false;
         const width = Math.max(this.options.host.clientWidth, MIN_WIDTH);
         const height = Math.max(this.options.host.clientHeight, MIN_HEIGHT);
-        const resolution = resolveLumiereRenderResolution(window.devicePixelRatio);
+        const resolution = resolveLumiereRenderResolution(window.devicePixelRatio, this.options.reducedEffects);
         if (width === this.width && height === this.height && resolution === this.renderResolution) return false;
         this.width = width;
         this.height = height;
@@ -417,6 +418,14 @@ export class LumierePixiRuntime {
         Object.assign(this.sceneTuning, next);
         this.refreshQuality();
         if (requiresLumiereSceneRebuild(previous, next)) this.scheduleRebuild();
+    }
+
+    /** Change the TV pixel budget in place, retaining the current WebGL context and song. */
+    setReducedEffects(reducedEffects: boolean) {
+        if (this.destroyed || reducedEffects === Boolean(this.options.reducedEffects)) return;
+        this.options.reducedEffects = reducedEffects;
+        this.resizeToHost(false);
+        if (this.options.paused) this.renderOnce();
     }
 
     setStaticMode(staticMode: boolean) {

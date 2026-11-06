@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { resolveTvPerformanceProfile } from '../../../src/tv/services/tvPerformanceProfile';
+import { resolveTvLumiereTuning } from '../../../src/tv/model/tvVisualTheme';
+import { DEFAULT_LUMIERE_TUNING } from '../../../src/types';
 
 // test/unit/tv/tvPerformanceProfile.test.ts
 
 describe('TV performance profile', () => {
+    it('uses a bounded Lumiere workload while retaining its light and lyric scene', () => {
+        const tuning = resolveTvLumiereTuning(true);
+        expect(tuning.renderQuality).toBe('low');
+        expect(tuning.bloom).toBe(0);
+        expect(tuning.textBloom).toBe(0);
+        expect(tuning.frontBokeh).toBe(false);
+        expect(tuning.textOnly).toBe(false);
+        expect(tuning.lightIntensity).toBeGreaterThan(0);
+        expect(resolveTvLumiereTuning(false).renderQuality).toBe('balanced');
+        expect(DEFAULT_LUMIERE_TUNING.renderQuality).toBe('full');
+        expect(DEFAULT_LUMIERE_TUNING.bloom).toBe(1);
+    });
+
     it('marks low-RAM Android devices as constrained', () => {
         const profile = resolveTvPerformanceProfile({
             lowRamDevice: true,

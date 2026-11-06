@@ -2957,8 +2957,8 @@ img {
     display: grid;
     grid-template-columns:
         minmax(0, 1fr)
-        minmax(300px, 38vw)
-        minmax(0, 1fr);
+        clamp(260px, 22vw, 360px)
+        auto;
     align-items: center;
     gap: clamp(12px, 1.2vw, 22px);
 }
@@ -3090,7 +3090,7 @@ img {
 .tv-search-entry {
     width: 100%;
     height: clamp(50px, 5.8vh, 56px);
-    justify-self: center;
+    justify-self: end;
     padding-inline: clamp(18px, 1.45vw, 24px);
     border-radius: 17px;
     background: rgba(17, 17, 28, 0.74);
