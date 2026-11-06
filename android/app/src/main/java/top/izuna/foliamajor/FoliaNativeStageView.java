@@ -404,6 +404,22 @@ public class FoliaNativeStageView extends View {
         }
     }
 
+    public void drawLumiereLayer(Canvas canvas, int width, int height) {
+        if (line.isEmpty()) return;
+        lyricPaint.setTextAlign(Paint.Align.CENTER);
+        lyricPaint.setTextSize(Math.max(dp(28), Math.min(dp(60), width * 0.06f)));
+        lyricPaint.setColor(stageLight ? 0xFF111111 : 0xFFFFFFFF);
+        lyricPaint.setShadowLayer(dp(18), 0, 0, accent);
+        canvas.drawText(line, width / 2f, height * 0.52f, lyricPaint);
+        lyricPaint.clearShadowLayer();
+        if (!lineTranslation.isEmpty()) {
+            nextPaint.setTextAlign(Paint.Align.CENTER);
+            nextPaint.setTextSize(dp(22));
+            nextPaint.setColor(stageLight ? 0x99111111 : 0x99FFFFFF);
+            canvas.drawText(lineTranslation, width / 2f, height * 0.62f, nextPaint);
+        }
+    }
+
     public void drawPartitaLayer(Canvas canvas, int width, int height) { drawPartita(canvas, width, height); }
 
     public void drawCappellaLayer(Canvas canvas, int width, int height) { drawCappella(canvas, width, height); }

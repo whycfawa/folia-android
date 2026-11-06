@@ -808,3 +808,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - stage.frag 增加 lumiere 分支：暗场、灯束、尘埃。
 - Java 传 mode；Vulkan push constant 选择场景。
+
+### 0.7.25-android.375：Lumiere 文字层修复
+
+- lumiere 不再走整帧 Canvas，避免盖住 Vulkan 灯束/尘埃。
