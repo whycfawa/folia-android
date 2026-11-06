@@ -588,7 +588,9 @@ bool createSwapchain(State& s) {
     alloc.commandBufferCount = (uint32_t)s.commands.size();
     if (!ok(vkAllocateCommandBuffers(s.device, &alloc, s.commands.data()), "commands")) return false;
     if (s.descriptorLayout == VK_NULL_HANDLE && !createTextResources(s)) return false;
-    if (!createTextPipeline(s)) return false;
+    if (!createTextPipeline(s)) {
+        lastError = "text pipeline skipped";
+    }
     for (size_t i = 0; i < s.commands.size(); ++i) {
         VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         vkBeginCommandBuffer(s.commands[i], &begin);

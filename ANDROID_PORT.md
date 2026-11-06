@@ -973,3 +973,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.25-android.413：静态管线状态
 
 - 背景管线去掉 dynamic state，使用静态 viewport/scissor。
+
+### 0.7.25-android.414：无接口简单管线
+
+- simple shader 去掉所有接口/描述符，验证 pipeline 状态本身。
+- 文字管线失败不阻断背景出帧。
