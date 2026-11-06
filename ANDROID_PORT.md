@@ -941,3 +941,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 移除 3 秒 no-frames 自动移除/fallback。
 - surfaceChanged 时若 Vulkan 未就绪则重试 nativeCreate，处理 surfaceCreated 时尺寸为 0。
+
+### 0.7.25-android.406：Vulkan 错误诊断
+
+- nativeLastError 记录 Vulkan 失败步骤；诊断输出 vulkanError。

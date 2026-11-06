@@ -64,9 +64,14 @@ struct State {
 };
 
 State* state = nullptr;
+std::string lastError;
 
 bool ok(VkResult result, const char* what) {
-    if (result != VK_SUCCESS) { LOGE("%s failed: %d", what, result); return false; }
+    if (result != VK_SUCCESS) {
+        lastError = std::string(what) + " failed: " + std::to_string((int) result);
+        LOGE("%s failed: %d", what, result);
+        return false;
+    }
     return true;
 }
 
@@ -469,7 +474,7 @@ bool createSwapchain(State& s) {
         s.extent.width = 1080;
         s.extent.height = 1920;
     }
-    if (s.extent.width == 0 || s.extent.height == 0) return false;
+    if (s.extent.width == 0 || s.extent.height == 0) { lastError = "swapchain extent 0"; return false; }
     uint32_t imageCount = caps.minImageCount + 1;
     if (caps.maxImageCount > 0 && imageCount > caps.maxImageCount) imageCount = caps.maxImageCount;
     VkSwapchainCreateInfoKHR info{VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
@@ -567,7 +572,7 @@ bool createDevice(State& s, ANativeWindow* window) {
         uint32_t q = findQueue(d, s.surface);
         if (q != UINT32_MAX) { s.physical = d; s.queueFamily = q; break; }
     }
-    if (!s.physical) return false;
+    if (!s.physical) { lastError = "no vulkan physical device"; return false; }
     float priority = 1.0f;
     VkDeviceQueueCreateInfo q{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
     q.queueFamilyIndex = s.queueFamily;
@@ -597,9 +602,9 @@ bool createDevice(State& s, ANativeWindow* window) {
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject, jobject surface) {
-    if (!surface) return 0;
+    if (!surface) { lastError = "null surface"; return 0; }
     ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-    if (!window) return 0;
+    if (!window) { lastError = "null native window"; return 0; }
     State* s = new State();
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app.pApplicationName = "Folia";
@@ -646,6 +651,11 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeSetAccent(JNIEnv*, jobject,
     s->accent[1] = ((color >> 8) & 0xFF) / 255.0f;
     s->accent[2] = (color & 0xFF) / 255.0f;
     s->accent[3] = 1.0f;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeLastError(JNIEnv* env, jobject) {
+    return env->NewStringUTF(lastError.c_str());
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
