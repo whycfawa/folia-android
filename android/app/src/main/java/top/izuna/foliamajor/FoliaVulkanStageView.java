@@ -11,12 +11,12 @@ import android.view.Choreographer;
 import java.util.ArrayList;
 import java.util.List;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.graphics.SurfaceTexture;
+import android.view.TextureView;
 import android.util.AttributeSet;
 
 /** Vulkan-only 原生舞台的 Surface 宿主。当前只验证 swapchain clear，后续效果全部走 Vulkan。 */
-public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+public class FoliaVulkanStageView extends TextureView implements TextureView.SurfaceTextureListener, Runnable {
     static { System.loadLibrary("folia_vulkan"); }
 
     private Thread renderThread;
@@ -63,9 +63,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     public FoliaVulkanStageView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
 
     private void init() {
-        getHolder().addCallback(this);
-        setBackgroundColor(0xFF07070B);
-        setZOrderMediaOverlay(false);
+        setSurfaceTextureListener(this);
+        setOpaque(false);
+        setBackgroundColor(0x00000000);
         canvasStage = new FoliaNativeStageView(getContext());
     }
 
@@ -351,28 +351,31 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         nativeUpdateText(width, height, pixels);
     }
 
-    private void createVulkan(SurfaceHolder holder) {
-        if (nativeReady()) return;
-        nativeCreate(holder.getSurface());
+    private void createVulkan(SurfaceTexture texture) {
+        if (nativeReady() || texture == null) return;
+        Surface surface = new Surface(texture);
+        nativeCreate(surface);
+        surface.release();
     }
 
-    @Override public void surfaceCreated(SurfaceHolder holder) {
+    @Override public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
         surfaceReady = true;
-        createVulkan(holder);
+        createVulkan(texture);
         if (!running) {
             running = true;
             renderThread = new Thread(this, "FoliaVulkanStage");
             renderThread.start();
         }
+        renderText();
         scheduleFrame();
     }
 
-    @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        // surfaceCreated 时窗口尺寸可能还是 0，swapchain 创建会失败；布局完成后再重试一次。
-        createVulkan(holder);
+    @Override public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
+        createVulkan(texture);
         renderText();
     }
-    @Override public void surfaceDestroyed(SurfaceHolder holder) {
+
+    @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
         surfaceReady = false;
         running = false;
         Choreographer.getInstance().removeFrameCallback(frameCallback);
@@ -380,7 +383,10 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
         try { if (renderThread != null) renderThread.join(800); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
         renderThread = null;
         nativeDestroy();
+        return true;
     }
+
+    @Override public void onSurfaceTextureUpdated(SurfaceTexture texture) {}
 
     @Override public void run() {
         while (running) {
