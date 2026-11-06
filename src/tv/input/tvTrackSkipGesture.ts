@@ -2,7 +2,7 @@
 
 import type { TvRemoteAction } from './tvKeys';
 
-const DEFAULT_DOUBLE_PRESS_INTERVAL_MS = 420;
+export const TV_TRACK_SKIP_INTERVAL_MS = 420;
 
 type TrackDirection = Extract<TvRemoteAction, 'left' | 'right'>;
 
@@ -13,7 +13,7 @@ export type TvTrackSkipGesture = {
 
 /** Recognizes two distinct presses in the same horizontal direction while ignoring held-key repeats. */
 export const createTvTrackSkipGesture = (
-    intervalMs = DEFAULT_DOUBLE_PRESS_INTERVAL_MS,
+    intervalMs = TV_TRACK_SKIP_INTERVAL_MS,
 ): TvTrackSkipGesture => {
     let previous: { direction: TrackDirection; at: number } | null = null;
 

@@ -21,7 +21,10 @@ import { useTvPlayer } from './hooks/useTvPlayer';
 import { useTvRemote } from './hooks/useTvRemote';
 import { clickFocusedTvElement } from './input/focusDom';
 import { isTvDirection, type TvRemoteAction } from './input/tvKeys';
-import { createTvTrackSkipGesture } from './input/tvTrackSkipGesture';
+import {
+    createTvTrackSkipGesture,
+    TV_TRACK_SKIP_INTERVAL_MS,
+} from './input/tvTrackSkipGesture';
 import { shouldRevealTvPlayerChrome } from './model/tvPlayerChrome';
 import { resolveTvBackRoute, resolveTvLayer, TV_HOME_ROUTE, type TvRoute } from './model/tvRoute';
 import { TvHome } from './pages/TvHome';
@@ -36,6 +39,7 @@ export const TvApp = () => {
     const account = useTvAccount({ onProviderSwitch: player.pause });
     const library = useTvLibrary(account);
     const trackSkipGestureRef = useRef(createTvTrackSkipGesture());
+    const pendingChromeRevealTimerRef = useRef<number | null>(null);
     const [route, setRoute] = useState<TvRoute>(TV_HOME_ROUTE);
     const [collection, setCollection] = useState<ProviderCollection | null>(null);
     const [loginError, setLoginError] = useState<string | null>(null);
@@ -52,11 +56,39 @@ export const TvApp = () => {
         loginCompletionBaselineRef.current = null;
     }, [account.cancelSwitch, account.closeLogin, account.pendingSwitch]);
 
+    const cancelPendingChromeReveal = useCallback(() => {
+        if (pendingChromeRevealTimerRef.current === null) return;
+        window.clearTimeout(pendingChromeRevealTimerRef.current);
+        pendingChromeRevealTimerRef.current = null;
+    }, []);
+
+    const revealPlayerChrome = useCallback(() => {
+        cancelPendingChromeReveal();
+        setRoute(current => (
+            current.page === 'player' && !current.overlay
+                ? { ...current, overlay: 'controls' }
+                : current
+        ));
+    }, [cancelPendingChromeReveal]);
+
+    const schedulePlayerChromeReveal = useCallback(() => {
+        cancelPendingChromeReveal();
+        // A hidden-player horizontal press may start a double-tap skip. Delay chrome
+        // activation until the second press can no longer complete that gesture.
+        pendingChromeRevealTimerRef.current = window.setTimeout(() => {
+            pendingChromeRevealTimerRef.current = null;
+            trackSkipGestureRef.current.clear();
+            revealPlayerChrome();
+        }, TV_TRACK_SKIP_INTERVAL_MS);
+    }, [cancelPendingChromeReveal, revealPlayerChrome]);
+
     const closeControls = useCallback(() => {
+        cancelPendingChromeReveal();
+        trackSkipGestureRef.current.clear();
         setRoute(current => (
             current.overlay === 'controls' ? { ...current, overlay: null } : current
         ));
-    }, []);
+    }, [cancelPendingChromeReveal]);
 
     const hideControls = useCallback(() => closeControls(), [closeControls]);
     const touchControls = useTvControlsAutoHide({
@@ -120,22 +152,35 @@ export const TvApp = () => {
         { repeat }: { repeat: boolean },
     ): boolean => {
         if (action === 'back') {
+            cancelPendingChromeReveal();
             trackSkipGestureRef.current.clear();
             return goBack();
         }
 
         if (route.page === 'player' && !route.overlay) {
             if (shouldRevealTvPlayerChrome(action)) {
-                if (!repeat && (action === 'left' || action === 'right')) {
-                    trackSkipGestureRef.current.press(action, performance.now());
-                } else {
-                    trackSkipGestureRef.current.clear();
+                if (action === 'left' || action === 'right') {
+                    if (repeat) {
+                        cancelPendingChromeReveal();
+                        trackSkipGestureRef.current.clear();
+                        return true;
+                    }
+                    if (trackSkipGestureRef.current.press(action, performance.now())) {
+                        cancelPendingChromeReveal();
+                        if (action === 'left') player.skipPrevious();
+                        else player.next();
+                        return true;
+                    }
+                    schedulePlayerChromeReveal();
+                    return true;
                 }
-                setRoute(current => ({ ...current, overlay: 'controls' }));
+                trackSkipGestureRef.current.clear();
+                revealPlayerChrome();
                 return true;
             }
         }
 
+        cancelPendingChromeReveal();
         if (
             route.page === 'player'
             && route.overlay === 'controls'
@@ -155,7 +200,15 @@ export const TvApp = () => {
         if (isTvDirection(action)) return moveFocus(action);
         if (action === 'menu') return false;
         return false;
-    }, [goBack, player, route, moveFocus]);
+    }, [
+        cancelPendingChromeReveal,
+        goBack,
+        player,
+        revealPlayerChrome,
+        route,
+        moveFocus,
+        schedulePlayerChromeReveal,
+    ]);
 
     useTvRemote({
         onAction: handleAction,
@@ -180,6 +233,8 @@ export const TvApp = () => {
     useEffect(() => {
         applyKeepScreenOn(route.page === 'player' || readStoredKeepScreenOn());
     }, [route.page]);
+
+    useEffect(() => () => cancelPendingChromeReveal(), [cancelPendingChromeReveal]);
 
     const openAccount = useCallback(() => {
         setLoginError(null);
