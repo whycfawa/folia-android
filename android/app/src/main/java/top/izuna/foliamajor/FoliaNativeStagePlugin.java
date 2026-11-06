@@ -27,14 +27,14 @@ public class FoliaNativeStagePlugin extends Plugin {
     private boolean guardChecked;
     private boolean unsafe;
 
-    /** 上一次进程没来得及 disable 就死了：这次先拒绝一次，避免闪退循环。 */
+    /** 上一次进程没来得及 disable 就死了：清掉残留标记，但不再拒绝本次启用。 */
     private boolean consumeCrashGuard() {
-        if (guardChecked) return unsafe;
+        if (guardChecked) return false;
         guardChecked = true;
         SharedPreferences preferences = getContext().getSharedPreferences(PREFS, 0);
         unsafe = preferences.getBoolean(ACTIVE, false);
         preferences.edit().putBoolean(ACTIVE, false).apply();
-        return unsafe;
+        return false;
     }
 
     @PluginMethod
@@ -154,6 +154,8 @@ public class FoliaNativeStagePlugin extends Plugin {
         result.put("active", stageView != null);
         result.put("renderer", "surface");
         result.put("frames", stageView == null ? 0 : stageView.getFrameCount());
+        result.put("surface", stageView != null && stageView.isSurfaceReady());
+        result.put("playing", stageView != null && stageView.isPlaying());
         call.resolve(result);
     }
 

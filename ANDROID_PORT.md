@@ -656,3 +656,9 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 启用原生舞台成功后才给 WebView 加透明/隐藏视觉层样式。
 - 原生插件 inactive 超过 3.5 秒，强制移除样式并关闭开关。
 - fallback 事件先恢复 WebView 样式，再关闭开关。
+
+### 0.7.25-android.342：修复原生舞台被启动保护误拒
+
+- 根因：崩溃保护把上次 ACTIVE 当成不安全，整个进程内所有 enable 都被拒绝，舞台永远 active=false。
+- 启动只清理 ACTIVE，不再拒绝本次启用。
+- 诊断增加 surface/playing。

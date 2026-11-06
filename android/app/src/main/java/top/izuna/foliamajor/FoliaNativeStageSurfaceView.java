@@ -45,6 +45,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     private long lastFrameAt;
     private long lastSpawnAt;
     private volatile long frameCount;
+    private volatile boolean surfaceReady;
 
     private String line = "";
     private String nextLine = "";
@@ -210,6 +211,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (running) return;
+        surfaceReady = true;
         running = true;
         renderThread = new Thread(this::renderLoop, "FoliaNativeStage");
         renderThread.start();
@@ -229,6 +231,7 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        surfaceReady = false;
         running = false;
         Thread thread = renderThread;
         renderThread = null;
@@ -351,6 +354,10 @@ public class FoliaNativeStageSurfaceView extends SurfaceView implements SurfaceH
 
     public long getFrameCount() {
         return frameCount;
+    }
+
+    public boolean isSurfaceReady() {
+        return surfaceReady;
     }
 
     public boolean isPlaying() {
