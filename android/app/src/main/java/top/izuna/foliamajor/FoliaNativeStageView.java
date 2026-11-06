@@ -21,7 +21,7 @@ import android.view.View;
  * 绘制路径按帧缓存渐变和 StaticLayout，暂停/不可见时停止 Choreographer。
  */
 public class FoliaNativeStageView extends View {
-    private static final long FRAME_INTERVAL_MS = 16L;
+    private static final long FRAME_INTERVAL_MS = 8L;
 
     private final TextPaint lyricPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint nextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -34,6 +34,11 @@ public class FoliaNativeStageView extends View {
     private String title = "";
     private String artist = "";
     private int accent = 0xFF7C9BFF;
+    private int secondary = 0xFF7C9BFF;
+    private int background = 0xFF07070B;
+    private boolean daylight = false;
+    private float lineProgress = 0f;
+    private long frameCount;
     private boolean playing = true;
     private boolean attached = false;
     private boolean windowVisible = true;
@@ -93,6 +98,53 @@ public class FoliaNativeStageView extends View {
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    public void setThemeColors(String primaryHex, String secondaryHex, String backgroundHex) {
+        try {
+            int nextSecondary = Color.parseColor(secondaryHex);
+            int nextBackground = Color.parseColor(backgroundHex);
+            if (nextSecondary != secondary || nextBackground != background) {
+                secondary = nextSecondary;
+                background = nextBackground;
+                backgroundGradient = null;
+                glowGradient = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public void setDaylight(boolean daylight) {
+        this.daylight = daylight;
+        lyricPaint.setColor(daylight ? 0xFF111111 : Color.WHITE);
+        nextPaint.setColor(daylight ? 0x99111111 : 0x88FFFFFF);
+        metaPaint.setColor(daylight ? 0xAA111111 : 0x99FFFFFF);
+        invalidate();
+    }
+
+    public void updateAudio(float power, float bass, float mid, float treble) {
+        // Canvas View 版本暂不绘制频谱，保留接口。
+    }
+
+    public void updateWords(String json, float position) {
+        // Canvas View 版本暂不绘制逐字，保留接口。
+    }
+
+    public void setLineProgress(float progress) {
+        this.lineProgress = Math.max(0f, Math.min(1f, progress));
+        invalidate();
+    }
+
+    public long getFrameCount() {
+        return frameCount;
+    }
+
+    public boolean isSurfaceReady() {
+        return true;
+    }
+
+    public boolean isPlaying() {
+        return playing;
     }
 
     public void update(String line, String nextLine, String title, String artist, String accentHex, boolean playing) {
@@ -174,7 +226,7 @@ public class FoliaNativeStageView extends View {
 
     private void ensureGradients(int width, int height) {
         if (backgroundGradient != null && gradientWidth == width && gradientHeight == height) return;
-        int accentSoft = (accent & 0x00FFFFFF) | 0x55000000;
+        int accentSoft = (secondary & 0x00FFFFFF) | 0x55000000;
         backgroundGradient = new LinearGradient(
                 0, 0, width, height,
                 new int[]{0xFF07070B, accentSoft, 0xFF050508},
@@ -213,6 +265,7 @@ public class FoliaNativeStageView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        frameCount += 1;
         try {
             drawStage(canvas);
         } catch (Throwable ignored) {
@@ -244,7 +297,17 @@ public class FoliaNativeStageView extends View {
         float centerY = height * 0.5f;
         if (lyricLayout != null) {
             canvas.save();
-            canvas.translate((width - width * 0.86f) / 2f, centerY - lyricLayout.getHeight() / 2f);
+            float left = (width - width * 0.86f) / 2f;
+            float top = centerY - lyricLayout.getHeight() / 2f;
+            lyricPaint.setColor(daylight ? 0x55111111 : 0x55FFFFFF);
+            canvas.save();
+            canvas.translate(left, top);
+            lyricLayout.draw(canvas);
+            canvas.restore();
+            lyricPaint.setColor(daylight ? 0xFF111111 : Color.WHITE);
+            canvas.save();
+            canvas.clipRect(left, 0f, left + width * 0.86f * lineProgress, height);
+            canvas.translate(left, top);
             lyricLayout.draw(canvas);
             canvas.restore();
         }

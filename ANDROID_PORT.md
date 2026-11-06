@@ -677,3 +677,8 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 
 - 不再用 TextureView.lockCanvas，改为 new Surface(surfaceTexture).lockCanvas。
 - 解决 TextureView 渲染线程不出帧导致自动关闭。
+
+### 0.7.25-android.346：原生舞台回退到 Canvas View
+
+- TextureView 在该机仍不出帧；改用普通 View + Choreographer，保证与 WebView 同层可见。
+- 120fps 上限；暂不绘制频谱/逐字，先保证原生画面可见。
