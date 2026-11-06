@@ -616,6 +616,19 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
     info.ppEnabledExtensionNames = extensions;
     if (!ok(vkCreateInstance(&info, nullptr, &s->instance), "instance") ||
         !createDevice(*s, window)) {
+        if (s->device) {
+            vkDeviceWaitIdle(s->device);
+            vkDestroyDevice(s->device, nullptr);
+            s->device = VK_NULL_HANDLE;
+        }
+        if (s->surface) {
+            vkDestroySurfaceKHR(s->instance, s->surface, nullptr);
+            s->surface = VK_NULL_HANDLE;
+        }
+        if (s->instance) {
+            vkDestroyInstance(s->instance, nullptr);
+            s->instance = VK_NULL_HANDLE;
+        }
         delete s;
         ANativeWindow_release(window);
         return 0;
