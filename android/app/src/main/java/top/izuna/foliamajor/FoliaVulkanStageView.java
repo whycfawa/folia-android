@@ -244,7 +244,8 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
     private void emitStillLine(List<Float> vertices, int width, int height, VulkanTextAtlas atlas, String text, String trans, float baselineY, float scale, float alpha) {
         emitTextRun(vertices, width, height, atlas, text, baselineY, scale, alpha);
         if (trans != null && !trans.isEmpty()) {
-            emitTextRun(vertices, width, height, atlas, trans, baselineY + dp(34) * scale, scale * 0.6f, alpha * 0.75f);
+            atlas.setTextSize(dp(24));
+            emitTextRun(vertices, width, height, atlas, trans, baselineY + dp(34) * scale, 1f, alpha * 0.75f);
         }
     }
 
