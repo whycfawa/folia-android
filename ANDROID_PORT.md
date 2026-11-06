@@ -1026,3 +1026,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.26-android.425：Apple Music WebView 保持 1x1 可见
 
 - 隐藏 WebView 不再 GONE，改为 1x1/alpha 0.01，避免 Chromium 挂起媒体/DRM。
+
+### 0.7.26-android.426：授予 Widevine 权限
+
+- WebChromeClient 对 music.apple.com 的 RESOURCE_PROTECTED_MEDIA_ID 授权，完整音轨不再退回 preview。

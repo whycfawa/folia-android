@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -58,9 +59,25 @@ public class FoliaAppleMusicPlugin extends Plugin {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(true);
         settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         webView.addJavascriptInterface(new Bridge(), "FoliaAppleMusicBridge");
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override public void onPermissionRequest(PermissionRequest request) {
+                for (String resource : request.getResources()) {
+                    if (PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID.equals(resource)
+                            && request.getOrigin() != null
+                            && (request.getOrigin().getHost() != null)
+                            && (request.getOrigin().getHost().equals("music.apple.com")
+                                || request.getOrigin().getHost().endsWith(".music.apple.com"))) {
+                        request.grant(new String[] { PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID });
+                        return;
+                    }
+                }
+                request.deny();
+            }
+        });
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 loading = false;
