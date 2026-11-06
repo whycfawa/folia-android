@@ -761,3 +761,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - FoliaNativeStagePlugin 改用 FoliaVulkanStageView。
 - 歌词用 Bitmap 纹理上传；Vulkan 背景 shader + 文字纹理。
 - 不做 GLES/Canvas 回退。
+
+### 0.7.25-android.364：Vulkan 诊断
+
+- 诊断输出 vulkan ready 状态。

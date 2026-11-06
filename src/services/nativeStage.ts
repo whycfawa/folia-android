@@ -26,7 +26,7 @@ interface FoliaNativeStagePlugin {
     updateAudio(options: { power: number; bass: number; mid: number; treble: number }): Promise<void>;
     updateProgress(options: { position: number; duration: number; lineProgress: number }): Promise<void>;
     updateWords(options: { words: string; position: number }): Promise<void>;
-    stats(): Promise<{ active?: boolean; renderer?: string; frames?: number; surface?: boolean; playing?: boolean }>;
+    stats(): Promise<{ active?: boolean; renderer?: string; frames?: number; surface?: boolean; playing?: boolean; vulkan?: boolean }>;
     addListener(eventName: string, listener: (event: { action?: string; value?: number }) => void): Promise<{ remove: () => Promise<void> | void }>;
     disable(): Promise<void>;
 }

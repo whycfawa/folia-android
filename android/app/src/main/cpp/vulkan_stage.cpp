@@ -579,6 +579,12 @@ Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeCreate(JNIEnv* env, jobject
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeReady(JNIEnv*, jobject) {
+    State* s = state;
+    return (s != nullptr && s->device != VK_NULL_HANDLE) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_top_izuna_foliamajor_FoliaVulkanStageView_nativeRender(JNIEnv*, jobject) {
     State* s = state;
     if (!s || !s->device) return JNI_FALSE;

@@ -130,6 +130,7 @@ const NativeStageBridge: React.FC = () => {
                     frames: Number(stats?.frames || 0),
                     surface: Boolean(stats?.surface),
                     playing: Boolean(stats?.playing),
+                    vulkan: Boolean(stats?.vulkan),
                 });
                 if (!active && Date.now() - enabledAt > 3500) {
                     console.warn('[NativeStage] plugin inactive, restoring WebView');
@@ -141,7 +142,7 @@ const NativeStageBridge: React.FC = () => {
         }, 1000);
         return () => {
             window.clearInterval(timer);
-            setNativeStageStats({ enabled: false, active: false, renderer: 'none', surface: false, playing: false });
+            setNativeStageStats({ enabled: false, active: false, renderer: 'none', surface: false, playing: false, vulkan: false });
             remove?.();
         };
     }, [enabled]);

@@ -37,6 +37,9 @@ public class FoliaVulkanStageView extends SurfaceView implements SurfaceHolder.C
 
     private native long nativeCreate(Surface surface);
     private native boolean nativeRender();
+    private native boolean nativeReady();
+
+    public boolean isVulkanReady() { return nativeReady(); }
     private native void nativeDestroy();
     private native void nativeUpdateText(int width, int height, int[] pixels);
 

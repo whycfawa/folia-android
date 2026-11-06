@@ -5,9 +5,10 @@ export type NativeStageStats = {
     frames: number;
     surface: boolean;
     playing: boolean;
+    vulkan: boolean;
 };
 
-let current: NativeStageStats = { enabled: false, active: false, renderer: 'none', frames: 0, surface: false, playing: false };
+let current: NativeStageStats = { enabled: false, active: false, renderer: 'none', frames: 0, surface: false, playing: false, vulkan: false };
 
 export const setNativeStageStats = (next: Partial<NativeStageStats>): void => {
     current = { ...current, ...next };
