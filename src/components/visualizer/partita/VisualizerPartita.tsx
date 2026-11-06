@@ -83,7 +83,7 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
         getLineEndTime: getLineRenderEndTime,
     });
     const activeLineRenderProfile = activeLine ? resolveGlowWordRenderProfile(activeLine) : null;
-    const activeLineContainerMotion = getGlowWordLineContainerMotion(activeLineRenderProfile);
+    const activeLineContainerMotion = getGlowWordLineContainerMotion(activeLineRenderProfile, props.reducedEffects);
 
     const sequentialLayout = useMemo(() => {
         if (!activeLine) {
@@ -168,8 +168,8 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
             <motion.div
                 ref={stageContentRef}
                 className="relative z-10 w-full h-[70vh] flex items-center justify-center p-8 pointer-events-none will-change-transform"
-                animate={lyricContainerFloat.animate}
-                transition={lyricContainerFloat.transition}
+                animate={props.reducedEffects ? undefined : lyricContainerFloat.animate}
+                transition={props.reducedEffects ? undefined : lyricContainerFloat.transition}
                 style={{
                     '--tv-visualizer-primary-font-size': mainFontSize,
                 } as React.CSSProperties}
@@ -206,6 +206,7 @@ const VisualizerPartita: React.FC<VisualizerPartitaProps> = (props) => {
                                                     theme={theme}
                                                     layoutVariants={layoutVariants}
                                                     bodyVariants={bodyVariants}
+                                                    reducedEffects={props.reducedEffects}
                                                     baseColor={theme.primaryColor}
                                                     renderProfile={activeLineRenderProfile}
                                                     isChorus={activeLine.isChorus}

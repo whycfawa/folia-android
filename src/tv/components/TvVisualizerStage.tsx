@@ -1,5 +1,5 @@
 import { useMotionValueEvent, type MotionValue } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import VisualizerRenderer from '../../components/visualizer/VisualizerRenderer';
 import { getSongAlbumLabel, getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type {
@@ -45,7 +45,7 @@ const useTvActiveLyricLine = (
     return activeIndex;
 };
 
-export const TvVisualizerStage = ({
+export const TvVisualizerStage = memo(({
     song,
     lyrics,
     currentTime,
@@ -88,6 +88,7 @@ export const TvVisualizerStage = ({
                     audioPower={audioPower}
                     audioBands={audioBands}
                     showText
+                    reducedEffects
                     songTitle={song.name}
                     songArtist={artist}
                     songAlbum={album}
@@ -108,4 +109,4 @@ export const TvVisualizerStage = ({
             </div>
         </section>
     );
-};
+});

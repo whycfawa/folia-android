@@ -78,3 +78,10 @@ export const glowWordBodyVariants: Variants = {
         }
     })
 };
+
+// Color changes stay discrete in the TV path; opacity/transform own the visible animation.
+export const reducedGlowWordBodyVariants: Variants = {
+    waiting: ({ baseColor }: any) => ({ color: baseColor, transition: { duration: 0 } }),
+    active: ({ activeColor }: any) => ({ color: activeColor, transition: { duration: 0 } }),
+    passed: ({ baseColor }: any) => ({ color: baseColor, transition: { duration: 0 } }),
+};

@@ -55,7 +55,17 @@ export const getGlowWordDisplayDuration = (word: WordType, renderProfile: GlowWo
     return Math.max(activeEndTime - word.startTime, minDuration);
 };
 
-export const getGlowWordLineContainerMotion = (renderProfile: GlowWordRenderProfile | null) => {
+export const getGlowWordLineContainerMotion = (renderProfile: GlowWordRenderProfile | null, reducedEffects = false) => {
+    // TV keeps line entry/exit on opacity and transforms so full-stage blur never rerasterizes it.
+    if (reducedEffects) {
+        const mode = renderProfile?.lineTransitionMode;
+        const duration = mode === 'none' ? 0.12 : mode === 'fast' ? 0.16 : 0.3;
+        return {
+            initial: { opacity: mode === 'none' ? 1 : 0, scale: mode === 'none' ? 1 : 0.96 },
+            animate: { opacity: 1, scale: 1 },
+            exit: { opacity: 0, scale: 1.02, transition: { duration } },
+        };
+    }
     if (renderProfile?.lineTransitionMode === 'none') {
         return {
             initial: { opacity: 1, scale: 1, filter: 'blur(0px)' },

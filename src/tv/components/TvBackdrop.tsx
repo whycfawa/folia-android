@@ -14,6 +14,7 @@ export const TvBackdrop = ({
     audioPower,
     audioBands,
     paused,
+    staticMode,
 }: {
     config: VisualizerBackgroundConfig;
     theme: Theme;
@@ -22,6 +23,7 @@ export const TvBackdrop = ({
     audioPower: MotionValue<number>;
     audioBands: AudioBands;
     paused: boolean;
+    staticMode: boolean;
 }) => (
     <div className="tv-backdrop tv-visualizer-background" aria-hidden="true">
         <VisualizerBackgroundRenderer
@@ -33,7 +35,7 @@ export const TvBackdrop = ({
             audioPower={audioPower}
             audioBands={audioBands}
             seed={seed}
-            staticMode={false}
+            staticMode={staticMode}
             paused={paused}
         />
         <div className="tv-backdrop-scrim" />

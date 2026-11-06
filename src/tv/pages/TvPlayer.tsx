@@ -72,6 +72,7 @@ export const TvPlayer = ({
                 audioPower={audio.audioPower}
                 audioBands={audio.audioBands}
                 paused={player.status !== 'playing'}
+                staticMode={constrained}
             />
             <header className="tv-player-header">
                 <div className="tv-player-song">

@@ -163,6 +163,8 @@ Visualizer 消费已解析的 `LyricData` / `Line` / `Word`，不负责解析 `.
 
 宿主可以提供不同的 `staticMode`、背景、面板和字幕 props，但模式契约仍来自 `definition.ts`。
 
+TV 播放页通过 `reducedEffects` 为 classic / partita 启用轻量歌词：逐字动态光晕改为整词固定半径光晕与透明度动画，正文和切句不使用模糊，也不持续缩放整行。词级时间、高亮、布局及入场动作保持共用；其他宿主默认保留完整效果。低配置 TV 还会将背景的 `staticMode` 打开，复用各背景已有的静态展示路径，减少与歌词争用绘制资源。
+
 ## Runtime guardrails
 
 - 连续播放时间优先使用 MotionValue、ref、CSS/Motion、canvas 或 Pixi draw loop；不要每帧写 React state/store。

@@ -67,6 +67,8 @@ export interface VisualizerSharedProps {
     showSubtitleTranslation?: boolean;
     subtitleContentMode?: SubtitleContentMode;
     paused?: boolean;
+    /** Use compositor-only lyric effects on TV without per-glyph glow or animated blur. */
+    reducedEffects?: boolean;
     onBack?: () => void;
     isPanelOpen?: boolean;
     alwaysShowBackButton?: boolean;

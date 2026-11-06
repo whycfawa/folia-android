@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { wordGlowVariants } from '@/components/visualizer/wordGlow';
+import { getGlowWordLineContainerMotion, type GlowWordRenderProfile } from '@/components/visualizer/glowWordTiming';
 import {
     clearCanvasTextGlow,
     fillGlowText,
@@ -33,6 +34,24 @@ const CUSTOMS = [
 ];
 
 afterEach(() => { setGlowBlurQuantized(false); });
+
+describe('TV lyric transitions', () => {
+    it.each(['normal', 'fast', 'none'] as const)('avoids full-line blur for %s lyrics', lineTransitionMode => {
+        const profile: GlowWordRenderProfile = {
+            renderHints: null,
+            lineRenderEndTime: 3,
+            lineTransitionMode,
+            wordRevealMode: 'normal',
+            wordLookahead: 0.15,
+        };
+        const motion = getGlowWordLineContainerMotion(profile, true);
+        expect(JSON.stringify(motion)).not.toMatch(/filter|blur/);
+        expect(motion.animate.opacity).toBe(1);
+        expect(motion.exit.opacity).toBe(0);
+        // The opt-in must leave full effects available to desktop and preview hosts.
+        expect(JSON.stringify(getGlowWordLineContainerMotion(profile))).toContain('blur(');
+    });
+});
 
 describe('stepped glow radius', () => {
     it('keeps the original text-shadow animation when the switch is off', () => {

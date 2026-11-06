@@ -114,7 +114,7 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
     });
     const activeLineRenderProfile = activeLine ? resolveGlowWordRenderProfile(activeLine) : null;
     const activeWordRenderProfile = activeLineRenderProfile ?? (activeLine ? resolveGlowWordRenderProfile(activeLine) : null);
-    const activeLineContainerMotion = getGlowWordLineContainerMotion(activeLineRenderProfile);
+    const activeLineContainerMotion = getGlowWordLineContainerMotion(activeLineRenderProfile, props.reducedEffects);
 
     const stageContentRef = useRef<HTMLDivElement | null>(null);
     const stageSize = useElementSize(stageContentRef);
@@ -302,7 +302,7 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
 
     const lyricContainerFloat = useMemo(() => {
         const multiplier = resolvedClassicTuning.breathingFloatMultiplier;
-        if (multiplier <= 0) {
+        if (multiplier <= 0 || props.reducedEffects) {
             return null;
         }
 
@@ -327,7 +327,7 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
                 ease: "easeInOut" as const
             }
         };
-    }, [resolvedClassicTuning.breathingFloatMultiplier, theme.animationIntensity]);
+    }, [resolvedClassicTuning.breathingFloatMultiplier, theme.animationIntensity, props.reducedEffects]);
 
     return (
         <VisualizerShell
@@ -374,6 +374,7 @@ const Visualizer: React.FC<VisualizerProps> = (props) => {
                                         activeColor={activeColor}
                                         renderProfile={activeWordRenderProfile!}
                                         isChorus={activeLine.isChorus}
+                                        reducedEffects={props.reducedEffects}
                                         fontSize={mainFontSize}
                                         layoutStyle={{ marginRight: config.marginRight, alignSelf: config.alignSelf }}
                                     />
