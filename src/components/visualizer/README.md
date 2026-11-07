@@ -172,6 +172,7 @@ TV 播放页通过 `reducedEffects` 为 classic / partita 启用轻量歌词：�
 - 连续播放时间优先使用 MotionValue、ref、CSS/Motion、canvas 或 Pixi draw loop；不要每帧写 React state/store。
 - React state 只保存当前行、播放状态、可见段落等离散变化；高频 `requestAnimationFrame`、`useMotionValueEvent`、`ResizeObserver` 必须有相等保护和 cleanup。
 - 布局 cache key 要包含歌词内容、主题、最终字重、窗口尺寸和 mode tuning；字体测量和最终渲染必须使用同一 `resolveThemeFontWeight` 结果。
+- 低配 Android 投影仪对 Latent / Nomand 的 Paper shader 使用统一像素预算（480×270）；层、颜色、音频响应和设置全部保留，只降低 shader 内部绘制分辨率。
 - 新模式应复用 `runtime.ts`、`registry.tsx`、`VisualizerShell.tsx`、共享 subtitle/harmony overlay 和 `entry.tsx` settings contract。
 - 新功能若让单个模式文件继续明显膨胀，加载 `file-modularization` skill，把 layout、canvas/Pixi、tuning 和纯计算拆到同目录文件。
 

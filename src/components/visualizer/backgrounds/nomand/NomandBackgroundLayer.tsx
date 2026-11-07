@@ -15,6 +15,8 @@ import {
     resolveDaylightInversion,
     resolveHalftoneInversion,
 } from './nomandShaderAdjustments';
+import { useDevicePerformanceProfile } from '../../../../hooks/useDevicePerformanceProfile';
+import { resolvePaperShaderPixelCount } from '../../../../utils/paperShaderBudget';
 
 // src/components/visualizer/backgrounds/nomand/NomandBackgroundLayer.tsx
 // Renders the selected Paper image shader with the current theme palette.
@@ -34,6 +36,7 @@ const NomandBackgroundLayer: React.FC<NomandBackgroundLayerProps> = ({
     theme,
     isDaylight,
 }) => {
+    const { tier } = useDevicePerformanceProfile();
     const tuning = { ...DEFAULT_NOMAND_BACKGROUND_TUNING, ...tuningOverride };
     const sourceUrl = tuning.imageSource === 'uploaded-global'
         ? monetBackgroundImage?.url ?? coverUrl
@@ -51,12 +54,13 @@ const NomandBackgroundLayer: React.FC<NomandBackgroundLayerProps> = ({
     // Keeps each Paper shader's fixed design choices local while exposing the selected variant's tuning.
     const renderShader = () => {
         const commonProps = {
+            className: 'folia-paper-shader-fill',
             width: '100%' as const,
             height: '100%' as const,
             image: sourceUrl,
             fit: 'cover' as const,
             minPixelRatio: 1,
-            maxPixelCount: 1920 * 1080,
+            maxPixelCount: resolvePaperShaderPixelCount(1920 * 1080, tier === 'constrained'),
             style: { width: '100%', height: '100%' },
         };
 

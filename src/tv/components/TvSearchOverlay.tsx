@@ -8,7 +8,7 @@ import {
 import type { SongResult } from '../../types';
 import { useTvSearch } from '../hooks/useTvSearch';
 import { isTvSpaceKey, resolveTvRemoteAction } from '../input/tvKeys';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 // src/tv/components/TvSearchOverlay.tsx
 // 顶部搜索入口的遥控器界面：输入框支持平台键盘，方向键下移进入结果列表，OK 播放歌曲。
@@ -130,7 +130,7 @@ export const TvSearchOverlay = ({
                             data-tv-focus-axis="vertical"
                         >
                             {search.results.map((song, index) => {
-                                const coverUrl = resolveTvSongCoverUrl(song);
+                                const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.row);
                                 const detail = [
                                     getSongArtistLabel(song) || '—',
                                     getSongAlbumLabel(song),

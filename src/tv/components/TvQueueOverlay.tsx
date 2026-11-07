@@ -4,7 +4,7 @@ import { ListMusic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 export const TvQueueOverlay = ({
     queue,
@@ -42,7 +42,7 @@ export const TvQueueOverlay = ({
                         <div className="tv-overlay-empty">{t('tv.player.queueEmpty')}</div>
                     )}
                     {queue.map((song, index) => {
-                        const coverUrl = resolveTvSongCoverUrl(song);
+                        const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.row);
                         return (
                             <button
                                 key={`${song.id}-${index}`}

@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import { formatTvTime } from '../model/tvLyricFill';
 import type { TvPlayerModel } from '../model/tvTypes';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 export const TvControlDock = ({
     player,
@@ -29,7 +29,7 @@ export const TvControlDock = ({
 }) => {
     const { t } = useTranslation();
     const song = player.currentSong;
-    const coverUrl = resolveTvSongCoverUrl(song);
+    const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.row);
     const positionLabelRef = useRef<HTMLSpanElement>(null);
     const remainingLabelRef = useRef<HTMLSpanElement>(null);
     const lastClockBucketRef = useRef(Number.NaN);

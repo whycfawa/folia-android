@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { LibraryHomeCard } from '../../library/core/contracts/homeModel';
 import {
@@ -40,10 +41,10 @@ export const TvHomeLibraryRows = ({
 }) => {
     const { t } = useTranslation();
 
-    const openOnlineCollection = (card: LibraryHomeCard) => {
+    const openOnlineCollection = useCallback((card: LibraryHomeCard) => {
         onOpenCollection(onlineCardCollection(card) as unknown as ProviderCollection);
-    };
-    const activateRadioCard = async (card: LibraryHomeCard) => {
+    }, [onOpenCollection]);
+    const activateRadioCard = useCallback(async (card: LibraryHomeCard) => {
         if (isPersonalFmCard(card)) {
             const songs = await online.playPersonalFm();
             if (songs) onPlayTracks(songs, 0);
@@ -55,7 +56,10 @@ export const TvHomeLibraryRows = ({
             return;
         }
         openOnlineCollection(card);
-    };
+    }, [online.playDailyRecommendations, online.playPersonalFm, onPlayTracks, openOnlineCollection]);
+    const activateRadioCardForTv = useCallback((card: LibraryHomeCard) => {
+        void activateRadioCard(card);
+    }, [activateRadioCard]);
 
     return (
         <>
@@ -89,7 +93,7 @@ export const TvHomeLibraryRows = ({
                         card={card}
                         kind={radioCardKind(card)}
                         focusKey={`home-radio-${String(card.id)}`}
-                        onClick={() => void activateRadioCard(card)}
+                        onActivate={activateRadioCardForTv}
                     />
                 ))}
             </TvMediaRow>
@@ -111,7 +115,7 @@ export const TvHomeLibraryRows = ({
                         key={collection.id}
                         collection={collection}
                         focusKey={`home-playlist-${collection.id}`}
-                        onClick={() => onOpenCollection(collection)}
+                        onActivate={onOpenCollection}
                     />
                 ))}
             </TvMediaRow>
@@ -146,7 +150,7 @@ export const TvHomeLibraryRows = ({
                         card={card}
                         kind="album"
                         focusKey={`home-album-${String(card.id)}`}
-                        onClick={() => openOnlineCollection(card)}
+                        onActivate={openOnlineCollection}
                     />
                 ))}
             </TvMediaRow>

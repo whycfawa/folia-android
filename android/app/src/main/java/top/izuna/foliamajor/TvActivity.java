@@ -29,7 +29,11 @@ public class TvActivity extends MainActivity {
             .setStartPath("/tv.html")
             .setBackgroundColor("#07070c")
             .setWebContentsDebuggingEnabled(debuggable)
-            .setLoggingEnabled(debuggable)
+            // Capacitor serializes every plugin result before logging it. On the projector that
+            // stringification lands on the WebView main thread while the home feeds are loading,
+            // turning routine bridge traffic into 50-200ms frame stalls. Native errors still go
+            // through CrashDiagnostics, so TV keeps the quieter bridge in debug builds too.
+            .setLoggingEnabled(false)
             .create();
         super.load();
     }

@@ -1,19 +1,22 @@
 // src/tv/components/TvPlaylistCard.tsx
 
+import { memo } from 'react';
 import { ListMusic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ProviderCollection } from '../../types/onlineMusic';
+import { resolveTvCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
-export const TvPlaylistCard = ({
+export const TvPlaylistCard = memo(({
     collection,
     focusKey,
-    onClick,
+    onActivate,
 }: {
     collection: ProviderCollection;
     focusKey: string;
-    onClick: () => void;
+    onActivate: (collection: ProviderCollection) => void;
 }) => {
     const { t } = useTranslation();
+    const coverUrl = resolveTvCoverUrl(collection.coverUrl, TV_COVER_SIZE.card);
 
     return (
         <button
@@ -21,11 +24,11 @@ export const TvPlaylistCard = ({
             className="tv-collection-card"
             data-tv-focusable="true"
             data-tv-focus-key={focusKey}
-            onClick={onClick}
+            onClick={() => onActivate(collection)}
         >
             <span className="tv-collection-cover">
-                {collection.coverUrl ? (
-                    <img src={collection.coverUrl} alt="" loading="lazy" decoding="async" />
+                {coverUrl ? (
+                    <img src={coverUrl} alt="" loading="lazy" decoding="async" />
                 ) : (
                     <ListMusic size={42} />
                 )}
@@ -40,5 +43,5 @@ export const TvPlaylistCard = ({
             </span>
         </button>
     );
-};
+});
 

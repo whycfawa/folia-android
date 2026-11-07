@@ -3,7 +3,7 @@
 import { Disc3, LogIn, Play } from 'lucide-react';
 import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 export const TvHero = ({
     song,
@@ -21,7 +21,7 @@ export const TvHero = ({
         loginHint: string;
     };
 }) => {
-    const coverUrl = resolveTvSongCoverUrl(song);
+    const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.card);
     const title = song?.name
         || (isAuthenticated ? labels.chooseSong : labels.loginHint);
     const artist = song ? getSongArtistLabel(song) : '';

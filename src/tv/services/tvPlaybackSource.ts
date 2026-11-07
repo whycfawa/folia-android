@@ -10,10 +10,12 @@ import {
 import { getSongCoverUrl } from '../../services/onlineMusic/songMetadata';
 import type { AudioQualityPreference, MediaId } from '../../types/onlineMusic';
 import type { LyricData, LocalSong, SongResult } from '../../types';
-import { toSafeRemoteUrl } from '../../utils/appPlaybackHelpers';
 import { isLocalPlaybackSong } from '../../utils/appPlaybackGuards';
 import { resolveLocalSongLyrics } from '../../utils/lyrics/localSongLyrics';
 import { useLyricSettingsStore } from '../../stores/useLyricSettingsStore';
+import { resolveTvCoverUrl, TV_COVER_SIZE } from './tvCoverUrl';
+
+export { resolveTvCoverUrl, TV_COVER_SIZE } from './tvCoverUrl';
 
 // src/tv/services/tvPlaybackSource.ts
 // TV playback deliberately reuses the phone app's source and lyric resolvers, but keeps the queue
@@ -35,10 +37,13 @@ export class TvPlaybackSourceError extends Error {
     }
 }
 
-export const resolveTvSongCoverUrl = (song: SongResult | null): string | null => {
+export const resolveTvSongCoverUrl = (
+    song: SongResult | null,
+    size: number = TV_COVER_SIZE.card,
+): string | null => {
     if (!song) return null;
     const raw = song.album?.coverUrl || getSongCoverUrl(song);
-    return toSafeRemoteUrl(raw) ?? null;
+    return resolveTvCoverUrl(raw, size);
 };
 
 export const loadTvSongAudio = async (

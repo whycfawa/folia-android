@@ -6,7 +6,7 @@ import { getSongArtistLabel } from '../../services/onlineMusic/songMetadata';
 import type { SongResult } from '../../types';
 import type { ProviderCollection } from '../../types/onlineMusic';
 import { useTvCollectionTracks } from '../hooks/useTvCollectionTracks';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 export const TvCollectionOverlay = ({
     collection,
@@ -74,7 +74,7 @@ export const TvCollectionOverlay = ({
                                 data-tv-focus-axis="vertical"
                             >
                                 {tracks.map((song, index) => {
-                                    const coverUrl = resolveTvSongCoverUrl(song);
+                                    const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.row);
                                     return (
                                         <button
                                             key={`${song.id}-${index}`}

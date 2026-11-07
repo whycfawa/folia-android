@@ -14,7 +14,7 @@ import { TvVisualizerStage } from '../components/TvVisualizerStage';
 import { useTvAudioAnalyser } from '../hooks/useTvAudioAnalyser';
 import type { TvPlayerModel } from '../model/tvTypes';
 import { resolveTvVisualTheme } from '../model/tvVisualTheme';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 
 export const TvPlayer = ({
     player,
@@ -33,7 +33,7 @@ export const TvPlayer = ({
 }) => {
     const { t } = useTranslation();
     const song = player.currentSong;
-    const coverUrl = resolveTvSongCoverUrl(song);
+    const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.backdrop);
     const artist = song ? getSongArtistLabel(song) : '';
     const album = song ? getSongAlbumLabel(song) : '';
     const statusLabel = player.status === 'loading'

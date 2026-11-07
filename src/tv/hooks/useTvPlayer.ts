@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { getSongArtistLabel, getSongAlbumLabel } from '../../services/onlineMusic/songMetadata';
 import type { TvPlayerModel } from '../model/tvTypes';
 import { readTvNativePlaybackPlugin } from '../services/tvNativePlayback';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 import { useTvAudioTransport } from './useTvAudioTransport';
 import { useTvPlaybackQueue } from './useTvPlaybackQueue';
 
@@ -29,7 +29,7 @@ export const useTvPlayer = (): TvPlayerModel => {
         if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return undefined;
         const session = navigator.mediaSession;
         const song = playback.currentSong;
-        const coverUrl = resolveTvSongCoverUrl(song);
+        const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.card);
 
         session.metadata = song
             ? new MediaMetadata({

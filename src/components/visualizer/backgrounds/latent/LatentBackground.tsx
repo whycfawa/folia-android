@@ -10,7 +10,9 @@ import {
     type Theme,
 } from '../../../../types';
 import { extractRepresentativeColors } from '../../../../utils/colorExtractor';
+import { useDevicePerformanceProfile } from '../../../../hooks/useDevicePerformanceProfile';
 import { updatePaperShaderUniforms } from '../../../../utils/paperShaderUniforms';
+import { resolvePaperShaderPixelCount } from '../../../../utils/paperShaderBudget';
 import { createPaperShaderReleaseRef, PAPER_SHADER_CONTEXT_ATTRIBUTES } from '../../../../utils/paperShaderContext';
 
 // src/components/visualizer/backgrounds/latent/LatentBackground.tsx
@@ -26,7 +28,7 @@ interface LatentBackgroundProps {
     tuning?: LatentBackgroundTuning;
 }
 
-const MAX_SHADER_PIXELS = 1280 * 720;
+const BALANCED_MAX_SHADER_PIXELS = 1280 * 720;
 const PAUSED_SPEED_SCALE = 0.12;
 const normalizeAudio = (value: number) => Math.min(1, Math.max(0, value / 255));
 const clampShaderSpeed = (value: number) => Math.min(2, Math.max(0, value));
@@ -117,6 +119,7 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
     paused,
     tuning: tuningOverride,
 }) => {
+    const { tier } = useDevicePerformanceProfile();
     const ditheringRef = useRef<PaperShaderElement | null>(null);
     const meshRef = useRef<PaperShaderElement | null>(null);
     // Stable callback refs: they also lose each shader's WebGL context when it unmounts.
@@ -129,6 +132,10 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
     const tuning = tuningOverride ?? DEFAULT_LATENT_BACKGROUND_TUNING;
     const showDithering = tuning.displayMode !== 'mesh';
     const showMesh = tuning.displayMode !== 'dithering';
+    const maxShaderPixels = resolvePaperShaderPixelCount(
+        BALANCED_MAX_SHADER_PIXELS,
+        tier === 'constrained',
+    );
     pausedRef.current = paused;
 
     useEffect(() => {
@@ -299,6 +306,7 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
                 >
                     <MeshGradient
                         ref={meshShaderRef}
+                        className="folia-paper-shader-fill"
                         width="100%"
                         height="100%"
                         colors={shaderColors.mesh}
@@ -310,7 +318,7 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
                             ? 0
                             : resolveLatentShaderSpeed(tuning.meshSpeed, tuning.meshAudioSpeed, 0, paused)}
                         minPixelRatio={1}
-                        maxPixelCount={MAX_SHADER_PIXELS}
+                        maxPixelCount={maxShaderPixels}
                         webGlContextAttributes={PAPER_SHADER_CONTEXT_ATTRIBUTES}
                         style={{ width: '100%', height: '100%' }}
                     />
@@ -329,6 +337,7 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
                 >
                     <Dithering
                         ref={ditheringShaderRef}
+                        className="folia-paper-shader-fill"
                         width="100%"
                         height="100%"
                         colorBack={shaderColors.ditheringBack}
@@ -340,7 +349,7 @@ const LatentBackground: React.FC<LatentBackgroundProps> = ({
                             ? 0
                             : resolveLatentShaderSpeed(tuning.ditheringSpeed, tuning.ditheringAudioSpeed, 0, paused)}
                         minPixelRatio={1}
-                        maxPixelCount={MAX_SHADER_PIXELS}
+                        maxPixelCount={maxShaderPixels}
                         webGlContextAttributes={PAPER_SHADER_CONTEXT_ATTRIBUTES}
                         style={{ width: '100%', height: '100%' }}
                     />

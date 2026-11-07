@@ -12,7 +12,7 @@ import type {
 import { findTvActiveLineIndex } from '../model/tvLyricTimeline';
 import type { TvPlaybackStatus } from '../model/tvTypes';
 import { resolveTvLumiereTuning } from '../model/tvVisualTheme';
-import { resolveTvSongCoverUrl } from '../services/tvPlaybackSource';
+import { resolveTvSongCoverUrl, TV_COVER_SIZE } from '../services/tvPlaybackSource';
 import '../styles/tv-visualizer.css';
 
 // src/tv/components/TvVisualizerStage.tsx
@@ -72,7 +72,7 @@ export const TvVisualizerStage = memo(({
     const currentLineIndex = useTvActiveLyricLine(lyrics, currentTime);
     const artist = getSongArtistLabel(song);
     const album = getSongAlbumLabel(song);
-    const coverUrl = resolveTvSongCoverUrl(song);
+    const coverUrl = resolveTvSongCoverUrl(song, TV_COVER_SIZE.backdrop);
 
     return (
         <section

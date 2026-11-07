@@ -1,5 +1,6 @@
 // src/tv/pages/TvHome.tsx
 
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SongResult } from '../../types';
 import type { ProviderCollection } from '../../types/onlineMusic';
@@ -9,6 +10,7 @@ import { TvHomeLibraryRows } from '../components/TvHomeLibrarySection';
 import { TvMediaRow, TvRowStatus } from '../components/TvMediaRow';
 import { TvSongCard } from '../components/TvSongCard';
 import type { TvAccountModel } from '../hooks/useTvAccount';
+import { useTvHomeFocusPrewarm } from '../hooks/useTvHomeFocusPrewarm';
 import type { TvLibraryModel } from '../hooks/useTvLibrary';
 import { useTvOnlineHome } from '../hooks/useTvOnlineHome';
 import type { TvPlayerModel } from '../model/tvTypes';
@@ -37,15 +39,25 @@ export const TvHome = ({
     const { t } = useTranslation();
     const online = useTvOnlineHome(account);
     const isPlaying = player.status === 'playing';
+    const focusPrewarmKey = !account.isAuthenticated
+        ? 'login'
+        : library.isLoadingLiked
+            ? 'loading'
+            : library.likedError
+                ? 'error'
+                : library.likedSongs.length === 0
+                    ? 'empty'
+                    : String(library.likedSongs[0].id);
+    useTvHomeFocusPrewarm(!inert && !library.isLoadingLiked, focusPrewarmKey);
 
-    const playLocalSong = (song: SongResult) => {
+    const playLocalSong = useCallback((song: SongResult) => {
         const index = library.localSongs.findIndex(candidate => candidate.id === song.id);
         onPlayTracks(library.localSongs, Math.max(0, index));
-    };
-    const playLikedSong = (song: SongResult) => {
+    }, [library.localSongs, onPlayTracks]);
+    const playLikedSong = useCallback((song: SongResult) => {
         const index = library.likedSongs.findIndex(candidate => candidate.id === song.id);
         onPlayTracks(library.likedSongs, Math.max(0, index));
-    };
+    }, [library.likedSongs, onPlayTracks]);
 
     return (
         <div
@@ -99,7 +111,7 @@ export const TvHome = ({
                             song={song}
                             focusKey={`home-liked-${song.id}`}
                             isCurrent={song.id === player.currentSong?.id}
-                            onClick={() => playLikedSong(song)}
+                            onActivate={playLikedSong}
                         />
                     ))}
                 </TvMediaRow>
@@ -118,7 +130,7 @@ export const TvHome = ({
                                 song={song}
                                 focusKey={`home-recent-${song.id}`}
                                 isCurrent={song.id === player.currentSong?.id}
-                                onClick={() => playLocalSong(song)}
+                                onActivate={playLocalSong}
                             />
                         ))}
                     </TvMediaRow>

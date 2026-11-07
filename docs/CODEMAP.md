@@ -17,9 +17,9 @@
 | test/dev | 512+ |
 | library | 256+ |
 | services | 128+ |
+| src (其他) | 128+ |
 | utils | 128+ |
 | hooks | 64+ |
-| src (其他) | 64+ |
 | stores | 32+ |
 | 其他 | 32+ |
 | backend/electron | 16+ |
@@ -59,6 +59,7 @@
 | 32+ | `src/services/onlineMusic/songMetadata.ts` |
 | 32+ | `src/stores/useAppViewStore.ts` |
 | 32+ | `src/stores/useAudioSettingsStore.ts` |
+| 32+ | `src/stores/useOnlineProviderAccountStore.ts` |
 | 32+ | `src/stores/useThemeSettingsStore.ts` |
 | 32+ | `src/types/localLibrary.ts` |
 | 32+ | `src/utils/coverUrl.ts` |
@@ -120,6 +121,7 @@
 - `dev/probes/subtitleDualRow.probe.tsx`
 - `dev/probes/themePark.probe.tsx`
 - `dev/probes/trackTitleNavigator.probe.tsx`
+- `dev/probes/tvLyrics.probe.tsx`
 - `dev/probes/visualizerMemory.probe.tsx`
 - `dev/probes/wallToolsIsland.probe.tsx`
 - `dev/probes/wallpaperEntryConfirm.probe.tsx`

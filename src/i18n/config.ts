@@ -4,25 +4,8 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from './locales/en.ts';
 import zhCN from './locales/zh-CN.ts';
 import ind from './locales/in.ts';
+import { flattenLocale } from './flattenLocale';
 import { resolveMissingTranslation } from './missingTranslation';
-
-/*
- * Hardcoded Chinese fallback dictionary.
- * Flattened at build-time from zh-CN.ts so every key has a Chinese fallback
- * baked directly into the JS bundle — no dependency on i18next resource loading.
- */
-function flattenLocale(obj: Record<string, any>, prefix = ''): Record<string, string> {
-  let result: Record<string, string> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    if (typeof value === 'object' && value !== null) {
-      result = { ...result, ...flattenLocale(value, path) };
-    } else {
-      result[path] = String(value);
-    }
-  }
-  return result;
-}
 
 const ZH_FALLBACKS: Record<string, string> = flattenLocale(zhCN);
 
