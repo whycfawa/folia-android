@@ -1,5 +1,16 @@
 # Project Skills
 
+## Agent Quick Card
+
+- **Primary Android product**: root Vite/React renderer plus the `android/` Capacitor host.
+- **TV entry**: `tv.html` and `src/tv/`; do not treat the regular mobile renderer as the TV surface.
+- **Development**: `npm run dev` for the main app; `npm run dev:tv` for the TV entry.
+- **Checks**: `npm run typecheck` and `npm run test:unit`; use `npm run codemap:check` when changing module structure.
+- **Android debug build**: `npm run build:android:debug`; for TV use `npm run build:android:tv:debug`.
+- **UI changes**: run the relevant `npm run test:component` or `npm run test:ui` suite; device/emulator testing is required for D-pad, focus, and TV runtime behavior.
+- **Search skip**: `dist/`, `node_modules/`, `android/build/`, `android/.gradle/`, and generated assets.
+- **Read only the relevant project skill**: the skills below are loaded by trigger, not all at once.
+
 本仓库不再把项目规则直接堆在 `AGENTS.md` 中，而是改为按 skill 组织。
 
 使用方式：
