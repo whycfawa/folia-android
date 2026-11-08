@@ -10,6 +10,7 @@ import { useStageSettingsStore } from '../../stores/useStageSettingsStore';
 import { useLibraryWallLookStore } from '../../stores/useLibraryWallLookStore';
 import { useLatticeSettingsStore } from '../../stores/useLatticeSettingsStore';
 import { usePlayerChromeSettingsStore } from '../../stores/usePlayerChromeSettingsStore';
+import { useScratchpadSettingsStore } from '../../stores/useScratchpadSettingsStore';
 
 // src/services/obs/visualSettingsConfig.ts
 // Everything compressConfig serializes except the theme. Reads the live settings store, so both
@@ -48,6 +49,8 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     // several renderers, so a web overlay without it animates where the main window does not.
     staticMode: storeThemeSettings.staticMode,
     visualizerOpacity: storeVisualizer.visualizerOpacity,
+    // 歌词画布的分辨率与抗锯齿：OBS 页面读不到本机的设置，只能经配置码带过去（用户 2026-11-08 定，只带 OBS 页面看得到的）。
+    lyricRenderQuality: storeVisualizer.lyricRenderQuality,
     hidePlayerTranslationSubtitle: storeTypographySettings.hidePlayerTranslationSubtitle,
     showSubtitleTranslation: storeTypographySettings.showSubtitleTranslation,
     subtitleContentMode: storeTypographySettings.subtitleContentMode,
@@ -128,6 +131,9 @@ export function buildVisualSettingsConfig(): Record<string, unknown> {
     // The frosted bar behind the player page's titlebar: a look of the player page, no user exception.
     // The OBS overlay draws no titlebar and ignores it; it rides along so a copied look keeps it.
     playerHeaderBlur: usePlayerChromeSettingsStore.getState().playerHeaderBlur,
+    // How the scratchpad's side tab looks while the pointer is away: a look of the library chrome, no user
+    // exception, so it travels with a shared look. The OBS overlay draws no scratchpad and ignores it.
+    scratchpadHandleStyle: useScratchpadSettingsStore.getState().handleStyle,
   };
 }
 

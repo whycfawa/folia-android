@@ -16,7 +16,10 @@ import {
 } from '../types';
 import { normalizeRandomVisualizerModes } from './randomVisualizerModes';
 import { normalizeLumiereTuning } from './lumiereTuning';
-import { temperaPostProcessCompressionDefault } from '../services/temperaTuningDefaults';
+import { normalizeLyricRenderQuality } from './lyricRenderQuality';
+
+/** 配置的一层字段，按名字读写；新加的字段用它，不再往 any 上加。 */
+type ConfigFields = Record<string, unknown>;
 
 // src/utils/appearanceCodec.ts
 // The shareable appearance config codec: theme + visual settings <-> the minified `folia-theme://`
@@ -543,6 +546,8 @@ export const compressConfig = (config: any): string => {
     if (config.disableVisualizerVignette !== undefined) minified.dvv = config.disableVisualizerVignette;
     if (config.staticMode !== undefined) minified.stm = config.staticMode;
     if (config.visualizerOpacity !== undefined) minified.vo = config.visualizerOpacity;
+    // 新字段按类型写（config、minified 是 any，老字段的写法是旧账）
+    if ((config as ConfigFields).lyricRenderQuality !== undefined) (minified as ConfigFields).lrq = (config as ConfigFields).lyricRenderQuality;
     if (config.hidePlayerTranslationSubtitle !== undefined) minified.hpts = config.hidePlayerTranslationSubtitle;
     if (config.showSubtitleTranslation !== undefined) minified.sst = config.showSubtitleTranslation;
     if (config.subtitleContentMode !== undefined) minified.scm = config.subtitleContentMode;
@@ -606,6 +611,7 @@ export const compressConfig = (config: any): string => {
     if (config.libraryWallSeamDirection !== undefined) minified.lwsd = config.libraryWallSeamDirection;
     if (config.latticeBadgeCurrentOnly !== undefined) minified.lbco = config.latticeBadgeCurrentOnly;
     if (config.playerHeaderBlur !== undefined) minified.phb = config.playerHeaderBlur;
+    if (config.scratchpadHandleStyle !== undefined) minified.sphs = config.scratchpadHandleStyle;
 
     const jsonStr = JSON.stringify(minified);
     const bytes = new TextEncoder().encode(jsonStr);
@@ -680,7 +686,9 @@ export const decompressConfig = (str: string): any => {
         || parsed.lwsd !== undefined
         // Numbering only the playing song on both tile walls (#930), for the same reason.
         || parsed.lbco !== undefined
-        || parsed.phb !== undefined;
+        || parsed.phb !== undefined
+        // The scratchpad side tab's resting look, for the same reason.
+        || parsed.sphs !== undefined;
     if (isMinified) {
         const decompressed: any = {};
         if (parsed.t) {
@@ -699,6 +707,8 @@ export const decompressConfig = (str: string): any => {
         if (parsed.dvv !== undefined) decompressed.disableVisualizerVignette = parsed.dvv;
         if (parsed.stm !== undefined) decompressed.staticMode = parsed.stm;
         if (parsed.vo !== undefined) decompressed.visualizerOpacity = parsed.vo;
+        const lrq: unknown = (parsed as { lrq?: unknown }).lrq;
+        if (lrq !== undefined) (decompressed as Record<string, unknown>).lyricRenderQuality = normalizeLyricRenderQuality(lrq);
         if (parsed.hpts !== undefined) decompressed.hidePlayerTranslationSubtitle = parsed.hpts;
         if (parsed.sst !== undefined) decompressed.showSubtitleTranslation = parsed.sst;
         if (parsed.scm !== undefined) decompressed.subtitleContentMode = parsed.scm;
@@ -761,6 +771,7 @@ export const decompressConfig = (str: string): any => {
         if (parsed.lwsd !== undefined) decompressed.libraryWallSeamDirection = parsed.lwsd;
         if (parsed.lbco !== undefined) decompressed.latticeBadgeCurrentOnly = parsed.lbco;
         if (parsed.phb !== undefined) decompressed.playerHeaderBlur = parsed.phb;
+        if (parsed.sphs !== undefined) decompressed.scratchpadHandleStyle = parsed.sphs;
 
         return decompressed;
     } else {
@@ -769,7 +780,7 @@ export const decompressConfig = (str: string): any => {
         const validKeys = [
             'theme', 'visualizerMode', 'randomVisualizerModePerSong', 'randomVisualizerModes', 'visualizerBackgroundMode', 'backgroundOpacity',
             'useCoverColorBg', 'disableVisualizerGeometricBackground', 'disableVisualizerVignette', 'staticMode',
-            'visualizerOpacity', 'hidePlayerTranslationSubtitle', 'showSubtitleTranslation', 'subtitleContentMode',
+            'visualizerOpacity', 'lyricRenderQuality', 'hidePlayerTranslationSubtitle', 'showSubtitleTranslation', 'subtitleContentMode',
             'subtitleOverlayLayout', 'subtitleOverlayBackground', 'subtitleUpcomingLyricsBlur', 'subtitleOverlayOpacity',
             'showHarmonySubtitle', 'harmonySubtitleBackground',
             'lyricsFontStyle', 'lyricsFontScale', 'lyricsFontWeight', 'lyricsFontFallbackFamilies',
@@ -787,6 +798,7 @@ export const decompressConfig = (str: string): any => {
             'libraryWallSeamDirection',
             'latticeBadgeCurrentOnly',
             'playerHeaderBlur',
+            'scratchpadHandleStyle',
         ];
         const hasValidKey = validKeys.some(k => parsed[k] !== undefined);
         if (!hasValidKey) {

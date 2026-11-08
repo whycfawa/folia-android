@@ -2,7 +2,7 @@ import type { ProviderExternalPlaybackStatus } from '../../types/onlineMusic';
 import type { SongResult } from '../../types';
 import { PlayerState } from '../../types';
 import { usePlaybackStore, setAudioSrc, setDuration, setPlaybackRoute, setPlayerState } from '../../stores/usePlaybackStore';
-import { getPlaybackSongKey } from '../../utils/appPlaybackGuards';
+import { getOnlineProviderIdForSong, getPlaybackSongKey } from '../../utils/appPlaybackGuards';
 import { createExternalClock } from './externalClock';
 import { setExternalRouteMedia } from '../hifi/hifiMediaShim';
 import { leaveHifiRoute } from '../hifi/hifiRouteGuard';
@@ -29,6 +29,12 @@ const STATUS_RETRY_INTERVAL_MS = 2000;
 const MAX_SAMPLE_AGE_SEC = 1;
 /** A player that stopped this close to the length has finished the track. */
 const END_TOLERANCE_SEC = 0.75;
+/**
+ * A window that handed its player over is destroyed once its replacement shows, a second or two
+ * later. Still here after this long, it was not replaced (the main process refused or gave up the
+ * rebuild): it follows the player again.
+ */
+const HANDOVER_RECLAIM_MS = 10_000;
 
 export type ExternalPlaybackEvent =
     | { type: 'status' }
@@ -55,6 +61,8 @@ type ExternalSession = {
     ended: boolean;
     /** Set when the player moved to a track this app did not ask for. */
     foreign: boolean;
+    /** The player now belongs to the window replacing this one: answers are no longer acted on. */
+    handedOver: boolean;
     preparedQueueKey: string;
     positionRevision: number;
     seekPending: boolean;
@@ -66,6 +74,13 @@ export const externalMediaShim = new MediaShim('external:');
 let session: ExternalSession | null = null;
 let attemptCounter = 0;
 let timer: ReturnType<typeof setTimeout> | null = null;
+/** Takes a handed-over player back when the window was not replaced (`HANDOVER_RECLAIM_MS`). */
+let reclaimTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * This window was asked to hand over while it was still restoring the snapshot it was handed: the
+ * take-over that restore ends with lands handed over (`handOverExternalPlaybackDuringRestore`).
+ */
+let handOverOnAdoption = false;
 let pollRunning = false;
 let installed = false;
 let ownWriteDepth = 0;
@@ -103,7 +118,7 @@ export const isExternalPlaybackSounding = () => isExternalRoute() && session?.an
 
 /** Background reads wait for actual player progress, not an optimistic playing flag. */
 export const isExternalPlaybackReadyForPrefetch = (song: SongResult) => isExternalRoute()
-    && session?.songKey === getPlaybackSongKey(song) && session.announced
+    && session?.songKey === getPlaybackSongKey(song) && session.announced && !session.handedOver
     && session.prefetchReady && !session.seeking && !session.seekPending;
 
 /** The extrapolated position of the external player's track, in seconds. */
@@ -210,7 +225,7 @@ const markEnded = (positionSec: number) => {
 };
 
 const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number) => {
-    if (!session) return;
+    if (!session || session.handedOver) return;
     const current = session;
     const positionSec = status.positionMs / 1000;
     // A late completion belonging to the previous song cannot fill or finish the new session.
@@ -302,7 +317,7 @@ const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number
 
 async function poll(): Promise<void> {
     const current = session;
-    if (!current || pollRunning || !isExternalRoute()) return;
+    if (!current || current.handedOver || pollRunning || !isExternalRoute()) return;
     if (current.seekPending) { schedulePoll(STATUS_INTERVAL_MS); return; }
     const positionRevision = current.positionRevision;
     pollRunning = true;
@@ -315,7 +330,8 @@ async function poll(): Promise<void> {
         applyStatus(status, (startedAt + performance.now()) / 2);
         failureNoted = false;
     } catch (error) {
-        if (session !== current || !isExternalRoute() || current.positionRevision !== positionRevision) return;
+        // Handed over meanwhile: a failed answer says nothing this window acts on either.
+        if (session !== current || current.handedOver || !isExternalRoute() || current.positionRevision !== positionRevision) return;
         delay = STATUS_RETRY_INTERVAL_MS;
         if (!failureNoted) {
             failureNoted = true;
@@ -327,7 +343,7 @@ async function poll(): Promise<void> {
         if (current.playing || current.starting) markPaused(current.clock.read());
     } finally {
         pollRunning = false;
-        if (session === current && isExternalRoute()) schedulePoll(delay);
+        if (session === current && !current.handedOver && isExternalRoute()) schedulePoll(delay);
     }
 }
 
@@ -378,11 +394,19 @@ export function previewExternalPlaybackVolume(volume: number): void {
     setExternalPlaybackVolume(useAudioSettingsStore.getState().isMuted ? 0 : Math.min(1, Math.max(0, volume)));
 }
 
+/**
+ * Whether two songs play in the same external player. Each provider steers a player of its own, so
+ * a song of another provider never replaces the track sounding in this one.
+ */
+const playsInSamePlayer = (a: SongResult, b: SongResult) => getOnlineProviderIdForSong(a) === getOnlineProviderIdForSong(b);
+
 /** Starts a track in the external player and puts the app on that route. */
 export async function beginExternalPlayback(song: SongResult, startSec = 0): Promise<void> {
     if (isExternalRoute()) {
-        // Already on the route: replacing the track is one call, and the old clock must not speak
-        // for the new song while it does.
+        // Already on the route: within the same player replacing the track is one call, and the old
+        // clock must not speak for the new song while it does. A song of another provider starts in
+        // another player, which leaves the old one sounding: that one is stopped first.
+        if (session && !playsInSamePlayer(session.song, song)) stopExternalPlayback('another player takes the song');
     } else if (usePlaybackStore.getState().playbackRoute === 'hifi') {
         // mpv must give the song up before the other player starts, or both sound at once.
         leaveHifiRoute('external player');
@@ -395,7 +419,7 @@ export async function beginExternalPlayback(song: SongResult, startSec = 0): Pro
     clock.sync({ positionSec: Math.max(0, startSec), paused: true });
     session = {
         song, songKey, attempt, clock, durationSec,
-        announced: false, playing: false, starting: false, sampledPosition: Math.max(0, startSec), prefetchReady: false, live: false, ended: false, foreign: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false,
+        announced: false, playing: false, starting: false, sampledPosition: Math.max(0, startSec), prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false,
     };
     failureNoted = false;
     externalMediaShim.beginTrack(songKey);
@@ -420,7 +444,17 @@ export async function beginExternalPlayback(song: SongResult, startSec = 0): Pro
         }
         throw error;
     }
-    if (session?.attempt !== attempt || !isExternalRoute()) return;
+    if (session?.attempt !== attempt || !isExternalRoute()) {
+        // Overtaken while the player was starting it. A newer song in the same player replaces it
+        // there; otherwise the stop sent when it was overtaken may have reached the player before
+        // this start did, and the track would sound with nobody following it: it is stopped again.
+        if (!session || !playsInSamePlayer(session.song, song)) {
+            void omni.pauseExternalPlayback(song).catch(error => {
+                console.warn('[ExternalPlayback] an overtaken start could not be stopped', error);
+            });
+        }
+        return;
+    }
     // The level sent ahead may have landed on a page the companion then replaced (it moves to the
     // account's storefront between requests): once the player has the song, send the level again.
     volumeEpoch += 1;
@@ -436,6 +470,148 @@ export async function beginExternalPlayback(song: SongResult, startSec = 0): Pro
         console.warn('[ExternalPlayback] Initial player status unavailable', error);
     }
     if (session?.attempt === attempt && isExternalRoute()) schedulePoll(STATUS_INTERVAL_MS);
+}
+
+/**
+ * Takes over a track the player is already sounding (a window rebuild hands the song over; the
+ * player outlives the window). The player is asked once: with `song` loaded, the route becomes the
+ * external one, the clock and the polling attach to it and it is announced as it stands, playing or
+ * paused. With another track or none, nothing is taken and the caller shows the song as it would
+ * after a restart: paused. Never starts the player.
+ */
+export async function adoptExternalPlayback(song: SongResult): Promise<boolean> {
+    installExternalPlayback();
+    if (!omni.canPlayExternally(song)) return false;
+    stopTimer();
+    const attempt = ++attemptCounter;
+    const songKey = getPlaybackSongKey(song);
+    const durationSec = validDurationSec(song.durationMs) ?? null;
+    const clock = createExternalClock();
+    clock.setDuration(durationSec);
+    clock.sync({ positionSec: 0, paused: true });
+    session = {
+        song, songKey, attempt, clock, durationSec,
+        announced: false, playing: false, starting: false, sampledPosition: null, prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false,
+    };
+    failureNoted = false;
+    externalMediaShim.beginTrack(songKey);
+    withoutRouteGuard(() => {
+        setAudioSrc(null);
+        setPlaybackRoute('external');
+    });
+    const sampledAt = performance.now();
+    let status: ProviderExternalPlaybackStatus | null = null;
+    try {
+        status = await omni.getExternalPlaybackStatus(song);
+    } catch (error) {
+        console.warn('[ExternalPlayback] the player could not be asked what it has', error);
+    }
+    if (session?.attempt !== attempt) return false;
+    if (!status?.mediaId || !omni.isExternalPlaybackStatusForSong(song, status)) {
+        // Not the song: the route goes back to the app's engine. What the player has (another track
+        // the old window's queue moved it to, or nothing) is nobody's now; the caller stops it.
+        session = null;
+        externalMediaShim.reset();
+        withoutRouteGuard(() => setPlaybackRoute('web'));
+        emit({ type: 'status' });
+        console.info('[ExternalPlayback] the player has no track to take over', { songKey, hasTrack: Boolean(status?.mediaId) });
+        return false;
+    }
+    omni.adoptExternalPlayback(song);
+    // The level it sounds at was set by the window that is gone; said again so it is known here.
+    volumeEpoch += 1;
+    appliedVolume = null;
+    volumeFailureNoted = false;
+    setExternalPlaybackVolume();
+    applyStatus(status, sampledAt);
+    announceExternalPlayback();
+    if (session?.attempt !== attempt || !isExternalRoute()) return true;
+    // Announcing shows a playing player; a paused one is said here rather than on the next answer.
+    if (!session.playing && !session.ended) markPaused(session.clock.read());
+    if (handOverOnAdoption) {
+        // The window replacing this one has the snapshot and takes the player; shown here as it sounds,
+        // not followed, and taken back with the reclaim if that window never came.
+        handOverOnAdoption = false;
+        session.handedOver = true;
+        console.info('[ExternalPlayback] took the player over already handed on to the next window', { songKey });
+        return true;
+    }
+    schedulePoll(STATUS_INTERVAL_MS);
+    console.info('[ExternalPlayback] took the running player over', { songKey, playing: status.isPlaying });
+    return true;
+}
+
+const stopReclaimTimer = () => {
+    if (reclaimTimer !== null) clearTimeout(reclaimTimer);
+    reclaimTimer = null;
+};
+
+const startReclaimTimer = () => {
+    stopReclaimTimer();
+    reclaimTimer = setTimeout(() => {
+        reclaimTimer = null;
+        reclaimExternalPlayback('the window was not replaced');
+    }, HANDOVER_RECLAIM_MS);
+};
+
+/**
+ * This window is about to be replaced and has handed its playback over (the snapshot is taken):
+ * the player sounds on for the next window to adopt. Polling stops and the answers already in
+ * flight are not acted on, so a track ending or changing meanwhile moves nothing here. The player
+ * itself is not touched. A window still here `HANDOVER_RECLAIM_MS` later takes it back.
+ */
+export function handOverExternalPlayback(): void {
+    const current = session;
+    if (!current) return;
+    stopTimer();
+    current.handedOver = true;
+    startReclaimTimer();
+    console.info('[ExternalPlayback] handed the player over to the next window', { songKey: current.songKey });
+}
+
+/**
+ * This window is replaced before it finished restoring the snapshot it was handed, and passes that
+ * snapshot on as it came: the player goes on to the next window with it. A take-over already done is
+ * handed over now; one still on its way, or not begun yet, lands handed over. Either way this window
+ * takes the player back `HANDOVER_RECLAIM_MS` later if it was not replaced.
+ */
+export function handOverExternalPlaybackDuringRestore(): void {
+    if (session?.announced) {
+        handOverExternalPlayback();
+        return;
+    }
+    handOverOnAdoption = true;
+    startReclaimTimer();
+    console.info('[ExternalPlayback] handing the player on before taking it over: the window is replaced while it restores');
+}
+
+/**
+ * The rebuild the playback was handed over for did not happen (refused, given up): the player is
+ * this window's again, and it is followed from its next answer on, an end or another track included.
+ */
+export function reclaimExternalPlayback(reason: string): void {
+    stopReclaimTimer();
+    handOverOnAdoption = false;
+    const current = session;
+    if (!current?.handedOver) return;
+    current.handedOver = false;
+    console.info('[ExternalPlayback] took the player back: the window was not replaced', { reason, songKey: current.songKey });
+    if (isExternalRoute()) schedulePoll(0);
+}
+
+/**
+ * A handed-over song this window did not take over (another song was asked for first, its restore
+ * failed, or the player had something else): the player is nobody's, so it is stopped. Nothing
+ * happens while an external session of the same player is live here: the player is that session's
+ * then. A session in another provider's player leaves this one nobody's all the same.
+ */
+export function releaseUnclaimedExternalTrack(song: SongResult, reason: string): void {
+    if (!omni.canPlayExternally(song)) return;
+    if (isExternalRoute() && session && playsInSamePlayer(session.song, song)) return;
+    console.info('[ExternalPlayback] stopping the player nobody took over', { reason, songKey: getPlaybackSongKey(song) });
+    void omni.pauseExternalPlayback(song).catch(error => {
+        console.warn('[ExternalPlayback] the player nobody took over could not be paused', error);
+    });
 }
 
 /**
@@ -468,11 +644,16 @@ export function announceExternalPlayback(): void {
 export function stopExternalPlayback(reason: string): void {
     const current = session;
     stopTimer();
+    stopReclaimTimer();
+    handOverOnAdoption = false;
     session = null;
     externalMediaShim.reset();
     if (!current) return;
     emit({ type: 'status' });
     console.info('[ExternalPlayback] left the external player', { reason, songKey: current.songKey });
+    // Stopped even when handed over: nothing of a window's teardown comes here, only a listener's
+    // stop or another song in this window, and a window that was not replaced after all would
+    // otherwise leave the player sounding with nobody to stop it.
     void omni.pauseExternalPlayback(current.song).catch(error => {
         console.warn('[ExternalPlayback] the player could not be paused as the route is left', error);
     });

@@ -96,9 +96,9 @@ const {
   getReleaseUrl,
   getUpdateDiscoveryConfig,
   getUpdateProviderConfig,
-  parseUpdateMetadataVersion,
   resolveReleaseChannel,
 } = require('./updateChannels.cjs');
+const { discoverUpdateVersion, settleWithin } = require('./updateCheckMirrors.cjs');
 const { resolveCacheLimit, selectEvictions } = require('./audioCachePrune.cjs');
 const { removeAudioCacheFileOfSize } = require('./audioCacheRemove.cjs');
 const { createAnalysisHost } = require('./analysis/host.cjs');
@@ -425,6 +425,21 @@ const spotifyApiBridge = createSpotifyApiBridge({ store, safeStorage,
   language: () => getMainLocaleKey(),
   audioDirectory: () => path.join(getConfiguredCacheDirectory(), 'spotify'),
   onAudioKept: limitBytes => pruneMediaCache(limitBytes),
+  // Soloist (the program the person downloads) keeps its pairing and its cache under the app's data.
+  soloistPaths: {
+    data: () => path.join(app.getPath('userData'), 'soloist', 'data'),
+    cache: () => path.join(app.getPath('userData'), 'soloist', 'cache'),
+  },
+  chooseSoloistFile: async () => {
+    const owner = BrowserWindow.getFocusedWindow();
+    const options = {
+      properties: ['openFile'],
+      defaultPath: app.getPath('downloads'),
+      filters: process.platform === 'win32' ? [{ name: 'Soloist', extensions: ['exe'] }] : [],
+    };
+    const chosen = owner ? await dialog.showOpenDialog(owner, options) : await dialog.showOpenDialog(options);
+    return chosen.canceled ? null : chosen.filePaths[0] ?? null;
+  },
 });
 const qqAuthSessionRepository = createQqAuthSessionRepository({ store, safeStorage });
 // AI API keys are sealed with safeStorage instead of sitting in config.json as plaintext, and never
@@ -588,16 +603,20 @@ function isWindowsWallpaperTransparentSupported() {
 // The user preference (TRANSPARENT_PLAYER_BACKGROUND) is independent of what the current
 // window can render: wallpaper mode on the classic desktop derives an opaque window. After an
 // attach reports a different architecture than the window was built for, bring them back in
-// sync with one rebuild.
+// sync with one rebuild. This often lands right after the rebuild that entered wallpaper mode,
+// while the new page is still restoring: the playback handoff carries the session on regardless.
 function reconcileWindowsWallpaperWindowTransparency() {
-  if (process.platform !== 'win32' || !isWindowsWallpaperMode() || !mainWindow || mainWindow.isDestroyed()) {
+  const needsRebuild = () => {
+    if (process.platform !== 'win32' || !isWindowsWallpaperMode() || !mainWindow || mainWindow.isDestroyed()) {
+      return false;
+    }
+    const desiredTransparent = isTransparentPlayerBackgroundEnabled() && isWindowsWallpaperTransparentSupported();
+    return mainWindow.__wallpaperWindowTransparent !== desiredTransparent;
+  };
+  if (!needsRebuild()) {
     return;
   }
-  const desiredTransparent = isTransparentPlayerBackgroundEnabled() && isWindowsWallpaperTransparentSupported();
-  if (mainWindow.__wallpaperWindowTransparent === desiredTransparent) {
-    return;
-  }
-  recreateMainWindowWithTransparencyMode(isTransparentPlayerBackgroundEnabled(), null);
+  void rebuildMainWindowWithPlaybackHandoff('wallpaper window transparency', needsRebuild);
 }
 
 // The helper ships as resources/folia-wallpaper-helper.exe (built by
@@ -691,7 +710,7 @@ const windowsWallpaper = windowsWallpaperModule.createWindowsWallpaperController
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('wallpaper-mode-changed', getPublicSettings());
     }
-    recreateMainWindowWithTransparencyMode(isTransparentPlayerBackgroundEnabled(), null);
+    void rebuildMainWindowWithPlaybackHandoff('wallpaper mode given up');
   },
   onReattachNeeded: () => {
     rebuildWindowsWallpaperSession();
@@ -2568,12 +2587,21 @@ const backgroundThrottling = createBackgroundThrottling({
 // from the fragment timeline once recording ends.
 const videoExportFileWriter = createVideoExportFileWriter({ finalizeFile: finalizeVideoExportFile });
 let autoUpdater = null;
+// The updater's own check of GitHub is running: its failure is handled where it was started (the
+// mirrors get asked), so the updater's 'error' event leaves the state alone meanwhile.
+let updaterCheckRunning = false;
+// The updater's requests have no working timeout in Electron (it hangs its timer on a 'socket' event
+// Electron's net requests never fire), so a stalled connection to GitHub would hold the check forever.
+const UPDATER_CHECK_TIMEOUT_MS = 20000;
 // Backed by the settings store so a handoff survives a full process relaunch (wallpaper mode)
 const windowPlaybackHandoffStore = createWindowPlaybackHandoffStore({
   storage: store,
   ttlMs: 60_000,
 });
 const pendingWindowPlaybackHandoffRequests = new Map();
+// When the main window was last asked for its playback: a window that read a handoff after that and
+// never answered was asked before its page listened (see recreateMainWindowWithTransparencyMode).
+let lastWindowPlaybackHandoffRequestAt = Number.POSITIVE_INFINITY;
 let pendingWindowStateSave = null;
 let windowStateSaveTimer = null;
 let wallpaperModeRelaunchTimer = null;
@@ -2869,11 +2897,11 @@ const displaySleepBlocker = createDisplaySleepBlocker(powerSaveBlocker);
 // own estimators whenever they answer null, which is what the web build always gets.
 // The developer debug module: the runtime log and the memory monitor, both switched from
 // Settings > Developer. Created BEFORE the analysis host, which logs through it.
-createDebugHost({ app, ipcMain, store, BrowserWindow });
+createDebugHost({ app, ipcMain, store, BrowserWindow, isTrustedSender: isFirstPartyWindowContents });
 logLinuxVulkanChoice(linuxVulkan, linuxGraphicsMode);
 
 const analysisHost = createAnalysisHost({
-  app, ipcMain, getModelsDir: getBundledModelsDirectory,
+  app, ipcMain, getModelsDir: getBundledModelsDirectory, isTrustedSender: isFirstPartyWindowContents,
 });
 
 function buildPlaybackSyncBridgeStatus() {
@@ -3625,6 +3653,47 @@ function isTrustedRemoteControlContents(webContents) {
   );
 }
 
+// The first-party predicate: the two windows that run the app with the preload - the main window and
+// the remote-control window, which runs the same app and therefore the same online providers.
+// Comparing webContents identity rejects every other window; it cannot stop script already running
+// inside a trusted window - that is the CSP and preload layer's job, not this check's. A function
+// declaration so that handlers registered anywhere in this file can name it.
+function isFirstPartyWindowContents(event) {
+  return isTrustedMainWindowContents(event.sender) || isTrustedRemoteControlContents(event.sender);
+}
+
+// IPC 处理函数只给第一方窗口：别的来源直接拒（D605，登记在 dev/dedicatus/ipcChannels.mjs）。
+function firstParty(channel, handler) {
+  return createSenderGuardedHandler({ channel, isTrusted: isFirstPartyWindowContents, handler });
+}
+
+// 带 preload 的第一方窗口不开别的窗口，也不导航到应用以外的页面（D605 复核，2026-11-08）：window.open、
+// target="_blank"、中键点链接开出来的窗口会继承同一个 preload；窗口自己导航到外面的页面，那个页面同样带着
+// preload，还会被上面的判断当成第一方。外面的地址一律交给系统浏览器（openExternalUrl 只放行 http(s)）。
+function isolateFirstPartyWindow(win) {
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void openExternalUrl(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event, url) => {
+    if (isSameAppPage(win.webContents.getURL(), url)) return;
+    event.preventDefault();
+    void openExternalUrl(url);
+  });
+}
+
+// 应用自己的页面：开发时同一个源（http://localhost:3000），打包后同一个 index.html（file:，查询参数可以不同）。
+function isSameAppPage(currentUrl, nextUrl) {
+  try {
+    const current = new URL(currentUrl);
+    const next = new URL(nextUrl);
+    if (current.protocol === 'file:') return next.protocol === 'file:' && next.pathname === current.pathname;
+    return next.origin === current.origin;
+  } catch {
+    return false;
+  }
+}
+
 function getMainWindowUrl() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return '';
@@ -3966,6 +4035,11 @@ function isDevUpdatePreviewEnabled() {
   return process.env.ELECTRON_DEV === 'true' && process.env.FOLIA_DEV_UPDATE_PREVIEW === 'true';
 }
 
+// The preview's version as if GitHub could not be read and a mirror found it: the download then fails.
+function isDevUpdatePreviewGithubFailed() {
+  return isDevUpdatePreviewEnabled() && process.env.FOLIA_DEV_UPDATE_PREVIEW_GITHUB_FAILED === 'true';
+}
+
 // Builds a believable next patch version so the preview stays aligned with package metadata.
 function getDevUpdatePreviewVersion() {
   const currentVersion = normalizeVersion(app.getVersion());
@@ -4007,6 +4081,12 @@ const updateState = {
   error: null,
   lastCheckedAt: null,
   downloadProgress: null,
+  // Where the last found version came from: 'github', or 'mirror' when GitHub could not be read and a
+  // public proxy answered instead. The updater can only download what it has read from GitHub itself.
+  checkedVia: null,
+  // The last request to GitHub for this update (the check, or the download) failed: the settings
+  // page then offers the two network drives up front.
+  githubFailed: false,
 };
 
 function getUpdateStatus() {
@@ -4090,6 +4170,8 @@ function setupAutoUpdater() {
       error: null,
       lastCheckedAt: Date.now(),
       downloadProgress: null,
+      checkedVia: 'github',
+      githubFailed: false,
     });
   });
 
@@ -4101,6 +4183,8 @@ function setupAutoUpdater() {
       error: null,
       lastCheckedAt: Date.now(),
       downloadProgress: null,
+      checkedVia: 'github',
+      githubFailed: false,
     });
   });
 
@@ -4113,6 +4197,7 @@ function setupAutoUpdater() {
         transferred: progress.transferred,
         total: progress.total,
       },
+      githubFailed: false,
     });
   });
 
@@ -4122,16 +4207,31 @@ function setupAutoUpdater() {
       availableVersion: normalizeVersion(info?.version) || updateState.availableVersion,
       error: null,
       downloadProgress: null,
+      githubFailed: false,
     });
   });
 
   updater.on('error', (error) => {
+    if (updaterCheckRunning) {
+      return;
+    }
     setUpdateState({
       status: 'error',
       error: error instanceof Error ? error.message : String(error),
       downloadProgress: null,
+      githubFailed: true,
     });
   });
+}
+
+// Runs the updater's check of GitHub, waiting at most UPDATER_CHECK_TIMEOUT_MS for it. A check that
+// is given up on keeps running; the updater hands it to the next caller instead of starting another.
+function runUpdaterCheck(updater) {
+  updaterCheckRunning = true;
+  const check = Promise.resolve(updater.checkForUpdates()).finally(() => {
+    updaterCheckRunning = false;
+  });
+  return settleWithin(check, UPDATER_CHECK_TIMEOUT_MS, 'GitHub update check timed out.');
 }
 
 function configureAutoUpdaterChannel(updater) {
@@ -4147,7 +4247,9 @@ function configureAutoUpdaterChannel(updater) {
 
 async function downloadAvailableUpdate() {
   if (isDevUpdatePreviewEnabled()) {
-    setUpdateState({ status: 'downloaded', error: null, downloadProgress: null });
+    setUpdateState(isDevUpdatePreviewGithubFailed()
+      ? { status: 'error', error: 'net::ERR_CONNECTION_RESET', downloadProgress: null, githubFailed: true }
+      : { status: 'downloaded', error: null, downloadProgress: null });
     return getUpdateStatus();
   }
 
@@ -4168,9 +4270,24 @@ async function downloadAvailableUpdate() {
 
   if (!updateState.availableVersion) {
     await checkForUpdates({ manual: true });
+  } else if (updateState.checkedVia === 'mirror') {
+    // The version came through a proxy: the updater downloads only against metadata it has read
+    // from GitHub itself, so it reads it now. Failing here leaves the found version and the drives.
+    try {
+      updater.autoDownload = false;
+      await runUpdaterCheck(updater);
+    } catch (error) {
+      console.warn('[Updater] GitHub still unreachable before download', error);
+      setUpdateState({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+        downloadProgress: null,
+        githubFailed: true,
+      });
+    }
   }
 
-  if (!updateState.availableVersion) {
+  if (!updateState.availableVersion || updateState.checkedVia !== 'github') {
     return getUpdateStatus();
   }
 
@@ -4182,6 +4299,7 @@ async function downloadAvailableUpdate() {
       status: 'error',
       error: error instanceof Error ? error.message : String(error),
       downloadProgress: null,
+      githubFailed: true,
     });
   }
 
@@ -4198,6 +4316,8 @@ async function checkForUpdates({ manual = false } = {}) {
       error: null,
       lastCheckedAt: Date.now(),
       downloadProgress: null,
+      checkedVia: isDevUpdatePreviewGithubFailed() ? 'mirror' : 'github',
+      githubFailed: isDevUpdatePreviewGithubFailed(),
     });
     return getUpdateStatus();
   }
@@ -4228,20 +4348,36 @@ async function checkForUpdates({ manual = false } = {}) {
     }
 
     updater.autoDownload = getAutoUpdateEnabled();
-    await updater.checkForUpdates();
+    await runUpdaterCheck(updater);
   } catch (error) {
-    setUpdateState({
-      status: 'error',
-      error: error instanceof Error ? error.message : String(error),
-      lastCheckedAt: Date.now(),
-      downloadProgress: null,
-    });
+    // GitHub could not be read: the public proxies can still say whether there is a new version.
+    console.warn('[Updater] GitHub update check failed, asking the mirrors', error);
+    return checkForManualUpdateAvailability({ githubError: error });
   }
 
   return getUpdateStatus();
 }
 
-async function checkForManualUpdateAvailability() {
+// Reads one update metadata file through its own session, so refreshing proxy state cannot interrupt
+// playback, provider requests or other live connections on the default one.
+async function readUpdateMetadataText(url, signal) {
+  const ses = session.fromPartition('folia-update-check');
+  const response = await ses.fetch(url, {
+    headers: {
+      Accept: 'text/yaml, text/plain',
+      'User-Agent': `Folia/${app.getVersion()}`,
+    },
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Update metadata request to ${new URL(url).host} failed: ${response.status} ${response.statusText}`);
+  }
+  return response.text();
+}
+
+// Finds the newest version without the updater: from GitHub, then from the public proxies when GitHub
+// cannot be read. `githubError` says the updater has just failed to read GitHub, which is not tried again.
+async function checkForManualUpdateAvailability({ githubError = null } = {}) {
   const releaseChannel = getCurrentReleaseChannel();
   const discovery = getUpdateDiscoveryConfig(releaseChannel, FOLIA_GITHUB_REPOSITORY);
   if (!discovery) {
@@ -4249,54 +4385,38 @@ async function checkForManualUpdateAvailability() {
     return getUpdateStatus();
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
   setUpdateState({ status: 'checking', error: null, downloadProgress: null });
 
+  let found = null;
   try {
-    // Keep the startup check off the app's default session so refreshing proxy state cannot
-    // interrupt playback, provider requests, or other live connections.
     const ses = session.fromPartition('folia-update-check');
     await ses.setProxy({ mode: 'system' });
     await ses.forceReloadProxyConfig();
-    const response = await ses.fetch(discovery.url, {
-      headers: {
-        Accept: 'text/yaml, text/plain',
-        'User-Agent': `Folia/${app.getVersion()}`,
-      },
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`Update metadata request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const metadata = await response.text();
-    const latestVersion = parseUpdateMetadataVersion(metadata);
-    if (!latestVersion) {
-      throw new Error('Update metadata did not include a version.');
-    }
-
-    const hasUpdate = compareVersions(latestVersion, app.getVersion()) > 0;
-    setUpdateState({
-      status: hasUpdate ? 'available' : 'latest',
-      availableVersion: hasUpdate ? latestVersion : null,
-      updateUrl: hasUpdate
-        ? getReleaseUrl(releaseChannel.id, latestVersion, FOLIA_RELEASES_URL)
-        : FOLIA_RELEASES_URL,
-      error: null,
-      lastCheckedAt: Date.now(),
-      downloadProgress: null,
-    });
+    found = await discoverUpdateVersion({ githubUrl: discovery.url, readText: readUpdateMetadataText, githubError });
   } catch (error) {
     setUpdateState({
       status: 'error',
       error: error instanceof Error ? error.message : String(error),
       lastCheckedAt: Date.now(),
       downloadProgress: null,
+      githubFailed: true,
     });
-  } finally {
-    clearTimeout(timeout);
+    return getUpdateStatus();
   }
+
+  const hasUpdate = compareVersions(found.version, app.getVersion()) > 0;
+  setUpdateState({
+    status: hasUpdate ? 'available' : 'latest',
+    availableVersion: hasUpdate ? found.version : null,
+    updateUrl: hasUpdate
+      ? getReleaseUrl(releaseChannel.id, found.version, FOLIA_RELEASES_URL)
+      : FOLIA_RELEASES_URL,
+    error: null,
+    lastCheckedAt: Date.now(),
+    downloadProgress: null,
+    checkedVia: found.via,
+    githubFailed: found.via === 'mirror',
+  });
 
   return getUpdateStatus();
 }
@@ -5168,6 +5288,7 @@ function requestWindowPlaybackHandoff(timeoutMs = WINDOW_PLAYBACK_HANDOFF_REQUES
     });
 
     try {
+      lastWindowPlaybackHandoffRequestAt = Date.now();
       mainWindow.webContents.send('window-playback-handoff-requested', { requestId });
     } catch (error) {
       clearTimeout(timeoutId);
@@ -5175,6 +5296,43 @@ function requestWindowPlaybackHandoff(timeoutMs = WINDOW_PLAYBACK_HANDOFF_REQUES
       console.warn('[Electron] Failed to request window playback handoff', error);
       resolve(null);
     }
+  });
+}
+
+// Generation of the rebuilds the main process starts for reasons of its own: a newer one supersedes
+// one still waiting for the page's answer.
+let mainProcessWindowRebuildGeneration = 0;
+
+/**
+ * Rebuilds the main window for a reason of the main process's own (the desktop's transparency, the
+ * wallpaper helper given up). The page is asked for its playback first, like every other rebuild:
+ * the players outside the window (mpv, a provider's own player) outlive it and go on to the next
+ * window, never left sounding with nobody following them. `stillWanted` is asked again once the page
+ * has answered: the rebuild may not be needed anymore by then.
+ */
+async function rebuildMainWindowWithPlaybackHandoff(reason, stillWanted = () => true) {
+  mainProcessWindowRebuildGeneration += 1;
+  const generation = mainProcessWindowRebuildGeneration;
+  const handoff = await requestWindowPlaybackHandoff();
+  if (generation !== mainProcessWindowRebuildGeneration || !stillWanted()) {
+    console.log('[Electron] main window rebuild no longer needed', { reason });
+    return false;
+  }
+  console.log('[Electron] rebuilding the main window', { reason, withHandoff: Boolean(handoff) });
+  recreateMainWindowWithTransparencyMode(isTransparentPlayerBackgroundEnabled(), handoff);
+  return true;
+}
+
+// The players outside the window, which outlive it (a provider's companion or program of its own).
+// A rebuild that hands nothing on to the next window stops them: no window follows them any more, and
+// the window that did can no longer reach them once it is replaced (its requests are refused).
+function pauseExternalPlayersNobodyFollows(reason) {
+  console.log('[Electron] no window takes the playback over; pausing the players outside the window', { reason });
+  appleMusicClient.pauseIfRunning().catch((error) => {
+    console.warn('[Electron] the companion player could not be paused', error);
+  });
+  spotifyApiBridge.pauseSoloist().catch((error) => {
+    console.warn('[Electron] Soloist could not be paused', error);
   });
 }
 
@@ -5563,6 +5721,7 @@ function createRemoteControlWindow() {
   });
 
   remoteControlWindow = win;
+  isolateFirstPartyWindow(win);
   remoteControlQueueExpansion = null;
   remoteControlPointerInside = false;
   remoteControlMouseIgnored = false;
@@ -5877,6 +6036,7 @@ function createWindow(options = {}) {
   }
 
   mainWindow = win;
+  isolateFirstPartyWindow(win);
   backgroundThrottling.attach(win);
   ensureTray();
   setMainWindowSkipTaskbarEnabled(mainWindowSkipTaskbarEnabled);
@@ -5965,7 +6125,19 @@ function createWindow(options = {}) {
 
 function recreateMainWindowWithTransparencyMode(enabled, handoff = null) {
   store.set(TRANSPARENT_PLAYER_BACKGROUND_SETTING_KEY, Boolean(enabled));
-  rememberWindowPlaybackHandoff(handoff);
+  if (handoff) {
+    rememberWindowPlaybackHandoff(handoff);
+  } else if (windowPlaybackHandoffStore.carryForward(mainWindow, lastWindowPlaybackHandoffRequestAt)) {
+    // No answer from the window being replaced: it was asked before its page listened, then read the
+    // handoff of the rebuild before and is restoring it (a provider's player it takes over keeps
+    // sounding). The next window restores that one instead of starting with nothing.
+    console.log('[Electron] the replaced window never answered for its playback; passing on the handoff it read');
+  } else if (mainWindow && !windowPlaybackHandoffStore.peek()) {
+    // The window being replaced did not answer in time (busy, hung, gone) and the next one restores
+    // nothing: a provider's player it was following, or had already handed over, would sound on
+    // with nobody following it.
+    pauseExternalPlayersNobodyFollows('the window was rebuilt without a handoff');
+  }
 
   // Windows wallpaper mode: whatever window ends up as the main window must be re-attached —
   // the helper holds the old window's hwnd, which is about to be destroyed. Detach (graceful)
@@ -6211,6 +6383,8 @@ app.whenReady().then(async () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('wallpaper-mode-changed', getPublicSettings());
       }
+      // Not asked for a handoff: this window was created just above and its page plays nothing yet.
+      // eslint-disable-next-line dedicatus/window-rebuild-handoff -- the window was created just above and plays nothing yet
       recreateMainWindowWithTransparencyMode(isTransparentPlayerBackgroundEnabled(), null);
     }
   }
@@ -6495,9 +6669,9 @@ app.on('before-quit', (event) => {
 });
 
 // Settings Management IPC
-ipcMain.handle('window-set-native-theme', (event, themeSource) => {
+ipcMain.handle('window-set-native-theme', firstParty('window-set-native-theme', (event, themeSource) => {
   nativeTheme.themeSource = themeSource;
-});
+}));
 
 // Cache the main window's device pixel ratio so export window sizing can be
 // expressed in physical pixels (see resize-main-window / video-export-prepare-window).
@@ -6512,9 +6686,9 @@ ipcMain.handle('report-device-pixel-ratio', (event, ratio) => {
   }
 });
 
-ipcMain.handle('get-settings', () => {
+ipcMain.handle('get-settings', firstParty('get-settings', () => {
   return getPublicSettings();
-});
+}));
 
 // The GPU choice this run started with and the adapter Chromium took; null off Windows, where the
 // setting is not offered, or when the asking page is not the main window.
@@ -6571,15 +6745,15 @@ ipcMain.handle('playback-display-sleep-set-active', (event, active) => {
   return displaySleepBlocker.setActive(Boolean(active));
 });
 
-ipcMain.handle('set-app-locale', (event, localeKey) => {
+ipcMain.handle('set-app-locale', firstParty('set-app-locale', (event, localeKey) => {
   if (localeKey === 'zh-CN' || localeKey === 'zh-TW' || localeKey === 'en' || localeKey === 'in' || localeKey === 'vi') {
     store.set(APP_LOCALE_KEY, localeKey);
     refreshTrayMenu();
   }
   return localeKey;
-});
+}));
 
-ipcMain.handle('save-settings', (event, key, value) => {
+ipcMain.handle('save-settings', firstParty('save-settings', (event, key, value) => {
   // electron-store's set() also accepts an object of key/value pairs, which would bypass the
   // per-key guards below.
   if (typeof key !== 'string') {
@@ -6743,7 +6917,7 @@ ipcMain.handle('save-settings', (event, key, value) => {
         });
       });
     } else {
-      setUpdateState({ status: 'disabled', error: null, availableVersion: null, downloadProgress: null });
+      setUpdateState({ status: 'disabled', error: null, availableVersion: null, downloadProgress: null, checkedVia: null, githubFailed: false });
     }
   }
 
@@ -6771,6 +6945,8 @@ ipcMain.handle('save-settings', (event, key, value) => {
       updateUrl: FOLIA_RELEASES_URL,
       error: null,
       downloadProgress: null,
+      checkedVia: null,
+      githubFailed: false,
     });
 
     if (getUpdateCheckEnabled() && isPackagedUpdateRuntime() && isUpdateCheckSupported()) {
@@ -6837,16 +7013,16 @@ ipcMain.handle('save-settings', (event, key, value) => {
   }
 
   return getPublicSettings();
-});
+}));
 
-ipcMain.handle('get-cache-directory', () => {
+ipcMain.handle('get-cache-directory', firstParty('get-cache-directory', () => {
   return {
     path: getConfiguredCacheDirectory(),
     isDefault: !store.has(CACHE_DIRECTORY_SETTING_KEY),
   };
-});
+}));
 
-ipcMain.handle('choose-cache-directory', async () => {
+ipcMain.handle('choose-cache-directory', firstParty('choose-cache-directory', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return {
       canceled: true,
@@ -6877,15 +7053,15 @@ ipcMain.handle('choose-cache-directory', async () => {
     path: selectedPath,
     isDefault: false,
   };
-});
+}));
 
-ipcMain.handle('reset-cache-directory', () => {
+ipcMain.handle('reset-cache-directory', firstParty('reset-cache-directory', () => {
   store.delete(CACHE_DIRECTORY_SETTING_KEY);
   return {
     path: getConfiguredCacheDirectory(),
     isDefault: true,
   };
-});
+}));
 
 // What earlier versions downloaded, gone from this machine: up to 330MB nothing reads now. Once per
 // launch, off the startup path; a file that will not go (in use, read-only) is tried again next time.
@@ -6910,7 +7086,7 @@ const getLegacyModelsDirectory = () => {
   return ours.includes(dir) ? null : dir;
 };
 
-ipcMain.handle('legacy-models-check', async () => {
+ipcMain.handle('legacy-models-check', firstParty('legacy-models-check', async () => {
   const dir = getLegacyModelsDirectory();
   if (!dir) {
     store.delete(LEGACY_MODELS_DIRECTORY_SETTING_KEY);
@@ -6924,9 +7100,9 @@ ipcMain.handle('legacy-models-check', async () => {
     return null;
   }
   return { dir, count: paths.length, bytes };
-});
+}));
 
-ipcMain.handle('legacy-models-resolve', async (_event, action) => {
+ipcMain.handle('legacy-models-resolve', firstParty('legacy-models-resolve', async (_event, action) => {
   const dir = getLegacyModelsDirectory();
   if (action === 'delete' && dir) {
     try {
@@ -6940,38 +7116,38 @@ ipcMain.handle('legacy-models-resolve', async (_event, action) => {
   }
   store.delete(LEGACY_MODELS_DIRECTORY_SETTING_KEY);
   return { ok: true };
-});
+}));
 
-ipcMain.handle('legacy-models-open', async () => {
+ipcMain.handle('legacy-models-open', firstParty('legacy-models-open', async () => {
   const dir = getLegacyModelsDirectory();
   return dir ? (await shell.openPath(dir)) === '' : false;
-});
+}));
 
 ipcMain.handle('updates-get-status', () => {
   return getUpdateStatus();
 });
 
-ipcMain.handle('updates-check', () => {
+ipcMain.handle('updates-check', firstParty('updates-check', () => {
   return checkForUpdates({ manual: true });
-});
+}));
 
-ipcMain.handle('updates-mark-seen', (event, version) => {
+ipcMain.handle('updates-mark-seen', firstParty('updates-mark-seen', (event, version) => {
   return markUpdateSeen(version);
-});
+}));
 
-ipcMain.handle('updates-open-release-page', (event, version) => {
+ipcMain.handle('updates-open-release-page', firstParty('updates-open-release-page', (event, version) => {
   return openUpdateReleasePage(version);
-});
+}));
 
-ipcMain.handle('open-external-url', (event, url) => {
+ipcMain.handle('open-external-url', firstParty('open-external-url', (event, url) => {
   return openExternalUrl(url);
-});
+}));
 
-ipcMain.handle('updates-download', () => {
+ipcMain.handle('updates-download', firstParty('updates-download', () => {
   return downloadAvailableUpdate();
-});
+}));
 
-ipcMain.handle('updates-quit-and-install', () => {
+ipcMain.handle('updates-quit-and-install', firstParty('updates-quit-and-install', () => {
   const updater = ensureAutoUpdater();
   if (!isAutoUpdaterSupported() || !updater || updateState.status !== 'downloaded') {
     return false;
@@ -6986,26 +7162,26 @@ ipcMain.handle('updates-quit-and-install', () => {
 
   updater.quitAndInstall(false, true);
   return true;
-});
+}));
 
-ipcMain.handle('get-audio-cache', async (event, cacheKey) => {
+ipcMain.handle('get-audio-cache', firstParty('get-audio-cache', async (event, cacheKey) => {
   return readAudioCacheEntry(cacheKey);
-});
+}));
 
-ipcMain.handle('has-audio-cache', async (event, cacheKey) => {
+ipcMain.handle('has-audio-cache', firstParty('has-audio-cache', async (event, cacheKey) => {
   return hasAudioCacheEntry(cacheKey);
-});
+}));
 
-ipcMain.handle('save-audio-cache', async (event, cacheKey, data, mimeType, limitBytes) => {
+ipcMain.handle('save-audio-cache', firstParty('save-audio-cache', async (event, cacheKey, data, mimeType, limitBytes) => {
   await writeAudioCacheEntry(cacheKey, data, mimeType, limitBytes);
   return true;
-});
+}));
 
 // A copy playback found to be less than the song: deleted only while it is the file that was read.
-ipcMain.handle('remove-audio-cache', async (event, cacheKey, size) => {
+ipcMain.handle('remove-audio-cache', firstParty('remove-audio-cache', async (event, cacheKey, size) => {
   const { dataPath, metaPath } = getAudioCachePaths(cacheKey);
   return removeAudioCacheFileOfSize(dataPath, metaPath, size);
-});
+}));
 
 ipcMain.handle('get-audio-cache-usage', async () => {
   return getAudioCacheUsageBytes();
@@ -7015,58 +7191,58 @@ ipcMain.handle('get-audio-cache-stats', async () => {
   return getAudioCacheStats();
 });
 
-ipcMain.handle('clear-audio-cache', async () => {
+ipcMain.handle('clear-audio-cache', firstParty('clear-audio-cache', async () => {
   await clearAudioCacheDirectory();
   return true;
-});
+}));
 
-ipcMain.handle('transcode-fallback-request', async (_event, request) => {
+ipcMain.handle('transcode-fallback-request', firstParty('transcode-fallback-request', async (_event, request) => {
   return transcodeService.request(request);
-});
+}));
 
-ipcMain.handle('transcode-fallback-cancel', (_event, requestId) => {
+ipcMain.handle('transcode-fallback-cancel', firstParty('transcode-fallback-cancel', (_event, requestId) => {
   return transcodeService.cancel(requestId);
-});
+}));
 
-ipcMain.handle('get-cover-cache', async (event, cacheKey) => {
+ipcMain.handle('get-cover-cache', firstParty('get-cover-cache', async (event, cacheKey) => {
   return readCoverCacheEntry(cacheKey);
-});
+}));
 
-ipcMain.handle('save-cover-cache', async (event, cacheKey, data, mimeType) => {
+ipcMain.handle('save-cover-cache', firstParty('save-cover-cache', async (event, cacheKey, data, mimeType) => {
   await writeCoverCacheEntry(cacheKey, data, mimeType);
   return true;
-});
+}));
 
-ipcMain.handle('remove-cover-cache', async (event, cacheKey) => {
+ipcMain.handle('remove-cover-cache', firstParty('remove-cover-cache', async (event, cacheKey) => {
   await removeCoverCacheEntry(cacheKey);
   return true;
-});
+}));
 
 ipcMain.handle('get-cover-cache-usage', async () => {
   return getCoverCacheUsageBytes();
 });
 
-ipcMain.handle('clear-cover-cache', async () => {
+ipcMain.handle('clear-cover-cache', firstParty('clear-cover-cache', async () => {
   await clearCoverCacheDirectory();
   return true;
-});
+}));
 
-ipcMain.handle('has-local-cover-asset', async (_event, assetId) => {
+ipcMain.handle('has-local-cover-asset', firstParty('has-local-cover-asset', async (_event, assetId) => {
   return localCoverAssetStore.has(assetId);
-});
+}));
 
-ipcMain.handle('save-local-cover-asset', async (_event, assetId, data, mimeType) => {
+ipcMain.handle('save-local-cover-asset', firstParty('save-local-cover-asset', async (_event, assetId, data, mimeType) => {
   await localCoverAssetStore.write(assetId, data, mimeType);
   return true;
-});
+}));
 
-ipcMain.handle('remove-local-cover-asset', async (_event, assetId) => {
+ipcMain.handle('remove-local-cover-asset', firstParty('remove-local-cover-asset', async (_event, assetId) => {
   return localCoverAssetStore.remove(assetId);
-});
+}));
 
-ipcMain.handle('clear-local-cover-assets', async () => {
+ipcMain.handle('clear-local-cover-assets', firstParty('clear-local-cover-assets', async () => {
   return localCoverAssetStore.clear();
-});
+}));
 
 // 内嵌后端的端口、状态、重启、诊断快照与主动自检（electron/loginBackendIpc.cjs）。
 registerLoginBackendIpc({
@@ -7076,6 +7252,7 @@ registerLoginBackendIpc({
   getDefaultSession: () => session.defaultSession,
   neteaseBackend,
   qqBackend,
+  isTrustedSender: isFirstPartyWindowContents,
 });
 
 // Both channels reach the embedded KuGou API. `kugou-api-request` forwards the renderer's operation
@@ -7086,10 +7263,8 @@ registerLoginBackendIpc({
 //
 // Boundary, stated plainly: comparing webContents identity rejects other windows (a popup opened with
 // window.open carries the same preload). It cannot stop script already running inside a trusted
-// window - that is the CSP and preload layer's job, not this check's.
-const isFirstPartyWindowContents = (event) => (
-  isTrustedMainWindowContents(event.sender) || isTrustedRemoteControlContents(event.sender)
-);
+// window - that is the CSP and preload layer's job, not this check's. isFirstPartyWindowContents is
+// defined next to the other trust checks (after isTrustedRemoteControlContents).
 
 ipcMain.handle('kugou-api-status', createSenderGuardedHandler({
   channel: 'kugou-api-status',
@@ -7157,7 +7332,7 @@ ipcMain.handle('spotify-api-request', (event, operation, params) => {
   return spotifyApiBridge.request(operation, params);
 });
 
-ipcMain.handle('window-minimize', () => {
+ipcMain.handle('window-minimize', firstParty('window-minimize', () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return false;
   }
@@ -7174,9 +7349,9 @@ ipcMain.handle('window-minimize', () => {
   mainWindow.minimize();
   refreshTrayMenu();
   return true;
-});
+}));
 
-ipcMain.handle('window-toggle-maximize', () => {
+ipcMain.handle('window-toggle-maximize', firstParty('window-toggle-maximize', () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return false;
   }
@@ -7192,7 +7367,7 @@ ipcMain.handle('window-toggle-maximize', () => {
 
   mainWindow.maximize();
   return true;
-});
+}));
 
 ipcMain.handle('window-toggle-fullscreen', (event) => {
   if (!isTrustedMainWindowContents(event.sender) || !mainWindow || mainWindow.isDestroyed()) {
@@ -7209,7 +7384,7 @@ ipcMain.handle('window-toggle-fullscreen', (event) => {
   return nextFullscreen;
 });
 
-ipcMain.handle('window-close', () => {
+ipcMain.handle('window-close', firstParty('window-close', () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return false;
   }
@@ -7227,7 +7402,7 @@ ipcMain.handle('window-close', () => {
 
   mainWindow.close();
   return true;
-});
+}));
 
 // Sleep timer and other explicit "exit the whole app" paths. Unlike window-close this
 // quits even when closing-to-tray is enabled, and runs the before-quit cleanup.
@@ -7275,7 +7450,7 @@ ipcMain.handle('window-playback-handoff-consume', (event) => {
     return null;
   }
 
-  return windowPlaybackHandoffStore.consume();
+  return windowPlaybackHandoffStore.consume(mainWindow);
 });
 
 ipcMain.handle('window-playback-handoff-submit', (event, requestId, handoff) => {
@@ -7460,21 +7635,21 @@ ipcMain.handle('voice-input-pause-get-status', (event) => {
   return voiceInputPauseMonitor.getStatus();
 });
 
-ipcMain.handle('stage-get-status', () => {
+ipcMain.handle('stage-get-status', firstParty('stage-get-status', () => {
   return stageApi.buildStageStatus();
-});
+}));
 
-ipcMain.handle('stage-set-enabled', async (_event, enabled) => {
+ipcMain.handle('stage-set-enabled', firstParty('stage-set-enabled', async (_event, enabled) => {
   return stageApi.setStageEnabled(enabled);
-});
+}));
 
-ipcMain.handle('stage-regenerate-token', async () => {
+ipcMain.handle('stage-regenerate-token', firstParty('stage-regenerate-token', async () => {
   return stageApi.regenerateStageToken();
-});
+}));
 
-ipcMain.handle('stage-clear-state', async () => {
+ipcMain.handle('stage-clear-state', firstParty('stage-clear-state', async () => {
   return stageApi.clearStageState();
-});
+}));
 
 ipcMain.handle('stage-complete-external-play', (event, result) => {
   if (!isTrustedMainWindowContents(event.sender)) {
@@ -7918,7 +8093,7 @@ ipcMain.handle('lyric-proxy-fetch', async (event, url, init) => {
 });
 
 // Integrate AI logic locally into Electron
-ipcMain.handle('generate-theme', async (event, lyricsText, options = {}) => {
+ipcMain.handle('generate-theme', firstParty('generate-theme', async (event, lyricsText, options = {}) => {
   try {
     const { isPureMusic = false, songTitle } = options;
     const provider = store.get('AI_PROVIDER') || 'gemini';
@@ -7979,7 +8154,7 @@ ipcMain.handle('generate-theme', async (event, lyricsText, options = {}) => {
     console.error(e);
     throw new Error(e instanceof Error ? e.message : String(e));
   }
-});
+}));
 
 registerAiModelDiscovery({ ipcMain, aiCredentials, store, isTrustedMainWindowContents, fetchWithOptionalSystemProxy });
 
@@ -8015,7 +8190,7 @@ ipcMain.handle('ai-test-connection', async (event, payload) => {
 // Word-segments the current song's lyric lines with whichever model the user configured. Shares
 // its prompt with the web handlers and with the client's copy-to-a-model-site path through
 // shared/lyricSegmentationPrompt.cjs, so all four routes ask for exactly the same thing.
-ipcMain.handle('segment-lyrics', async (event, lines) => {
+ipcMain.handle('segment-lyrics', firstParty('segment-lyrics', async (event, lines) => {
   // Held outside the try so the failure path can print what the model actually said. Without it a
   // rejected response gives the user a stack trace and nothing to act on.
   let rawResponse = null;
@@ -8064,4 +8239,4 @@ ipcMain.handle('segment-lyrics', async (event, lines) => {
     }
     throw new Error(message);
   }
-});
+}));

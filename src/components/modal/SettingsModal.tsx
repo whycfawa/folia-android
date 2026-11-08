@@ -354,7 +354,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         } else {
             setActiveSettingsSection(prev => prev || 'appearance');
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialSubview, initialTab]);
 
     // A request for one place in the settings: show the page settingsAnchorModel puts it on, then
@@ -371,7 +370,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         setSearchQuery('');
         // A request may name one row of the section; the section is where it lands while that row is not drawn.
         landOn(initialAnchor.rowId ?? initialAnchor.id, initialAnchor.id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialAnchor]);
 
     // Cache State

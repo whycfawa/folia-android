@@ -6,7 +6,7 @@ import { OnlineProviderError } from '../../../types/onlineMusic';
 import { parseLyricsByFormat } from '../../../utils/lyrics/parserCore';
 import { hasRenderableLyrics } from '../../../utils/lyrics/validity';
 import {
-    getAppleMusicCatalogPage, getAppleMusicLibraryAlbums, getAppleMusicLibraryAlbumTracks, getAppleMusicPersonalFm, canAddToAppleMusicPlaylist, updateAppleMusicPlaylistTracks, appleMusicSongLikeId, getAppleMusicLikedSongIds, setAppleMusicSongLiked, appleMusicCatalogSongId, isAppleMusicSongPlayable, getAppleMusicPlaylists, getAppleMusicPlaylistTracks, getAppleMusicTtml, searchAppleMusic,
+    APPLE_MUSIC_LIBRARY_PLAYLIST_ID, getAppleMusicCatalogPage, getAppleMusicLibraryAlbums, getAppleMusicLibrarySongs, getAppleMusicLibraryAlbumTracks, getAppleMusicPersonalFm, canAddToAppleMusicPlaylist, updateAppleMusicPlaylistTracks, appleMusicSongLikeId, getAppleMusicLikedSongIds, setAppleMusicSongLiked, appleMusicCatalogSongId, isAppleMusicSongPlayable, getAppleMusicPlaylists, getAppleMusicPlaylistTracks, getAppleMusicTtml, searchAppleMusic,
 } from './appleMusicData';
 import { appleMusicLiveStationId, getAppleMusicLiveStations, getAppleMusicLiveStationTracks } from './appleMusicRadio';
 import { getAppleMusicLyricSearchAlias } from './appleMusicOriginal';
@@ -212,8 +212,10 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
             getArtistDetail: async id => (await getAppleMusicCatalogPage('catalogArtist', String(id), 1, 0)).items[0] as import('../../../types/onlineMusic').ProviderCollection | undefined ?? null,
             getArtistSongs: async (id, limit, offset) => await getAppleMusicCatalogPage('catalogArtistSongs', String(id), limit, offset) as import('../../../types/onlineMusic').ProviderPage<import('../../../types').UnifiedSong>,
             getArtistAlbums: async (id, limit, offset) => await getAppleMusicCatalogPage('catalogArtistAlbums', String(id), limit, offset) as import('../../../types/onlineMusic').ProviderPage<import('../../../types/onlineMusic').ProviderCollection>,
-            getPlaylistTracks: (id, limit, offset) => String(id).startsWith('ra.')
-                ? getAppleMusicLiveStationTracks(String(id), offset) : getAppleMusicPlaylistTracks(String(id), limit, offset),
+            getPlaylistTracks: (id, limit, offset) => id === APPLE_MUSIC_LIBRARY_PLAYLIST_ID
+                ? getAppleMusicLibrarySongs(limit, offset)
+                : String(id).startsWith('ra.')
+                    ? getAppleMusicLiveStationTracks(String(id), offset) : getAppleMusicPlaylistTracks(String(id), limit, offset),
         },
         // Apple's TTML carries the song's own word timing (and its translations and voices): where
         // it is word-level, the automatic pick must not replace it with another source's.
@@ -295,6 +297,19 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 noteAppleMusicPlayStarted(result);
                 console.info('[AppleMusic] play started', result);
             },
+            // The previous window's attempt died with it; a fresh one lets prepareNext and the
+            // native-advance adoption in getStatus work for the song the companion is still playing.
+            adopt(song) {
+                const stationId = appleMusicLiveStationId(song);
+                handoffId = null;
+                if (stationId) {
+                    playback = null;
+                    liveStationId = stationId;
+                    return;
+                }
+                liveStationId = null;
+                playback = { catalogId: appleMusicCatalogSongId(song), hasPlayed: true, durationMs: 0, positionMs: 0, nextIds: [], nativeNextId: '', queueRevision: 0 };
+            },
             async pause() {
                 await requestAppleMusic('pause');
             },
@@ -365,6 +380,10 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
             // The companion's window is the sign-in surface: there is no code to show and no
             // separate browser page to open.
             getLoginStatus: readUser,
+            // The sign-in lives in the companion's own profile on this machine (WKWebsiteDataStore /
+            // WebView2 user data folder), so the kept account shows at app start while the companion
+            // is asked, instead of "nobody" for the seconds the companion takes to come up.
+            showsKeptAccountAtStart: true,
             async startLogin() {
                 const ticket = ++generation;
                 await scheduleWindowAction(async () => {
