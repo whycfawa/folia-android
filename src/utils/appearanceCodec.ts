@@ -17,6 +17,7 @@ import {
 import { normalizeRandomVisualizerModes } from './randomVisualizerModes';
 import { normalizeLumiereTuning } from './lumiereTuning';
 import { normalizeLyricRenderQuality } from './lyricRenderQuality';
+import { temperaPostProcessCompressionDefault } from '../services/temperaTuningDefaults';
 
 /** 配置的一层字段，按名字读写；新加的字段用它，不再往 any 上加。 */
 type ConfigFields = Record<string, unknown>;

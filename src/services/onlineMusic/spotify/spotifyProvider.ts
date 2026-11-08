@@ -1,5 +1,6 @@
 import type { UnifiedSong } from '../../../types';
 import type { LoginMethod, OnlineMusicProvider, ProviderUser, LoginState } from '../../../types/onlineMusic';
+import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
 import { createProviderSongMetadata } from '../../../utils/songMetadata';
 import { parseLyricsByFormat } from '../../../utils/lyrics/parserCore';
 import { formatLrcTimestamp } from '../../../utils/lyrics/lrcTimestamp';

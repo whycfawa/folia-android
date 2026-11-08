@@ -13,6 +13,7 @@ import { useSettingsModalStore } from '../../../../stores/useSettingsModalStore'
 import { Button, Group, Reveal, Row, Segmented, Select, Toggle, option, type SettingsGroupDef, type SettingsOptionDef } from '../kit';
 import { FoundUpdateRow } from './FoundUpdateRow';
 import { ChinaDrivesRow } from './ChinaDrivesRow';
+import AnalysisModelsGroup from './AnalysisModelsGroup';
 import { useSettingsPage } from './settingsPageContext';
 
 // src/components/modal/settings/pages/GeneralPage.tsx

@@ -1,11 +1,14 @@
 import { registerPlugin } from '@capacitor/core';
 import type { ModRuntimeInfo, ModsListPayload, ModSetEnabledResult } from '../types';
 import { isCapacitorAndroid } from '../../platform/runtime';
-import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 
 // src/mods/android/androidModsBridge.ts
 // Android 端只加载客户端模组：原生负责 zip 安装、目录、启用状态与本地 HTTP 文件服务，
 // 这里把原生列表翻译成渲染层已有的 ModRuntimeInfo，复用 clientLoader 的注册/清理逻辑。
+
+// 模组总开关由界面层注入：模组服务的闭包不许碰应用 store（D114），这里只留一个探针。
+let modSystemEnabledProbe: () => boolean = () => true;
+export const setAndroidModsEnabledProbe = (probe: () => boolean): void => { modSystemEnabledProbe = probe; };
 
 type NativeMod = {
     id: string;
@@ -74,7 +77,7 @@ export const listAndroidMods = async (): Promise<ModsListPayload> => {
     };
     if (!isCapacitorAndroid()) return empty;
     // 总开关关闭时不加载任何模组代码：连列表都不返回，clientLoader 不会启动它们。
-    if (!useDesktopSettingsStore.getState().modSystemEnabled) return empty;
+    if (!modSystemEnabledProbe()) return empty;
     try {
         const answer = await FoliaMods.list();
         const mods = (Array.isArray(answer?.mods) ? answer.mods : [])

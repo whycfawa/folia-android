@@ -7,10 +7,12 @@ import { installCrashDiagnostics } from './utils/crashDiagnostics';
 import { installChunkLoadRecovery } from './utils/chunkLoadRecovery';
 import { installFrameTimingDiagnostics } from './utils/frameTimingDiagnostics';
 import { installNativeAndroidBridge } from './services/nativeAndroidBridge';
-import { installAppleMusicAndroidBridge } from './services/appleMusicAndroidBridge';
-import { installFnMusicAndroidBridge } from './services/fnmusicAndroidBridge';
+import { installAppleMusicAndroidBridge } from './services/onlineMusic/appleMusic/appleMusicAndroidBridge';
+import { installFnMusicAndroidBridge } from './services/onlineMusic/fnmusic/fnmusicAndroidBridge';
 import { installAndroidPhoneFitPreference } from './services/androidPhoneLayout';
 import { installKeepScreenOnPreference } from './services/androidKeepScreenOn';
+import { setAndroidModsEnabledProbe } from './mods/android/androidModsBridge';
+import { useDesktopSettingsStore } from './stores/useDesktopSettingsStore';
 // import { installCoverSizeAudit } from './services/debug/coverSizeSamples';
 // @ts-ignore
 globalThis.Buffer = Buffer;
@@ -39,6 +41,8 @@ installFrameTimingDiagnostics();
 installAndroidPhoneFitPreference();
 // 屏幕常亮：启动时套用保存的开关状态（安卓走原生窗口标志）。
 installKeepScreenOnPreference();
+// 安卓模组桥的总开关由这里注入：模组服务的闭包不碰 store（D114），界面层把这个值递给它。
+setAndroidModsEnabledProbe(() => useDesktopSettingsStore.getState().modSystemEnabled);
 // 原生桥：替换 fetch / 模拟扩展的 chrome.cookies / chrome.storage，所有在线请求走它。
 void installNativeAndroidBridge();
 installAppleMusicAndroidBridge();

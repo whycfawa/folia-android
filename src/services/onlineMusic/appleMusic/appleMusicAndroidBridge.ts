@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import type { AppleMusicBridgeResult, AppleMusicOperation, AppleMusicParams } from './onlineMusic/appleMusic/appleMusicTransport';
+import type { AppleMusicBridgeResult, AppleMusicOperation, AppleMusicParams } from './appleMusicTransport';
 
 type AppleMusicPlugin = {
     request: (options: { operation: string; params?: Record<string, unknown> }) => Promise<AppleMusicBridgeResult>;

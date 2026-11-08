@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import type { FnMusicBridgeParams, FnMusicBridgeResult, FnMusicBridgeStatus } from './onlineMusic/fnmusic/fnmusicTransport';
+import type { FnMusicBridgeParams, FnMusicBridgeResult, FnMusicBridgeStatus } from './fnmusicTransport';
 
 type FnMusicPlugin = {
     api: (options: { operation: string; params?: Record<string, unknown> }) => Promise<FnMusicBridgeResult>;
