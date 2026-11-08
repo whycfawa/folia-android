@@ -217,7 +217,12 @@ const playerSession = lazySession(async () => {
 const audio = async (params: YtmParams) => {
     const id = videoId(params.id);
     const level = params.quality === 'standard' ? 'standard' : 'high';
-    const [yt, poToken] = await Promise.all([playerSession(), mintYtmToken(id)]);
+    // 准备阶段（建播放器会话 / 铸 PoToken）失败与「这首歌不能放」是两回事：前者是环境或网络，
+    // 后者是平台拒绝。分开报，界面上和诊断里才看得出该修哪一头。
+    const [yt, poToken] = await Promise.all([playerSession(), mintYtmToken(id)]).catch((error: unknown) => {
+        console.warn('[Ytm] The player or its token could not be prepared', error);
+        return fail('network', 'YouTube Music could not prepare this track', 'player-prepare');
+    });
     let info: any;
     try {
         info = await yt.getBasicInfo(id, { client: 'YTMUSIC', po_token: poToken } as any);
@@ -250,7 +255,10 @@ const audio = async (params: YtmParams) => {
         const done = await Filesystem.downloadFile({
             url: address.href, directory: Directory.Cache, path, recursive: true,
             connectTimeout: 15000, readTimeout: 30000,
-        } as any);
+        } as any).catch((error: unknown) => {
+            console.warn('[Ytm] The audio download failed', error);
+            return fail('network', 'YouTube Music audio could not be downloaded', 'audio-download');
+        });
         const stat = await Filesystem.stat({ directory: Directory.Cache, path });
         if (Number(stat.size) !== length) {
             await Filesystem.deleteFile({ directory: Directory.Cache, path }).catch(() => undefined);
