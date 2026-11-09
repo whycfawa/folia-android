@@ -267,10 +267,28 @@
               initDataTypes: ["cenc"],
               audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"', ...robustness ? { robustness } : {} }]
             }];
+            const withDeadline = async (label, promise, ms) => {
+              let timer;
+              try {
+                return await Promise.race([
+                  promise,
+                  new Promise((_, reject) => {
+                    timer = setTimeout(() => reject(new Error(label + " hung > " + ms + "ms")), ms);
+                  })
+                ]);
+              } finally {
+                if (timer) clearTimeout(timer);
+              }
+            };
+            const accessAttempt = (robustness) => withDeadline(
+              "requestMediaKeySystemAccess",
+              navigator.requestMediaKeySystemAccess("com.widevine.alpha", configuration(robustness)),
+              3e3
+            );
             if (report.eme) {
               for (const robustness of ["SW_SECURE_CRYPTO", ""]) {
                 try {
-                  await navigator.requestMediaKeySystemAccess("com.widevine.alpha", configuration(robustness));
+                  await accessAttempt(robustness);
                   report.widevine = true;
                   report.robustness = robustness || "default";
                   break;
@@ -278,26 +296,30 @@
                   if (!report.error) report.error = String(error?.name || error?.message || "rejected").slice(0, 80);
                 }
               }
-            }
-            if (report.eme && report.widevine) {
-              try {
-                const relaxed = await navigator.requestMediaKeySystemAccess("com.widevine.alpha", configuration(""));
-                await relaxed.createMediaKeys();
-                report.keys = "ok";
-              } catch (error) {
-                report.keys = String(error?.name || error?.message || "rejected").slice(0, 80);
-                report.keysError = String(error?.message || "").slice(0, 120);
-              }
-            }
-            if (typeof navigator.mediaCapabilities?.decodingInfo === "function") {
-              const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: "2", samplerate: 44100, bitrate: 256e3 };
-              report.decode = {};
-              for (const type of ["file", "media-source"]) {
+              if (report.eme && report.widevine) {
                 try {
-                  const answer = await navigator.mediaCapabilities.decodingInfo({ type, audio });
-                  report.decode[type] = (answer.supported === true ? "ok" : "no") + "/" + (answer.smooth === true ? "smooth" : "rough");
+                  const relaxed = await accessAttempt("");
+                  await withDeadline("createMediaKeys", relaxed.createMediaKeys(), 3e3);
+                  report.keys = "ok";
                 } catch (error) {
-                  report.decode[type] = String(error?.name || "rejected").slice(0, 60);
+                  report.keys = String(error?.name || error?.message || "rejected").slice(0, 80);
+                  report.keysError = String(error?.message || "").slice(0, 120);
+                }
+              }
+              if (typeof navigator.mediaCapabilities?.decodingInfo === "function") {
+                const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: "2", samplerate: 44100, bitrate: 256e3 };
+                report.decode = {};
+                for (const type of ["file", "media-source"]) {
+                  try {
+                    const answer = await withDeadline(
+                      "decodingInfo",
+                      navigator.mediaCapabilities.decodingInfo({ type, audio }),
+                      2e3
+                    );
+                    report.decode[type] = (answer.supported === true ? "ok" : "no") + "/" + (answer.smooth === true ? "smooth" : "rough");
+                  } catch (error) {
+                    report.decode[type] = String(error?.name || "rejected").slice(0, 60);
+                  }
                 }
               }
             }

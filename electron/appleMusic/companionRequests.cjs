@@ -145,46 +145,57 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             };
             const configuration = robustness => [{ initDataTypes: ['cenc'],
                 audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"', ...(robustness ? { robustness } : {}) }] }];
-            if (report.eme) {
-                for (const robustness of ['SW_SECURE_CRYPTO', '']) {
-                    try {
-                        // Support is the answer the report needs; creating keys would provision the
-                        // CDM on the player's own origin and is left to the page.
-                        await navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(robustness));
-                        report.widevine = true;
-                        report.robustness = robustness || 'default';
-                        break;
-                    } catch (error) {
-                        if (!report.error) report.error = String(error?.name || error?.message || 'rejected').slice(0, 80);
-                    }
+            // 探测的每一步都可能挂住（这台设备的 createMediaKeys 就不是报错而是死等，能拖垮整个
+        // 诊断请求）。每一步都设上限：挂住就记成 timeout，报告照常返回，别的环节不受连累。
+        const withDeadline = async (label, promise, ms) => {
+            let timer;
+            try {
+                return await Promise.race([
+                    promise,
+                    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label + ' hung > ' + ms + 'ms')), ms); }),
+                ]);
+            } finally {
+                if (timer) clearTimeout(timer);
+            }
+        };
+        const accessAttempt = (robustness) => withDeadline('requestMediaKeySystemAccess',
+            navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(robustness)), 3000);
+        if (report.eme) {
+            for (const robustness of ['SW_SECURE_CRYPTO', '']) {
+                try {
+                    await accessAttempt(robustness);
+                    report.widevine = true;
+                    report.robustness = robustness || 'default';
+                    break;
+                } catch (error) {
+                    if (!report.error) report.error = String(error?.name || error?.message || 'rejected').slice(0, 80);
                 }
             }
-            // 访问层通过不等于能解密：设备把 com.widevine.alpha 报成可用，createMediaKeys 仍可能
-            // 抛 NotSupportedError / MediaCrypto not available（安卓 WebView 上见过）。两件事分开记。
             if (report.eme && report.widevine) {
                 try {
-                    const relaxed = await navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(''));
-                    await relaxed.createMediaKeys();
+                    const relaxed = await accessAttempt('');
+                    await withDeadline('createMediaKeys', relaxed.createMediaKeys(), 3000);
                     report.keys = 'ok';
                 } catch (error) {
                     report.keys = String(error?.name || error?.message || 'rejected').slice(0, 80);
                     report.keysError = String(error?.message || '').slice(0, 120);
                 }
             }
-            // 加密音频在 mediaCapabilities 里是另一个问句，失败时它也会给出一句准话。
             if (typeof navigator.mediaCapabilities?.decodingInfo === 'function') {
                 const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: '2', samplerate: 44100, bitrate: 256000 };
                 report.decode = {};
                 for (const type of ['file', 'media-source']) {
                     try {
-                        const answer = await navigator.mediaCapabilities.decodingInfo({ type, audio });
+                        const answer = await withDeadline('decodingInfo',
+                            navigator.mediaCapabilities.decodingInfo({ type, audio }), 2000);
                         report.decode[type] = (answer.supported === true ? 'ok' : 'no') + '/' + (answer.smooth === true ? 'smooth' : 'rough');
                     } catch (error) {
                         report.decode[type] = String(error?.name || 'rejected').slice(0, 60);
                     }
                 }
             }
-            report.at = Date.now();
+        }
+                        report.at = Date.now();
             window.__foliaDrm = report;
             return report;
         };
