@@ -146,7 +146,7 @@
       var REQUEST_ID = /^[a-zA-Z0-9_-]{1,64}$/;
       var RESOURCE_ID = /^[a-zA-Z0-9._-]{1,200}$/;
       var PLAYBACK_COMMANDS = /* @__PURE__ */ new Set(["playStation", "playSong", "pause", "resume", "seek", "setVolume", "prepareNext"]);
-      var OPERATIONS = /* @__PURE__ */ new Set(["songOriginal", "catalogSong", "catalogAlbum", "catalogAlbumTracks", "catalogArtist", "catalogArtistSongs", "catalogArtistAlbums", "libraryAlbums", "libraryAlbumTracks", "stations", "station", "personalFm", "showWindow", "hideWindow", "logout", "accountStatus", "search", "playlists", "playlistTracks", "playlistTrackCount", "lyrics", "playbackStatus", "diagnostics", "likeSong", "addPlaylistTracks", ...PLAYBACK_COMMANDS]);
+      var OPERATIONS = /* @__PURE__ */ new Set(["songOriginal", "catalogSong", "catalogAlbum", "catalogAlbumTracks", "catalogArtist", "catalogArtistSongs", "catalogArtistAlbums", "libraryAlbums", "librarySongs", "libraryAlbumTracks", "stations", "station", "personalFm", "showWindow", "hideWindow", "logout", "accountStatus", "search", "playlists", "playlistTracks", "playlistTrackCount", "lyrics", "playbackStatus", "diagnostics", "likeSong", "addPlaylistTracks", ...PLAYBACK_COMMANDS]);
       function validateRequest(message) {
         if (!message || typeof message !== "object" || Array.isArray(message)) return null;
         const { id, operation, params = {} } = message;
@@ -709,6 +709,9 @@
           } else if (request.operation === "libraryAlbums") {
             path = "v1/me/library/albums";
             options = { limit: p.limit, offset: p.offset };
+          } else if (request.operation === "librarySongs") {
+            path = "v1/me/library/songs";
+            options = { limit: p.limit, offset: p.offset, include: "catalog" };
           } else if (request.operation === "libraryAlbumTracks") {
             path = "v1/me/library/albums/" + encodeURIComponent(p.albumId) + "/tracks";
             options = { limit: p.limit, offset: p.offset, include: "catalog" };
