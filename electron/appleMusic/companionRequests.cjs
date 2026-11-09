@@ -159,6 +159,31 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                     }
                 }
             }
+            // 访问层通过不等于能解密：设备把 com.widevine.alpha 报成可用，createMediaKeys 仍可能
+            // 抛 NotSupportedError / MediaCrypto not available（安卓 WebView 上见过）。两件事分开记。
+            if (report.eme && report.widevine) {
+                try {
+                    const relaxed = await navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(''));
+                    await relaxed.createMediaKeys();
+                    report.keys = 'ok';
+                } catch (error) {
+                    report.keys = String(error?.name || error?.message || 'rejected').slice(0, 80);
+                    report.keysError = String(error?.message || '').slice(0, 120);
+                }
+            }
+            // 加密音频在 mediaCapabilities 里是另一个问句，失败时它也会给出一句准话。
+            if (typeof navigator.mediaCapabilities?.decodingInfo === 'function') {
+                const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: '2', samplerate: 44100, bitrate: 256000 };
+                report.decode = {};
+                for (const type of ['file', 'media-source']) {
+                    try {
+                        const answer = await navigator.mediaCapabilities.decodingInfo({ type, audio });
+                        report.decode[type] = (answer.supported === true ? 'ok' : 'no') + '/' + (answer.smooth === true ? 'smooth' : 'rough');
+                    } catch (error) {
+                        report.decode[type] = String(error?.name || 'rejected').slice(0, 60);
+                    }
+                }
+            }
             report.at = Date.now();
             window.__foliaDrm = report;
             return report;
@@ -231,6 +256,7 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                     t: Math.round((element.currentTime || 0) * 10) / 10,
                     ready: element.readyState, network: element.networkState,
                     error: element.error ? element.error.code : null,
+                    errorText: element.error && element.error.message ? scrubText(element.error.message) : '',
                     source: Boolean(element.currentSrc || element.src) });
             }
             return { total: list.length, rows };

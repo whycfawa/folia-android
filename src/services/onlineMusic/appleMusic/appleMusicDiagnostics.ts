@@ -118,6 +118,20 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
     lines.push(`  drm: eme=${yesNo(drm?.eme)} mediaSource=${yesNo(drm?.mediaSource)}`
         + ` secure=${yesNo(drm?.secure)} widevine=${yesNo(drm?.widevine)}`
         + ` robustness=${text(drm?.robustness, '(none)')} error=${text(drm?.error, '(none)')}`);
+    // 「访问层通过」与「真的建得出解密器」是两件事：安卓 WebView 上前者成立、后者抛
+    // NotSupportedError / MediaCrypto not available 时，任何歌都放不了，且与播放逻辑无关。
+    const keysVerdict = text(drm?.keys, '');
+    const decode = asRecord(drm?.decode);
+    lines.push(`  drm keys: ${keysVerdict || '(not probed)'}${drm?.keysError ? ` message=${text(drm.keysError, '')}` : ''}`
+        + ` decode=${decode ? Object.entries(decode).map(([kind, verdict]) => `${kind}:${text(verdict, '?')}`).join(' ') : '(not probed)'}`);
+    const emeTexts = Array.isArray(page.eme) ? (page.eme as unknown[]).map(entry => JSON.stringify(entry)) : [];
+    const logTexts = Array.isArray(page.log) ? (page.log as unknown[]).map(line => String(line)) : [];
+    const cryptoRefused = [...emeTexts, ...logTexts].some(line => /MediaCrypto not available/i.test(line));
+    if (keysVerdict && keysVerdict !== 'ok') {
+        lines.push(`  drm verdict: 这台设备的 CDM 在 WebView 里建不出解密器（${keysVerdict}${cryptoRefused ? '，页面同时报 MediaCrypto not available' : ''}）——所有歌曲都会失败，与店铺/账号/播放逻辑无关；先更新 Android System WebView，仍如此则该设备的 Widevine 在 WebView 内不可用`);
+    } else if (keysVerdict === 'ok') {
+        lines.push('  drm verdict: 解密器可创建（CDM 正常），失败原因在其它环节');
+    }
 
     const player = asRecord(page.player);
     lines.push(`  player: authorized=${yesNo(player?.authorized)} previewOnly=${yesNo(player?.previewOnly)}`
@@ -152,7 +166,7 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
         for (const row of mediaRows.slice(0, 5)) {
             lines.push(`    #${count(row.index)} paused=${yesNo(row.paused)} t=${count(row.t)}`
                 + ` ready=${count(row.ready)} network=${count(row.network)}`
-                + ` error=${count(row.error)} source=${yesNo(row.source)}`);
+                + ` error=${count(row.error)}${row.errorText ? `(${text(row.errorText, '')})` : ''} source=${yesNo(row.source)}`);
         }
     } else {
         lines.push(`  media: (none) online=${yesNo(page.online)}`);

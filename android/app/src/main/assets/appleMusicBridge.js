@@ -279,6 +279,28 @@
                 }
               }
             }
+            if (report.eme && report.widevine) {
+              try {
+                const relaxed = await navigator.requestMediaKeySystemAccess("com.widevine.alpha", configuration(""));
+                await relaxed.createMediaKeys();
+                report.keys = "ok";
+              } catch (error) {
+                report.keys = String(error?.name || error?.message || "rejected").slice(0, 80);
+                report.keysError = String(error?.message || "").slice(0, 120);
+              }
+            }
+            if (typeof navigator.mediaCapabilities?.decodingInfo === "function") {
+              const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: "2", samplerate: 44100, bitrate: 256e3 };
+              report.decode = {};
+              for (const type of ["file", "media-source"]) {
+                try {
+                  const answer = await navigator.mediaCapabilities.decodingInfo({ type, audio });
+                  report.decode[type] = (answer.supported === true ? "ok" : "no") + "/" + (answer.smooth === true ? "smooth" : "rough");
+                } catch (error) {
+                  report.decode[type] = String(error?.name || "rejected").slice(0, 60);
+                }
+              }
+            }
             report.at = Date.now();
             window.__foliaDrm = report;
             return report;
@@ -356,6 +378,7 @@
                 ready: element.readyState,
                 network: element.networkState,
                 error: element.error ? element.error.code : null,
+                errorText: element.error && element.error.message ? scrubText(element.error.message) : "",
                 source: Boolean(element.currentSrc || element.src)
               });
             }
@@ -951,19 +974,36 @@
       }
       var mediaKeySystemAccess = typeof MediaKeySystemAccess === "undefined" ? null : MediaKeySystemAccess.prototype;
       patchMethod(mediaKeySystemAccess, "createMediaKeys", (original) => function(...args) {
-        noteEme({ step: "keys-start" });
+        let granted = "";
+        try {
+          granted = describe(this.getConfiguration()).slice(0, 300);
+        } catch {
+        }
+        noteEme({ step: "keys-start", granted });
         let result;
         try {
           result = original.apply(this, args);
         } catch (error) {
-          noteEme({ step: "keys", ok: false, error: nameOf(error) });
+          noteEme({
+            step: "keys",
+            ok: false,
+            error: nameOf(error),
+            errorName: String(error && error.name || "").slice(0, 60),
+            errorMessage: String(error && error.message || "").slice(0, 120)
+          });
           throw error;
         }
         return Promise.resolve(result).then((keys) => {
           noteEme({ step: "keys", ok: true });
           return keys;
         }, (error) => {
-          noteEme({ step: "keys", ok: false, error: nameOf(error) });
+          noteEme({
+            step: "keys",
+            ok: false,
+            error: nameOf(error),
+            errorName: String(error && error.name || "").slice(0, 60),
+            errorMessage: String(error && error.message || "").slice(0, 120)
+          });
           throw error;
         });
       });

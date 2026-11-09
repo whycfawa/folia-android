@@ -82,19 +82,27 @@ try {
 
 const mediaKeySystemAccess = typeof MediaKeySystemAccess === 'undefined' ? null : MediaKeySystemAccess.prototype;
 patchMethod(mediaKeySystemAccess, 'createMediaKeys', original => function (...args) {
-    noteEme({ step: 'keys-start' });
+    // 建解密器时带上是哪一份配置被授予的：同一台设备上「访问通过、建解密器失败」很常见，
+    // 两件事要能对上（谁被授予了 persistentState、用了哪种 robustness）。
+    let granted = '';
+    try { granted = describe(this.getConfiguration()).slice(0, 300); } catch { /* 老版本没有这个方法。 */ }
+    noteEme({ step: 'keys-start', granted });
     let result;
     try {
         result = original.apply(this, args);
     } catch (error) {
-        noteEme({ step: 'keys', ok: false, error: nameOf(error) });
+        noteEme({ step: 'keys', ok: false, error: nameOf(error),
+            errorName: String((error && error.name) || '').slice(0, 60),
+            errorMessage: String((error && error.message) || '').slice(0, 120) });
         throw error;
     }
     return Promise.resolve(result).then(keys => {
         noteEme({ step: 'keys', ok: true });
         return keys;
     }, error => {
-        noteEme({ step: 'keys', ok: false, error: nameOf(error) });
+        noteEme({ step: 'keys', ok: false, error: nameOf(error),
+            errorName: String((error && error.name) || '').slice(0, 60),
+            errorMessage: String((error && error.message) || '').slice(0, 120) });
         throw error;
     });
 });

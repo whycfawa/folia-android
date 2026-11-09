@@ -64,6 +64,11 @@ public class FoliaFnMusicPlugin extends Plugin {
     private static final String KEY_DEVICE = "deviceId";
     private static final long TIMEOUT_MS = 12_000L;
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    /** FN Connect 中继：登录框整段只填一个 FN ID 时解析成 https://<fnid>.fnos.net。 */
+    private static final String RELAY_DOMAIN = "fnos.net";
+    private static final String RELAY_COOKIE = "mode=relay";
+    /** FN ID 是 fnos.net 下的一段主机名：只收 DNS 标签字符。 */
+    private static final java.util.regex.Pattern FN_ID = java.util.regex.Pattern.compile("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final SecureRandom random = new SecureRandom();
@@ -127,6 +132,36 @@ public class FoliaFnMusicPlugin extends Plugin {
         } catch (Throwable error) {
             return strictClient;
         }
+    }
+
+    /** 整段输入就是一个 FN ID → https://<fnid>.fnos.net（FN Connect 外网中继）；其余原样返回。 */
+    private static String resolveServer(String input) {
+        String raw = input == null ? "" : input.trim();
+        if (FN_ID.matcher(raw).matches() && !raw.equalsIgnoreCase("localhost")) {
+            return "https://" + raw.toLowerCase(Locale.ROOT) + "." + RELAY_DOMAIN;
+        }
+        return raw;
+    }
+
+    /** 主机名是否为 FN Connect 中继（*.fnos.net）：网关要求带 Cookie: mode=relay 才放行 API。 */
+    private static boolean isRelay(String base) {
+        try {
+            String host = new URL(base).getHost();
+            return host != null && host.toLowerCase(Locale.ROOT).endsWith("." + RELAY_DOMAIN);
+        } catch (Throwable error) {
+            return false;
+        }
+    }
+
+    /** 请求的 Cookie 头：token（登录时还没有）+ 中继标志；空串表示不带。 */
+    private static String authCookie(String base, String token) {
+        StringBuilder cookie = new StringBuilder();
+        if (token != null && !token.isEmpty()) cookie.append("music-token=").append(token);
+        if (isRelay(base)) {
+            if (cookie.length() > 0) cookie.append("; ");
+            cookie.append(RELAY_COOKIE);
+        }
+        return cookie.toString();
     }
 
     /** 规范化服务器地址：没写协议按 http（fnOS 默认 5666 是 HTTP），只收 http/https。 */
@@ -194,7 +229,8 @@ public class FoliaFnMusicPlugin extends Plugin {
         String encoded = params == null ? "" : query(params.keys(), params);
         String url = base.replaceAll("/+$", "") + pathname + (encoded.isEmpty() ? "" : "?" + encoded);
         Request.Builder builder = new Request.Builder().url(url).header("Accept", "application/json");
-        if (token != null && !token.isEmpty()) builder.header("Cookie", "music-token=" + token);
+        String cookie = authCookie(base, token);
+        if (!cookie.isEmpty()) builder.header("Cookie", cookie);
         if ("POST".equalsIgnoreCase(method)) {
             String payload = body == null ? "{}" : body.toString();
             builder.post(RequestBody.create(payload, JSON));
@@ -230,7 +266,8 @@ public class FoliaFnMusicPlugin extends Plugin {
             return result;
         }
         if (envelope == null) {
-            Log.w(TAG, "BAD-RESP " + method + " " + pathname + " status=" + status);
+            Log.w(TAG, "BAD-RESP " + method + " " + pathname + " status=" + status
+                    + " relay=" + isRelay(base) + " body=" + (raw.length() > 120 ? raw.substring(0, 120) : raw));
             result.put("ok", false);
             result.put("status", status);
             JSObject failure = new JSObject();
@@ -305,7 +342,7 @@ public class FoliaFnMusicPlugin extends Plugin {
                             fail(call, "invalid-params", "登录缺少服务器地址 / 账号 / 密码");
                             return;
                         }
-                        String base = normalizeBase(rawBase);
+                        String base = normalizeBase(resolveServer(rawBase));
                         if (base == null) {
                             fail(call, "invalid-base", "服务器地址无效");
                             return;
@@ -528,7 +565,9 @@ public class FoliaFnMusicPlugin extends Plugin {
                     return;
                 }
                 Request.Builder request = new Request.Builder().url(base.replaceAll("/+$", "") + path).header("Accept", "*/*");
-                if (authToken != null && !authToken.isEmpty()) request.header("Cookie", "music-token=" + authToken);
+                // 中继地址的媒体请求同样要 mode=relay：网关只认这个 cookie。
+                String cookie = authCookie(base, authToken);
+                if (!cookie.isEmpty()) request.header("Cookie", cookie);
                 if (range != null) request.header("Range", range);
                 try (Response response = plugin.upstreamClient(base).newCall(request.build()).execute()) {
                     String contentType = response.header("Content-Type", "application/octet-stream");
