@@ -162,24 +162,51 @@ public class FoliaNativePlugin extends Plugin {
     }
 
     @PluginMethod
-    public void cookiesGetAll(PluginCall call) {
-        String url = call.getString("url", "");
-        String domain = call.getString("domain", "");
-        if (url == null || url.isEmpty()) {
-            if (domain == null || domain.isEmpty()) {
-                url = "https://localhost/";
-            } else {
-                url = domain.startsWith("http") ? domain : "https://" + domain;
-            }
-        }
+    /** url / domain 二选一，落到一个能问 CookieManager 的地址。 */
+    private static String cookieQueryUrl(String url, String domain) {
+        if (url != null && !url.isEmpty()) return url;
+        if (domain != null && !domain.isEmpty()) return domain.startsWith("http") ? domain : "https://" + domain;
+        return "https://localhost/";
+    }
 
+    private JSArray readCookies(String url, String domain) {
         JSArray cookies = new JSArray();
         for (JSObject cookie : parseCookieHeader(CookieManager.getInstance().getCookie(url), domain)) {
             cookies.put(cookie);
         }
+        return cookies;
+    }
+
+    public void cookiesGetAll(PluginCall call) {
+        String url = cookieQueryUrl(call.getString("url", ""), call.getString("domain", ""));
         JSObject result = new JSObject();
-        result.put("cookies", cookies);
+        result.put("cookies", readCookies(url, call.getString("domain", "")));
         call.resolve(result);
+    }
+
+    /**
+     * 一次读多个目标：渲染层启动时每个平台各要一次 cookie，逐条过桥会排队，先到的那条
+     * 一慢就全部撞上调用方的 4 秒截止。这里一次拿完，调用方只等一次。
+     * targets: [{url?, domain?}] → results: [[cookie…], …]（与 targets 同序）。
+     */
+    @PluginMethod
+    public void cookiesGetBatch(PluginCall call) {
+        JSArray targets = call.getArray("targets");
+        JSArray results = new JSArray();
+        if (targets != null) {
+            for (int index = 0; index < targets.length(); index++) {
+                org.json.JSONObject target = targets.optJSONObject(index);
+                if (target == null) {
+                    results.put(new JSArray());
+                    continue;
+                }
+                String url = cookieQueryUrl(target.optString("url", ""), target.optString("domain", ""));
+                results.put(readCookies(url, target.optString("domain", "")));
+            }
+        }
+        JSObject answer = new JSObject();
+        answer.put("results", results);
+        call.resolve(answer);
     }
 
     @PluginMethod

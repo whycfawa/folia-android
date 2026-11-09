@@ -1,4 +1,5 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+import { foliaYtm } from './ytmNativePlugin';
 
 // src/services/onlineMusic/ytm/android/ytmAndroidSessionStore.ts
 // 与原生 FoliaYtm 插件里会话存取三个方法封口。会话（cookie + 登录用的 UA）在原生侧用
@@ -10,14 +11,8 @@ const COOKIE_LIMIT = 8192;
 const UA_LIMIT = 256;
 const FIELD_LIMIT = 48;
 
-type NativeSessionBox = { ok?: unknown; session?: { cookie?: unknown; userAgent?: unknown } | null; error?: { code?: unknown; message?: unknown } };
-type FoliaYtmStoreNative = {
-    restoreSession(): Promise<NativeSessionBox>;
-    saveSession(options: { cookie: string; userAgent: string }): Promise<NativeSessionBox>;
-    clearSession(options?: { eraseCookies: boolean }): Promise<NativeSessionBox>;
-};
-
-const plugin = registerPlugin<FoliaYtmStoreNative>('FoliaYtm');
+const plugin = foliaYtm;
+type NativeSessionBox = Awaited<ReturnType<typeof foliaYtm.restoreSession>>;
 
 /** 存下的那个登录：cookie 与登录 WebView 自己的 UA，两个都有才算数。 */
 export type StoredYtmSession = { cookie: string; userAgent: string };

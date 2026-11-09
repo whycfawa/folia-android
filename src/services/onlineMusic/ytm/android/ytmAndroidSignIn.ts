@@ -1,4 +1,5 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+import { foliaYtm } from './ytmNativePlugin';
 import type { ProviderErrorCode } from '../../../../types/onlineMusic';
 import i18n from '../../../../i18n/config';
 
@@ -16,9 +17,7 @@ const MESSAGE_LIMIT = 300;
 const DEFAULT_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 
 type NativeSignInAnswer = { ok?: unknown; session?: { cookie?: unknown; userAgent?: unknown }; error?: { code?: unknown; message?: unknown } };
-type FoliaYtmNative = { signIn(options: { title: string; cancelLabel: string; doneLabel: string }): Promise<NativeSignInAnswer> };
-
-const plugin = registerPlugin<FoliaYtmNative>('FoliaYtm');
+const plugin = foliaYtm;
 
 /** 原生一侧的关键字是「为什么没成」：一路带着它是 reason，登录报告才查得清。 */
 export type YtmNativeSignIn = { ok: true; cookie: string; userAgent: string } | { ok: false; code: ProviderErrorCode; reason: string; message: string };

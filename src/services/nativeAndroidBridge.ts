@@ -17,6 +17,10 @@ const BRIDGED_REQUEST_MAX_TIMEOUT_MS = 120000;
 // these calls, so a lost reply used to leave the QR modal parked on "waiting" after the
 // phone had already reported success. Every shim call therefore settles within a budget.
 const COOKIE_CALL_TIMEOUT_MS = 4000;
+// 启动时各平台一起要 cookie：一次批量读要遍历多个目标，比单条慢，预算单独放宽。
+const COOKIE_BATCH_TIMEOUT_MS = 8000;
+// 读到的 cookie 复用多久。启动、登录、拉列表常常在几百毫秒内重复问同一批域。
+const COOKIE_CACHE_TTL_MS = 1500;
 
 const API_HOSTS = [
   'music.163.com',
@@ -82,6 +86,7 @@ const API_HOSTS = [
 
 type NativePlugin = {
   cookiesGetAll: (options: Record<string, unknown>) => Promise<{ cookies?: unknown[] }>;
+  cookiesGetBatch: (options: { targets: Array<{ url?: string; domain?: string }> }) => Promise<{ results?: unknown[][] }>;
   cookiesGet: (options: Record<string, unknown>) => Promise<{ cookie?: unknown }>;
   cookiesSet: (options: Record<string, unknown>) => Promise<{ ok?: boolean }>;
   cookiesRemove: (options: Record<string, unknown>) => Promise<{ ok?: boolean }>;
@@ -245,26 +250,72 @@ const installCookieShim = (plugin: NativePlugin) => {
       if (timeoutHandle) clearTimeout(timeoutHandle);
     });
   };
+  // 同一个目标（url|domain）在 COOKIE_CACHE_TTL_MS 内只读一次；同一帧里来的多个目标合并成
+  // 一次过桥。插件调用是单线程串行的，逐条读会在启动时排队，先到的那条一慢就全部撞上超时。
+  const cookieCache = new Map<string, { at: number; rows: unknown[] }>();
+  const cookieKey = (details: Record<string, unknown>) => `${String(details?.url ?? '')}|${String(details?.domain ?? '')}`;
+  let cookieQueue: Array<{ key: string; details: Record<string, unknown>; resolve: (rows: unknown[]) => void }> = [];
+  let cookieFlush: ReturnType<typeof setTimeout> | null = null;
+  const flushCookies = () => {
+    cookieFlush = null;
+    const pending = cookieQueue;
+    cookieQueue = [];
+    if (!pending.length) return;
+    const targets = pending.map(item => ({
+      url: typeof item.details.url === 'string' ? item.details.url : '',
+      domain: typeof item.details.domain === 'string' ? item.details.domain : '',
+    }));
+    void callPlugin('cookies.getBatch', [] as unknown[][], async () => (await plugin.cookiesGetBatch({ targets })).results || [])
+      .then((results) => {
+        pending.forEach((item, index) => {
+          const rows = Array.isArray(results?.[index]) ? results[index] as unknown[] : [];
+          cookieCache.set(item.key, { at: Date.now(), rows });
+          item.resolve(rows);
+        });
+      });
+  };
+  // 写操作之后按 url 前缀清缓存：{url} 与 {domain} 两种键都可能有，宁多清不漏清。
+  const invalidateCookies = (details: Record<string, unknown>) => {
+    const url = typeof details?.url === 'string' ? details.url : '';
+    const domain = typeof details?.domain === 'string' ? details.domain : '';
+    if (!url && !domain) { cookieCache.clear(); return; }
+    for (const key of [...cookieCache.keys()]) {
+      if ((url && key.startsWith(`${url}|`)) || (domain && key.endsWith(`|${domain}`))) cookieCache.delete(key);
+    }
+  };
+  const readCookies = (details: Record<string, unknown>): Promise<unknown[]> => {
+    const key = cookieKey(details);
+    const hit = cookieCache.get(key);
+    if (hit && Date.now() - hit.at < COOKIE_CACHE_TTL_MS) return Promise.resolve(hit.rows);
+    return new Promise<unknown[]>((resolve) => {
+      cookieQueue.push({ key, details, resolve });
+      cookieFlush ??= setTimeout(flushCookies, 0);
+    });
+  };
   chromeObject.cookies = {
-    getAll: async (details: Record<string, unknown> = {}) => callPlugin(
-      'cookies.getAll',
-      [] as unknown[],
-      async () => (await plugin.cookiesGetAll(details)).cookies || [],
-    ),
-    get: async (details: Record<string, unknown>) => callPlugin(
-      'cookies.get',
-      null,
-      async () => (await plugin.cookiesGet(details)).cookie || null,
-    ),
+    getAll: async (details: Record<string, unknown> = {}) => readCookies(details),
+    // 单条按名字读：走同一个缓存/批量，不再单独过桥。
+    get: async (details: Record<string, unknown>) => {
+      const name = typeof details?.name === 'string' ? details.name : '';
+      if (!name) return null;
+      const rows = await readCookies({ url: details.url, domain: details.domain });
+      return rows.find(row => (row as { name?: unknown })?.name === name) ?? null;
+    },
     set: async (details: Record<string, unknown>) => {
       await callPlugin('cookies.set', { ok: false }, () => plugin.cookiesSet(details));
+      // 刚写进去的 cookie 不能被上一次的读结果盖住。
+      invalidateCookies(details);
       return details;
     },
-    remove: async (details: Record<string, unknown>) => callPlugin(
-      'cookies.remove',
-      null,
-      async () => ((await plugin.cookiesRemove(details)).ok ? details : null),
-    ),
+    remove: async (details: Record<string, unknown>) => {
+      const answer = await callPlugin(
+        'cookies.remove',
+        null,
+        async () => ((await plugin.cookiesRemove(details)).ok ? details : null),
+      );
+      invalidateCookies(details);
+      return answer;
+    },
     // 非标准扩展：一次删掉一批 cookie，避免几十条逐个过桥拖过调用方的截止时间。
     // 失败/超时返回 null，调用方会退回逐条删除。
     removeBatch: async (entries: Array<{ url: string; name: string }>) => callPlugin(
@@ -272,6 +323,8 @@ const installCookieShim = (plugin: NativePlugin) => {
       null,
       async () => {
         await plugin.cookiesRemoveBatch({ entries });
+        // 这一批删掉的都过期：按 url 逐条失效，别让缓存的旧值救活它们。
+        entries.forEach(entry => invalidateCookies({ url: entry.url }));
         return entries;
       },
     ),
