@@ -13,6 +13,7 @@ import { DEFAULT_OPENAI_CHAT_COMPLETIONS_URL, geminiGenerateContentUrl } from '.
 import { applyStoredAnimationIntensityToDualTheme } from "./themePreferences";
 import { sanitizeDualTheme } from "./themeSanitizer";
 import { getWebAiProvider, type WebAiProvider } from "./runtimeConfig";
+import { segmentLyricLines } from '../../shared/lyricSegmentationService.mjs';
 export {
   AI_PROVIDER_PRESETS,
   inferAiProviderFromUrl,
@@ -61,6 +62,36 @@ const themeRoute = (provider: WebAiProvider) => THEME_ROUTES[provider] ?? THEME_
 
 /** Our web route for the segmentation ask. The route picks the service itself. */
 const SEGMENTATION_ROUTE = '/api/segment-lyrics';
+
+/**
+ * 安卓壳里的分词：没有主进程桥，也没有部署的 /api/segment-lyrics，只有设置页里那把密钥。
+ * 共用 shared/lyricSegmentationService.mjs（与 Vercel / Worker 同一份提示词与解析），
+ * 网络出口换成原生 CapacitorHttp，避开 WebView 的 CORS。
+ */
+const bridgedAiFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const headers: Record<string, string> = {};
+    new Headers(init?.headers ?? {}).forEach((value, key) => { headers[key] = value; });
+    const body = typeof init?.body === 'string' ? JSON.parse(init.body) : (init?.body ?? {});
+    const reply = await postDirectAiJson(url, headers, body);
+    return new Response(reply.text, {
+        status: reply.status,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}) as typeof fetch;
+
+const requestDirectLyricSegmentation = async (lines: string[]): Promise<unknown> => {
+    const settings = useAiClientSettingsStore.getState().settings;
+    const env = {
+        AI_PROVIDER: settings.provider,
+        OPENAI_API_KEY: settings.openaiApiKey,
+        GEMINI_API_KEY: settings.geminiApiKey,
+        OPENAI_API_URL: settings.openaiApiUrl,
+        OPENAI_API_MODEL: settings.openaiApiModel,
+        GEMINI_API_MODEL: AI_CLIENT_GEMINI_MODEL,
+    };
+    return await segmentLyricLines(lines, env, bridgedAiFetch);
+};
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -406,7 +437,7 @@ const getSegmentationBridge = (): SegmentationBridge | null => {
 
 /** Whether an AI segmentation request can be made at all from this build. */
 export const isLyricSegmentationAiAvailable = (): boolean => (
-  typeof window !== 'undefined' && (Boolean(getSegmentationBridge()) || typeof fetch === 'function')
+  typeof window !== 'undefined' && (Boolean(getSegmentationBridge()) || isDirectAiTextRuntime() || typeof fetch === 'function')
 );
 
 /**
@@ -420,6 +451,10 @@ export const requestLyricSegmentation = async (lines: string[], signal?: AbortSi
   const bridge = getSegmentationBridge();
   if (bridge?.segmentLyrics) {
     return bridge.segmentLyrics(lines);
+  }
+  // 安卓壳：直连用户配置的模型（与「连接测试」同一条路），不再打本地根本没有的 /api 路由。
+  if (isDirectAiTextRuntime()) {
+    return requestDirectLyricSegmentation(lines);
   }
 
   const response = await fetch(SEGMENTATION_ROUTE, {
