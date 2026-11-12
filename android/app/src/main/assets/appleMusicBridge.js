@@ -135,6 +135,62 @@
     }
   });
 
+  // electron/appleMusic/companionStorefront.cjs
+  var require_companionStorefront = __commonJS({
+    "electron/appleMusic/companionStorefront.cjs"(exports, module) {
+      "use strict";
+      function storefrontTarget(currentUrl, storefront) {
+        if (typeof storefront !== "string" || !/^[a-z]{2}$/.test(storefront)) return null;
+        try {
+          const url = new URL(currentUrl);
+          if (url.protocol !== "https:" || url.hostname !== "music.apple.com") return null;
+          const current = url.pathname.split("/")[1];
+          if (current === storefront) return null;
+          return `https://music.apple.com/${storefront}/`;
+        } catch {
+          return null;
+        }
+      }
+      function pageStorefront(address) {
+        try {
+          const url = new URL(address);
+          if (url.protocol !== "https:" || url.hostname !== "music.apple.com") return null;
+          const region = url.pathname.split("/")[1];
+          return /^[a-z]{2}$/.test(region) ? region : null;
+        } catch {
+          return null;
+        }
+      }
+      async function alignStorefront(mk) {
+        const read = window.__foliaStorefront?.data?.data?.[0]?.id;
+        const account = typeof read === "string" ? read : mk?.storefrontCountryCode;
+        if (mk?.isAuthorized !== true || typeof account !== "string" || !/^[a-z]{2}$/.test(account)) return;
+        if (mk.storefrontId !== account) {
+          mk.storefrontId = account;
+          window.__foliaStorefrontAligned = true;
+        }
+        if (window.__foliaStorefrontAligned !== true) return;
+        const modes = window.MusicKit?.PlaybackMode;
+        if (!modes || mk.playbackMode !== modes.PREVIEW_ONLY || typeof mk.hasMusicSubscription !== "function") return;
+        if (typeof window.__foliaSubscribed !== "boolean") {
+          window.__foliaSubscription ||= Promise.resolve().then(() => mk.hasMusicSubscription()).then((answer) => {
+            if (typeof answer === "boolean") window.__foliaSubscribed = answer;
+          }, () => {
+          }).finally(() => {
+            window.__foliaSubscription = null;
+          });
+          let timer;
+          await Promise.race([window.__foliaSubscription, new Promise((done) => {
+            timer = setTimeout(done, 3e3);
+          })]);
+          clearTimeout(timer);
+        }
+        if (window.__foliaSubscribed === true) mk.playbackMode = modes.MIXED_CONTENT;
+      }
+      module.exports = { storefrontTarget, pageStorefront, alignStorefront };
+    }
+  });
+
   // electron/appleMusic/companionRequests.cjs
   var require_companionRequests = __commonJS({
     "electron/appleMusic/companionRequests.cjs"(exports, module) {
@@ -143,9 +199,10 @@
       var { updateFavorite } = require_companionFavorites();
       var { addPlaylistTracks } = require_companionPlaylist();
       var { readPersonalStation } = require_companionRadio();
+      var { alignStorefront } = require_companionStorefront();
       var REQUEST_ID = /^[a-zA-Z0-9_-]{1,64}$/;
       var RESOURCE_ID = /^[a-zA-Z0-9._-]{1,200}$/;
-      var PLAYBACK_COMMANDS = /* @__PURE__ */ new Set(["playStation", "playSong", "pause", "resume", "seek", "setVolume", "prepareNext"]);
+      var PLAYBACK_COMMANDS = /* @__PURE__ */ new Set(["playStation", "playSong", "pause", "resume", "seek", "setVolume", "setRepeatOne", "prepareNext"]);
       var OPERATIONS = /* @__PURE__ */ new Set(["songOriginal", "catalogSong", "catalogAlbum", "catalogAlbumTracks", "catalogArtist", "catalogArtistSongs", "catalogArtistAlbums", "libraryAlbums", "librarySongs", "libraryAlbumTracks", "stations", "station", "personalFm", "showWindow", "hideWindow", "logout", "accountStatus", "search", "playlists", "playlistTracks", "playlistTrackCount", "lyrics", "playbackStatus", "diagnostics", "likeSong", "addPlaylistTracks", ...PLAYBACK_COMMANDS]);
       function validateRequest(message) {
         if (!message || typeof message !== "object" || Array.isArray(message)) return null;
@@ -167,6 +224,10 @@
         if (operation === "setVolume") {
           if (typeof params.volume !== "number" || !Number.isFinite(params.volume) || params.volume < 0 || params.volume > 1) return null;
           return { id, operation, params: { volume: params.volume } };
+        }
+        if (operation === "setRepeatOne") {
+          if (typeof params.enabled !== "boolean") return null;
+          return { id, operation, params: { enabled: params.enabled } };
         }
         if (operation === "addPlaylistTracks") {
           if (typeof params.playlistId !== "string" || !/^p\.[a-zA-Z0-9._-]{1,198}$/.test(params.playlistId) || !Array.isArray(params.catalogIds) || params.catalogIds.length < 1 || params.catalogIds.length > 100 || params.catalogIds.some((id2) => typeof id2 !== "string" || !/^\d{1,40}$/.test(id2))) return null;
@@ -217,41 +278,108 @@
         }
         return { id, operation, params: { offset, limit } };
       }
-      async function readFromPage(request, controlQueue2, updateFavorite2, addPlaylistTracks2, readPersonalStation2) {
+      async function readFromPage(request, controlQueue2, updateFavorite2, addPlaylistTracks2, readPersonalStation2, alignStorefront2) {
         try {
           const mk = window.MusicKit?.getInstance();
           const modern = mk?.api?.v3;
           const legacy = mk?.api;
           const call = typeof modern?.music === "function" ? modern.music.bind(modern) : typeof legacy?.music === "function" ? (path2, query, options2) => options2 ? legacy.music(path2, query, options2.fetchOptions) : legacy.music(path2, query) : null;
-          const alignStorefront = async () => {
-            let storefront = typeof window.__foliaAccountStorefront === "string" ? window.__foliaAccountStorefront : "";
-            if (!/^[a-z]{2}$/.test(storefront) && window.__foliaCompanionHost === "android") {
+          if (request.operation !== "diagnostics" && !call) return { ok: false, error: "not-ready" };
+          const primeAndroidStorefront = async () => {
+            if (window.__foliaCompanionHost !== "android" || !call) return;
+            const known = window.__foliaStorefront?.data?.data?.[0]?.id;
+            if (typeof known === "string" && /^[a-z]{2}$/.test(known)) return;
+            const declared = typeof window.__foliaAccountStorefront === "string" ? window.__foliaAccountStorefront : "";
+            if (/^[a-z]{2}$/.test(declared)) {
+              window.__foliaStorefront = { data: { data: [{ id: declared }] } };
+              return;
+            }
+            try {
+              const answer = await call("v1/me/storefront");
+              const id = answer?.data?.data?.[0]?.id;
+              if (typeof id !== "string" || !/^[a-z]{2}$/.test(id)) return;
+              window.__foliaStorefront = answer;
+              window.__foliaAccountStorefront = id;
               try {
-                const answer = await call("v1/me/storefront");
-                const id = answer?.data?.data?.[0]?.id;
-                if (typeof id === "string" && /^[a-z]{2}$/.test(id)) storefront = id;
+                if (typeof window.FoliaAppleMusicBridge?.storefront === "function") window.FoliaAppleMusicBridge.storefront(id);
               } catch {
               }
-              if (/^[a-z]{2}$/.test(storefront)) {
-                window.__foliaAccountStorefront = storefront;
+            } catch {
+            }
+          };
+          if (["playSong", "playStation", "prepareNext"].includes(request.operation)) {
+            if (window.__foliaCompanionHost === "android" && mk) {
+              try {
+                await primeAndroidStorefront();
+              } catch {
+              }
+              const known = window.__foliaStorefront?.data?.data?.[0]?.id;
+              if (typeof known === "string" && /^[a-z]{2}$/.test(known)) {
                 try {
-                  if (typeof window.FoliaAppleMusicBridge?.storefront === "function") window.FoliaAppleMusicBridge.storefront(storefront);
+                  if (String(mk.storefrontId || "").toLowerCase() !== known) mk.storefrontId = known;
                 } catch {
                 }
+                console.info("[AppleMusic] playback storefront", {
+                  account: known,
+                  page: String(mk.storefrontId || "").toLowerCase(),
+                  matched: String(mk.storefrontId || "").toLowerCase() === known
+                });
               }
-            }
-            if (!/^[a-z]{2}$/.test(storefront) || !mk) return null;
-            const before = String(mk.storefrontId || "").toLowerCase();
-            if (before !== storefront) {
+            } else {
               try {
-                mk.storefrontId = storefront;
+                await alignStorefront2(mk);
               } catch {
               }
             }
-            const after = String(mk.storefrontId || "").toLowerCase();
-            console.info("[AppleMusic] playback storefront", { account: storefront, page: after, matched: after === storefront });
-            return { account: storefront, page: after, matched: after === storefront };
-          };
+          }
+          if (request.operation === "addPlaylistTracks") return await addPlaylistTracks2(call, request.params);
+          if (request.operation === "likeSong") return await updateFavorite2(call, request.params);
+          if (request.operation === "prepareNext") return await controlQueue2(mk, request.operation, request.params);
+          if (request.operation === "playbackStatus") {
+            const pendingStart = window.__foliaStart;
+            if (pendingStart?.pending && mk.isPlaying === true) pendingStart.pending = false;
+            if (pendingStart?.pending && !pendingStart.cancelled && Date.now() - pendingStart.startedAt >= 6e4) {
+              pendingStart.pending = false;
+              pendingStart.cancelled = true;
+              pendingStart.failed = true;
+            }
+            const elapsed = Date.now() - Number(pendingStart?.startedAt || 0);
+            const playerState = Number(mk.playbackState);
+            if (pendingStart && !pendingStart.cancelled && !pendingStart.failed && pendingStart.nudged !== true && elapsed >= 4e3 && elapsed < 15e3 && mk.isPlaying !== true && (playerState === 0 || playerState === 4)) {
+              pendingStart.nudged = true;
+              console.warn("[AppleMusic] start did not begin; asking the player again", { state: Number(mk.playbackState) });
+              Promise.resolve(mk.play()).catch((error) => {
+                pendingStart.error = String(error?.name || error?.message || error || "rejected").slice(0, 160);
+              });
+            }
+            if (pendingStart?.failed && mk.isPlaying === true) pendingStart.failed = false;
+            if (window.__foliaStart?.failed) {
+              console.warn("[AppleMusic] start rejected", { stage: "play", error: String(window.__foliaStart.error || "").slice(0, 120) });
+              return { ok: false, error: "playback-failed", playbackStage: "play" };
+            }
+            const item = mk.nowPlayingItem;
+            const params = item?.attributes?.playParams || {};
+            const liveStation = typeof window.__foliaLiveStation === "string" ? window.__foliaLiveStation : "";
+            const position = liveStation ? 0 : Number(mk.currentPlaybackTime);
+            const duration = Number(item?.attributes?.durationInMillis);
+            const state = Number(mk.playbackState);
+            const queue = mk.queue;
+            const queueLength = Number.isInteger(queue?.length) ? queue.length : Array.isArray(queue?.items) ? queue.items.length : null;
+            return { ok: true, data: {
+              itemId: liveStation || (typeof item?.id === "string" ? item.id : ""),
+              ...liveStation ? { live: true } : {},
+              catalogId: liveStation || (typeof params.catalogId === "string" ? params.catalogId : ""),
+              isPlaying: mk.isPlaying === true,
+              ...window.__foliaStart?.pending && !window.__foliaStart.cancelled ? { starting: true } : {},
+              // MusicKit's own state tells "stopped" and "ended" apart from a pause.
+              state: Number.isInteger(state) ? state : null,
+              repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,
+              queueLength,
+              queueKeys: queue ? Object.keys(queue).slice(0, 12) : null,
+              positionMs: Number.isFinite(position) && position >= 0 ? Math.round(position * 1e3) : 0,
+              durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0
+            } };
+          }
           const readDrm = async () => {
             const cached = window.__foliaDrm;
             if (cached && (cached.widevine === true || Date.now() - Number(cached.at || 0) < 6e4)) return cached;
@@ -429,66 +557,6 @@
           };
           watchMedia();
           watchPlayer();
-          if (request.operation !== "diagnostics" && (!call || !mk)) return { ok: false, error: "not-ready" };
-          if (request.operation === "logout") {
-            if (typeof mk.unauthorize === "function") {
-              try {
-                await mk.unauthorize();
-              } catch {
-              }
-            }
-            window.__foliaAccountStorefront = "";
-            window.__foliaStart = null;
-            window.__foliaPreparedQueue = [];
-            return { ok: true, data: {} };
-          }
-          if (request.operation === "addPlaylistTracks") return await addPlaylistTracks2(call, request.params);
-          if (request.operation === "likeSong") return await updateFavorite2(call, request.params);
-          if (request.operation === "prepareNext") return await controlQueue2(mk, request.operation, request.params);
-          if (request.operation === "playbackStatus") {
-            const pendingStart = window.__foliaStart;
-            if (pendingStart?.pending && mk.isPlaying === true) pendingStart.pending = false;
-            if (pendingStart?.pending && !pendingStart.cancelled && Date.now() - pendingStart.startedAt >= 6e4) {
-              pendingStart.pending = false;
-              pendingStart.cancelled = true;
-              pendingStart.failed = true;
-            }
-            const elapsed = Date.now() - Number(pendingStart?.startedAt || 0);
-            const playerState = Number(mk.playbackState);
-            if (pendingStart && !pendingStart.cancelled && !pendingStart.failed && pendingStart.nudged !== true && elapsed >= 4e3 && elapsed < 15e3 && mk.isPlaying !== true && (playerState === 0 || playerState === 4)) {
-              pendingStart.nudged = true;
-              console.warn("[AppleMusic] start did not begin; asking the player again", { state: Number(mk.playbackState) });
-              Promise.resolve(mk.play()).catch((error) => {
-                pendingStart.error = String(error?.name || error?.message || error || "rejected").slice(0, 160);
-              });
-            }
-            if (pendingStart?.failed && mk.isPlaying === true) pendingStart.failed = false;
-            if (window.__foliaStart?.failed) {
-              console.warn("[AppleMusic] start rejected", { stage: "play", error: String(window.__foliaStart.error || "").slice(0, 120) });
-              return { ok: false, error: "playback-failed", playbackStage: "play" };
-            }
-            const item = mk.nowPlayingItem;
-            const params = item?.attributes?.playParams || {};
-            const liveStation = typeof window.__foliaLiveStation === "string" ? window.__foliaLiveStation : "";
-            const position = liveStation ? 0 : Number(mk.currentPlaybackTime);
-            const duration = Number(item?.attributes?.durationInMillis);
-            const state = Number(mk.playbackState);
-            const queue = mk.queue;
-            const queueLength = Number.isInteger(queue?.length) ? queue.length : Array.isArray(queue?.items) ? queue.items.length : null;
-            return { ok: true, data: {
-              itemId: liveStation || (typeof item?.id === "string" ? item.id : ""),
-              ...liveStation ? { live: true } : {},
-              catalogId: liveStation || (typeof params.catalogId === "string" ? params.catalogId : ""),
-              isPlaying: mk.isPlaying === true,
-              ...window.__foliaStart?.pending && !window.__foliaStart.cancelled ? { starting: true } : {},
-              // MusicKit's own state tells "stopped" and "ended" apart from a pause.
-              state: Number.isInteger(state) ? state : null,
-              queueLength,
-              queueKeys: queue ? Object.keys(queue).slice(0, 12) : null,
-              positionMs: Number.isFinite(position) && position >= 0 ? Math.round(position * 1e3) : 0,
-              durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0
-            } };
-          }
           if (request.operation === "diagnostics") {
             const start = window.__foliaStart;
             const queue = mk?.queue;
@@ -541,7 +609,7 @@
             if (typeof mk.setQueue !== "function" || typeof mk.play !== "function") return { ok: false, error: "unsupported" };
             let stationStage = "storefront";
             try {
-              await alignStorefront();
+              await alignStorefront2();
               stationStage = "queue";
               if (mk.setQueue !== window.__foliaStationQueueHook) {
                 const originalSetQueue = mk.setQueue;
@@ -552,6 +620,7 @@
                 mk.setQueue = clearStationOnQueueChange;
                 window.__foliaStationQueueHook = clearStationOnQueueChange;
               }
+              if (typeof mk.setRepeatMode === "function") mk.setRepeatMode(0);
               await mk.setQueue({ station: request.params.stationId, startPlaying: false });
               window.__foliaLiveStation = request.params.stationId;
               window.__foliaPreparedQueue = [];
@@ -567,6 +636,17 @@
             mk.volume = request.params.volume;
             return { ok: true, data: {} };
           }
+          if (request.operation === "setRepeatOne") {
+            const mode = request.params.enabled ? 1 : 0;
+            try {
+              if (typeof mk.setRepeatMode === "function") mk.setRepeatMode(mode);
+              else if ("repeatMode" in mk) mk.repeatMode = mode;
+              else return { ok: false, error: "unsupported" };
+            } catch {
+              return { ok: false, error: "playback-failed" };
+            }
+            return { ok: true, data: { repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null } };
+          }
           const methods = { pause: "pause", resume: "play", seek: "seekToTime" };
           if (request.operation === "playSong") {
             if (typeof mk.setQueue !== "function" || typeof mk.play !== "function") return { ok: false, error: "unsupported" };
@@ -580,7 +660,7 @@
               if (typeof mk.setShuffleMode === "function") mk.setShuffleMode(0);
               if (typeof mk.setRepeatMode === "function") mk.setRepeatMode(0);
               playbackStage = "storefront";
-              storefront = await alignStorefront();
+              storefront = await alignStorefront2();
               playbackStage = "queue";
               console.info("[AppleMusic] Playback stage: queue");
               window.__foliaLiveStation = "";
@@ -631,9 +711,11 @@
               isPlaying: mk.isPlaying === true,
               itemId: typeof mk.nowPlayingItem?.id === "string" ? mk.nowPlayingItem.id : "",
               queueKeys: mk.queue ? Object.keys(mk.queue).slice(0, 12) : null,
-              storefront: storefront ? storefront.page : "",
-              storefrontMatched: storefront ? storefront.matched : null,
-              previewOnly: mk.previewOnly === true
+              // A start that will only sound a preview says so here, with the region it plays in and,
+              // where the page is in another region, what Apple said of the subscription (null: nothing yet).
+              previewOnly: mk.previewOnly === true,
+              storefront: typeof mk.storefrontId === "string" ? mk.storefrontId.slice(0, 8) : "",
+              subscribed: typeof window.__foliaSubscribed === "boolean" ? window.__foliaSubscribed : null
             } };
           }
           if (Object.prototype.hasOwnProperty.call(methods, request.operation)) {
@@ -826,12 +908,12 @@
             nextOffset = suppliedOffset;
           }
           return { ok: true, data: { items, hasMore, nextOffset } };
-        } catch {
-          return { ok: false, error: "request-failed" };
+        } catch (error) {
+          return { ok: false, error: "request-failed", detail: String(error?.message || error || "").slice(0, 160) };
         }
       }
       function requestExpression(request) {
-        return `(${readFromPage.toString()})(${JSON.stringify(request)}, (${controlQueue.toString()}), (${updateFavorite.toString()}), (${addPlaylistTracks.toString()}), (${readPersonalStation.toString()}))`;
+        return `(${readFromPage.toString()})(${JSON.stringify(request)}, (${controlQueue.toString()}), (${updateFavorite.toString()}), (${addPlaylistTracks.toString()}), (${readPersonalStation.toString()}), (${alignStorefront.toString()}))`;
       }
       function createRequestDispatcher(getContents, timeoutMs = 2e4, getGeneration = () => 0, recoverPlayback = async () => false) {
         let scope;

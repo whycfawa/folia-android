@@ -18,6 +18,7 @@ import { useBravaisSeamStore } from './bravaisSeamLevel';
 import { canTakeSeamFocus, resolveSeamEntry, resolveSeamStep } from './bravaisSeamFocus';
 import { BRAVAIS_SEAM_FLIP_ATTRIBUTE } from './bravaisSeamMotion';
 import type { BravaisTileHandlers } from './BravaisTile';
+import { noteLibraryStep } from '../../../nativeBridge/api/libraryTrace.js';
 import type { BravaisFrameState } from './useBravaisFrame';
 import { filterOnScreenSlots, getVisibleWorldBounds } from './useBravaisCamera';
 import type { useBravaisFocus } from './useBravaisFocus';

@@ -65,7 +65,10 @@ public class FoliaFnMusicPlugin extends Plugin {
     private static final long TIMEOUT_MS = 12_000L;
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     /** FN Connect 中继：登录框整段只填一个 FN ID 时解析成 https://<fnid>.fnos.net。 */
-    private static final String RELAY_DOMAIN = "fnos.net";
+    // 飞牛有两个中继集群，一个 FN ID 只开在其中一个上：先试新的 5ddd.com，再试旧的 fnos.net。
+    // mode=relay 只有 fnos.net 网关要求（5ddd.com 实测不带即可）。
+    private static final String[] RELAY_DOMAINS = { "5ddd.com", "fnos.net" };
+    private static final String RELAY_COOKIE_DOMAIN = "fnos.net";
     private static final String RELAY_COOKIE = "mode=relay";
     /** FN ID 是 fnos.net 下的一段主机名：只收 DNS 标签字符。 */
     private static final java.util.regex.Pattern FN_ID = java.util.regex.Pattern.compile("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", java.util.regex.Pattern.CASE_INSENSITIVE);
@@ -134,20 +137,34 @@ public class FoliaFnMusicPlugin extends Plugin {
         }
     }
 
-    /** 整段输入就是一个 FN ID → https://<fnid>.fnos.net（FN Connect 外网中继）；其余原样返回。 */
-    private static String resolveServer(String input) {
+    /** 整段输入是一个 FN ID → 每个集群一个 https://<fnid>.<集群域名>（FN Connect 中继）；其余原样一条。 */
+    private static java.util.List<String> resolveServerCandidates(String input) {
         String raw = input == null ? "" : input.trim();
+        java.util.List<String> candidates = new java.util.ArrayList<>();
         if (FN_ID.matcher(raw).matches() && !raw.equalsIgnoreCase("localhost")) {
-            return "https://" + raw.toLowerCase(Locale.ROOT) + "." + RELAY_DOMAIN;
+            for (String domain : RELAY_DOMAINS) {
+                candidates.add("https://" + raw.toLowerCase(Locale.ROOT) + "." + domain);
+            }
+            return candidates;
         }
-        return raw;
+        candidates.add(raw);
+        return candidates;
     }
 
-    /** 主机名是否为 FN Connect 中继（*.fnos.net）：网关要求带 Cookie: mode=relay 才放行 API。 */
-    private static boolean isRelay(String base) {
+    /** 主机名是不是 FN Connect 中继（*.5ddd.com / *.fnos.net）。 */
+    private static boolean isRelayHost(String host) {
+        String value = host == null ? "" : host.toLowerCase(Locale.ROOT);
+        for (String domain : RELAY_DOMAINS) {
+            if (value.endsWith("." + domain)) return true;
+        }
+        return false;
+    }
+
+    /** 是否要带 Cookie: mode=relay —— 只有 fnos.net 那个集群的网关要它。 */
+    private static boolean needsRelayCookie(String base) {
         try {
             String host = new URL(base).getHost();
-            return host != null && host.toLowerCase(Locale.ROOT).endsWith("." + RELAY_DOMAIN);
+            return host != null && host.toLowerCase(Locale.ROOT).endsWith("." + RELAY_COOKIE_DOMAIN);
         } catch (Throwable error) {
             return false;
         }
@@ -157,7 +174,7 @@ public class FoliaFnMusicPlugin extends Plugin {
     private static String authCookie(String base, String token) {
         StringBuilder cookie = new StringBuilder();
         if (token != null && !token.isEmpty()) cookie.append("music-token=").append(token);
-        if (isRelay(base)) {
+        if (needsRelayCookie(base)) {
             if (cookie.length() > 0) cookie.append("; ");
             cookie.append(RELAY_COOKIE);
         }
@@ -267,7 +284,7 @@ public class FoliaFnMusicPlugin extends Plugin {
         }
         if (envelope == null) {
             Log.w(TAG, "BAD-RESP " + method + " " + pathname + " status=" + status
-                    + " relay=" + isRelay(base) + " body=" + (raw.length() > 120 ? raw.substring(0, 120) : raw));
+                    + " relay=" + needsRelayCookie(base) + " body=" + (raw.length() > 120 ? raw.substring(0, 120) : raw));
             result.put("ok", false);
             result.put("status", status);
             JSObject failure = new JSObject();
@@ -342,16 +359,29 @@ public class FoliaFnMusicPlugin extends Plugin {
                             fail(call, "invalid-params", "登录缺少服务器地址 / 账号 / 密码");
                             return;
                         }
-                        String base = normalizeBase(resolveServer(rawBase));
-                        if (base == null) {
-                            fail(call, "invalid-base", "服务器地址无效");
-                            return;
-                        }
                         JSONObject body = new JSONObject();
                         body.put("username", username);
                         body.put("password", sha256Hex(password));
                         body.put("deviceId", deviceId());
-                        JSObject result = perform(base, "POST", "/music/api/v1/user/password-login", null, body, null);
+                        // 一个 FN ID 只开在一个中继集群上：拿到 fnOS 的业务答复（哪怕密码错）就停，
+                        // 只在「没连上 / 回的不是 JSON」时才换下一个集群 —— 与桌面端同一套顺序。
+                        JSObject result = null;
+                        String base = null;
+                        for (String candidate : resolveServerCandidates(rawBase)) {
+                            String normalized = normalizeBase(candidate);
+                            if (normalized == null) continue;
+                            base = normalized;
+                            result = perform(normalized, "POST", "/music/api/v1/user/password-login", null, body, null);
+                            if (Boolean.TRUE.equals(result.getBool("ok"))) break;
+                            Object failure = result.opt("error");
+                            String code = failure instanceof JSObject ? ((JSObject) failure).optString("code", "") : "";
+                            boolean answered = !code.isEmpty() && !"network".equals(code) && !"invalid-response".equals(code);
+                            if (answered) break;
+                        }
+                        if (result == null || base == null) {
+                            fail(call, "invalid-base", "服务器地址无效");
+                            return;
+                        }
                         if (!Boolean.TRUE.equals(result.getBool("ok"))) {
                             call.resolve(result);
                             return;

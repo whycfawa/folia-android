@@ -99,6 +99,8 @@ import { useHifiPlaybackBridge } from './components/hifi/useHifiPlaybackBridge';
 import { useExternalPlaybackBridge } from './components/app/playback/bridges/useExternalPlaybackBridge';
 import { useExternalAutomixGate } from './components/app/playback/externalPlaybackGate';
 import { previewExternalPlaybackVolume, seekExternalPlayback } from './services/onlineMusic/externalPlayback';
+import { setNativeStageTheme } from './services/nativeStageTheme';
+import { registerNativeStageActions } from './services/nativeStageActions';
 import { seekExternalSongIfNotLoaded, startExternalSong } from './components/app/playback/start/externalSongStart';
 import { seekHifiRoute } from './components/hifi/hifiRouteTransport';
 import { useHifiAutomixGate } from './components/hifi/useHifiAutomixGate';

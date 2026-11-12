@@ -17,7 +17,10 @@ import {
     isPlayerControlSlotActionId,
     type PlayerControlSlotActionId,
 } from '../types/playerControlSlots';
-import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX } from '../utils/playerBottomBarLayout';
+import {
+    PLAYER_BOTTOM_BAR_BASE_OFFSET_PX,
+    resolvePlayerBottomBarMaxOffset,
+} from '../utils/playerBottomBarLayout';
 import { getStoredBoolean, setStoredBoolean, getStoredString, setStoredString } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
 
@@ -33,6 +36,35 @@ const readTitlebarSide = (): 'left' | 'right' => {
 };
 
 /** Reads the persisted lower-bounded offset; the viewport-dependent upper bound is applied by consumers. */
+/**
+ * 安卓上的底部偏移量原来由一个自由滑块写入：在可滚动列表里被手指蹭一下就会把控制条抬到画面中间
+ * 并立刻持久化，装新版本也不会自己恢复。滑块已从安卓端移除（改用「调整位置」流程），这里把历史
+ * 遗留的大偏移复位一次；小幅抬高属于正常使用，不动它。
+ */
+const ANDROID_OFFSET_RESET_FLAG = 'folia_android_bottom_bar_offset_reset_v1';
+
+const migrateLegacyAndroidBottomBarOffset = (offsetPx: number): number => {
+    if (typeof window === 'undefined') return offsetPx;
+    const isAndroid = (window as unknown as { Capacitor?: { getPlatform?: () => string } })
+        .Capacitor?.getPlatform?.() === 'android';
+    if (!isAndroid) return offsetPx;
+
+    try {
+        if (localStorage.getItem(ANDROID_OFFSET_RESET_FLAG) === '1') return offsetPx;
+        localStorage.setItem(ANDROID_OFFSET_RESET_FLAG, '1');
+
+        const max = resolvePlayerBottomBarMaxOffset(window.innerHeight);
+        const quarterOfRange = PLAYER_BOTTOM_BAR_BASE_OFFSET_PX
+            + (max - PLAYER_BOTTOM_BAR_BASE_OFFSET_PX) * 0.25;
+        if (offsetPx < quarterOfRange) return offsetPx;
+
+        localStorage.setItem(PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY, String(PLAYER_BOTTOM_BAR_BASE_OFFSET_PX));
+        return PLAYER_BOTTOM_BAR_BASE_OFFSET_PX;
+    } catch {
+        return offsetPx;
+    }
+};
+
 const readStoredPlayerBottomBarOffset = (): number => {
     if (typeof window === 'undefined') {
         return PLAYER_BOTTOM_BAR_BASE_OFFSET_PX;

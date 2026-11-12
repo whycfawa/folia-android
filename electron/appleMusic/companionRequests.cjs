@@ -11,7 +11,7 @@ const REQUEST_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 const RESOURCE_ID = /^[a-zA-Z0-9._-]{1,200}$/;
 // Folia chooses the order; the companion may prepare a bounded tail but cannot invent next tracks.
 const PLAYBACK_COMMANDS = new Set(['playStation', 'playSong', 'pause', 'resume', 'seek', 'setVolume', 'setRepeatOne', 'prepareNext']);
-const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'librarySongs', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
+const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'librarySongs', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'diagnostics', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
 
 function validateRequest(message) {
     if (!message || typeof message !== 'object' || Array.isArray(message)) return null;
@@ -102,10 +102,48 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             : typeof legacy?.music === 'function' ? (path, query, options) => options
                 ? legacy.music(path, query, options.fetchOptions) : legacy.music(path, query)
                 : null;
-        if (!call) return { ok: false, error: 'not-ready' };
+        // 诊断是只读取页面与 CDM 的状态：没有 MusicKit、没有 API 也必须能答（安卓的失败排查全在它）。
+        if (request.operation !== 'diagnostics' && !call) return { ok: false, error: 'not-ready' };
+        // 安卓宿主没有桌面那条「按 URL 打开账号地区页面」的路：原地切店铺之前，先把账号地区问出来
+        // （桌面在 accountStatus 里顺手缓存，安卓可能还没走过那一步）。
+        const primeAndroidStorefront = async () => {
+            if (window.__foliaCompanionHost !== 'android' || !call) return;
+            const known = window.__foliaStorefront?.data?.data?.[0]?.id;
+            if (typeof known === 'string' && /^[a-z]{2}$/.test(known)) return;
+            const declared = typeof window.__foliaAccountStorefront === 'string' ? window.__foliaAccountStorefront : '';
+            if (/^[a-z]{2}$/.test(declared)) {
+                window.__foliaStorefront = { data: { data: [{ id: declared }] } };
+                return;
+            }
+            try {
+                const answer = await call('v1/me/storefront');
+                const id = answer?.data?.data?.[0]?.id;
+                if (typeof id !== 'string' || !/^[a-z]{2}$/.test(id)) return;
+                window.__foliaStorefront = answer;
+                window.__foliaAccountStorefront = id;
+                try {
+                    if (typeof window.FoliaAppleMusicBridge?.storefront === 'function') window.FoliaAppleMusicBridge.storefront(id);
+                } catch { /* 宿主只用它下次打开正确的页面。 */ }
+            } catch { /* 页面就按自己的地区放，队列结果照旧报出来。 */ }
+        };
         // Starts and prepared queues play in the account's region, whatever region the page is in.
         if (['playSong', 'playStation', 'prepareNext'].includes(request.operation)) {
-            try { await alignStorefront(mk); } catch { /* The start goes on in the page's own region. */ }
+            if (window.__foliaCompanionHost === 'android' && mk) {
+                // 安卓：页面原地切店铺。桌面那条「按 URL 把页面搬到账号地区」在 WebView 里没有意义，
+                // 也不等 isAuthorized —— 账号地区已经由宿主递进来，先用它。
+                try { await primeAndroidStorefront(); } catch { /* 问不到就按页面地区放。 */ }
+                const known = window.__foliaStorefront?.data?.data?.[0]?.id;
+                if (typeof known === 'string' && /^[a-z]{2}$/.test(known)) {
+                    try {
+                        if (String(mk.storefrontId || '').toLowerCase() !== known) mk.storefrontId = known;
+                    } catch { /* 老播放器只读，照旧报出来。 */ }
+                    console.info('[AppleMusic] playback storefront', {
+                        account: known, page: String(mk.storefrontId || '').toLowerCase(), matched: String(mk.storefrontId || '').toLowerCase() === known,
+                    });
+                }
+            } else {
+                try { await alignStorefront(mk); } catch { /* The start goes on in the page's own region. */ }
+            }
         }
         if (request.operation === 'addPlaylistTracks') return await addPlaylistTracks(call, request.params);
         if (request.operation === 'likeSong') return await updateFavorite(call, request.params);
@@ -167,6 +205,168 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0,
             } };
         }
+        // Why a start never begins is usually here: the page can only decrypt Widevine, and the WebView
+        // that hosts it may offer no CDM at all. Asked once, before the first start.
+        const readDrm = async () => {
+            const cached = window.__foliaDrm;
+            // A supported CDM stays supported; a failure may be a moment's provisioning and is retried.
+            if (cached && (cached.widevine === true || Date.now() - Number(cached.at || 0) < 60000)) return cached;
+            const report = {
+                eme: typeof navigator.requestMediaKeySystemAccess === 'function',
+                mediaSource: typeof MediaSource !== 'undefined',
+                secure: window.isSecureContext === true,
+                widevine: false,
+                robustness: '',
+                error: '',
+            };
+            const configuration = robustness => [{ initDataTypes: ['cenc'],
+                audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"', ...(robustness ? { robustness } : {}) }] }];
+            // 探测的每一步都可能挂住（这台设备的 createMediaKeys 就不是报错而是死等，能拖垮整个
+        // 诊断请求）。每一步都设上限：挂住就记成 timeout，报告照常返回，别的环节不受连累。
+        const withDeadline = async (label, promise, ms) => {
+            let timer;
+            try {
+                return await Promise.race([
+                    promise,
+                    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label + ' hung > ' + ms + 'ms')), ms); }),
+                ]);
+            } finally {
+                if (timer) clearTimeout(timer);
+            }
+        };
+        const accessAttempt = (robustness) => withDeadline('requestMediaKeySystemAccess',
+            navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(robustness)), 3000);
+        if (report.eme) {
+            for (const robustness of ['SW_SECURE_CRYPTO', '']) {
+                try {
+                    await accessAttempt(robustness);
+                    report.widevine = true;
+                    report.robustness = robustness || 'default';
+                    break;
+                } catch (error) {
+                    if (!report.error) report.error = String(error?.name || error?.message || 'rejected').slice(0, 80);
+                }
+            }
+            if (report.eme && report.widevine) {
+                try {
+                    const relaxed = await accessAttempt('');
+                    await withDeadline('createMediaKeys', relaxed.createMediaKeys(), 3000);
+                    report.keys = 'ok';
+                } catch (error) {
+                    report.keys = String(error?.name || error?.message || 'rejected').slice(0, 80);
+                    report.keysError = String(error?.message || '').slice(0, 120);
+                }
+            }
+            if (typeof navigator.mediaCapabilities?.decodingInfo === 'function') {
+                const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: '2', samplerate: 44100, bitrate: 256000 };
+                report.decode = {};
+                for (const type of ['file', 'media-source']) {
+                    try {
+                        const answer = await withDeadline('decodingInfo',
+                            navigator.mediaCapabilities.decodingInfo({ type, audio }), 2000);
+                        report.decode[type] = (answer.supported === true ? 'ok' : 'no') + '/' + (answer.smooth === true ? 'smooth' : 'rough');
+                    } catch (error) {
+                        report.decode[type] = String(error?.name || 'rejected').slice(0, 60);
+                    }
+                }
+            }
+        }
+                        report.at = Date.now();
+            window.__foliaDrm = report;
+            return report;
+        };
+        // The page's own media element is the only thing that sounds; its error is the clearest word a
+        // failed start has. No address and no words leave this page.
+        const readAudio = () => {
+            const element = document.querySelector('audio');
+            const error = element?.error || null;
+            return {
+                elements: document.querySelectorAll('audio,video').length,
+                paused: element ? element.paused === true : null,
+                readyState: element ? element.readyState : null,
+                networkState: element ? element.networkState : null,
+                currentTime: element && Number.isFinite(element.currentTime) ? Math.round(element.currentTime * 10) / 10 : null,
+                muted: element ? element.muted === true : null,
+                volume: element && Number.isFinite(element.volume) ? Math.round(element.volume * 100) / 100 : null,
+                hasSource: element ? Boolean(element.currentSrc || element.src) : false,
+                errorCode: error ? error.code : null,
+                errorText: error && error.message ? scrubText(error.message) : '',
+            };
+        };
+        // A queue that reports "playing" while nothing sounds is decided by the page's own media
+        // events and by which host it stopped talking to: a stalled segment fetch and a refused
+        // license look identical from outside. Only event names, numbers and hosts leave this page.
+        const scrubText = value => String(value)
+            .replace(/https?:\/\/[^\s"'<>]+/g, link => {
+                try { return new URL(link).host; } catch { return 'url'; }
+            })
+            .replace(/[A-Za-z0-9_\-]{40,}/g, '<blob>')
+            .slice(0, 200);
+        const hasDom = () => typeof document !== 'undefined' && typeof document.querySelectorAll === 'function';
+        const watchMedia = () => {
+            if (!hasDom()) return;
+            if (!Array.isArray(window.__foliaMedia)) window.__foliaMedia = [];
+            const list = document.querySelectorAll('audio,video');
+            for (let index = 0; index < list.length; index++) {
+                const element = list[index];
+                if (element.__foliaWatched) continue;
+                element.__foliaWatched = true;
+                for (const type of ['loadstart', 'loadedmetadata', 'waiting', 'stalled', 'playing', 'pause', 'error', 'suspend']) {
+                    element.addEventListener(type, () => {
+                        window.__foliaMedia.push({ at: Date.now(), index, type,
+                            t: Math.round((element.currentTime || 0) * 10) / 10,
+                            ready: element.readyState, network: element.networkState,
+                            error: element.error ? element.error.code : null });
+                        if (window.__foliaMedia.length > 80) window.__foliaMedia.shift();
+                    }, true);
+                }
+            }
+        };
+        const watchPlayer = () => {
+            if (window.__foliaStateWatched || !mk || typeof mk.addEventListener !== 'function') return;
+            window.__foliaStateWatched = true;
+            window.__foliaStates = [];
+            try {
+                mk.addEventListener('playbackStateDidChange', () => {
+                    window.__foliaStates.push({ at: Date.now(), state: Number(mk.playbackState), playing: mk.isPlaying === true });
+                    if (window.__foliaStates.length > 40) window.__foliaStates.shift();
+                });
+            } catch { /* A player without events still answers playbackStatus. */ }
+        };
+        const readMediaTable = () => {
+            if (!hasDom()) return { total: 0, rows: [] };
+            const list = document.querySelectorAll('audio,video');
+            const rows = [];
+            for (let index = 0; index < list.length && rows.length < 8; index++) {
+                const element = list[index];
+                rows.push({ index, paused: element.paused === true,
+                    t: Math.round((element.currentTime || 0) * 10) / 10,
+                    ready: element.readyState, network: element.networkState,
+                    error: element.error ? element.error.code : null,
+                    errorText: element.error && element.error.message ? scrubText(element.error.message) : '',
+                    source: Boolean(element.currentSrc || element.src) });
+            }
+            return { total: list.length, rows };
+        };
+        const readHosts = () => {
+            const hosts = {};
+            if (typeof performance === 'undefined' || typeof performance.getEntriesByType !== 'function') return hosts;
+            try {
+                for (const entry of performance.getEntriesByType('resource')) {
+                    let host = '';
+                    try { host = new URL(entry.name).host; } catch { continue; }
+                    // Artwork and analytics are noise; the player's own hosts are the signal.
+                    if (!/(^|\.)(apple\.com|itunes\.apple\.com|applemusic\.com)$/.test(host) || host === 'xp.apple.com') continue;
+                    const row = hosts[host] || (hosts[host] = { count: 0, maxMs: 0 });
+                    row.count += 1;
+                    const ms = Math.round(entry.duration || 0);
+                    if (ms > row.maxMs) row.maxMs = ms;
+                }
+            } catch { /* Resource timing is a bonus. */ }
+            return hosts;
+        };
+        watchMedia();
+        watchPlayer();
         // One read-only answer for the app's diagnostics report: what the page, the player and the CDM
         // say about a start that did not sound. No id, no words, no address.
         if (request.operation === 'diagnostics') {
@@ -528,8 +728,9 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             nextOffset = suppliedOffset;
         }
         return { ok: true, data: { items, hasMore, nextOffset } };
-    } catch {
-        return { ok: false, error: 'request-failed' };
+    } catch (error) {
+        // 失败原因以前被吞成一句话，排查时无从下手：留着原文（不带地址与内容）供诊断报告引用。
+        return { ok: false, error: 'request-failed', detail: String(error?.message || error || '').slice(0, 160) };
     }
 }
 

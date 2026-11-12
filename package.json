@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.7.28",
+  "version": "0.7.28-android.452",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -76,7 +76,13 @@
     "contributors:generate": "npx all-contributors-cli generate",
     "models:fetch": "node build/fetchModels.mjs",
     "steam-audio:fetch": "node build/fetchSteamAudio.mjs",
-    "manual:ai-probe": "node test/manual/ai_probe.mjs"
+    "manual:ai-probe": "node test/manual/ai_probe.mjs",
+        "verify:android": "node dev/verify-android-bundle.mjs",
+        "build:capacitor": "cross-env FOLIA_BUILD_TARGET=capacitor VITE_NETEASE_API_BASE=extension VITE_KUGOU_API_BASE=extension VITE_QQ_API_BASE=extension vite build",
+        "cap:sync:android": "npm run build:capacitor && cap sync android",
+        "cap:open:android": "cap open android",
+        "cap:run:android": "npm run build:capacitor && cap run android",
+        "build:android:debug": "npm run cap:sync:android && cd android && gradlew.bat assembleDebug"
   },
   "build": {
     "appId": "top.izuna.foliamajor",
