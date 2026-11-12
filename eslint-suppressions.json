@@ -1729,14 +1729,6 @@
       "count": 1
     }
   },
-  "src/components/app/home/explore/exploreFeedMemory.ts": {
-    "@typescript-eslint/no-dynamic-delete": {
-      "count": 2
-    },
-    "no-restricted-globals": {
-      "count": 2
-    }
-  },
   "src/components/app/home/explore/ownSections.ts": {
     "@typescript-eslint/use-unknown-in-catch-callback-variable": {
       "count": 1
@@ -1926,7 +1918,7 @@
   },
   "src/components/app/overlays/NowPlayingToast.tsx": {
     "@stylistic/indent": {
-      "count": 127
+      "count": 118
     }
   },
   "src/components/app/overlays/buildAppOverlaysModel.ts": {
@@ -5391,7 +5383,7 @@
   },
   "src/components/visualizer/monet/MonetSettingsPanel.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 20
+      "count": 18
     },
     "@typescript-eslint/no-useless-default-assignment": {
       "count": 1
@@ -7716,11 +7708,6 @@
       "count": 1
     }
   },
-  "src/library/suites/bravais/useBravaisPosterTilt.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 1
-    }
-  },
   "src/library/suites/bravais/useBravaisReflowDriver.ts": {
     "@eslint-community/eslint-comments/require-description": {
       "count": 1
@@ -7733,6 +7720,11 @@
     }
   },
   "src/library/suites/bravais/useBravaisSeam.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "src/library/suites/bravais/useBravaisTilt.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 1
     }
@@ -10834,6 +10826,11 @@
       "count": 1
     }
   },
+  "src/stores/exploreFeedMemory.ts": {
+    "@typescript-eslint/no-dynamic-delete": {
+      "count": 2
+    }
+  },
   "src/stores/useAppChromeStore.ts": {
     "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
@@ -11209,16 +11206,16 @@
       "count": 2
     },
     "@typescript-eslint/no-explicit-any": {
-      "count": 80
+      "count": 72
     },
     "@typescript-eslint/no-unsafe-argument": {
       "count": 4
     },
     "@typescript-eslint/no-unsafe-assignment": {
-      "count": 483
+      "count": 455
     },
     "@typescript-eslint/no-unsafe-member-access": {
-      "count": 999
+      "count": 966
     },
     "dedicatus/restricted-apis": {
       "count": 1

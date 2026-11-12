@@ -52,13 +52,18 @@ export type SubtitleContentMode = 'translation' | 'romanization' | 'both' | 'non
 // One row of the shared bottom subtitle overlay: the line on screen, the line after it, or the line on screen's translation / romanization.
 export type SubtitleOverlayRowSource = 'current' | 'next' | 'translation' | 'romanization';
 export type SubtitleOverlayFollowRow = Exclude<SubtitleOverlayRowSource, 'current'>;
-// The shared bottom subtitle overlay's rows, top to bottom, joined with '+' (stored and carried as this string).
-// One row is the current line, its translation or its romanization; two or three rows open with the current line,
-// and each row after it is the next line, the translation or the romanization.
-export type SubtitleOverlayLayout =
-  | Exclude<SubtitleOverlayRowSource, 'next'>
-  | `current+${SubtitleOverlayFollowRow}`
-  | `current+${SubtitleOverlayFollowRow}+${SubtitleOverlayFollowRow}`;
+// The shared bottom subtitle overlay's rows, top to bottom, joined with '+'.
+// The first row is the current line, its translation or its romanization (so a stack can leave the original text out);
+// each row after it is the next line, the translation or the romanization.
+export type SubtitleOverlayFirstRow = Exclude<SubtitleOverlayRowSource, 'next'>;
+export type SubtitleOverlayRowsLayout =
+  | SubtitleOverlayFirstRow
+  | `${SubtitleOverlayFirstRow}+${SubtitleOverlayFollowRow}`
+  | `${SubtitleOverlayFirstRow}+${SubtitleOverlayFollowRow}+${SubtitleOverlayFollowRow}`;
+// A line the rows have nothing for (a translation row on a song without one) previews the coming lyrics instead.
+// The '|only' ending turns that off: the overlay then shows its rows and nothing else.
+// Stored and carried as this string.
+export type SubtitleOverlayLayout = SubtitleOverlayRowsLayout | `${SubtitleOverlayRowsLayout}|only`;
 
 export interface LyricAgent {
   id: string;
@@ -549,7 +554,18 @@ export interface CladdaghTuning {
   radiusScale: number;
   ellipseTiltDeg: number;
   showAxisLine: boolean;
+  /** 主歌词字符间距（px，每个字间隙额外加的量）。 */
   letterSpacingOffset: number;
+  /** 圆环中心的左右位置（#1124）：相对画面宽度的百分比，0 是正中，正值往右。 */
+  positionX?: number;
+  /** 圆环中心的上下位置（#1124）：相对画面高度的百分比，0 是正中，正值往下。 */
+  positionY?: number;
+  /** 在每句主歌词下方沿圆环显示翻译（#1124）。 */
+  showTranslation?: boolean;
+  /** 翻译字号相对默认（主歌词的一半）的倍率。 */
+  translationScale?: number;
+  /** 翻译字符间距（px），同 letterSpacingOffset 的算法。 */
+  translationLetterSpacingOffset?: number;
 }
 
 export const DEFAULT_CLADDAGH_TUNING: CladdaghTuning = {
@@ -558,6 +574,11 @@ export const DEFAULT_CLADDAGH_TUNING: CladdaghTuning = {
   ellipseTiltDeg: 45,
   showAxisLine: true,
   letterSpacingOffset: 0,
+  positionX: 0,
+  positionY: 0,
+  showTranslation: false,
+  translationScale: 1,
+  translationLetterSpacingOffset: 0,
 };
 
 export type CappellaEmojiPackSource = 'builtin' | 'custom';
@@ -602,6 +623,20 @@ export interface PendoloTuning {
   showCenterGradient?: boolean;
   showCoverOnWatchFace?: boolean;
   enableLineGlow?: boolean;
+  /** 歌词左右镜像（#1124）：表盘移到右边、歌词弧线在左；wheelCenterX 改从右边缘量。 */
+  mirrorLayout?: boolean;
+  /** 表盘倾斜（度，正值时倾斜轴上方往屏幕里退）：表盘平面带透视地转出屏幕，0 是平放。 */
+  tiltDeg?: number;
+  /** 倾斜轴的方向（度）：0 是水平轴（前后俯仰），±90 是竖直轴（左右偏转）。 */
+  tiltAxisDeg?: number;
+  /** 分层视差强度：倾斜时齿轮、摆轮、歌词按各自高度浮在表盘上方，0 是全在一个平面上。 */
+  parallaxDepth?: number;
+  /** 轮心视角：相机在轮心后上方、顺着刻度针看向焦点句，代替倾斜；只在 WebGL 下生效。 */
+  hubView?: boolean;
+  /** 轮心视角的相机高度（轮盘半径的倍数）：低时贴着表盘平视，高时接近俯视。 */
+  hubViewHeight?: number;
+  /** 轮心视角的相机从轮心沿刻度针反方向后退多远（轮盘半径的倍数），0 是正在轮心上方。 */
+  hubViewBack?: number;
 }
 
 export const DEFAULT_PENDOLO_TUNING: PendoloTuning = {
@@ -616,6 +651,13 @@ export const DEFAULT_PENDOLO_TUNING: PendoloTuning = {
   showCenterGradient: true,
   showCoverOnWatchFace: false,
   enableLineGlow: false,
+  mirrorLayout: false,
+  tiltDeg: 0,
+  tiltAxisDeg: 0,
+  parallaxDepth: 1,
+  hubView: false,
+  hubViewHeight: 1.4,
+  hubViewBack: 1.2,
 };
 
 export type SonnetOuterFrameMode = 'none' | 'frame' | 'full';
@@ -1069,7 +1111,11 @@ export type NomandBackgroundEffect = 'dithering' | 'fluted-glass' | 'paper-textu
 export type LatentBackgroundDisplayMode = 'dithering' | 'mesh' | 'both';
 export type LatentBackgroundColorSource = 'cover-theme' | 'cover-only';
 export type MonetAudioStyle = 'bar' | 'line';
-export type MonetPortraitSource = 'cover' | 'custom';
+// 'none' 不显示肖像，只留歌词（#1124）。
+export type MonetPortraitSource = 'cover' | 'custom' | 'none';
+// 莫奈的歌曲描述和封面拖动按钮：鼠标移上去才出现（原来的样子）、一直显示、不显示。
+export type MonetChromeVisibility = 'auto' | 'always' | 'hidden';
+export const MONET_CHROME_VISIBILITIES: readonly MonetChromeVisibility[] = ['auto', 'always', 'hidden'];
 export type BuiltinVisualizerBackgroundMode = 'common' | 'monet' | 'nomand' | 'latent' | 'url' | 'sora';
 export type VisualizerBackgroundMode = BuiltinVisualizerBackgroundMode | (string & {});
 
@@ -1152,14 +1198,24 @@ export interface MonetTuning {
   /** 分辨率与抗锯齿（#929）：默认跟随「动画与性能」里的全局挡位（utils/lyricRenderQuality.ts）。 */
   render: LyricRenderOverride;
   keywordColoringEnabled: boolean;
+  /** Whether the description shows at all; kept equal to `descriptionVisibility !== 'hidden'` for older readers. */
   showDescription: boolean;
+  /** How the song description shows. Older tunings have only `showDescription`: on is 'auto'. */
+  descriptionVisibility?: MonetChromeVisibility;
   showAudioVisualization: boolean;
   audioStyle: MonetAudioStyle;
   fontScale: number;
   portraitSource: MonetPortraitSource;
   portraitOffsetX?: number;
   portraitStyle?: 'square' | 'rectangular';
+  /** Whether the drag handle shows at all; kept equal to `portraitHangerVisibility !== 'hidden'` for older readers. */
   showPortraitDragHanger?: boolean;
+  /** How the portrait's drag handle shows. Older tunings have only `showPortraitDragHanger`: on is 'auto'. */
+  portraitHangerVisibility?: MonetChromeVisibility;
+  /** 歌词左右镜像（#1124）：肖像在左、文字靠右排，整个画面左右对称。 */
+  mirrorLayout?: boolean;
+  /** 自定义的歌曲描述；空着就显示主题自带的描述。 */
+  customDescription?: string;
 }
 
 export const DEFAULT_MONET_BACKGROUND_TUNING: MonetBackgroundTuning = {
@@ -1229,6 +1285,7 @@ export const DEFAULT_MONET_TUNING: MonetTuning = {
   render: { scale: 'global', antialias: 'global' },
   keywordColoringEnabled: true,
   showDescription: true,
+  descriptionVisibility: 'auto',
   showAudioVisualization: true,
   audioStyle: 'bar',
   fontScale: 1.2,
@@ -1236,6 +1293,9 @@ export const DEFAULT_MONET_TUNING: MonetTuning = {
   portraitOffsetX: 0,
   portraitStyle: 'square',
   showPortraitDragHanger: true,
+  portraitHangerVisibility: 'auto',
+  mirrorLayout: false,
+  customDescription: '',
 };
 
 export interface StoredCappellaEmojiImage {
@@ -1297,6 +1357,10 @@ export enum PlayerState {
 }
 
 export interface StatusMessage {
+  /** Shows a decorative loader beside the visible status text. */
+  activity?: 'loading' | 'success' | 'error';
+  /** Keeps one loader mounted while its strokes morph into the result. */
+  activityId?: number;
   type: 'error' | 'success' | 'info';
   text: string;
   /** A second line under the text: what to do about it. */

@@ -17,44 +17,19 @@ import {
     isPlayerControlSlotActionId,
     type PlayerControlSlotActionId,
 } from '../types/playerControlSlots';
-import {
-    PLAYER_BOTTOM_BAR_BASE_OFFSET_PX,
-    resolvePlayerBottomBarMaxOffset,
-} from '../utils/playerBottomBarLayout';
-import { getStoredBoolean, setStoredBoolean } from './storagePrimitives';
+import { PLAYER_BOTTOM_BAR_BASE_OFFSET_PX } from '../utils/playerBottomBarLayout';
+import { getStoredBoolean, setStoredBoolean, getStoredString, setStoredString } from './storagePrimitives';
 import { setStatusMessage } from './useStatusMessageStore';
 
 const PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY = 'player_bottom_bar_offset';
 const PLAYER_CONTROL_SLOT_PRIMARY_STORAGE_KEY = 'player_control_slot_primary';
 const PLAYER_CONTROL_SLOT_SECONDARY_STORAGE_KEY = 'player_control_slot_secondary';
 
-/**
- * 安卓上的底部偏移量原来由一个自由滑块写入：在可滚动列表里被手指蹭一下就会把控制条抬到画面中间
- * 并立刻持久化，装新版本也不会自己恢复。滑块已从安卓端移除（改用「调整位置」流程），这里把历史
- * 遗留的大偏移复位一次；小幅抬高属于正常使用，不动它。
- */
-const ANDROID_OFFSET_RESET_FLAG = 'folia_android_bottom_bar_offset_reset_v1';
-
-const migrateLegacyAndroidBottomBarOffset = (offsetPx: number): number => {
-    if (typeof window === 'undefined') return offsetPx;
-    const isAndroid = (window as unknown as { Capacitor?: { getPlatform?: () => string } })
-        .Capacitor?.getPlatform?.() === 'android';
-    if (!isAndroid) return offsetPx;
-
-    try {
-        if (localStorage.getItem(ANDROID_OFFSET_RESET_FLAG) === '1') return offsetPx;
-        localStorage.setItem(ANDROID_OFFSET_RESET_FLAG, '1');
-
-        const max = resolvePlayerBottomBarMaxOffset(window.innerHeight);
-        const quarterOfRange = PLAYER_BOTTOM_BAR_BASE_OFFSET_PX
-            + (max - PLAYER_BOTTOM_BAR_BASE_OFFSET_PX) * 0.25;
-        if (offsetPx < quarterOfRange) return offsetPx;
-
-        localStorage.setItem(PLAYER_BOTTOM_BAR_OFFSET_STORAGE_KEY, String(PLAYER_BOTTOM_BAR_BASE_OFFSET_PX));
-        return PLAYER_BOTTOM_BAR_BASE_OFFSET_PX;
-    } catch {
-        return offsetPx;
-    }
+/** All platforms default to the right; explicit choices are kept and malformed values ignored. */
+const readTitlebarSide = (): 'left' | 'right' => {
+    const fallback = 'right';
+    const value = getStoredString('window_titlebar_side', fallback);
+    return value === 'left' || value === 'right' ? value : fallback;
 };
 
 /** Reads the persisted lower-bounded offset; the viewport-dependent upper bound is applied by consumers. */
@@ -96,8 +71,11 @@ export type PlayerChromeSettingsState = {
     alwaysShowMainWindowTitlebar: boolean;
     /** A frosted bar behind the window titlebar on the player page, so its buttons read over any picture. */
     playerHeaderBlur: boolean;
+    titlebarSide: 'left' | 'right';
+    handleSetTitlebarSide: (side: 'left' | 'right') => void;
     hideFullscreenButton: boolean;
     useNativeMacFullscreenButton: boolean;
+    useNativeMacTrafficLights: boolean;
     transparentPlayerBackground: boolean;
     enablePlayerPageNativeBlur: boolean;
     autoHidePlayerChrome: boolean;
@@ -118,6 +96,7 @@ export type PlayerChromeSettingsState = {
     handleTogglePlayerHeaderBlur: (enable: boolean) => void;
     handleToggleHideFullscreenButton: (enable: boolean) => void;
     handleToggleNativeMacFullscreenButton: (enable: boolean) => void;
+    handleToggleNativeMacTrafficLights: (enable: boolean) => void;
     handleToggleTransparentPlayerBackground: (enable: boolean) => void;
     handleWallpaperTransparentRefused: () => void;
     handleToggleAutoHidePlayerChrome: (enable: boolean) => void;
@@ -143,8 +122,14 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
     alwaysShowTrackSwitchButtons: getStoredBoolean('always_show_track_switch_buttons', false),
     alwaysShowMainWindowTitlebar: getStoredBoolean('always_show_main_window_titlebar', false),
     playerHeaderBlur: getStoredBoolean('player_header_blur', false),
+    titlebarSide: readTitlebarSide(),
+    handleSetTitlebarSide: (side) => {
+        setStoredString('window_titlebar_side', side);
+        set({ titlebarSide: side });
+    },
     hideFullscreenButton: getStoredBoolean('hide_fullscreen_button', false),
     useNativeMacFullscreenButton: getStoredBoolean('use_native_mac_fullscreen_button', false),
+    useNativeMacTrafficLights: getStoredBoolean('use_native_mac_traffic_lights', false),
     transparentPlayerBackground: getStoredBoolean('transparent_player_background', false),
     enablePlayerPageNativeBlur: getStoredBoolean('enable_player_page_native_blur', false),
     autoHidePlayerChrome: getStoredBoolean('auto_hide_player_chrome', false),
@@ -260,6 +245,19 @@ export const usePlayerChromeSettingsStore = create<PlayerChromeSettingsState>((s
         setStoredBoolean('use_native_mac_fullscreen_button', enable);
         set({ useNativeMacFullscreenButton: enable });
     },
+    handleToggleNativeMacTrafficLights: (enable) => {
+        setStoredBoolean('use_native_mac_traffic_lights', enable);
+        set({ useNativeMacTrafficLights: enable });
+        // The titlebar style is a window-creation option: the switch lands in the main process
+        // store and the new value is read the next time the main window is built.
+        if (window.electron?.saveSettings) {
+            void window.electron.saveSettings('USE_NATIVE_MAC_TRAFFIC_LIGHTS', enable);
+        }
+        setStatusMessage({
+            type: 'info',
+            text: i18n.t('notifications.restartToApplyWindowChrome'),
+        });
+    },
     handleToggleHidePlayerRightPanelButton: (enable) => {
         setStoredBoolean('hide_player_right_panel_button', enable);
         set({ hidePlayerRightPanelButton: enable });
@@ -308,8 +306,12 @@ export const selectPlayerChromeSettingsSnapshot = (state: PlayerChromeSettingsSt
     alwaysShowTrackSwitchButtons: state.alwaysShowTrackSwitchButtons,
     alwaysShowMainWindowTitlebar: state.alwaysShowMainWindowTitlebar,
     playerHeaderBlur: state.playerHeaderBlur,
+    titlebarSide: state.titlebarSide,
+    handleSetTitlebarSide: state.handleSetTitlebarSide,
     hideFullscreenButton: state.hideFullscreenButton,
     useNativeMacFullscreenButton: state.useNativeMacFullscreenButton,
+    useNativeMacTrafficLights: state.useNativeMacTrafficLights,
+    handleToggleNativeMacTrafficLights: state.handleToggleNativeMacTrafficLights,
     transparentPlayerBackground: state.transparentPlayerBackground,
     enablePlayerPageNativeBlur: state.enablePlayerPageNativeBlur,
     autoHidePlayerChrome: state.autoHidePlayerChrome,

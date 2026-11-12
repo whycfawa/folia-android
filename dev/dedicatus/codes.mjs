@@ -49,6 +49,8 @@ export const CODES = {
     D301: { name: '新增循环依赖', level: 'error' },
     D306: { name: '首屏闭包引入重型包', level: 'error' },
     D307: { name: '模组接入点没登记', level: 'error' },
+    // 由 test/unit/dedicatus/contracts/packageIndependence.test.ts 检查
+    D308: { name: '独立包依赖了宿主仓库', level: 'error' },
     // 由 test/unit/playback/currentSongArchitecture.test.ts 检查
     D310: { name: '当前歌曲在 currentSong.ts 之外改写', level: 'error' },
     D311: { name: '播放路径等待之后不复核', level: 'error' },
@@ -105,6 +107,8 @@ export const CODES = {
     D608: { name: '系统加密的可用性各自判断', level: 'error' },
     D609: { name: '外链绕过协议白名单', level: 'error' },
     D611: { name: '读取别的应用的凭据', level: 'error' },
+
+    // 8xx 是 Coven 流程的代码，由 harness 自己定义（packages/coven/src/codes.mjs），Dedicatus 的检查不报它们。
 };
 
 /** ESLint 规则 id → 代码。没列出的规则统一报 D490 并附规则 id；消息以 `Dxxx` 开头的（项目约定规则）按消息里的代码。 */

@@ -4,13 +4,14 @@ const { controlQueue } = require('./companionQueue.cjs');
 const { updateFavorite } = require('./companionFavorites.cjs');
 const { addPlaylistTracks } = require('./companionPlaylist.cjs');
 const { readPersonalStation } = require('./companionRadio.cjs');
+const { alignStorefront } = require('./companionStorefront.cjs');
 
 // Define the only data requests the parent may send to the isolated Apple Music page.
 const REQUEST_ID = /^[a-zA-Z0-9_-]{1,64}$/;
 const RESOURCE_ID = /^[a-zA-Z0-9._-]{1,200}$/;
 // Folia chooses the order; the companion may prepare a bounded tail but cannot invent next tracks.
-const PLAYBACK_COMMANDS = new Set(['playStation', 'playSong', 'pause', 'resume', 'seek', 'setVolume', 'prepareNext']);
-const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'librarySongs', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'diagnostics', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
+const PLAYBACK_COMMANDS = new Set(['playStation', 'playSong', 'pause', 'resume', 'seek', 'setVolume', 'setRepeatOne', 'prepareNext']);
+const OPERATIONS = new Set(['songOriginal', 'catalogSong', 'catalogAlbum', 'catalogAlbumTracks', 'catalogArtist', 'catalogArtistSongs', 'catalogArtistAlbums', 'libraryAlbums', 'librarySongs', 'libraryAlbumTracks', 'stations', 'station', 'personalFm', 'showWindow', 'hideWindow', 'logout', 'accountStatus', 'search', 'playlists', 'playlistTracks', 'playlistTrackCount', 'lyrics', 'playbackStatus', 'likeSong', 'addPlaylistTracks', ...PLAYBACK_COMMANDS]);
 
 function validateRequest(message) {
     if (!message || typeof message !== 'object' || Array.isArray(message)) return null;
@@ -32,6 +33,10 @@ function validateRequest(message) {
     if (operation === 'setVolume') {
         if (typeof params.volume !== 'number' || !Number.isFinite(params.volume) || params.volume < 0 || params.volume > 1) return null;
         return { id, operation, params: { volume: params.volume } };
+    }
+    if (operation === 'setRepeatOne') {
+        if (typeof params.enabled !== 'boolean') return null;
+        return { id, operation, params: { enabled: params.enabled } };
     }
     if (operation === 'addPlaylistTracks') {
         if (typeof params.playlistId !== 'string' || !/^p\.[a-zA-Z0-9._-]{1,198}$/.test(params.playlistId)
@@ -86,7 +91,7 @@ function validateRequest(message) {
 }
 
 // This function runs inside the Apple page; return only fields required by the provider.
-async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTracks, readPersonalStation) {
+async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTracks, readPersonalStation, alignStorefront) {
     try {
         const mk = window.MusicKit?.getInstance();
         const modern = mk?.api?.v3;
@@ -97,210 +102,10 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             : typeof legacy?.music === 'function' ? (path, query, options) => options
                 ? legacy.music(path, query, options.fetchOptions) : legacy.music(path, query)
                 : null;
-        // The catalog ids Folia holds come from the account's storefront, and MusicKit plays a song
-        // only against the page's own storefront: a page opened in another region accepts the queue
-        // and then never starts it. The host that owns the page hands that storefront in
-        // (window.__foliaAccountStorefront); the desktop companion moves the page by URL instead and
-        // never sets it, so this stays out of its way.
-        const alignStorefront = async () => {
-            let storefront = typeof window.__foliaAccountStorefront === 'string' ? window.__foliaAccountStorefront : '';
-            // The Android host asks for the switch, so the page may look the account's storefront up
-            // itself; the desktop companion moves the page by URL and never sets this marker.
-            if (!/^[a-z]{2}$/.test(storefront) && window.__foliaCompanionHost === 'android') {
-                try {
-                    const answer = await call('v1/me/storefront');
-                    const id = answer?.data?.data?.[0]?.id;
-                    if (typeof id === 'string' && /^[a-z]{2}$/.test(id)) storefront = id;
-                } catch { /* Play in whatever region the page has; the queue reports what happened. */ }
-                if (/^[a-z]{2}$/.test(storefront)) {
-                    window.__foliaAccountStorefront = storefront;
-                    try {
-                        if (typeof window.FoliaAppleMusicBridge?.storefront === 'function') window.FoliaAppleMusicBridge.storefront(storefront);
-                    } catch { /* The host only needs it to open the right URL next time. */ }
-                }
-            }
-            if (!/^[a-z]{2}$/.test(storefront) || !mk) return null;
-            const before = String(mk.storefrontId || '').toLowerCase();
-            if (before !== storefront) {
-                // The page keeps this property writable; an older player throws and is reported below.
-                try { mk.storefrontId = storefront; } catch { /* Read-only on older players. */ }
-            }
-            const after = String(mk.storefrontId || '').toLowerCase();
-            console.info('[AppleMusic] playback storefront', { account: storefront, page: after, matched: after === storefront });
-            return { account: storefront, page: after, matched: after === storefront };
-        };
-        // Why a start never begins is usually here: the page can only decrypt Widevine, and the WebView
-        // that hosts it may offer no CDM at all. Asked once, before the first start.
-        const readDrm = async () => {
-            const cached = window.__foliaDrm;
-            // A supported CDM stays supported; a failure may be a moment's provisioning and is retried.
-            if (cached && (cached.widevine === true || Date.now() - Number(cached.at || 0) < 60000)) return cached;
-            const report = {
-                eme: typeof navigator.requestMediaKeySystemAccess === 'function',
-                mediaSource: typeof MediaSource !== 'undefined',
-                secure: window.isSecureContext === true,
-                widevine: false,
-                robustness: '',
-                error: '',
-            };
-            const configuration = robustness => [{ initDataTypes: ['cenc'],
-                audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"', ...(robustness ? { robustness } : {}) }] }];
-            // 探测的每一步都可能挂住（这台设备的 createMediaKeys 就不是报错而是死等，能拖垮整个
-        // 诊断请求）。每一步都设上限：挂住就记成 timeout，报告照常返回，别的环节不受连累。
-        const withDeadline = async (label, promise, ms) => {
-            let timer;
-            try {
-                return await Promise.race([
-                    promise,
-                    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label + ' hung > ' + ms + 'ms')), ms); }),
-                ]);
-            } finally {
-                if (timer) clearTimeout(timer);
-            }
-        };
-        const accessAttempt = (robustness) => withDeadline('requestMediaKeySystemAccess',
-            navigator.requestMediaKeySystemAccess('com.widevine.alpha', configuration(robustness)), 3000);
-        if (report.eme) {
-            for (const robustness of ['SW_SECURE_CRYPTO', '']) {
-                try {
-                    await accessAttempt(robustness);
-                    report.widevine = true;
-                    report.robustness = robustness || 'default';
-                    break;
-                } catch (error) {
-                    if (!report.error) report.error = String(error?.name || error?.message || 'rejected').slice(0, 80);
-                }
-            }
-            if (report.eme && report.widevine) {
-                try {
-                    const relaxed = await accessAttempt('');
-                    await withDeadline('createMediaKeys', relaxed.createMediaKeys(), 3000);
-                    report.keys = 'ok';
-                } catch (error) {
-                    report.keys = String(error?.name || error?.message || 'rejected').slice(0, 80);
-                    report.keysError = String(error?.message || '').slice(0, 120);
-                }
-            }
-            if (typeof navigator.mediaCapabilities?.decodingInfo === 'function') {
-                const audio = { contentType: 'audio/mp4; codecs="mp4a.40.2"', channels: '2', samplerate: 44100, bitrate: 256000 };
-                report.decode = {};
-                for (const type of ['file', 'media-source']) {
-                    try {
-                        const answer = await withDeadline('decodingInfo',
-                            navigator.mediaCapabilities.decodingInfo({ type, audio }), 2000);
-                        report.decode[type] = (answer.supported === true ? 'ok' : 'no') + '/' + (answer.smooth === true ? 'smooth' : 'rough');
-                    } catch (error) {
-                        report.decode[type] = String(error?.name || 'rejected').slice(0, 60);
-                    }
-                }
-            }
-        }
-                        report.at = Date.now();
-            window.__foliaDrm = report;
-            return report;
-        };
-        // The page's own media element is the only thing that sounds; its error is the clearest word a
-        // failed start has. No address and no words leave this page.
-        const readAudio = () => {
-            const element = document.querySelector('audio');
-            const error = element?.error || null;
-            return {
-                elements: document.querySelectorAll('audio,video').length,
-                paused: element ? element.paused === true : null,
-                readyState: element ? element.readyState : null,
-                networkState: element ? element.networkState : null,
-                currentTime: element && Number.isFinite(element.currentTime) ? Math.round(element.currentTime * 10) / 10 : null,
-                muted: element ? element.muted === true : null,
-                volume: element && Number.isFinite(element.volume) ? Math.round(element.volume * 100) / 100 : null,
-                hasSource: element ? Boolean(element.currentSrc || element.src) : false,
-                errorCode: error ? error.code : null,
-                errorText: error && error.message ? scrubText(error.message) : '',
-            };
-        };
-        // A queue that reports "playing" while nothing sounds is decided by the page's own media
-        // events and by which host it stopped talking to: a stalled segment fetch and a refused
-        // license look identical from outside. Only event names, numbers and hosts leave this page.
-        const scrubText = value => String(value)
-            .replace(/https?:\/\/[^\s"'<>]+/g, link => {
-                try { return new URL(link).host; } catch { return 'url'; }
-            })
-            .replace(/[A-Za-z0-9_\-]{40,}/g, '<blob>')
-            .slice(0, 200);
-        const hasDom = () => typeof document !== 'undefined' && typeof document.querySelectorAll === 'function';
-        const watchMedia = () => {
-            if (!hasDom()) return;
-            if (!Array.isArray(window.__foliaMedia)) window.__foliaMedia = [];
-            const list = document.querySelectorAll('audio,video');
-            for (let index = 0; index < list.length; index++) {
-                const element = list[index];
-                if (element.__foliaWatched) continue;
-                element.__foliaWatched = true;
-                for (const type of ['loadstart', 'loadedmetadata', 'waiting', 'stalled', 'playing', 'pause', 'error', 'suspend']) {
-                    element.addEventListener(type, () => {
-                        window.__foliaMedia.push({ at: Date.now(), index, type,
-                            t: Math.round((element.currentTime || 0) * 10) / 10,
-                            ready: element.readyState, network: element.networkState,
-                            error: element.error ? element.error.code : null });
-                        if (window.__foliaMedia.length > 80) window.__foliaMedia.shift();
-                    }, true);
-                }
-            }
-        };
-        const watchPlayer = () => {
-            if (window.__foliaStateWatched || !mk || typeof mk.addEventListener !== 'function') return;
-            window.__foliaStateWatched = true;
-            window.__foliaStates = [];
-            try {
-                mk.addEventListener('playbackStateDidChange', () => {
-                    window.__foliaStates.push({ at: Date.now(), state: Number(mk.playbackState), playing: mk.isPlaying === true });
-                    if (window.__foliaStates.length > 40) window.__foliaStates.shift();
-                });
-            } catch { /* A player without events still answers playbackStatus. */ }
-        };
-        const readMediaTable = () => {
-            if (!hasDom()) return { total: 0, rows: [] };
-            const list = document.querySelectorAll('audio,video');
-            const rows = [];
-            for (let index = 0; index < list.length && rows.length < 8; index++) {
-                const element = list[index];
-                rows.push({ index, paused: element.paused === true,
-                    t: Math.round((element.currentTime || 0) * 10) / 10,
-                    ready: element.readyState, network: element.networkState,
-                    error: element.error ? element.error.code : null,
-                    errorText: element.error && element.error.message ? scrubText(element.error.message) : '',
-                    source: Boolean(element.currentSrc || element.src) });
-            }
-            return { total: list.length, rows };
-        };
-        const readHosts = () => {
-            const hosts = {};
-            if (typeof performance === 'undefined' || typeof performance.getEntriesByType !== 'function') return hosts;
-            try {
-                for (const entry of performance.getEntriesByType('resource')) {
-                    let host = '';
-                    try { host = new URL(entry.name).host; } catch { continue; }
-                    // Artwork and analytics are noise; the player's own hosts are the signal.
-                    if (!/(^|\.)(apple\.com|itunes\.apple\.com|applemusic\.com)$/.test(host) || host === 'xp.apple.com') continue;
-                    const row = hosts[host] || (hosts[host] = { count: 0, maxMs: 0 });
-                    row.count += 1;
-                    const ms = Math.round(entry.duration || 0);
-                    if (ms > row.maxMs) row.maxMs = ms;
-                }
-            } catch { /* Resource timing is a bonus. */ }
-            return hosts;
-        };
-        watchMedia();
-        watchPlayer();
-        if (request.operation !== 'diagnostics' && (!call || !mk)) return { ok: false, error: 'not-ready' };
-        if (request.operation === 'logout') {
-            // The page owns the Apple session: dropping its music-user token is what signs out here.
-            if (typeof mk.unauthorize === 'function') {
-                try { await mk.unauthorize(); } catch { /* Nothing left to sign out of. */ }
-            }
-            window.__foliaAccountStorefront = '';
-            window.__foliaStart = null;
-            window.__foliaPreparedQueue = [];
-            return { ok: true, data: {} };
+        if (!call) return { ok: false, error: 'not-ready' };
+        // Starts and prepared queues play in the account's region, whatever region the page is in.
+        if (['playSong', 'playStation', 'prepareNext'].includes(request.operation)) {
+            try { await alignStorefront(mk); } catch { /* The start goes on in the page's own region. */ }
         }
         if (request.operation === 'addPlaylistTracks') return await addPlaylistTracks(call, request.params);
         if (request.operation === 'likeSong') return await updateFavorite(call, request.params);
@@ -355,6 +160,7 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 ...(window.__foliaStart?.pending && !window.__foliaStart.cancelled ? { starting: true } : {}),
                 // MusicKit's own state tells "stopped" and "ended" apart from a pause.
                 state: Number.isInteger(state) ? state : null,
+                repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,
                 queueLength,
                 queueKeys: queue ? Object.keys(queue).slice(0, 12) : null,
                 positionMs: Number.isFinite(position) && position >= 0 ? Math.round(position * 1000) : 0,
@@ -428,6 +234,8 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                     mk.setQueue = clearStationOnQueueChange;
                     window.__foliaStationQueueHook = clearStationOnQueueChange;
                 }
+                // A live station never repeats one track, whatever the song before it did.
+                if (typeof mk.setRepeatMode === 'function') mk.setRepeatMode(0);
                 await mk.setQueue({ station: request.params.stationId, startPlaying: false });
                 window.__foliaLiveStation = request.params.stationId;
                 window.__foliaPreparedQueue = [];
@@ -441,6 +249,18 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             if (typeof mk.volume !== 'number') return { ok: false, error: 'unsupported' };
             mk.volume = request.params.volume;
             return { ok: true, data: {} };
+        }
+        if (request.operation === 'setRepeatOne') {
+            // MusicKit's PlayerRepeatMode: none 0, one 1 (all 2 is never set: Folia's queue decides what
+            // follows). A start (playSong) turns it off again; the renderer sends it after every start.
+            const mode = request.params.enabled ? 1 : 0;
+            try {
+                if (typeof mk.setRepeatMode === 'function') mk.setRepeatMode(mode);
+                else if ('repeatMode' in mk) mk.repeatMode = mode;
+                else return { ok: false, error: 'unsupported' };
+            } catch { return { ok: false, error: 'playback-failed' }; }
+            // What the player holds afterwards, read back: the caller logs it (a number, no words).
+            return { ok: true, data: { repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null } };
         }
         const methods = { pause: 'pause', resume: 'play', seek: 'seekToTime' };
         if (request.operation === 'playSong') {
@@ -514,9 +334,11 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 isPlaying: mk.isPlaying === true,
                 itemId: typeof mk.nowPlayingItem?.id === 'string' ? mk.nowPlayingItem.id : '',
                 queueKeys: mk.queue ? Object.keys(mk.queue).slice(0, 12) : null,
-                storefront: storefront ? storefront.page : '',
-                storefrontMatched: storefront ? storefront.matched : null,
+                // A start that will only sound a preview says so here, with the region it plays in and,
+                // where the page is in another region, what Apple said of the subscription (null: nothing yet).
                 previewOnly: mk.previewOnly === true,
+                storefront: typeof mk.storefrontId === 'string' ? mk.storefrontId.slice(0, 8) : '',
+                subscribed: typeof window.__foliaSubscribed === 'boolean' ? window.__foliaSubscribed : null,
             } };
         }
         if (Object.prototype.hasOwnProperty.call(methods, request.operation)) {
@@ -713,7 +535,7 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
 
 // Embed validated JSON only; the parent cannot supply executable JavaScript.
 function requestExpression(request) {
-    return `(${readFromPage.toString()})(${JSON.stringify(request)}, (${controlQueue.toString()}), (${updateFavorite.toString()}), (${addPlaylistTracks.toString()}), (${readPersonalStation.toString()}))`;
+    return `(${readFromPage.toString()})(${JSON.stringify(request)}, (${controlQueue.toString()}), (${updateFavorite.toString()}), (${addPlaylistTracks.toString()}), (${readPersonalStation.toString()}), (${alignStorefront.toString()}))`;
 }
 
 // A timed-out playback can still produce sound later. Recover the document before accepting more work.
