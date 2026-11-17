@@ -1,6 +1,27 @@
 // Vietnamese (vi) interface text, laid out line for line like en.ts.
 
 export default {
+  "appUpdate": {
+    "title": "Có bản cập nhật mới",
+    "titleForced": "Bắt buộc cập nhật",
+    "versionLine": "Phiên bản mới {{version}}",
+    "noNotes": "Bản cập nhật này không có ghi chú.",
+    "forcedHint": "Đây là bản cập nhật bắt buộc; hãy cài để tiếp tục dùng ứng dụng.",
+    "download": "Tải bản cập nhật",
+    "downloading": "Đang tải {{percent}}%",
+    "downloadingHint": "Đang tải. Hãy giữ ứng dụng ở phía trước.",
+    "later": "Để sau",
+    "install": "Cài đặt",
+    "installing": "Đang mở trình cài đặt…",
+    "openInstallSetting": "Cho phép cài đặt",
+    "retry": "Thử lại",
+    "checkNow": "Kiểm tra cập nhật",
+    "checkNowHint": "Kiểm tra nguồn cập nhật đã cấu hình; bản mới sẽ hiện hộp thoại.",
+    "checking": "Đang kiểm tra…",
+    "upToDate": "Bạn đang dùng phiên bản mới nhất",
+    "checkFailed": "Kiểm tra thất bại",
+    "notConfigured": "Bản dựng này chưa cấu hình nguồn cập nhật"
+  },
   "appleMusic": {
     "libraryPlaylistName": "Tất cả bài hát"
   },

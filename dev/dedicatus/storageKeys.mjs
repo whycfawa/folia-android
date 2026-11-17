@@ -83,6 +83,7 @@ export const STORAGE_KEYS = [
     'provider:netease:cookie',
     'provider:qq:cookie',
     'web:active_online_provider_id',
+    'web:app_update_skipped_version',
     'web:always_show_main_window_titlebar',
     'web:always_show_player_back_button',
     'web:always_show_track_switch_buttons',

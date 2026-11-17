@@ -104,9 +104,10 @@ export const buildSettingsNavGroups = (t: Translate, options: { isElectron: bool
             id: group.id,
             label: t(group.labelKey),
             items: group.sections
+                // mods 与 AI 服务在安卓壳里也有（同一个 bundle，能力探测决定）：安卓用直连密钥，桌面走主进程。
                 .filter(section => !section.electronOnly
                     || options.isElectron
-                    || (section.id === 'mods' && IS_ANDROID_WEBVIEW))
+                    || ((section.id === 'mods' || section.id === 'ai') && IS_ANDROID_WEBVIEW))
                 .map(section => ({
                     id: section.id,
                     icon: section.icon,

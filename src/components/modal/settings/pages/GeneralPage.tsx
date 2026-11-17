@@ -15,6 +15,7 @@ import { FoundUpdateRow } from './FoundUpdateRow';
 import { ChinaDrivesRow } from './ChinaDrivesRow';
 import AnalysisModelsGroup from './AnalysisModelsGroup';
 import { useSettingsPage } from './settingsPageContext';
+import { useAppUpdateStore } from '../../../../stores/useAppUpdateStore';
 
 // src/components/modal/settings/pages/GeneralPage.tsx
 // The 通用 page: the interface language, what the app does when it starts and how its window
@@ -43,6 +44,7 @@ const O = {
     androidPhoneFit: option(ANDROID_SHELL, 'phoneFit', 'options.phoneFit'),
     androidOrientation: option(ANDROID_SHELL, 'orientationFit', 'options.orientationFit'),
     androidNativeStage: option(ANDROID_SHELL, 'nativeStage', 'options.nativeStage'),
+    androidAppUpdate: option(ANDROID_SHELL, 'appUpdateCheck', 'appUpdate.checkNow'),
 };
 
 export const OPTIONS: SettingsOptionDef[] = Object.values(O);
@@ -64,6 +66,16 @@ const GeneralPage: React.FC = () => {
     const setPhoneFitOrientation = useAndroidLayoutSettingsStore(state => state.setPhoneFitOrientation);
     const nativeStageEnabled = useDesktopSettingsStore(state => state.nativeStageEnabled);
     const setNativeStageEnabled = useDesktopSettingsStore(state => state.handleToggleNativeStage);
+    const appUpdateStatus = useAppUpdateStore(state => state.status);
+    const appUpdateManualResult = useAppUpdateStore(state => state.manualResult);
+    const checkAppUpdate = useAppUpdateStore(state => state.check);
+    const appUpdateLabel = appUpdateStatus === 'checking'
+        ? t('appUpdate.checking')
+        : appUpdateManualResult === 'up-to-date'
+            ? t('appUpdate.upToDate')
+            : appUpdateManualResult === 'failed'
+                ? t('appUpdate.checkFailed')
+                : t('appUpdate.checkNow');
     const [adaptiveDisplayEnabled, setAdaptiveDisplayEnabled] = React.useState(false);
     React.useEffect(() => {
         if (!IS_ANDROID_WEBVIEW) return;
@@ -155,6 +167,11 @@ const GeneralPage: React.FC = () => {
                     </Row>
                     <Row option={O.androidNativeStage} hint={t('options.nativeStageDesc')} note={t('options.nativeStageDescSub')}>
                         <Toggle checked={nativeStageEnabled} onChange={setNativeStageEnabled} />
+                    </Row>
+                    <Row option={O.androidAppUpdate} hint={t('appUpdate.checkNowHint')}>
+                        <Button variant="quiet" icon={RefreshCw} onClick={() => void checkAppUpdate(true)} disabled={appUpdateStatus === 'checking'}>
+                            {appUpdateLabel}
+                        </Button>
                     </Row>
                     <AnalysisModelsGroup />
                     {phoneFitEnabled && (

@@ -1,7 +1,6 @@
 // src/utils/frameRateLimiter.ts
 // Shared helpers and global RAF gate for optional visualizer frame throttling.
 
-import { IS_ANDROID_WEBVIEW } from './platform';
 import type { VisualizerFrameRate } from '../types';
 
 type AnimationFrameCallback = FrameRequestCallback;
@@ -139,6 +138,9 @@ export const createFrameRateLimitedRaf = (
 
 let installedLimiter: FrameRateLimitedRaf | null = null;
 
+/** 当前生效的全局上限；没有装限幅器时是 'off'（不限制）。 */
+export const getGlobalVisualizerFrameRate = (): VisualizerFrameRate => installedLimiter?.getFrameRate() ?? 'off';
+
 export const setGlobalVisualizerFrameRate = (frameRate: VisualizerFrameRate) => {
     if (typeof window === 'undefined') {
         return;
@@ -193,16 +195,10 @@ export const installGlobalVisualizerFrameRateLimiter = (overrideFrameRate?: Visu
 
     const initialFrameRate = overrideFrameRate
         ?? parseVisualizerFrameRate(window.localStorage.getItem(VISUALIZER_FRAME_RATE_STORAGE_KEY));
-    // 安卓手机 WebView 上，用户**从未手动设置过**帧率时默认 30FPS：把可视化器/背景动画的 GPU
-    // 绘制次数减半，明显降低发热与耗电；30fps 对音乐律动依然顺滑。这只是默认值 —— 设置里仍有
-    // 30/60/90/120/不限制，用户一旦手动选过（storage 里有值）就永远以他的选择为准。
-    const storedFrameRateRaw = window.localStorage.getItem(VISUALIZER_FRAME_RATE_STORAGE_KEY);
-    const effectiveFrameRate = initialFrameRate === 'off'
-        && !overrideFrameRate
-        && storedFrameRateRaw === null
-        && IS_ANDROID_WEBVIEW
-        ? 30
-        : initialFrameRate;
+    // 没设置过就按桌面一致的不限制来：帧率上限是用户自己主动选的省电手段（30/60/90/120），
+    // 不是默认值。以前安卓未设置时默认 30，把滚动、转场、歌词动画一起压到 30fps，
+    // 用的人只会觉得「锁帧」。
+    const effectiveFrameRate = initialFrameRate;
     if (effectiveFrameRate === 'off') {
         restoreGlobalVisualizerFrameRateLimiter();
         return;

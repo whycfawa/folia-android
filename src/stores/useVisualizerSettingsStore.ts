@@ -21,6 +21,7 @@ import type { StoredTuning, VisualizerTuningSettings } from '../components/visua
 import { getBackgroundSettingsSlices, getStoredVisualizerTunings } from '../components/visualizer/tuningRegistry';
 import { type LyricRenderQuality, type SmartBeatSettings, type VisualizerBackgroundMode, type VisualizerFrameRate, type VisualizerMode } from '../types';
 import { VISUALIZER_FRAME_RATE_STORAGE_KEY, setGlobalVisualizerFrameRate } from '../utils/frameRateLimiter';
+import { applyAndroidDisplayFrameRate } from '../services/androidDisplayFrameRate';
 import { LYRIC_RENDER_QUALITY_STORAGE_KEY, normalizeLyricRenderQuality } from '../utils/lyricRenderQuality';
 import { GLOW_BLUR_QUANTIZE_STORAGE_KEY, readStoredGlowBlurQuantize, setGlowBlurQuantized } from '../utils/glowBlurQuantize';
 import i18n from '../i18n/config';
@@ -177,6 +178,8 @@ export const useVisualizerSettingsStore = create<VisualizerSettingsState>((set, 
             localStorage.setItem(VISUALIZER_FRAME_RATE_STORAGE_KEY, String(frameRate));
         }
         setGlobalVisualizerFrameRate(frameRate);
+        // 把档位同时告诉系统：不然屏幕在没触摸输入时会自己回落，选 120 也白选。
+        applyAndroidDisplayFrameRate(frameRate);
         set({ visualizerFrameRate: frameRate });
     },
     handleSetLyricRenderQuality: (patch) => {

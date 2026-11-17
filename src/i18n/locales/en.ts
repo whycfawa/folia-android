@@ -1,6 +1,27 @@
 
 
 export default {
+  "appUpdate": {
+    "title": "Update available",
+    "titleForced": "Update required",
+    "versionLine": "New version {{version}}",
+    "noNotes": "No release notes were written for this update.",
+    "forcedHint": "This update is required; install it to keep using the app.",
+    "download": "Download update",
+    "downloading": "Downloading {{percent}}%",
+    "downloadingHint": "Downloading. Keep the app in the foreground.",
+    "later": "Later",
+    "install": "Install",
+    "installing": "Opening the installer…",
+    "openInstallSetting": "Allow installs",
+    "retry": "Retry",
+    "checkNow": "Check for updates",
+    "checkNowHint": "Checks the configured update source; a new version opens a dialog.",
+    "checking": "Checking…",
+    "upToDate": "You are on the latest version",
+    "checkFailed": "Check failed",
+    "notConfigured": "This build has no update source configured"
+  },
   "appleMusic": {
     "libraryPlaylistName": "All songs"
   },

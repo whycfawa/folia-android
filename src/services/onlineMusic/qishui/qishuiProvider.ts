@@ -53,11 +53,12 @@ export const qishuiProvider: OnlineMusicProvider = {
             if (error instanceof OnlineProviderError && error.code === 'network') return { case: 'unreachable' };
             if (!(error instanceof QishuiRequestError)) return null;
             return { ...(error.stage === 'account' ? { case: 'account-not-read' as const } : {}),
-                ...(error.upstreamCode ? { code: error.upstreamCode } : {}), mainCode: error.stage || undefined };
+                ...(error.upstreamCode ? { code: error.upstreamCode } : {}), mainCode: error.stage || undefined,
+                ...(error.upstreamMessage ? { message: error.upstreamMessage } : {}) };
         },
         async getLoginDiagnostics() {
             const failure = getQishuiLastFailure();
-            return failure ? [diagnosticLine`stage=${failure.stage} code=${failure.code} upstreamCode=${failure.upstreamCode}`] : [];
+            return failure ? [diagnosticLine`stage=${failure.stage} code=${failure.code} upstreamCode=${failure.upstreamCode}${failure.message ? ` message=${failure.message}` : ''}`] : [];
         },
         getLoginTexts: () => ({ title: 'home.loginTitleQishui', note: 'home.loginNoteQishui' }),
         signInRanOut: clearAccountState,

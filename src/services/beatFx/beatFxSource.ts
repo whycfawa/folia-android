@@ -72,6 +72,18 @@ export interface BeatFxTrackBeats {
 
 const memory = new Map<string, Promise<BeatFxTrackBeats>>();
 
+/** 最近一次「这首歌的拍点从哪来」的结果，给诊断报告看模型到底有没有参与。 */
+let lastLookup: {
+    at: number;
+    key: string;
+    source: BeatFxSourceKind;
+    note?: string;
+    retry?: boolean;
+    storedOnly: boolean;
+} | null = null;
+
+export const readBeatFxSourceDiagnostics = (): typeof lastLookup => lastLookup;
+
 /** An online track's bytes from the stream URL its playback resolved, if there is a live one. */
 const readStreamedTrackBytes = async (song: SongResult): Promise<ArrayBuffer | null> => {
     if (getPlaybackSourceRef(song).kind !== 'online') return null;
@@ -209,6 +221,14 @@ export const loadBeatFxTrackBeats = (song: SongResult, { storedOnly = false } = 
     }
     // A failed lookup is not remembered, so a later play (e.g. once the track is cached) retries.
     void pending.then((result) => {
+        lastLookup = {
+            at: Date.now(),
+            key,
+            source: result.source,
+            ...(result.note ? { note: result.note } : {}),
+            ...(result.retry ? { retry: true } : {}),
+            storedOnly,
+        };
         if (result.source === 'none' && memory.get(remembered) === pending) memory.delete(remembered);
     });
     return { key, beats: pending };

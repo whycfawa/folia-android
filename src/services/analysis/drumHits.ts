@@ -86,6 +86,26 @@ export const resampleStem = async (signal: Float32Array): Promise<Float32Array> 
 
 /** Per key, the hits 时计 plays, set once a track's analysis is in and it has drums. */
 const hitLists = new Map<string, DrumHits>();
+
+/** 最近一次分离的结果和失败原因，给诊断报告：动感效果读的是鼓点时，先看这里有没有 hits。 */
+let lastDrumRun: { at: number; key: string; hits: number; drumless: boolean; coverage: number } | null = null;
+let lastDrumError: string | null = null;
+
+export type DrumHitsDiagnostics = {
+    tracks: Array<{ key: string; hits: number }>;
+    settled: number;
+    running: number;
+    last: { at: number; key: string; hits: number; drumless: boolean; coverage: number } | null;
+    lastError: string | null;
+};
+
+export const readDrumHitsDiagnostics = (): DrumHitsDiagnostics => ({
+    tracks: [...hitLists.entries()].map(([key, hits]) => ({ key: key.slice(0, 32), hits: hits.times.length })),
+    settled: settled.size,
+    running: runs.size,
+    last: lastDrumRun,
+    lastError: lastDrumError,
+});
 const runs = new Map<string, Promise<DrumAnalysis | null>>();
 /** Hit lists kept in memory; the analyses themselves are on disk. */
 const MAX_TRACKS = 24;
@@ -160,7 +180,15 @@ const remember = (key: string, analysis: DrumAnalysis, note: string) => {
     const counted = [0, 0, 0];
     analysis.hits.kinds.forEach((kind) => { counted[kind] += 1; });
     const drumless = coverage < DRUMLESS_COVERAGE;
+    lastDrumRun = { at: Date.now(), key: key.slice(0, 32), hits: analysis.hits.times.length, drumless, coverage };
     console.info(`[DrumHits] ${key}: ${drumless ? 'drumless' : `${analysis.hits.times.length} hits`} | drum coverage ${coverage.toFixed(3)} | kick ${counted[DRUM_KICK]} snare ${counted[DRUM_SNARE]} hat ${counted[DRUM_HAT]} | ${note}`);
+    lastDrumRun = {
+        at: Date.now(),
+        key: key.slice(0, 32),
+        hits: analysis.hits.times.length,
+        drumless,
+        coverage,
+    };
     // A track whose head looked drummed may still be judged drumless as a whole: its live hits go.
     if (drumless) hitLists.delete(key);
     else keep(key, analysis.hits);
@@ -406,6 +434,7 @@ export const loadTrackDrumHits = (key: string, readBytes: () => Promise<ArrayBuf
             if (!analysis && getDrumHits(key)?.until !== undefined) hitLists.delete(key);
         }
     })().catch((error) => {
+        lastDrumError = `${key.slice(0, 32)}: ${String(error)}`;
         console.warn(`[DrumHits] ${key}: failed`, error);
         return null;
     });

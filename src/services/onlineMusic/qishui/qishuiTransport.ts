@@ -2,7 +2,7 @@ import { OnlineProviderError } from '../../../types/onlineMusic';
 import type { ProviderErrorCode } from '../../../types/onlineMusic';
 import { isFoliaExtensionBridgeConfigured, requestFoliaExtension } from '../../foliaExtensionBridge';
 import { IS_ANDROID_WEBVIEW } from '../../../utils/platform';
-import type { QishuiOperation, QishuiParams, QishuiBridgeResult } from 'qishui-music-api';
+import type { QishuiBridgeResult, QishuiOperation, QishuiParams } from 'qishui-music-api';
 
 // Typed renderer boundary for the car bridge; credentials and player models stay in the main process.
 export type { QishuiOperation, QishuiParams, QishuiBridgeResult } from 'qishui-music-api';
@@ -14,15 +14,25 @@ export const QISHUI_ANDROID_FAILED = 'Qishui Android bridge request failed';
 const STAGES = ['access-code', 'ticket', 'account'] as const;
 export type QishuiLoginStage = typeof STAGES[number];
 // The last failure of a sign-in operation (login_*), for the sign-in diagnostics. Other requests made
-// while signing in (lyrics, radio, covers) are not the sign-in's, and are not kept here.
-let lastFailure: { stage: QishuiLoginStage | null; code: ProviderErrorCode; upstreamCode?: string } | null = null;
+// while signing in (lyrics, radio, covers) are not the sign-in's, and are not kept here. The platform's
+// own words for a refusal are kept as they came; only the bridge knows which response they came from.
+let lastFailure: { stage: QishuiLoginStage | null; code: ProviderErrorCode; upstreamCode?: string; message?: string } | null = null;
 export const getQishuiLastFailure = () => lastFailure;
 const isLoginOperation = (operation: QishuiOperation) => operation.startsWith('login_');
 export class QishuiRequestError extends OnlineProviderError {
-    constructor(code: ProviderErrorCode, message: string, public readonly stage: QishuiLoginStage | null, public readonly upstreamCode?: string) {
+    constructor(code: ProviderErrorCode, message: string, public readonly stage: QishuiLoginStage | null,
+        public readonly upstreamCode?: string, public readonly upstreamMessage?: string) {
         super(code, message, 'qishui');
     }
 }
+// The bridge answers with the package's fields plus the platform's own refusal sentence (Android bridge);
+// the desktop bridge answers with the package's fields only, so the sentence stays optional.
+type QishuiBridgeFailure = Extract<QishuiBridgeResult, { ok: false }>['error'] & { upstreamMessage?: string };
+type QishuiBridgeAnswer<T = unknown> = { ok: true; data: T } | { ok: false; error: QishuiBridgeFailure };
+const refusalSentence = (error: QishuiBridgeFailure): string | undefined => (
+    typeof error.upstreamMessage === 'string' && error.upstreamMessage.trim() !== ''
+        ? error.upstreamMessage.trim().slice(0, 200) : undefined
+);
 // 桌面走 Electron 主进程桥；安卓没有 Electron，走内置原生桥（nativeBridge/api/qishui.js）。
 // 只认 electron 的话，安卓上汽水会被判成「运行时不可用」，整个平台在界面上就消失了。
 export const getQishuiAvailability = () => (
@@ -33,9 +43,9 @@ export const getQishuiAvailability = () => (
 export async function requestQishui<T = unknown>(operation: QishuiOperation, params: QishuiParams = {}): Promise<T> {
     if (operation === 'login_qr_key') lastFailure = null;
     if (!getQishuiAvailability().configured) throw new OnlineProviderError('unavailable', QISHUI_NEEDS_DESKTOP, 'qishui');
-    let result: QishuiBridgeResult;
+    let result: QishuiBridgeAnswer;
     if (typeof window.electron?.qishuiRequest === 'function') {
-        try { result = await window.electron.qishuiRequest(operation, params); }
+        try { result = await window.electron.qishuiRequest(operation, params) as QishuiBridgeAnswer; }
         catch (error) { throw new OnlineProviderError('network', QISHUI_BRIDGE_FAILED, 'qishui', error); }
     } else {
         // Android：内置原生桥（nativeBridge/api/qishui.js 按同样的协议回答）。
@@ -43,7 +53,7 @@ export async function requestQishui<T = unknown>(operation: QishuiOperation, par
             throw new OnlineProviderError('unavailable', QISHUI_NEEDS_DESKTOP, 'qishui');
         }
         try {
-            result = await requestFoliaExtension<QishuiBridgeResult>({
+            result = await requestFoliaExtension<QishuiBridgeAnswer>({
                 provider: 'qishui',
                 operation,
                 params,
@@ -55,8 +65,9 @@ export async function requestQishui<T = unknown>(operation: QishuiOperation, par
     if (!result.ok) {
         const stage = STAGES.find(stage => stage === result.error.stage) ?? null;
         const upstreamCode = typeof result.error.upstreamCode === 'string' && /^\d{1,12}$/.test(result.error.upstreamCode) ? result.error.upstreamCode : undefined;
-        if (isLoginOperation(operation)) lastFailure = { stage, code: result.error.code, upstreamCode };
-        throw new QishuiRequestError(result.error.code, result.error.message, stage, upstreamCode);
+        const upstreamMessage = refusalSentence(result.error);
+        if (isLoginOperation(operation)) lastFailure = { stage, code: result.error.code, upstreamCode, message: upstreamMessage };
+        throw new QishuiRequestError(result.error.code, result.error.message, stage, upstreamCode, upstreamMessage);
     }
     return result.data as T;
 }

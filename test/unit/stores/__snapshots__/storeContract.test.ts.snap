@@ -3,6 +3,7 @@
 exports[`store contract > keeps every localStorage key the stores read or write 1`] = `
 [
   "active_online_provider_id",
+  "app_update_skipped_version",
   "audio_output_device_id",
   "auto_hide_command_palette_button",
   "auto_hide_player_chrome",

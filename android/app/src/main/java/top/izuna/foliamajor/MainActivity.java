@@ -97,6 +97,12 @@ public class MainActivity extends BridgeActivity {
         webView.postDelayed(() -> PhoneFitCutout.apply(this), 1500);
     }
 
+    @Override
+    public void onPause() {
+        DisplayFrameRateJournal.stop();
+        super.onPause();
+    }
+
     /**
      * The PWA service worker caches index.html and every hashed asset. After an APK update the
      * cached index.html can reference chunks that no longer exist in the new package, and that
@@ -231,6 +237,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        // 前台时每秒记一次系统刷新率，供「复制诊断数据」导出回落过程。
+        DisplayFrameRateJournal.start(this);
         if (getBridge() != null) {
             WebView webView = getBridge().getWebView();
             if (webView != null) {

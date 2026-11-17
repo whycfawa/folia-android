@@ -1,6 +1,27 @@
 
 
 export default {
+  "appUpdate": {
+    "title": "发现新版本",
+    "titleForced": "需要更新才能继续",
+    "versionLine": "新版本 {{version}}",
+    "noNotes": "这次更新没有填写说明。",
+    "forcedHint": "这一版是强制更新，安装完成后才能继续使用。",
+    "download": "下载更新",
+    "downloading": "正在下载 {{percent}}%",
+    "downloadingHint": "下载中，请保持应用在前台。",
+    "later": "以后再说",
+    "install": "安装",
+    "installing": "正在调起安装…",
+    "openInstallSetting": "去允许安装",
+    "retry": "重试",
+    "checkNow": "检查更新",
+    "checkNowHint": "检查自建更新源；发现新版本会弹窗提示。",
+    "checking": "检查中…",
+    "upToDate": "已是最新版本",
+    "checkFailed": "检查失败",
+    "notConfigured": "这个版本没有配置更新源"
+  },
   "appleMusic": {
     "libraryPlaylistName": "全部歌曲"
   },

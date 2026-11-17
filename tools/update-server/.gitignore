@@ -1,0 +1,4 @@
+node_modules/
+data/
+admin-password.txt
+.tmp-test/

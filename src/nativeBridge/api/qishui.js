@@ -335,6 +335,8 @@ export class QishuiError extends Error {
     this.upstreamCode = upstreamCode;
     /** @type {string | undefined} */
     this.stage = undefined;
+    /** The platform's own words for a refusal, kept for the sign-in diagnostics. @type {string | undefined} */
+    this.upstreamMessage = undefined;
   }
 }
 
@@ -346,6 +348,7 @@ export function toBridgeError(error) {
       message: error.message,
       ...(error.upstreamCode === undefined ? {} : { upstreamCode: error.upstreamCode }),
       ...(error.stage === undefined ? {} : { stage: error.stage }),
+      ...(error.upstreamMessage === undefined ? {} : { upstreamMessage: error.upstreamMessage }),
     };
   }
   return { code: 'invalid-response', message: 'Qishui operation failed' };
@@ -364,10 +367,41 @@ const timeoutSignal = () => {
   return controller.signal;
 };
 
+// What the platform itself said when it refused: its status word and its own description, folded to one
+// bounded line. Nothing else is copied out of the response: control characters go, backticks go (the
+// diagnostics are pasted into a fenced block), and the cut is by code point so no pair is split.
+const REFUSAL_LIMIT = 200;
+const foldRefusalText = (value) => {
+  if (typeof value !== 'string') return undefined;
+  const folded = value
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/`/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  return folded === '' ? undefined : folded;
+};
+export const upstreamSentence = (data) => {
+  const inner = data && typeof data === 'object' && data.data && typeof data.data === 'object' ? data.data : null;
+  const parts = [];
+  const status = foldRefusalText(data?.status) ?? foldRefusalText(inner?.status);
+  if (status) parts.push(`status=${status}`);
+  const description = foldRefusalText(data?.description) ?? foldRefusalText(inner?.description);
+  if (description) parts.push(`description=${description}`);
+  const message = foldRefusalText(data?.message) ?? foldRefusalText(inner?.message);
+  if (message && !/^success$/i.test(message)) parts.push(`message=${message}`);
+  const captcha = foldRefusalText(data?.captcha) ?? foldRefusalText(inner?.captcha);
+  if (captcha && !/^(?:0|false)$/i.test(captcha)) parts.push('captcha=required');
+  return parts.length > 0 ? Array.from(parts.join(' ')).slice(0, REFUSAL_LIMIT).join('') : undefined;
+};
+
 function checked(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new QishuiError('invalid-response', 'Invalid Qishui response');
   const code = Number(data.err_no ?? data.data?.error_code ?? 0);
-  if (code) throw new QishuiError(AUTH_CODES.includes(code) ? 'auth-required' : 'unavailable', 'Qishui rejected the request', String(code));
+  if (code) {
+    const error = new QishuiError(AUTH_CODES.includes(code) ? 'auth-required' : 'unavailable', 'Qishui rejected the request', String(code));
+    error.upstreamMessage = upstreamSentence(data);
+    throw error;
+  }
   return data;
 }
 
@@ -1283,7 +1317,7 @@ function createQishuiApi(sessions) {
       } catch (error) {
         // Only safe protocol errors cross the bridge. Fetch exceptions may embed credential-bearing URLs.
         if (error instanceof QishuiError && typeof operation === 'string' && operation.startsWith('login')) {
-          warn(`[Qishui] Sign-in operation failed: ${[error.code, error.stage, error.upstreamCode].filter(Boolean).join(' ')}`);
+          warn(`[Qishui] Sign-in operation failed: ${[error.code, error.stage, error.upstreamCode].filter(Boolean).join(' ')}${error.upstreamMessage ? ` ${error.upstreamMessage}` : ''}`);
         }
         return { ok: false, error: toBridgeError(error) };
       }

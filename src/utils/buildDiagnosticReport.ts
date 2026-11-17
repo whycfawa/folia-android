@@ -4,7 +4,22 @@ import { useAudioSettingsStore } from '../stores/useAudioSettingsStore';
 import { usePlaybackStore } from '../stores/usePlaybackStore';
 import { readCrashDiagnostics, readDiagnosticsHeartbeats } from './crashDiagnostics';
 import { readPlaybackContinuitySnapshot } from './mediaDiagnostics';
-import { readCpuProbeForDiagnostics, readFrameTimingSnapshot } from './frameTimingDiagnostics';
+import { readCpuProbeForDiagnostics, readFrameTimingSnapshot, readFpsHistory } from './frameTimingDiagnostics';
+import { getGlobalVisualizerFrameRate } from './frameRateLimiter';
+import { readAppUpdateDiagnostics } from '../services/appUpdate/appUpdateDiagnostics';
+import { modelsPresent } from '../services/analysis/modelAvailability';
+import { canRunBeatThis } from '../services/analysis/beatThis';
+import { probeBeatThisGpu, readBeatThisGpuDiagnostics } from '../services/analysis/beatThisGpu';
+import { readBeatFxSourceDiagnostics } from '../services/beatFx/beatFxSource';
+import { readBeatFxWanted } from '../services/beatFx/beatFxWanted';
+import { readDrumHitsDiagnostics } from '../services/analysis/drumHits';
+import { isCapacitorAndroid } from '../platform/runtime';
+import {
+    readAndroidDisplayFrameRateInfo,
+    readAndroidDisplayFrameRateJournal,
+    readLastDisplayFrameRateRequest,
+    sampleAndroidDisplayFrameRate,
+} from '../services/androidDisplayFrameRate';
 import { readLastAiThemeAttempt, readAiThemeAttempts, readFailedAiThemeAttempts } from './aiThemeDiagnostics';
 import { isNeutralAudioEffects } from './audioEffects';
 import { getCollectionOrderDiagnosticLines } from './collectionOrderDiagnostics';
@@ -216,6 +231,162 @@ export const resolveStutterAttribution = (input: StutterAttributionInput): strin
 };
 
 /**
+ * 智能动感模式的现场：开关是什么、模型在不在、能不能跑（GPU 适配器、worker、模型建没建起来），
+ * 以及最近一次取拍点到底用了模型还是回退到内置估计。
+ */
+const readSmartBeatLines = async (): Promise<string[]> => {
+    const setting = readLocalStorageValue('visualizer_smart_beat');
+    const models = modelsPresent();
+    const gpu = readBeatThisGpuDiagnostics();
+    const adapter = await withDeadline(probeBeatThisGpu(), 1500, false);
+    const last = readBeatFxSourceDiagnostics();
+    const wanted = readBeatFxWanted();
+    const drums = readDrumHitsDiagnostics();
+    const resident = gpu.resident.length
+        ? gpu.resident.map(entry => entry.model + ' ' + Math.round(entry.bytes / 1048576) + 'MB').join(', ')
+        : '(none)';
+    return [
+        '  setting: ' + (setting.length > 220 ? setting.slice(0, 220) + '…' : setting),
+        '  bridge: ' + (isCapacitorAndroid() ? 'android-native' : (typeof window.electron?.runBeatThis === 'function' ? 'electron' : 'none')),
+        '  models: beat_this=' + (models.beat_this ? 'yes' : 'no')
+            + ' htdemucs=' + (models.htdemucs ? 'yes' : 'no')
+            + ' htdemucs_gpu=' + (models.htdemucs_gpu ? 'yes' : 'no'),
+        '  can run beat_this: ' + (canRunBeatThis() ? 'yes' : 'no') + ' gpu adapter: ' + (adapter ? 'yes' : 'no'),
+        '  gpu: unsupported=' + (gpu.unsupported ? 'yes' : 'no')
+            + ' worker=' + (gpu.workerActive ? 'yes' : 'no')
+            + ' ready=[' + gpu.readyModels.join(',') + ']'
+            + ' resident=[' + resident + ']'
+            + ' last-error=' + (gpu.lastError ?? '(none)')
+            + (gpu.failedModels.length ? ' failed=[' + gpu.failedModels.join(',') + ']' : ''),
+        '  wanted: ' + (wanted
+            ? 'beats=' + (wanted.beats ? 'yes' : 'no')
+                + ' drums=' + (wanted.drums ? 'yes' : 'no')
+                + ' vocals=' + (wanted.vocals ? 'yes' : 'no')
+                + ' storedOnly=' + (wanted.storedOnly ? 'yes' : 'no')
+                + ' key=' + (wanted.key ? 'set' : '(none)')
+            : '(nothing asked for yet)'),
+        '  drums: tracks=' + drums.tracks.length
+            + ' running=' + drums.running
+            + ' settled=' + drums.settled
+            + ' last=' + (drums.last
+                ? 'hits=' + drums.last.hits + (drums.last.drumless ? ' drumless' : '') + ' at=' + new Date(drums.last.at).toISOString()
+                : '(none)')
+            + ' error=' + (drums.lastError ?? '(none)'),
+        '  last lookup: ' + (last
+            ? 'at=' + new Date(last.at).toISOString()
+                + ' source=' + last.source
+                + ' storedOnly=' + (last.storedOnly ? 'yes' : 'no')
+                + (last.retry ? ' retry=yes' : '')
+                + (last.note ? ' note=' + last.note : '')
+            : '(none since start)'),
+    ];
+};
+
+/** 应用内更新的现场：包里的地址、Cordova 桥的形态、读到的安装版本、最近一次检查的结果。 */
+const readAppUpdateLines = (): string[] => {
+    const update = readAppUpdateDiagnostics();
+    const installed = update.installed
+        ? update.installed.versionCode + ' (' + update.installed.versionName + ')'
+        : 'n/a';
+    const last = update.lastCheck
+        ? 'at=' + update.lastCheck.at
+            + ' status=' + update.lastCheck.status
+            + ' available=' + (update.lastCheck.availableVersionCode ?? 'n/a')
+            + ' decision=' + update.lastCheck.decision
+            + (update.lastCheck.error ? ' error=' + update.lastCheck.error : '')
+        : '(none)';
+    return [
+        '  endpoint: ' + (update.endpoint || '(none)') + ' configured=' + (update.configured ? 'yes' : 'no'),
+        '  installer: ' + update.installer,
+        '  installed: ' + installed,
+        '  last check: ' + last,
+    ];
+};
+
+/**
+ * 「选了 120，不动就掉到 60」这类报告的分流依据：设置里选的档位、限幅器实际生效的档位、
+ * 系统此刻的刷新率与屏幕支持的档位、窗口和 View 各申请了多少、以及连续两秒的刷新率采样。
+ * 采样存在的意义就是把「触摸时 120、静止后回 60」的回落过程直接记下来，不靠复述。
+ */
+/** 把逐秒的刷新率压成「每 10 秒一个 min/max」，再从序列里找回落点，报告才读得下来。 */
+const summarizeDisplayHistory = (journal: Array<{ ageMs: number; hz: number }>): string[] => {
+    if (journal.length === 0) return ['  history: (no samples yet)'];
+    const ordered = journal.slice().sort((a, b) => b.ageMs - a.ageMs);
+    const values = ordered.map(point => point.hz);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const spanSeconds = Math.max(0, Math.round((ordered[0]!.ageMs - ordered[ordered.length - 1]!.ageMs) / 1000));
+    const bucketMs = 10_000;
+    const buckets = new Map<number, { min: number; max: number }>();
+    for (const point of ordered) {
+        const bucket = Math.floor(point.ageMs / bucketMs);
+        const current = buckets.get(bucket);
+        buckets.set(bucket, current
+            ? { min: Math.min(current.min, point.hz), max: Math.max(current.max, point.hz) }
+            : { min: point.hz, max: point.hz });
+    }
+    const lines = [
+        `  history: span=${spanSeconds}s points=${ordered.length} min=${min.toFixed(1)}Hz max=${max.toFixed(1)}Hz avg=${avg.toFixed(1)}Hz`,
+        `  history buckets (10s each, min/max, oldest→newest): ${[...buckets.entries()]
+            .sort((a, b) => b[0] - a[0])
+            .map(([, bucket]) => `${bucket.min.toFixed(0)}/${bucket.max.toFixed(0)}`)
+            .join(' ') || '(none)'}`,
+    ];
+    // 回落点：前面至少三秒都在高刷，然后落到 70Hz 以下 —— 就是「不动就掉到 60」的那一刻。
+    for (let index = 3; index < ordered.length; index += 1) {
+        const before = ordered.slice(index - 3, index).every(point => point.hz >= 90);
+        if (!before || ordered[index]!.hz > 70) continue;
+        let end = index;
+        while (end + 1 < ordered.length && ordered[end + 1]!.hz <= 70) end += 1;
+        lines.push(`  history drop: at -${(ordered[index]!.ageMs / 1000).toFixed(0)}s `
+            + `(from ${ordered[index - 1]!.hz.toFixed(0)}Hz to ${ordered[index]!.hz.toFixed(0)}Hz, `
+            + `stayed ${((ordered[end]!.ageMs - ordered[index]!.ageMs) / 1000).toFixed(0)}s)`);
+        break;
+    }
+    return lines;
+};
+
+const readDisplayFrameRateLines = async (): Promise<string[]> => {
+    const setting = readLocalStorageValue('visualizer_frame_rate');
+    const limiter = getGlobalVisualizerFrameRate();
+    const info = await readAndroidDisplayFrameRateInfo();
+    const sample = await sampleAndroidDisplayFrameRate(2000);
+    const journal = await readAndroidDisplayFrameRateJournal();
+    const request = readLastDisplayFrameRateRequest();
+    const hz = (value: number | undefined) => (typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(1)}Hz` : 'n/a');
+    const lines = [
+        `  setting: ${setting} limiter: ${limiter}`,
+        info
+            ? `  system: refresh=${hz(info.refreshRate)} mode=${info.modeWidth ?? '?'}x${info.modeHeight ?? '?'}@${hz(info.modeRefreshRate)}`
+                + ` window=${hz(info.preferredRefreshRate)} min=${hz(info.preferredMinRefreshRate)} max=${hz(info.preferredMaxRefreshRate)}`
+                + ` view-requested=${hz(info.requestedFrameRate)}`
+                + ` screenOn=${info.screenOn === true ? 'yes' : 'no'}`
+            : '  system: (native display info unavailable)',
+        info?.supportedModes?.length
+            ? `  supported modes: ${info.supportedModes.join(', ')}`
+            : '  supported modes: n/a',
+        sample && sample.samples.length
+            ? `  sampled ${((sample.samples.length - 1) / 10).toFixed(1)}s: min=${hz(Math.min(...sample.samples))}`
+                + ` max=${hz(Math.max(...sample.samples))}`
+                + ` avg=${hz(sample.samples.reduce((sum, value) => sum + value, 0) / sample.samples.length)}`
+                + ` points=${sample.samples.length} values=${sample.samples.map(value => value.toFixed(0)).join(',')}`
+            : '  sampled: (unavailable)',
+        request
+            ? `  request: requested=${request.fps}Hz ok=${request.ok ? 'yes' : 'no'}`
+                + `${request.viewReadback === undefined ? '' : ` view-readback=${request.viewReadback.toFixed(1)}Hz`}`
+                + `${request.windowPreferred === undefined ? '' : ` window=${request.windowPreferred.toFixed(1)}Hz`}`
+                + `${request.windowMin === undefined ? '' : ` min=${request.windowMin.toFixed(1)}Hz`}`
+                + `${request.windowMax === undefined ? '' : ` max=${request.windowMax.toFixed(1)}Hz`}`
+                + `${request.windowModeId === undefined ? '' : ` mode-id=${request.windowModeId}`}`
+                + `${request.error ? ` error=${request.error}` : ''} at=${request.at}`
+            : '  request: (none sent this session)',
+        ...(journal ? summarizeDisplayHistory(journal) : ['  history: (unavailable)']),
+    ];
+    return lines;
+};
+
+/**
  * 帧间隔分位数说明界面掉不掉帧，longtask 说明是不是我们自己的脚本占住主线程，
  * 核数 / 内存 / 处理器探针说明设备本身够不够用。三条凑在一起才能分清
  * 「我们的渲染开销」和「用户处理器性能不足」。
@@ -259,9 +430,11 @@ const readFrameTimingLines = (): string[] => {
             + ` recent-window=${stats.count}`,
         `  device: cores=${frames.cores ?? 'n/a'}`
             + ` memory=${frames.memoryGb === null ? 'n/a' : `${frames.memoryGb}GB`} class=${frames.deviceClass}`,
-        `  display: refresh=${frames.refreshHz === null ? 'n/a' : `${frames.refreshHz}Hz`}`
+        `  display: refresh=${frames.refreshHz === null ? 'n/a' : `${frames.refreshHz}Hz (estimated from frame intervals)`}`
             + ` viewport=${typeof window === 'undefined' ? '' : `${window.innerWidth}x${window.innerHeight} dpr=${window.devicePixelRatio}`}`,
         `  fps: recent-second=${fps(frames.recentSecondFps)} worst-second=${fps(frames.worstSecondFps)}`,
+        // 逐秒时间线：和 display frame rate 的 history 摆在一起，才看得出「屏幕 120、页面 60」。
+        `  fps history (1s buckets, oldest→newest): ${readFpsHistory().map(value => value.toFixed(0)).join(',') || '(none)'}`,
         `  frame time: p50=${percent(stats.p50Ms)} p90=${percent(stats.p90Ms)} p95=${percent(stats.p95Ms)}`
             + ` p99=${percent(stats.p99Ms)} max=${percent(stats.maxMs)}`,
         // 「日常播放不卡、一移动就掉帧」：移动中的帧单独一行，直接和上面的整体分位数对比。
@@ -657,6 +830,18 @@ export const buildDiagnosticReport = async (): Promise<string> => {
         '',
         'visualizer backgrounds:',
         ...readVisualizerBackgroundLines(),
+        '',
+        // 智能动感模式：模型在不在、能不能跑、最近一次取拍点用了模型还是回退。
+        'smart beat:',
+        ...(await readSmartBeatLines()),
+        '',
+        // 应用内更新：地址有没有进包、桥在不在、检查停在哪一步。
+        'app update:',
+        ...readAppUpdateLines(),
+        '',
+        // 刷新率现场：设置档位、系统当前值、屏幕档位、申请值与两秒采样，先分清是谁把帧降下来的。
+        'display frame rate:',
+        ...(await readDisplayFrameRateLines()),
         '',
         // 卡顿分流：帧耗时 + 长任务 + 处理器探针，用来区分我们的渲染开销和设备性能。
         'frame timing:',

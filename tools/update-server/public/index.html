@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Folia 更新发布</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; background: #0d0e12; color: #e6e8ee; }
+  main { max-width: 720px; margin: 40px auto; padding: 0 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { color: #8b90a0; margin: 0 0 28px; font-size: 12px; }
+  section { background: #15171d; border: 1px solid #23262f; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+  label { display: block; font-size: 12px; color: #9aa0b0; margin: 12px 0 6px; }
+  input[type=text], input[type=password], input[type=number], textarea, select {
+    width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 9px;
+    border: 1px solid #2b2f3a; background: #0f1116; color: #e6e8ee; font: inherit; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #3f74ff; }
+  textarea { min-height: 110px; resize: vertical; }
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+  .inline { display: flex; gap: 16px; align-items: center; margin-top: 12px; font-size: 13px; color: #c8ccd8; }
+  button { border: 0; border-radius: 9px; padding: 10px 16px; font: inherit; cursor: pointer; background: #2a2f3d; color: #e6e8ee; }
+  button.primary { background: #3f74ff; color: #fff; font-weight: 600; }
+  button.danger { background: #4a2027; color: #ffb4c0; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .muted { color: #8b90a0; font-size: 12px; }
+  .status { margin-top: 12px; font-size: 13px; min-height: 20px; }
+  .ok { color: #6ee7a8; } .err { color: #ff8a9a; }
+  pre { background: #0f1116; border: 1px solid #23262f; border-radius: 9px; padding: 12px; overflow: auto; font-size: 12px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Folia 更新发布</h1>
+  <p class="sub">上传 APK 与更新说明；客户端启动后拉取清单并弹窗。</p>
+
+  <section id="login">
+    <label for="password">管理密码</label>
+    <input id="password" type="password" autocomplete="current-password" />
+    <div class="inline"><button class="primary" id="loginBtn">登录</button><span class="status" id="loginStatus"></span></div>
+  </section>
+
+  <div id="panel" class="hidden">
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>当前线上版本</strong>
+        <button class="danger" id="unpublishBtn">下架</button>
+      </div>
+      <pre id="current">(还没有发布过)</pre>
+    </section>
+
+    <section>
+      <strong>发布新版本</strong>
+      <label for="apk">APK 文件</label>
+      <input id="apk" type="file" accept=".apk,application/vnd.android.package-archive" />
+      <div class="row">
+        <div>
+          <label for="versionCode">versionCode（留空＝从 APK 自动读取）</label>
+          <input id="versionCode" type="number" min="1" step="1" placeholder="自动" />
+        </div>
+        <div>
+          <label for="versionName">版本名（留空＝从 APK 自动读取）</label>
+          <input id="versionName" type="text" placeholder="自动" />
+        </div>
+      </div>
+      <label for="notes">更新内容（原样展示给用户）</label>
+      <textarea id="notes" placeholder="修了什么就写什么，不扩写。"></textarea>
+      <div class="row">
+        <div>
+          <label for="minSupportedVersionCode">最低支持版本（低于它的用户强制更新，0 = 不限制）</label>
+          <input id="minSupportedVersionCode" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label for="channel">渠道</label>
+          <select id="channel"><option value="stable">stable</option><option value="beta">beta</option></select>
+        </div>
+      </div>
+      <div class="inline">
+        <label style="margin:0"><input type="radio" name="mandatory" value="false" checked /> 可选更新（用户能跳过）</label>
+        <label style="margin:0"><input type="radio" name="mandatory" value="true" /> 强制更新（不可跳过）</label>
+      </div>
+      <div class="inline"><button class="primary" id="publishBtn">上传并发布</button><span class="status" id="publishStatus"></span></div>
+      <p class="muted">发布后客户端在下次启动或最多 6 小时后看到；APK 会算 SHA-256 一并写进清单。</p>
+    </section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const show = (el, text, kind) => { el.textContent = text; el.className = 'status ' + (kind || ''); };
+
+const loadState = async () => {
+  const res = await fetch('/admin/state');
+  if (res.status === 401) { $('login').classList.remove('hidden'); $('panel').classList.add('hidden'); return false; }
+  const data = await res.json();
+  $('login').classList.add('hidden');
+  $('panel').classList.remove('hidden');
+  $('current').textContent = JSON.stringify(data.releases, null, 2);
+  return true;
+};
+
+$('loginBtn').onclick = async () => {
+  show($('loginStatus'), '登录中…');
+  const res = await fetch('/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: $('password').value }) });
+  if (!res.ok) { show($('loginStatus'), '密码不对', 'err'); return; }
+  show($('loginStatus'), '');
+  await loadState();
+};
+
+$('unpublishBtn').onclick = async () => {
+  if (!confirm('确定下架当前版本？')) return;
+  const channel = $('channel').value;
+  await fetch('/admin/unpublish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ platform: 'android', channel }) });
+  await loadState();
+};
+
+$('publishBtn').onclick = async () => {
+  const file = $('apk').files[0];
+  if (!file) { show($('publishStatus'), '先选 APK', 'err'); return; }
+  const versionCode = Number($('versionCode').value) || 0;
+  const versionName = $('versionName').value.trim();
+  const form = new FormData();
+  form.append('apk', file);
+  form.append('platform', 'android');
+  form.append('channel', $('channel').value);
+  if (versionCode > 0) form.append('versionCode', String(versionCode));
+  if (versionName) form.append('versionName', versionName);
+  form.append('notes', $('notes').value);
+  form.append('mandatory', document.querySelector('input[name=mandatory]:checked').value);
+  form.append('minSupportedVersionCode', String(Number($('minSupportedVersionCode').value) || 0));
+  $('publishBtn').disabled = true;
+  show($('publishStatus'), '上传中…');
+  try {
+    const res = await fetch('/admin/publish', { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { show($('publishStatus'), data.error || ('失败 HTTP ' + res.status), 'err'); return; }
+    show($('publishStatus'), '已发布 ' + data.release.versionName + '（versionCode ' + data.release.versionCode
+      + (data.source === 'apk' ? '，从 APK 读取' : '，手填') + '）', 'ok');
+    $('apk').value = '';
+    await loadState();
+  } catch (error) {
+    show($('publishStatus'), '上传失败：' + error.message, 'err');
+  } finally {
+    $('publishBtn').disabled = false;
+  }
+};
+
+void loadState();
+</script>
+</body>
+</html>

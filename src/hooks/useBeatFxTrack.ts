@@ -7,6 +7,7 @@ import { liveBeatEffects, liveBeatEffectStrength, visualizerWantsBeats, visualiz
 import { anyDrumBeatEffectOn, beatEffectPartId, resolveBeatEffectPartStrength, resolveBeatEffectSetting, smartBeatMayAnalyse } from '../services/beatFx/beatEffects';
 import { beginBeatFxTrack, getBeatFxHeard, setBeatFxEvents, setBeatFxIntensities, setBeatFxLiveEffects, stopBeatFx } from '../services/beatFx/beatFxLive';
 import { loadBeatFxTrackBeats, loadBeatFxTrackDrums } from '../services/beatFx/beatFxSource';
+import { noteBeatFxWanted } from '../services/beatFx/beatFxWanted';
 import { getPlaybackAnalysisKey, getPlaybackAnalysisTarget } from '../services/playbackRecovery/representationRegistry';
 import { modelsPresent, subscribeModelAvailability } from '../services/analysis/modelAvailability';
 import { drumHitsSettled, setWantedDrumTrack } from '../services/analysis/drumHits';
@@ -94,6 +95,11 @@ export function useBeatFxTrack(): boolean {
     const song = usePlaybackStore(selectDisplaySong);
     // Only the identity, to key the effect; the load resolves the key it reads bytes for itself.
     const identity = wanted && song ? getPlaybackAnalysisKey(song) : null;
+
+    // 诊断用：这一刻到底有没有人要求拍点。模型没跑时，先分清「没被要求」和「要求了跑不动」。
+    useEffect(() => {
+        noteBeatFxWanted({ beats: beatsWanted, drums: drumsWanted, vocals: vocalsWanted, storedOnly, key: identity });
+    }, [beatsWanted, drumsWanted, identity, storedOnly, vocalsWanted]);
 
     useEffect(() => {
         if (!wanted) {

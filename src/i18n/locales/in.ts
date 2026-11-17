@@ -1,6 +1,27 @@
 
 
 export default {
+  "appUpdate": {
+    "title": "Versi baru tersedia",
+    "titleForced": "Pembaruan wajib",
+    "versionLine": "Versi baru {{version}}",
+    "noNotes": "Pembaruan ini tidak menyertakan catatan.",
+    "forcedHint": "Pembaruan ini wajib; pasang untuk tetap memakai aplikasi.",
+    "download": "Unduh pembaruan",
+    "downloading": "Mengunduh {{percent}}%",
+    "downloadingHint": "Sedang mengunduh. Biarkan aplikasi di depan.",
+    "later": "Nanti",
+    "install": "Pasang",
+    "installing": "Membuka penginstal…",
+    "openInstallSetting": "Izinkan pemasangan",
+    "retry": "Coba lagi",
+    "checkNow": "Periksa pembaruan",
+    "checkNowHint": "Memeriksa sumber pembaruan; versi baru akan memunculkan dialog.",
+    "checking": "Memeriksa…",
+    "upToDate": "Anda sudah memakai versi terbaru",
+    "checkFailed": "Pemeriksaan gagal",
+    "notConfigured": "Build ini belum punya sumber pembaruan"
+  },
   "appleMusic": {
     "libraryPlaylistName": "Semua lagu"
   },

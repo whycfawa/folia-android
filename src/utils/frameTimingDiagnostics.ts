@@ -24,6 +24,9 @@ const LONG_ANIMATION_FRAME_THRESHOLD_MS = 50;
 /** 触摸/滚动结束后仍算「移动中」的余量：一次滑动收尾的那几帧同样是用户看到的掉帧。 */
 const MOTION_WINDOW_MS = 250;
 const MOTION_INTERVAL_CAPACITY = 2048;
+/** 逐秒帧率时间线：300 个点 = 最近 5 分钟，和原生的刷新率日志同一个窗口。 */
+const FPS_HISTORY_CAPACITY = 300;
+const fpsHistory: number[] = [];
 
 export type FrameStats = {
     count: number;
@@ -459,12 +462,18 @@ const recordInterval = (intervalMs: number, timestamp: number): void => {
         const fps = (bucketFrames * 1000) / bucketElapsed;
         recentSecondFps = fps;
         worstSecondFps = worstSecondFps === null ? fps : Math.min(worstSecondFps, fps);
+        // 逐秒留一条时间线：报告里要能看出「第几秒从 120 掉到 60」，只看最近一秒抓不到。
+        fpsHistory.push(Math.round(fps * 10) / 10);
+        if (fpsHistory.length > FPS_HISTORY_CAPACITY) fpsHistory.shift();
         bucketStartedAt = timestamp;
         bucketFrames = 0;
     }
 };
 
 /** 一帧的间隔进统计（rAF 循环内部走的就是这里；测试也用它喂样本）。 */
+/** 最近 5 分钟的逐秒帧率（每秒一个点，从旧到新），供诊断报告和「掉到 60」的时间点比对。 */
+export const readFpsHistory = (): number[] => fpsHistory.slice();
+
 export const noteFrameSample = (intervalMs: number, timestampMs: number): void => {
     recordInterval(intervalMs, timestampMs);
 };
@@ -655,6 +664,7 @@ export const resetFrameTimingDiagnostics = (): void => {
     bucketFrames = 0;
     worstSecondFps = null;
     recentSecondFps = null;
+    fpsHistory.length = 0;
     longTasks = emptyLongTasks();
     longAnimationFrames = emptyLongAnimationFrames();
     probeFromMs = null;

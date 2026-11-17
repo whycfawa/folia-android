@@ -3227,11 +3227,16 @@ export async function handleKGSongUrl(hash, albumId, albumAudioId, quality, cook
     const stillBlocked = trackerResult.blocked || trackerResult.status === 2;
     const cacheAfterRetry = await loadKGVipSessionCache(login.userId);
     const hasVipTokenAfterRetry = !!resolveKGEffectiveVipToken(cookieHeader, cacheAfterRetry);
+    // 概念版会员（vipType=6/33）在缓存里会被记成 isVip=true，于是「已经是 VIP」把领取挡在门外，
+    // 但概念版 VIP 并不等于畅听权益：主站取链回的 status=3/trackerStatus=0 就是这么来的。
+    // 以前只在 status=2（会员被拦）时领，概念版这种「认成 VIP 却没权益」的情况一次都领不到。
+    // 这里把概念版账号也当成需要领取：每日权益服务端只发一次，重复领取会被拒，不会造成刷接口。
+    const conceptAccount = !hasVipTokenAfterRetry && (Number(login.vipType) === 6 || Number(login.vipType) === 33);
     const shouldClaim = shouldClaimConceptVipOnFailure({
-      blocked: stillBlocked,
+      blocked: stillBlocked || conceptAccount,
       loggedIn: login.loggedIn,
       hasVipToken: hasVipTokenAfterRetry,
-      isVip: !!login.isVip,
+      isVip: conceptAccount ? false : !!login.isVip,
       lastAttemptAt: kgConceptClaimAt,
       intervalMs: KG_CONCEPT_CLAIM_INTERVAL_MS,
     });

@@ -8,6 +8,8 @@ import { installCrashDiagnostics } from './utils/crashDiagnostics';
 import { installChunkLoadRecovery } from './utils/chunkLoadRecovery';
 import { installFrameTimingDiagnostics } from './utils/frameTimingDiagnostics';
 import { installNativeAndroidBridge } from './services/nativeAndroidBridge';
+import { installAndroidDisplayFrameRate } from './services/androidDisplayFrameRate';
+import { installAppUpdateSchedule } from './stores/useAppUpdateStore';
 import { installAppleMusicAndroidBridge } from './services/onlineMusic/appleMusic/appleMusicAndroidBridge';
 import { installFnMusicAndroidBridge } from './services/onlineMusic/fnmusic/fnmusicAndroidBridge';
 import { installAndroidPhoneFitPreference } from './services/androidPhoneLayout';
@@ -46,6 +48,10 @@ installFrameTimingDiagnostics();
 installAndroidPhoneFitPreference();
 // 屏幕常亮：启动时套用保存的开关状态（安卓走原生窗口标志）。
 installKeepScreenOnPreference();
+// 刷新率申请：把保存的「动画帧率限制」档位交给系统（安卓 16 起按 View 申请）。
+installAndroidDisplayFrameRate();
+// 应用更新：启动 5 秒后查一次，之后每 6 小时一次；没配置更新源时整个功能不启用。
+installAppUpdateSchedule();
 // 安卓模组桥的总开关由这里注入：模组服务的闭包不碰 store（D114），界面层把这个值递给它。
 setAndroidModsEnabledProbe(() => useDesktopSettingsStore.getState().modSystemEnabled);
 // 原生桥：替换 fetch / 模拟扩展的 chrome.cookies / chrome.storage，所有在线请求走它。

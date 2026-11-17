@@ -62,6 +62,17 @@ describe('Qishui Omni adapter', () => {
         const lines = await qishuiProvider.auth?.getLoginDiagnostics?.();
         expect(lines?.[0].text).toContain('stage=account code=invalid-response');
     });
+    it('keeps the platform sentence when a sign-in request is refused', async () => {
+        vi.stubGlobal('window', { electron: { qishuiRequest: async () => ({ ok: false,
+            error: { code: 'unavailable', message: 'Qishui rejected the request', upstreamCode: '1092',
+                upstreamMessage: 'status=scanned description=操作过于频繁' } }) } });
+        let failure: unknown;
+        try { await requestQishui('login_qr_check', { key: 'test-session' }); } catch (error) { failure = error; }
+        expect(qishuiProvider.auth?.describeLoginFailure?.('check', failure))
+            .toMatchObject({ code: '1092', message: 'status=scanned description=操作过于频繁' });
+        const lines = await qishuiProvider.auth?.getLoginDiagnostics?.();
+        expect(lines?.[0].text).toContain('upstreamCode=1092 message=status=scanned description=操作过于频繁');
+    });
     it('declares the desktop runtime requirement and preserves bridge error codes', async () => {
         vi.stubGlobal('window', {});
         expect(qishuiProvider.getAvailability?.()).toMatchObject({ configured: false });

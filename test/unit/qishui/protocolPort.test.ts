@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     QISHUI_APP_IDENTITY, QISHUI_CLIENT_KEY, QISHUI_COMMON, QISHUI_UA,
     buildCsrRequest, buildGuardInfo, createQishuiGuard, der, ecdsaRawToDer,
-    QishuiError, readSessionRecord, serializeSession, toBridgeError,
+    QishuiError, readSessionRecord, serializeSession, toBridgeError, upstreamSentence,
 } from '../../../src/nativeBridge/api/qishui.js';
 
 // test/unit/qishui/protocolPort.test.ts
@@ -181,6 +181,31 @@ describe('bridge error wrapping', () => {
         expect(toBridgeError(error)).toEqual({
             code: 'auth-required', message: 'Sign in to Qishui first', upstreamCode: '28001003', stage: 'ticket',
         });
+    });
+
+    it('passes the platform sentence for a refusal through to the renderer', () => {
+        const error = new QishuiError('unavailable', 'Qishui rejected the request', '1092');
+        error.upstreamMessage = 'status=scanned description=操作过于频繁';
+        expect(toBridgeError(error)).toEqual({
+            code: 'unavailable', message: 'Qishui rejected the request', upstreamCode: '1092',
+            upstreamMessage: 'status=scanned description=操作过于频繁',
+        });
+    });
+
+    it('keeps only the status and words the platform itself wrote', () => {
+        expect(upstreamSentence({ err_no: 1092, status: 'scanned', description: '操作过于频繁' }))
+            .toBe('status=scanned description=操作过于频繁');
+        expect(upstreamSentence({ err_no: 4, description: '参数错误', message: 'error' }))
+            .toBe('description=参数错误 message=error');
+        expect(upstreamSentence({ err_no: 4, message: 'success' })).toBeUndefined();
+        expect(upstreamSentence({ err_no: 4 })).toBeUndefined();
+        expect(upstreamSentence({ data: { error_code: 2, description: '\n 不安全的请求 \n' } }))
+            .toBe('description=不安全的请求');
+        expect(upstreamSentence({ err_no: 1092, data: { captcha: '1' }, message: 'SUCCESS' }))
+            .toBe('captcha=required');
+        expect(upstreamSentence({ err_no: 4, captcha: 'false' })).toBeUndefined();
+        expect(upstreamSentence({ err_no: 1092, description: 'bad \u0007value `x`' }))
+            .toBe("description=bad value 'x'");
     });
 
     it('turns anything else into the fixed invalid-response sentence', () => {

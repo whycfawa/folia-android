@@ -2,6 +2,7 @@ import { runBeatThisGpu, type PercussiveEnergyFrames } from './beatThisGpu';
 import type { Urgency } from './scheduler';
 
 import { modelCanRun, noteModelFailed } from './modelAvailability';
+import { isCapacitorAndroid } from '../../platform/runtime';
 import { fft } from '../automix/signalAnalysis';
 import { YIELD_BUDGET_MS, yieldToUi } from '../automix/uiYield';
 
@@ -462,7 +463,10 @@ export const gridFromBeats = (
  */
 export const canRunBeatThis = (): boolean => {
     if (typeof window === 'undefined') return false;
-    return typeof window.electron?.runBeatThis === 'function' && modelCanRun('beat_this');
+    // 安卓没有 Electron 主进程：模型在本进程的 GPU worker 里跑（beatThisGpu.ts），权重由
+    // FoliaAnalysisModels 插件读出，所以「有没有桥」这一问在安卓上就是「在不在安卓壳里」。
+    const hasBridge = typeof window.electron?.runBeatThis === 'function' || isCapacitorAndroid();
+    return hasBridge && modelCanRun('beat_this');
 };
 
 /**

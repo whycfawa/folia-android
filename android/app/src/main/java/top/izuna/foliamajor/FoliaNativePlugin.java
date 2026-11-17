@@ -33,6 +33,7 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -306,6 +307,232 @@ public class FoliaNativePlugin extends Plugin {
         result.put("ok", true);
         result.put("removed", removed);
         call.resolve(result);
+    }
+
+    /**
+     * 向系统申请这个页面的刷新率：安卓 16（API 36）用 View.setRequestedFrameRate，更早的系统只能
+     * 改窗口的 preferredRefreshRate；fps<=0 表示撤回申请，交回系统自适应。系统不保证照办
+     * （省电策略、温度、屏幕档位都会把它压下来），所以只把申请值交回去，不承诺结果。
+     */
+    @PluginMethod
+    public void setDisplayFrameRate(PluginCall call) {
+        Integer requested = call.getInt("fps");
+        final float fps = requested == null || requested <= 0 ? 0f : Math.max(24f, Math.min(144f, requested));
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("No activity");
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            try {
+                WebView frameWebView = activity instanceof com.getcapacitor.BridgeActivity
+                    ? ((com.getcapacitor.BridgeActivity) activity).getBridge().getWebView()
+                    : null;
+                if (Build.VERSION.SDK_INT >= 36 && frameWebView != null) {
+                    frameWebView.setRequestedFrameRate(fps);
+                }
+                // 三条路一起走。preferredRefreshRate 是旧接口，很多定制 ROM 只看它做一次切换；
+                // 安卓 15 起新增的 min/max 才是「不允许这个窗口低于 N Hz」的正式说法，
+                // 一加这类按内容帧率投票的系统只认这一对。
+                WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
+                attributes.preferredRefreshRate = fps;
+                writeRefreshRateBounds(attributes, fps);
+                // preferredDisplayModeId 是 API 23 就有的公开字段：直接指定「这块窗口用哪个显示模式」，
+                // 比 preferredRefreshRate 那种建议式字段更硬。fps=0 时归零，交回系统。
+                int modeId = displayModeIdFor(activity, fps);
+                if (modeId != 0 || fps <= 0f) {
+                    attributes.preferredDisplayModeId = modeId;
+                }
+                activity.getWindow().setAttributes(attributes);
+                JSObject result = new JSObject();
+                result.put("fps", fps);
+                // 真实读回：View 认不认这个请求，看这里，不看上面回显的 fps。
+                result.put("viewReadback", requestedFrameRateOf(activity));
+                WindowManager.LayoutParams applied = activity.getWindow().getAttributes();
+                result.put("windowPreferred", applied.preferredRefreshRate);
+                result.put("windowMin", readRefreshRateBound(applied, "preferredMinDisplayRefreshRate"));
+                result.put("windowMax", readRefreshRateBound(applied, "preferredMaxDisplayRefreshRate"));
+                result.put("windowModeId", applied.preferredDisplayModeId);
+                call.resolve(result);
+            } catch (Exception error) {
+                call.reject(error.getMessage(), error);
+            }
+        });
+    }
+
+    /**
+     * 窗口的刷新率下限/上限（安卓 15 起才有这两个字段，旧 SDK 里不存在）。
+     * 反射写：编译期不依赖它们，运行时没有就静默跳过。
+     */
+    private static void writeRefreshRateBounds(WindowManager.LayoutParams attributes, float fps) {
+        for (String name : new String[]{"preferredMinDisplayRefreshRate", "preferredMaxDisplayRefreshRate"}) {
+            try {
+                // getDeclaredField + setAccessible：这两个字段在部分 SDK 上是非 public 的，
+                // 只查 public 字段会静默失败（读回来是 0，看着像「系统没有这个概念」）。
+                java.lang.reflect.Field field = WindowManager.LayoutParams.class.getDeclaredField(name);
+                field.setAccessible(true);
+                field.setFloat(attributes, fps);
+            } catch (Throwable ignored) {
+                // Field absent on this platform: the older preferredRefreshRate is all we can say.
+            }
+        }
+    }
+
+    private static float readRefreshRateBound(WindowManager.LayoutParams attributes, String name) {
+        try {
+            java.lang.reflect.Field field = WindowManager.LayoutParams.class.getDeclaredField(name);
+            field.setAccessible(true);
+            return field.getFloat(attributes);
+        } catch (Throwable ignored) {
+            return 0f;
+        }
+    }
+
+    /** 屏幕支持的显示模式里最接近 fps 的那个 id；0 表示不指定。 */
+    private static int displayModeIdFor(Activity activity, float fps) {
+        if (fps <= 0f) return 0;
+        try {
+            android.hardware.display.DisplayManager manager =
+                (android.hardware.display.DisplayManager) activity.getSystemService(Activity.DISPLAY_SERVICE);
+            android.view.Display display = manager == null
+                ? null : manager.getDisplay(android.view.Display.DEFAULT_DISPLAY);
+            if (display == null) return 0;
+            int bestId = 0;
+            float bestDelta = Float.MAX_VALUE;
+            for (android.view.Display.Mode mode : display.getSupportedModes()) {
+                float delta = Math.abs(mode.getRefreshRate() - fps);
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    bestId = mode.getModeId();
+                }
+            }
+            return bestId;
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    /** 当前请求帧率的读回值：安卓 16 起 View 能回答自己申请了多少，更早的系统没有这个概念。 */
+    private static float requestedFrameRateOf(Activity activity) {
+        try {
+            if (Build.VERSION.SDK_INT >= 36 && activity instanceof com.getcapacitor.BridgeActivity) {
+                WebView webView = ((com.getcapacitor.BridgeActivity) activity).getBridge().getWebView();
+                if (webView != null) return webView.getRequestedFrameRate();
+            }
+        } catch (Throwable ignored) {
+            // An older WebView build without the method: report nothing rather than failing the report.
+        }
+        return 0f;
+    }
+
+    /**
+     * 刷新率现场：系统当前是多少、屏幕支持哪些档位、窗口与 View 各申请了多少。
+     * 「选了 120，不动就掉 60」这种报告只靠这一行就能分成两类：屏幕自己降档，还是我们没申请。
+     */
+    @PluginMethod
+    public void getDisplayFrameRateInfo(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("No activity");
+            return;
+        }
+        // View.getRequestedFrameRate() 只在 UI 线程答得出真值；在别的线程读一律是 -4。
+        activity.runOnUiThread(() -> readDisplayFrameRateInfo(call, activity));
+    }
+
+    private void readDisplayFrameRateInfo(PluginCall call, Activity activity) {
+        try {
+            android.hardware.display.DisplayManager displayManager =
+                (android.hardware.display.DisplayManager) activity.getSystemService(Activity.DISPLAY_SERVICE);
+            android.view.Display display = displayManager == null
+                ? null : displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY);
+            if (display == null) {
+                JSObject missing = new JSObject();
+                missing.put("error", "no default display");
+                call.resolve(missing);
+                return;
+            }
+            android.view.Display.Mode mode = display.getMode();
+            JSONArray modes = new JSONArray();
+            for (android.view.Display.Mode supported : display.getSupportedModes()) {
+                modes.put(supported.getModeId() + ":" + supported.getRefreshRate() + "Hz@"
+                    + supported.getPhysicalWidth() + "x" + supported.getPhysicalHeight());
+            }
+            JSObject result = new JSObject();
+            result.put("refreshRate", display.getRefreshRate());
+            result.put("modeId", mode.getModeId());
+            result.put("modeRefreshRate", mode.getRefreshRate());
+            result.put("modeWidth", mode.getPhysicalWidth());
+            result.put("modeHeight", mode.getPhysicalHeight());
+            result.put("supportedModes", modes);
+            WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
+            result.put("preferredRefreshRate", attributes.preferredRefreshRate);
+            result.put("preferredMinRefreshRate", readRefreshRateBound(attributes, "preferredMinDisplayRefreshRate"));
+            result.put("preferredMaxRefreshRate", readRefreshRateBound(attributes, "preferredMaxDisplayRefreshRate"));
+            result.put("requestedFrameRate", requestedFrameRateOf(activity));
+            result.put("resumed", activity instanceof com.getcapacitor.BridgeActivity
+                && ((com.getcapacitor.BridgeActivity) activity).getBridge() != null);
+            android.os.PowerManager power = (android.os.PowerManager) activity.getSystemService(Activity.POWER_SERVICE);
+            result.put("screenOn", power != null && power.isInteractive());
+            call.resolve(result);
+        } catch (Exception error) {
+            JSObject failure = new JSObject();
+            failure.put("error", error.getClass().getSimpleName() + ": " + error.getMessage());
+            call.resolve(failure);
+        }
+    }
+
+    /** 最近 5 分钟的系统刷新率序列（每秒一点），报告里用它看回落发生在第几秒、之后回升没有。 */
+    @PluginMethod
+    public void getDisplayFrameRateJournal(PluginCall call) {
+        try {
+            JSObject result = new JSObject();
+            result.put("samples", DisplayFrameRateJournal.snapshot());
+            call.resolve(result);
+        } catch (Exception error) {
+            JSObject failure = new JSObject();
+            failure.put("error", error.getClass().getSimpleName() + ": " + error.getMessage());
+            call.resolve(failure);
+        }
+    }
+
+    /**
+     * 在一段时间里连续读系统刷新率，用来抓到「触摸时 120、静止后回 60」的回落过程。
+     * 只读 Display 的当前值，不请求任何东西，也不改动刷新率。
+     */
+    @PluginMethod
+    public void sampleDisplayFrameRate(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("No activity");
+            return;
+        }
+        Integer requested = call.getInt("durationMs");
+        final int durationMs = requested == null ? 2000 : Math.max(200, Math.min(6000, requested));
+        final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        final JSONArray samples = new JSONArray();
+        final long startedAt = android.os.SystemClock.elapsedRealtime();
+        final Runnable[] tick = new Runnable[1];
+        tick[0] = () -> {
+            try {
+                android.hardware.display.DisplayManager displayManager =
+                    (android.hardware.display.DisplayManager) activity.getSystemService(Activity.DISPLAY_SERVICE);
+                android.view.Display display = displayManager == null
+                    ? null : displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY);
+                if (display != null) samples.put(display.getRefreshRate());
+            } catch (Exception ignored) {
+                // A display that went away mid-sample simply contributes no point.
+            }
+            if (android.os.SystemClock.elapsedRealtime() - startedAt >= durationMs) {
+                JSObject result = new JSObject();
+                result.put("samples", samples);
+                result.put("requestedFrameRate", requestedFrameRateOf(activity));
+                call.resolve(result);
+                return;
+            }
+            handler.postDelayed(tick[0], 100);
+        };
+        handler.post(tick[0]);
     }
 
     @PluginMethod

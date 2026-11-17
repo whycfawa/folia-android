@@ -11,7 +11,7 @@ import { AiModelPicker } from './AiModelPicker';
 // One AI connection for the whole app — song themes and anything else that
 // asks services/aiText. The group id stays `electronSettings`: commands and links name that anchor.
 // It has a page of its own, so it shows open rather than folded into one row.
-const AI: SettingsGroupDef = { id: 'electronSettings', titleKey: 'options.aiServiceProviders', electronOnly: true };
+const AI: SettingsGroupDef = { id: 'electronSettings', titleKey: 'options.aiServiceProviders' };
 const O = {
     provider: option(AI, 'aiProvider', 'options.aiProvider'),
     endpoint: option(AI, 'aiEndpoint', 'options.aiEndpoint'),

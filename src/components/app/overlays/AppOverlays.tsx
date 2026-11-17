@@ -6,6 +6,7 @@ import MemoryMonitorWindow from '../../debug/MemoryMonitorWindow';
 import NowPlayingToast from './NowPlayingToast';
 import HifiSignalPathPanel from '../../hifi/HifiSignalPathPanel';
 import PerfCheckOverlay from '../../perfCheck/PerfCheckOverlay';
+import UpdateDialog from '../../appUpdate/UpdateDialog';
 import type { AppOverlaysModel } from './buildAppOverlaysModel';
 import { countRender } from '../../../dev/renderCount';
 import { useLatticeControlsStore } from '../../../stores/useLatticeControlsStore';
@@ -67,6 +68,9 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
 
             {/* The one HiFi signal-path sheet: the badge, the controls tab tile and the palette command open it through hifiPanelStore. */}
             <HifiSignalPathPanel />
+
+            {/* 自建更新服务的弹窗：有可安装的新版本时才出现。 */}
+            <UpdateDialog />
 
             {/* 性能检测在安卓上的全屏浮层：桌面上走独立窗口，这里什么都不画。 */}
             <PerfCheckOverlay />

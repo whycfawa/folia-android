@@ -370,7 +370,10 @@ const start = async (model: GpuModel): Promise<boolean> => {
     const fetchWeights = electronFetch ?? (isCapacitorAndroid()
         ? () => loadAndroidModelWeights(model)
         : null);
-    if (typeof fetchWeights !== 'function') return false;
+    if (typeof fetchWeights !== 'function') {
+        lastGpuError = 'no weight bridge';
+        return false;
+    }
     // Not there only in a checkout without the models (both ship in the installer); asked again on the next track.
     makeRoom(model);
     const started = performance.now();
@@ -383,6 +386,7 @@ const start = async (model: GpuModel): Promise<boolean> => {
         // Before the first chunk: no WebGPU, no adapter, or a pipeline this device will not build.
         // None of those changes within a session - but only the first three are the machine's.
         console.warn(`[beat-this-gpu] ${model} unavailable: ${reply.error}`);
+        lastGpuError = `${model}: ${reply.error}`;
         if (reply.scope === 'model') {
             failedModels.add(model);
             ready.delete(model);
@@ -399,6 +403,28 @@ const start = async (model: GpuModel): Promise<boolean> => {
     console.log(`[beat-this-gpu] ${model} loaded on ${reply.result}, ${megabytes(bytes)} on the GPU`);
     return true;
 };
+
+/** 最近一次 GPU 路径失败的原因，给诊断报告：没有桥、没有 WebGPU、模型建不起来、跑失败。 */
+let lastGpuError: string | null = null;
+
+export type BeatThisGpuDiagnostics = {
+    unsupported: boolean;
+    failedModels: string[];
+    workerActive: boolean;
+    readyModels: string[];
+    resident: Array<{ model: string; bytes: number }>;
+    lastError: string | null;
+};
+
+/** 诊断报告用的 GPU 分析现场：这台设备上模型到底建没建起来、卡在哪一步。 */
+export const readBeatThisGpuDiagnostics = (): BeatThisGpuDiagnostics => ({
+    unsupported,
+    failedModels: [...failedModels],
+    workerActive: worker !== null,
+    readyModels: [...ready.keys()],
+    resident: [...resident.entries()].map(([model, entry]) => ({ model, bytes: entry.bytes })),
+    lastError: lastGpuError,
+});
 
 let adapterProbe: Promise<boolean> | null = null;
 
@@ -547,6 +573,7 @@ const runNow = async (
     used(model);
     if (reply.error) {
         console.warn(`[beat-this-gpu] run failed, falling back to the CPU for this track: ${reply.error}`);
+        lastGpuError = `run: ${reply.error}`;
         drop();
         return null;
     }
