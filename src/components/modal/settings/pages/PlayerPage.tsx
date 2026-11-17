@@ -36,6 +36,8 @@ const PLAYER_UI: SettingsGroupDef = { id: 'labPlayerUi', titleKey: 'options.labP
 
 const O = {
     entryView: option(VIEW, 'playbackEntryViewChoice', 'options.playbackEntryView'),
+    wallForm: option(VIEW, 'latticeWallForm', 'options.latticeWallForm'),
+    radioHideUpcoming: option(VIEW, 'latticeRadioHideUpcoming', 'options.latticeRadioHideUpcoming'),
     vignette: option(VIEW, 'latticeSettings', 'options.latticeVignette'),
     performanceMode: option(VIEW, 'latticePerformanceMode', 'options.latticePerformanceMode'),
     tint: option(VIEW, 'latticePosterTint', 'options.latticePosterTint'),
@@ -83,12 +85,16 @@ const PlayerPage: React.FC = () => {
     const lattice = useLatticeSettingsStore(useShallow(state => ({
         performanceMode: state.latticePerformanceMode,
         setPerformanceMode: state.handleToggleLatticePerformanceMode,
+        wallForm: state.latticeWallForm,
+        radioHideUpcoming: state.latticeRadioHideUpcoming,
         vignette: state.latticeVignette,
         tintEnabled: state.latticePosterTintEnabled,
         tintUseCustomColor: state.latticePosterTintUseCustomColor,
         tintColor: state.latticePosterTintColor,
         tintIntensity: state.latticePosterTintIntensity,
         badgeCurrentOnly: state.latticeBadgeCurrentOnly,
+        setWallForm: state.handleSetLatticeWallForm,
+        setRadioHideUpcoming: state.handleToggleLatticeRadioHideUpcoming,
         setVignette: state.handleToggleLatticeVignette,
         setTintEnabled: state.handleToggleLatticePosterTint,
         setTintUseCustomColor: state.handleToggleLatticePosterTintCustomColor,
@@ -212,6 +218,21 @@ const PlayerPage: React.FC = () => {
                 <Row option={O.performanceMode} note={t('options.latticePerformanceModeDesc')}>
                     <Toggle checked={lattice.performanceMode} onChange={lattice.setPerformanceMode} />
                 </Row>
+                <Row option={O.wallForm} note={t('options.latticeWallFormDesc')}>
+                    <Segmented
+                        value={lattice.wallForm}
+                        options={[
+                            { value: 'poster', label: t('options.latticeWallForm_poster') },
+                            { value: 'radio', label: t('options.latticeWallForm_radio') },
+                        ]}
+                        onChange={lattice.setWallForm}
+                    />
+                </Row>
+                <Reveal when={lattice.wallForm === 'radio'}>
+                    <Row sub option={O.radioHideUpcoming} hint={t('options.latticeRadioHideUpcomingDesc')}>
+                        <Toggle checked={lattice.radioHideUpcoming} onChange={lattice.setRadioHideUpcoming} />
+                    </Row>
+                </Reveal>
                 <Row option={O.vignette} note={t('options.latticeVignetteDesc')}>
                     <Toggle checked={lattice.vignette} onChange={lattice.setVignette} />
                 </Row>

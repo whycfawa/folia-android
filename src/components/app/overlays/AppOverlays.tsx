@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import FloatingPlayerControls from '../../FloatingPlayerControls';
 import SearchWorkspace from '../search/SearchWorkspace';
 import DevDebugOverlay from '../../DevDebugOverlay';
 import MemoryMonitorWindow from '../../debug/MemoryMonitorWindow';
 import NowPlayingToast from './NowPlayingToast';
 import HifiSignalPathPanel from '../../hifi/HifiSignalPathPanel';
+import PerfCheckOverlay from '../../perfCheck/PerfCheckOverlay';
 import type { AppOverlaysModel } from './buildAppOverlaysModel';
 import { countRender } from '../../../dev/renderCount';
 import { useLatticeControlsStore } from '../../../stores/useLatticeControlsStore';
 import { useBottomDockStore } from '../../../stores/useBottomDockStore';
 import { useBottomLayoutTracking } from '../../../hooks/useBottomLayoutTracking';
 import { useNowPlayingCardLayoutStore } from './now-playing-toast/nowPlayingCardLayoutStore';
+import { useTrackEndCountdownStore, withTrackEndCountdown } from './now-playing-toast/trackEndCountdownStore';
 import { useTransitionBorderCue } from './now-playing-toast/useTransitionBorderCue';
 
 // Centralized app-level overlay renderer so App.tsx does not mount leaf overlays directly.
@@ -26,13 +28,19 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
     useBottomLayoutTracking();
     const isCompact = useBottomDockStore(state => state.layout === 'compact');
     const isPositioningCard = useNowPlayingCardLayoutStore(state => state.isPositioning);
-    const {
-        searchOverlay,
-        debugOverlay,
-        memoryMonitor,
-        floatingControls,
-        nowPlayingToast,
-    } = model;
+    const { searchOverlay, debugOverlay, memoryMonitor } = model;
+    // 模型里的 isNextUp 只算混音。普通曲末的倒计时每首歌翻两次，放在 App 里每翻一次整棵重渲染一遍，
+    // 所以在这里读，合进卡片和胶囊拿到的 props；没在倒计时就原样传下去。
+    const isTrackEndCountdownActive = useTrackEndCountdownStore(state => state.active);
+    const nowPlayingToast = useMemo(
+        () => withTrackEndCountdown(model.nowPlayingToast, isTrackEndCountdownActive),
+        [model.nowPlayingToast, isTrackEndCountdownActive],
+    );
+    const floatingControls = useMemo(() => {
+        const controls = model.floatingControls;
+        const card = withTrackEndCountdown(controls?.card, isTrackEndCountdownActive);
+        return controls && card !== controls.card ? { ...controls, card } : controls;
+    }, [model.floatingControls, isTrackEndCountdownActive]);
 
     const showsCapsule = Boolean(floatingControls)
         && (floatingControls?.currentView !== 'lattice' || !isCurrentSongPosterVisible);
@@ -59,6 +67,9 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
 
             {/* The one HiFi signal-path sheet: the badge, the controls tab tile and the palette command open it through hifiPanelStore. */}
             <HifiSignalPathPanel />
+
+            {/* 性能检测在安卓上的全屏浮层：桌面上走独立窗口，这里什么都不画。 */}
+            <PerfCheckOverlay />
         </>
     );
 };
