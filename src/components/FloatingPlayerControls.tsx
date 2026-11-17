@@ -717,14 +717,14 @@ const FloatingPlayerControls: React.FC<FloatingPlayerControlsProps> = ({
                 所以挂在这一层不会干扰居中。
             */}
             <motion.div
-                className={`absolute left-1/2 -translate-x-1/2 z-60 w-full flex justify-center pointer-events-none
+                className={`absolute left-1/2 z-60 w-full flex justify-center pointer-events-none
                     ${isCompactWide
                         // 紧凑档：两侧各留 12，最宽 520（再加模组的加宽量）；bottomDock.css 里挂件的位置按同一组数算。
                         ? 'max-w-[min(calc(544px_+_var(--folium-player-bar-extra,0px)),100vw)] px-3'
                         : currentView === 'home'
                             ? 'max-w-[calc(100vw-120px)] md:max-w-[min(calc(32rem_+_var(--folium-player-bar-extra,0px)),calc(100vw-120px))]'
                             : 'max-w-[min(calc(32rem_+_var(--folium-player-bar-extra,0px)),100vw)] px-4'}`}
-                style={{ bottom: bottomBarBottomPx }}
+                style={{ bottom: bottomBarBottomPx, transform: 'translateX(-50%)' }}
                 onUpdate={invalidateLayout}
             >
             {/* 这一层的透明度、位移和缩放全由下面的 animate 驱动，不再叠一层 CSS transition：

@@ -118,7 +118,10 @@
 ## 发布与版本规则
 
 - **只出包，不推 GitHub。** 除非维护者当次明确说“推”，否则只构建 APK，给出路径与 SHA-256，不建提交、不 push、不建 Release。上一次推过不代表下一次也推；到点等待指令，不主动推。
-- **更新日志只写维护者给的原话。** Release 标题和更新内容直接照抄维护者提供的文字：不扩写、不改写、不补充功能说明、不加营销措辞、不加分节和小标题。维护者没给的条目一律不写。
+- **“推”是发 Release，不是 push 分支。** 维护者说“推”“推 GitHub”“发版”时，交付物是 GitHub Release，四件缺一不可：① 代码 push 到分支 `android-0.7.22`；② tag `v<上游版本>-android.<迭代号>`；③ Release 标题 `Folia Android <上游版本>-android.<迭代号>`；④ 附件 `Folia-Android-<上游版本>-android.<迭代号>.apk`。只 push 了分支等于没推完，交付时必须给出 Release 链接并确认附件状态是 `uploaded`。
+- **更新日志只写维护者给的原话。** Release 标题和更新内容直接照抄维护者提供的文字：不扩写、不改写、不补充功能说明、不加营销措辞、不加分节和小标题。维护者没给的条目一律不写；他没单独给文案时，用他当次说的那一句（如“随上游更新”），要补内容等他给原话再改。
+- **没有 `gh` 时用 GitHub API。** 本机未装 GitHub CLI：token 用 `printf 'protocol=https\nhost=github.com\n\n' | git credential fill` 取，建 Release 走 `POST /repos/<owner>/<repo>/releases`（`tag_name`、`name`、`body`、`draft: false`），附件走 `POST https://uploads.github.com/repos/<owner>/<repo>/releases/<id>/assets?name=<文件名>`，`Content-Type` 用 `application/vnd.android.package-archive`；发布后回读一次确认 `assets[].state === 'uploaded'`。
+- **合并上游后要核对安卓修复没被覆盖。** 上游改的是同一批文件，我们的安卓修复很容易在解冲突时被顺手换成上游版本，而且看不出报错。做法：合并前先列出本分支的修复清单（`git log --oneline upstream/main..HEAD --grep='fix(android)\|fix(player)\|fix(visualizer)'`，再补上看提交标题找得到的），合并后逐条回到代码里确认还在；被覆盖的当场恢复，并补一条能抓住它的测试（源码断言也行，例如 `test/unit/app/playerBarCentering.test.ts` 盯住底栏的内联 `translateX(-50%)`）。教训：底栏居中在 `0.7.25-android.296` 修过一次（Tailwind v4 的 `-translate-x-1/2` 在安卓 WebView 里不生效），合并 v0.7.29 时被改回 class，`0.7.29-android.472` 于是又出现同一处向右偏出屏幕的错位。
 - **上游和分支是两件事。** 上游指 PC 原版 `chthollyphile/folia-major`（remote 名 `upstream`），分支指安卓工作分支 `android-0.7.22`。说“上游”就只指前者，说“分支”就只指后者，不混用、不简称。
 - **对外版本号跟迭代号。** 统一写成 `<上游版本>-android.<迭代号>`，例如 `0.7.28-android.453`。应用内显示的版本、APK 文件名、Release tag、提交信息都用这一个形式。`0.7.22` 是分支起始版本，不作为对外版本号。
 - **一版只改一个变量，先取证再出包。** 修一个问题先拿到能定位的证据（logcat、诊断报告、可复现步骤），再动代码；不猜一版出一版，也不在同一版里混入多个待验证的改动。每版交付时说明：改了什么、依据哪条证据、哪些点仍未验证。
