@@ -410,7 +410,12 @@
               });
             }
             if (pendingStart?.failed && mk.isPlaying === true) pendingStart.failed = false;
-            if (window.__foliaStart?.failed) {
+            // 这一首已经被页面拒绝（位置仍是 0）：「起播被拒」是同一件事的另一种说法。外面刚把
+            // 「这首放不了」说给用的人听，再报一次失败会把那句话顶掉，所以这里让位。
+            const refusedHere = Boolean(window.__foliaPlayError)
+              && Date.now() - Number(window.__foliaPlayError.at || 0) < 6e4
+              && Number(mk.currentPlaybackTime) <= 0.5;
+            if (window.__foliaStart?.failed && !refusedHere) {
               console.warn("[AppleMusic] start rejected", { stage: "play", error: String(window.__foliaStart.error || "").slice(0, 120) });
               return { ok: false, error: "playback-failed", playbackStage: "play" };
             }

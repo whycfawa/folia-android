@@ -629,6 +629,9 @@ async function poll(): Promise<void> {
     } catch (error) {
         // Handed over meanwhile: a failed answer says nothing this window acts on either.
         if (session !== current || current.handedOver || !isExternalRoute() || current.positionRevision !== positionRevision) return;
+        // 这首歌放不出来已经说过了（平台的播放器拒绝）：之后每次问不出结果都只是那件事的回声，
+        // 不能换一个说法再报一次 —— 那会把用户正在读的那句提示顶掉。
+        if (current.unplayableReason) return;
         delay = STATUS_RETRY_INTERVAL_MS;
         if (!failureNoted) {
             failureNoted = true;
