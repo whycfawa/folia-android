@@ -16,6 +16,16 @@ type UseExternalPlaybackBridgeParams = {
     handleNextTrack: (options?: NextTrackOptions) => Promise<void> | void;
 };
 
+/**
+ * 连续被平台播放器拒绝的曲数。一首被拒就带着原因跳到下一首；连着几首都被拒，说明不是某一首的
+ * 运气问题（地区、账号或整批版权限制），此时停下并说明，免得把整个队列当空气一首首跳过。
+ */
+const MAX_CONSECUTIVE_REFUSALS = 3;
+/** 上一次拒绝之后这么久还没有新的拒绝，就不再算「连续」。 */
+const REFUSAL_CHAIN_MS = 120_000;
+let refusedInARow = 0;
+let lastRefusalAt = 0;
+
 export function useExternalPlaybackBridge({ handleNextTrack }: UseExternalPlaybackBridgeParams) {
     // Read here rather than passed in: the callback and i18n are the newest at the moment of an event.
     const { t } = useTranslation();
@@ -29,6 +39,8 @@ export function useExternalPlaybackBridge({ handleNextTrack }: UseExternalPlayba
         return subscribeExternalPlayback(event => {
             if (event.type === 'ended') {
                 // As <audio>'s ended handler does: nothing after this when the queue is over.
+                // 一首真的放完了：连续被拒的计数从零开始。
+                refusedInARow = 0;
                 void latestRef.current.handleNextTrack({ allowStopOnMissing: true, playedToEnd: true, shouldNavigateToPlayer: false });
                 return;
             }
@@ -42,6 +54,27 @@ export function useExternalPlaybackBridge({ handleNextTrack }: UseExternalPlayba
                 setStatusMessage(event.paused
                     ? { type: 'error', text: latestRef.current.t('status.externalPlaybackStalled'), durationMs: 6000 }
                     : { type: 'info', text: latestRef.current.t('status.externalPlaybackStalledRetrying') });
+                return;
+            }
+            if (event.type === 'unplayable') {
+                // 平台自己的播放器明确拒绝这首歌：不是卡住，重开也没用。说清原因，再决定跳还是停。
+                const now = Date.now();
+                refusedInARow = now - lastRefusalAt < REFUSAL_CHAIN_MS ? refusedInARow + 1 : 1;
+                lastRefusalAt = now;
+                if (refusedInARow >= MAX_CONSECUTIVE_REFUSALS) {
+                    setStatusMessage({
+                        type: 'error',
+                        text: latestRef.current.t('status.externalPlaybackRefusedQueue'),
+                        durationMs: 8000,
+                    });
+                    return;
+                }
+                setStatusMessage({
+                    type: 'error',
+                    text: latestRef.current.t('status.externalPlaybackRefused'),
+                    durationMs: 8000,
+                });
+                void latestRef.current.handleNextTrack({ allowStopOnMissing: true, shouldNavigateToPlayer: false });
                 return;
             }
             if (event.type === 'failure') {

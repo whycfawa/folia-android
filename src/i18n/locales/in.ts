@@ -710,6 +710,8 @@ export default {
     "externalPlayerMovedOn": "Pemutar berpindah ke lagu lain; pemutaran dijeda",
     "externalPlaybackStalled": "Pemutar macet dan pemutaran berhenti di situ. Tekan putar untuk mencoba lagi.",
     "externalPlaybackStalledRetrying": "Pemutar macet; mencoba lagi…",
+    "externalPlaybackRefused": "Apple Music menolak memutar lagu ini (konten dibatasi); dilewati ke lagu berikutnya",
+    "externalPlaybackRefusedQueue": "Apple Music menolak beberapa lagu berturut-turut (konten dibatasi); dihentikan di sini",
     "externalVideoExportUnavailable": "Lagu ini diputar di pemutar milik platform dan suaranya tidak melewati Folia, jadi video tidak bisa diekspor.",
     "externalBypassTitle": "Lagu ini diputar di pemutar milik platform",
     "externalBypassBody": "Suaranya tidak melewati Folia, jadi ekualiser dan efek di sini tidak mengubah yang Anda dengar. Pengaturan tetap disimpan dan berlaku untuk lagu lain seperti biasa.",

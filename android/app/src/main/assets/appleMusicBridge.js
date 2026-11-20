@@ -280,6 +280,32 @@
       }
       async function readFromPage(request, controlQueue2, updateFavorite2, addPlaylistTracks2, readPersonalStation2, alignStorefront2) {
         try {
+          // 有些歌页面自己就拒绝：MusicKit 抛出 MKError（例：mk-007 CONTENT_RESTRICTED）。这类
+          // 答复以前只落在页面日志里，外面只能看见「接受起播但没有声音」，于是被当成卡住反复重开。
+          // 这里把它记成固定形状：只留代码与原因，正文一律擦洗后截断。函数声明会被提升，
+          // 起播分支在它前面也能用。
+          function notePlayError(error) {
+            const reasons = ["CONTENT_RESTRICTED", "CONTENT_UNAVAILABLE", "SUBSCRIBER_UNAVAILABLE", "NOT_AUTHORIZED", "STREAM_UNAVAILABLE"];
+            const raw = error && typeof error === "object" ? error : {};
+            const message = String(raw.message || raw.errorMessage || raw.error || raw || "")
+              .replace(/https?:\/\/[^\s"'<>]+/g, (link) => {
+                try {
+                  return new URL(link).host;
+                } catch {
+                  return "url";
+                }
+              })
+              .replace(/[A-Za-z0-9_\-]{40,}/g, "<blob>")
+              .slice(0, 200);
+            window.__foliaPlayError = {
+              at: Date.now(),
+              mkCode: /(mk-\d{3})/i.exec(message)?.[1]?.toLowerCase() || "",
+              reason: reasons.find((value) => message.includes(value)) || "",
+              name: String(raw.name || "").slice(0, 40),
+              message
+            };
+            return window.__foliaPlayError;
+          }
           const mk = window.MusicKit?.getInstance();
           const modern = mk?.api?.v3;
           const legacy = mk?.api;
@@ -337,6 +363,9 @@
           if (request.operation === "prepareNext") return await controlQueue2(mk, request.operation, request.params);
           if (request.operation === "playbackStatus") {
             const pendingStart = window.__foliaStart;
+            // 已经真出声（位置走过一秒）就不再算「这首放不了」：上一次的拒绝记录清掉，
+            // 免得下一首的答复带着上一首的错。
+            if (window.__foliaPlayError && Number(mk.currentPlaybackTime) > 1) window.__foliaPlayError = null;
             if (pendingStart?.pending && mk.isPlaying === true) pendingStart.pending = false;
             if (pendingStart?.pending && !pendingStart.cancelled && Date.now() - pendingStart.startedAt >= 6e4) {
               pendingStart.pending = false;
@@ -350,6 +379,7 @@
               console.warn("[AppleMusic] start did not begin; asking the player again", { state: Number(mk.playbackState) });
               Promise.resolve(mk.play()).catch((error) => {
                 pendingStart.error = String(error?.name || error?.message || error || "rejected").slice(0, 160);
+                notePlayError(error);
               });
             }
             if (pendingStart?.failed && mk.isPlaying === true) pendingStart.failed = false;
@@ -376,6 +406,13 @@
               repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,
               queueLength,
               queueKeys: queue ? Object.keys(queue).slice(0, 12) : null,
+              // 页面自己拒绝播放这首歌的证据：代码与原因，没有正文。
+              playError: window.__foliaPlayError ? {
+                at: Number(window.__foliaPlayError.at) || 0,
+                ageMs: Math.max(0, Date.now() - (Number(window.__foliaPlayError.at) || 0)),
+                mkCode: String(window.__foliaPlayError.mkCode || ""),
+                reason: String(window.__foliaPlayError.reason || "")
+              } : null,
               positionMs: Number.isFinite(position) && position >= 0 ? Math.round(position * 1e3) : 0,
               durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0
             } };
@@ -514,6 +551,13 @@
               });
             } catch {
             }
+            // 「这首歌不能播」只有页面自己说：记下来，播放状态里报给 Folia。
+            try {
+              mk.addEventListener("mediaPlaybackError", (event) => {
+                notePlayError(event?.error || event);
+              });
+            } catch {
+            }
           };
           const readMediaTable = () => {
             if (!hasDom()) return { total: 0, rows: [] };
@@ -594,6 +638,14 @@
                 error: String(start.error || "").replace(/https?:\/\/\S+/g, "url").slice(0, 160),
                 ageMs: Math.max(0, Date.now() - Number(start.startedAt || 0))
               } : null,
+              playError: window.__foliaPlayError ? {
+                at: Number(window.__foliaPlayError.at) || 0,
+                ageMs: Math.max(0, Date.now() - (Number(window.__foliaPlayError.at) || 0)),
+                name: String(window.__foliaPlayError.name || ""),
+                mkCode: String(window.__foliaPlayError.mkCode || ""),
+                reason: String(window.__foliaPlayError.reason || ""),
+                message: String(window.__foliaPlayError.message || "")
+              } : null,
               audio: readAudio(),
               media: readMediaTable(),
               mediaLog: Array.isArray(window.__foliaMedia) ? window.__foliaMedia.slice(-30) : null,
@@ -668,6 +720,8 @@
               const queueOptions = { song: request.params.catalogId, startPlaying: android };
               if (!android || request.params.startSec > 0) queueOptions.startTime = request.params.startSec;
               await mk.setQueue(queueOptions);
+              // 新的一首：上一首留下的播放错误不算在这一首头上。
+              window.__foliaPlayError = null;
               playbackStage = "play";
               console.info("[AppleMusic] Playback stage: play");
               const attempt = { failed: false, cancelled: false, sought: false, pending: true, nudged: false, stage: "play", error: "", startedAt: Date.now() };
@@ -697,6 +751,7 @@
                 if (!attempt.sought && request.params.startSec > 0 && typeof mk.seekToTime === "function" && !(Number(mk.currentPlaybackTime) >= request.params.startSec - 1)) await mk.seekToTime(request.params.startSec);
               }).catch((error) => {
                 noteStartError(error);
+                notePlayError(error);
                 if (window.__foliaStart === attempt && !attempt.cancelled && mk.isPlaying !== true) attempt.failed = true;
               }).finally(() => {
                 attempt.pending = false;

@@ -141,6 +141,7 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
     const stalledText = route
         ? ` stalled=${yesNo(route.stalled)} recoveries=${count(route.recoveries)}`
             + `${route.gaveUp ? ' gave-up=yes' : ''}`
+            + `${route.unplayable ? ` refused=${route.unplayable}` : ''}`
             + `${route.stalledForMs === null ? '' : ` still-for=${route.stalledForMs}ms`}`
         : ' stalled=n/a recoveries=n/a';
     lines.push(`  player: authorized=${yesNo(player?.authorized)} previewOnly=${yesNo(player?.previewOnly)}`
@@ -169,6 +170,18 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
             + ` ageMs=${count(start.ageMs)}`);
     } else {
         lines.push('  start: (none)');
+    }
+
+    // 页面自己拒绝这首歌（MusicKit 的 MKError）：以前这条只落在页面日志里，报告上看着像
+    // 「接受起播却没有声音」，于是被当成卡住反复重开。
+    const playError = asRecord(page.playError);
+    if (playError) {
+        lines.push(`  play error: code=${text(playError.mkCode, '(none)')}`
+            + ` reason=${text(playError.reason, '(none)')}`
+            + ` name=${text(playError.name, '(none)')}`
+            + ` ageMs=${count(playError.ageMs)}`);
+    } else {
+        lines.push('  play error: (none)');
     }
 
     const audio = asRecord(page.audio);

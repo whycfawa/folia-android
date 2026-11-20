@@ -57,6 +57,11 @@ export type ExternalPlaybackEvent =
     | { type: 'failure'; error: unknown }
     /** The stream stuck in the player: `paused` is false while a restart is under way, true once it is left stopped. */
     | { type: 'stalled'; paused: boolean; positionSec: number }
+    /**
+     * The player itself refused this song (Apple: content restricted). Nothing here can fix it: said
+     * once, with the song left paused, so the caller can tell the listener why and move the queue on.
+     */
+    | { type: 'unplayable'; reason: string }
     | { type: 'foreign-track' };
 
 type ExternalSession = {
@@ -96,6 +101,8 @@ type ExternalSession = {
     stallActedAtMs: number;
     /** The listener asked for a pause: a still position is that pause, never a stuck stream. */
     pauseRequested: boolean;
+    /** The player said this song cannot be played at all; the refusal is said once. */
+    unplayableReason: string | null;
 };
 
 export const externalMediaShim = new MediaShim('external:');
@@ -183,6 +190,7 @@ const publishSnapshot = (): void => {
         recoveries: current.stallRecoveries,
         gaveUp: current.stallPaused,
         seekPending: current.seekPending,
+        unplayable: current.unplayableReason,
         positionSec: Math.round(current.clock.read() * 10) / 10,
         durationSec: current.durationSec,
     };
@@ -409,9 +417,34 @@ const markEnded = (positionSec: number, reason: string) => {
     emit({ type: 'status' });
 };
 
+/**
+ * The provider's own player said this song cannot be played at all (Apple answers
+ * `CONTENT_RESTRICTED` for a few tracks in some storefronts): the account, the DRM and the wiring
+ * are fine, the song itself is refused. Restarting it only asks for the same refusal, so the refusal
+ * is said once and the song is left paused where it is; the caller tells the listener why and moves
+ * the queue on.
+ */
+const refuseUnplayableSong = (current: ExternalSession, reason: string): void => {
+    if (current.unplayableReason) return;
+    current.unplayableReason = reason;
+    current.stalled = false;
+    current.stalledSinceMs = null;
+    current.starting = false;
+    current.playing = false;
+    console.warn('[ExternalPlayback] the player refuses this song', { songKey: current.songKey, reason });
+    markPaused(current.clock.read());
+    emit({ type: 'unplayable', reason });
+};
+
 const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number) => {
     if (!session || session.handedOver) return;
     const current = session;
+    // 播放器自己说这首放不了（Apple 的 CONTENT_RESTRICTED）：不是卡住，也不是它换到了别的歌，
+    // 重开多少次都不会出声。说一次、把它停下，别让「没声音」被当成还在起播一直等。
+    if (status.unplayable) {
+        refuseUnplayableSong(current, status.unplayable);
+        return;
+    }
     const positionSec = status.positionMs / 1000;
     const previousSample = current.sampledPosition;
     // A late completion belonging to the previous song cannot fill or finish the new session.
@@ -686,6 +719,7 @@ export async function beginExternalPlayback(song: SongResult, startSec = 0): Pro
         song, songKey, attempt, clock, durationSec,
         announced: false, playing: false, starting: false, sampledPosition: Math.max(0, startSec), prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false, stalledSinceMs: null, stallRecoveries: 0,
         stalled: false, stallPaused: false, stallActedAtMs: Number.NEGATIVE_INFINITY, pauseRequested: false,
+        unplayableReason: null,
     };
     failureNoted = false;
     externalMediaShim.beginTrack(songKey);
@@ -764,6 +798,7 @@ export async function adoptExternalPlayback(song: SongResult): Promise<boolean> 
         song, songKey, attempt, clock, durationSec,
         announced: false, playing: false, starting: false, sampledPosition: null, prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false, stalledSinceMs: null, stallRecoveries: 0,
         stalled: false, stallPaused: false, stallActedAtMs: Number.NEGATIVE_INFINITY, pauseRequested: false,
+        unplayableReason: null,
     };
     failureNoted = false;
     externalMediaShim.beginTrack(songKey);

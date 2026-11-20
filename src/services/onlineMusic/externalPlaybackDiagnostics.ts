@@ -17,6 +17,8 @@ export type ExternalPlaybackSnapshot = {
     recoveries: number;
     /** 重开也救不回来，已停在卡住的位置。 */
     gaveUp: boolean;
+    /** 播放器自己说这首放不了（Apple：内容受限）时给出的原因，否则 null。 */
+    unplayable: string | null;
     seekPending: boolean;
     positionSec: number;
     durationSec: number | null;

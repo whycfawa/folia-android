@@ -49,6 +49,19 @@ function stoppedAtEnd(data: unknown, heard: { durationMs: number; positionMs: nu
 }
 
 // Name catalog artists given only by ID, one lookup each; null when an ID is malformed or an artist has no name.
+// MusicKit's own refusal, reduced to the one fact this file acts on: a few tracks in some
+// storefronts answer CONTENT_RESTRICTED (mk-007) — the song itself is refused, the account and the
+// DRM are not the problem. No restart can change that answer.
+const REFUSED_PLAY_REASONS = ['CONTENT_RESTRICTED', 'CONTENT_UNAVAILABLE', 'NOT_AUTHORIZED'];
+const REFUSED_PLAY_CODES = ['mk-007'];
+function readPlayRefusal(value: unknown): 'content-restricted' | null {
+    const error = (value as { playError?: unknown } | null)?.playError as { reason?: unknown; mkCode?: unknown } | null | undefined;
+    if (!error || typeof error !== 'object') return null;
+    const reason = typeof error.reason === 'string' ? error.reason : '';
+    const code = typeof error.mkCode === 'string' ? error.mkCode.toLowerCase() : '';
+    return REFUSED_PLAY_REASONS.includes(reason) || REFUSED_PLAY_CODES.includes(code) ? 'content-restricted' : null;
+}
+
 async function nameAppleMusicCatalogArtists(ids: readonly unknown[]): Promise<ProviderArtistSummary[] | null> {
     const named: ProviderArtistSummary[] = [];
     for (const id of ids) {
@@ -121,6 +134,8 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
     const stoppedEndLogged = new WeakSet();
     // Attempts whose "moved on before its end" reading has been logged, for the same reason.
     const movedOnLogged = new WeakSet();
+    // Attempts whose refusal by the page has been logged: said once per song, not per answer.
+    const refusedLogged = new WeakSet();
 
     // Window actions take turns so an older cancellation cannot hide a newer login.
     function scheduleWindowAction(action: () => Promise<void>): Promise<void> {
@@ -465,6 +480,16 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 // A track the player cannot name, and the state it is in, is what a start that did
                 // not take looks like from here. Logged on the change only, never its words.
                 const hasTrack = status.mediaId !== '';
+                // 页面自己说这首放不了（CONTENT_RESTRICTED）：整首没出过声才算它的，免得把上一首
+                // 留下的拒绝记到这一首头上。这不是卡住，重开多少次都是同一个答复。
+                const refusal = readPlayRefusal(data);
+                const unplayable = refusal && attempt && playback === attempt && !attempt.hasPlayed && attempt.positionMs === 0
+                    ? refusal
+                    : null;
+                if (unplayable && attempt && !refusedLogged.has(attempt)) {
+                    refusedLogged.add(attempt);
+                    console.info('[AppleMusic] the page refuses this song', { reason: unplayable });
+                }
                 if (lastHadTrack !== hasTrack) {
                     lastHadTrack = hasTrack;
                     console.info('[AppleMusic] player track state', {
@@ -478,7 +503,14 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 // Told at once, with the same answer: the route then restarts the stream rather than
                 // waiting to read the same stillness off a second and third answer of its own.
                 const stalled = stalledAnswer && !status.ended && status.mediaId === attempt?.catalogId;
-                return stalled || movedOn ? { ...status, ...(stalled ? { stalled: true } : {}), ...(movedOn ? { movedOn: true } : {}) } : status;
+                return stalled || movedOn || unplayable
+                    ? {
+                        ...status,
+                        ...(stalled ? { stalled: true } : {}),
+                        ...(movedOn ? { movedOn: true } : {}),
+                        ...(unplayable ? { unplayable } : {}),
+                    }
+                    : status;
             },
             // The companion reports the catalog id it was given (an upload: its library id), so a library song matches too.
             isStatusForSong(song, status) {

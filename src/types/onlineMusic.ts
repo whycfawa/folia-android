@@ -502,6 +502,12 @@ export interface ProviderExternalPlaybackStatus {
      * it again instead of skipping it.
      */
     movedOn?: boolean;
+    /**
+     * The provider's own player said it cannot play this song at all (Apple Music answers
+     * `CONTENT_RESTRICTED` for it): not a stall, not a slow start. No restart can help, so the route
+     * says why once instead of asking for the same refusal again.
+     */
+    unplayable?: 'content-restricted';
 }
 
 /**
