@@ -57,14 +57,6 @@ Folia for Android 基于原项目web版本移植做了基础功能功能要求�
 
 ![visualizer](./img/visualizer.png)
 
-### 演示视频
-
-https://github.com/user-attachments/assets/af806cf1-f67f-4b88-b2e7-57db507e9e81
-
-https://github.com/user-attachments/assets/fd27f4f0-64b9-4c57-8c3b-10df767f934b
-
-https://github.com/user-attachments/assets/704f195a-2194-434b-86e8-8f36290e5cc4
-
 ### 部分主题预览
 
 <table>
