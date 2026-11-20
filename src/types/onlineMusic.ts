@@ -309,7 +309,7 @@ export type OnlineFailureCaseId =
     | 'unreachable' | 'local-service-stopped' | 'retry-later'
     | 'sign-in-needed' | 'account-refused' | 'subscription-required' | 'purchase-required' | 'entitlement-required'
     | 'preview-only' | 'region-restricted' | 'not-configured'
-    | 'taken-down' | 'no-audio' | 'audio-unplayable' | 'not-public'
+    | 'taken-down' | 'no-audio' | 'content-restricted' | 'audio-unplayable' | 'not-public'
     | 'refused' | 'unknown';
 
 // 没有成功的是哪一种请求：一首歌的播放地址，或者一个集合（歌单、专辑）的歌曲。

@@ -28,6 +28,7 @@ const TEXTS: Record<OnlineFailureCaseId, { title?: string; bare?: string; note?:
     'not-configured': { title: 'status.songServiceNotConfigured' },
     'taken-down': { title: 'status.songUnavailable' },
     'no-audio': { title: 'failure.noAudio' },
+    'content-restricted': { title: 'failure.contentRestricted', note: 'failure.noteContentRestricted' },
     'audio-unplayable': { title: 'failure.audioUnplayable' },
     'not-public': { title: 'playlist.loadNotPublic' },
     refused: { title: 'failure.refused', note: 'failure.noteRetryLater' },
@@ -35,7 +36,7 @@ const TEXTS: Record<OnlineFailureCaseId, { title?: string; bare?: string; note?:
 };
 
 // 标题里要填平台名字的几种。
-const NAMES_PROVIDER = new Set<OnlineFailureCaseId>(['unreachable', 'local-service-stopped', 'retry-later', 'sign-in-needed', 'account-refused', 'subscription-required', 'no-audio', 'refused']);
+const NAMES_PROVIDER = new Set<OnlineFailureCaseId>(['unreachable', 'local-service-stopped', 'retry-later', 'sign-in-needed', 'account-refused', 'subscription-required', 'no-audio', 'content-restricted', 'refused']);
 
 // 发出请求时没有登录的账号：说登录后才能播放，不说登录已失效，也不说「重新」登录。
 const SIGNED_OUT = { title: 'failure.signInRequired', bare: 'status.songLoginRequired' };

@@ -326,7 +326,7 @@ describe('Apple Music lyrics and external playback', () => {
     // CONTENT_RESTRICTED，媒体元素拿到了 metadata 却始终没有声音。原先这只能在页面日志里看到，
     // Folia 只能把它当「接受起播但一直没开始」反复重开；现在页面把这条答复交回来，如实说一次。
     it('reports a song the page refuses as unplayable instead of asking again', async () => {
-        const data = {
+        const data: Record<string, unknown> = {
             itemId: '', catalogId: '', isPlaying: false, state: 4, positionMs: 0, durationMs: 0,
             playError: { at: Date.now(), ageMs: 1200, mkCode: 'mk-007', reason: 'CONTENT_RESTRICTED' },
         };
@@ -338,7 +338,7 @@ describe('Apple Music lyrics and external playback', () => {
 
     // 真的出过声的歌不能被上一首留下的拒绝记到头上：拒绝只算一整首都没放出来的那一次。
     it('does not call a song refused once it was heard playing', async () => {
-        let data = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 3000, durationMs: 200000 };
+        let data: Record<string, unknown> = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 3000, durationMs: 200000 };
         vi.stubGlobal('window', { electron: { appleMusicRequest: vi.fn(async () => ({ ok: true, data })) } });
         const external = createAppleMusicProvider(() => ({ configured: true })).externalPlayback!;
         await external.play(song, 0);

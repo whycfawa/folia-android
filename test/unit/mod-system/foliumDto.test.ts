@@ -217,13 +217,14 @@ describe('toFoliumPlaybackFailureReason', () => {
         'retry-later': 'network',
         'not-configured': 'unknown',
         'no-audio': 'unknown',
+        'content-restricted': 'restricted',
         'audio-unplayable': 'unknown',
         refused: 'unknown',
         unknown: 'unknown',
     };
 
-    it('classes all seventeen host reasons', () => {
-        expect(Object.keys(CLASSES)).toHaveLength(17);
+    it('classes all eighteen host reasons', () => {
+        expect(Object.keys(CLASSES)).toHaveLength(18);
         for (const [reason, expected] of Object.entries(CLASSES)) {
             expect(toFoliumPlaybackFailureReason(reason as OnlineFailureCaseId), reason).toBe(expected);
         }

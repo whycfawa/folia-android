@@ -48,6 +48,9 @@ const CASES: Record<OnlineFailureCaseId, { stops: boolean; retry: boolean; unpla
     // 只有平台的记录说它下架了才是这一种（getAvailability），或者 provider 自己点名。
     'taken-down': { stops: false, retry: false },
     'no-audio': { stops: false, retry: false },
+    // 平台点名这一首「内容受限」（Apple 的 CONTENT_RESTRICTED）：这一首放不了，下一首不一定，
+    // 所以和「没返回音频」一样往下走。
+    'content-restricted': { stops: false, retry: false },
     'audio-unplayable': { stops: false, retry: false },
     'not-public': { stops: false, retry: false },
     refused: { stops: false, retry: true },

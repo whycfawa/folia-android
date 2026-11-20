@@ -232,6 +232,7 @@ const FOLIUM_PLAYBACK_FAILURE_REASONS: Readonly<Record<OnlineFailureCaseId, Foli
     'retry-later': 'network',
     'not-configured': 'unknown',
     'no-audio': 'unknown',
+    'content-restricted': 'restricted',
     'audio-unplayable': 'unknown',
     refused: 'unknown',
     unknown: 'unknown',
