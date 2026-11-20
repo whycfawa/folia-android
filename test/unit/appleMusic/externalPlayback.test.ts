@@ -650,6 +650,64 @@ describe('external playback route', () => {
         expect(engine.getExternalSong()).toBeNull();
     });
 
+    // Apple's WebView can keep saying "playing" while the element under it sits in waiting and its
+    // position stops: the silence has to be told apart from a pause and from the end of the song.
+    describe('a stream stuck in the player', () => {
+        it('starts it again from just before where it stuck, twice, then leaves it stopped there', async () => {
+            await engine.beginExternalPlayback(song, 0);
+            engine.announceExternalPlayback();
+            const events: Array<{ type: string; paused?: boolean }> = [];
+            const unsubscribe = engine.subscribeExternalPlayback(event => events.push(event));
+            // The player says it plays; the position stays where the stream stuck (report 2026-11-20).
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 10000, isPlaying: true }));
+            await vi.advanceTimersByTimeAsync(12000);
+            expect(omniMock.playSongExternally).toHaveBeenLastCalledWith(song, 7);
+
+            // The same place again after the restart: the second try asks for a segment further back.
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 7000, isPlaying: true }));
+            await vi.advanceTimersByTimeAsync(12000);
+            expect(omniMock.playSongExternally).toHaveBeenLastCalledWith(song, 0);
+
+            // Stuck a third time: stopped where it is, said plainly, never skipped as if it had ended.
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 0, isPlaying: true }));
+            await vi.advanceTimersByTimeAsync(12000);
+            expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PAUSED);
+            expect(events.filter(event => event.type === 'stalled').map(event => event.paused)).toEqual([false, false, true]);
+            expect(events.some(event => event.type === 'ended')).toBe(false);
+            unsubscribe();
+        });
+
+        it('restarts at once on a status the provider itself calls stalled', async () => {
+            await engine.beginExternalPlayback(song, 0);
+            engine.announceExternalPlayback();
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 10000, isPlaying: true, stalled: true }));
+            await vi.advanceTimersByTimeAsync(500);
+            expect(omniMock.playSongExternally).toHaveBeenLastCalledWith(song, 7);
+        });
+
+        it('reads a still position as the listener pause, not as a stall', async () => {
+            await engine.beginExternalPlayback(song, 0);
+            engine.announceExternalPlayback();
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 10000, isPlaying: true }));
+            await vi.advanceTimersByTimeAsync(2000);
+            expect(engine.pauseExternalPlayback()).toBe(true);
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 10000, isPlaying: false }));
+            await vi.advanceTimersByTimeAsync(30000);
+            // Only the start of the song: the pause is the listener's, and nothing restarted it.
+            expect(omniMock.playSongExternally).toHaveBeenCalledTimes(1);
+            expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PAUSED);
+        });
+
+        it('never restarts a live broadcast, whose position has nowhere to move', async () => {
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ live: true, positionMs: 0, durationMs: 0 }));
+            await engine.beginExternalPlayback({ ...song, durationMs: 0 }, 0);
+            engine.announceExternalPlayback();
+            await vi.advanceTimersByTimeAsync(30000);
+            expect(omniMock.playSongExternally).toHaveBeenCalledTimes(1);
+            expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PLAYING);
+        });
+    });
+
     // Two providers play through players of their own (the companion, Spotify's Soloist): a song of
     // one does not replace a track sounding in the other.
     describe('moving between external players', () => {

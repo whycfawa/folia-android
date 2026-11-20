@@ -2,6 +2,8 @@
 // Apple Music 在 Android 上的播放现场：最近一次起播的结论，加上伴随 WebView 里那份页面的自述。
 // 只写阶段名、布尔值、状态码、长度和计数；歌曲 id、账号、cookie 和地址都不进报告。
 
+import { readExternalPlaybackSnapshot } from '../externalPlaybackDiagnostics';
+
 export type AppleMusicPlayAttempt = {
     at: number;
     stage: string;
@@ -134,11 +136,18 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
     }
 
     const player = asRecord(page.player);
+    // 外部播放路线自己的读数：页面说在放，位置却不动，是「卡死在播放器里」而不是暂停或结束。
+    const route = readExternalPlaybackSnapshot();
+    const stalledText = route
+        ? ` stalled=${yesNo(route.stalled)} recoveries=${count(route.recoveries)}`
+            + `${route.gaveUp ? ' gave-up=yes' : ''}`
+            + `${route.stalledForMs === null ? '' : ` still-for=${route.stalledForMs}ms`}`
+        : ' stalled=n/a recoveries=n/a';
     lines.push(`  player: authorized=${yesNo(player?.authorized)} previewOnly=${yesNo(player?.previewOnly)}`
         + ` storefront=${text(player?.storefront, '(none)')} country=${text(player?.country, '(none)')}`
         + ` state=${count(player?.state)} isPlaying=${yesNo(player?.isPlaying)}`
         + ` volume=${count(player?.volume)} queue=${count(player?.queueLength)}@${count(player?.queuePosition)}`
-        + ` itemIdLen=${count(player?.itemIdLength)}`);
+        + ` itemIdLen=${count(player?.itemIdLength)}${stalledText}`);
     lines.push(`  account storefront: ${text(page.accountStorefront, '(unknown)')}`);
 
     const start = asRecord(page.start);

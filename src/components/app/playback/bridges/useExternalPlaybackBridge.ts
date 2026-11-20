@@ -36,6 +36,14 @@ export function useExternalPlaybackBridge({ handleNextTrack }: UseExternalPlayba
                 setStatusMessage({ type: 'info', text: latestRef.current.t('status.externalPlayerMovedOn') });
                 return;
             }
+            if (event.type === 'stalled') {
+                // Said at once, not on a timer: the toast about a stream that stopped moving is what
+                // tells the listener the silence is not their pause, and whether it is being retried.
+                setStatusMessage(event.paused
+                    ? { type: 'error', text: latestRef.current.t('status.externalPlaybackStalled'), durationMs: 6000 }
+                    : { type: 'info', text: latestRef.current.t('status.externalPlaybackStalledRetrying') });
+                return;
+            }
             if (event.type === 'failure') {
                 const song = usePlaybackStore.getState().currentSong;
                 const providerId = song?.sourceRef?.kind === 'online' ? song.sourceRef.providerId : undefined;

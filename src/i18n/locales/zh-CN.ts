@@ -708,6 +708,8 @@ export default {
     "providerLibraryUnavailable": "{{provider}} 暂未提供歌单库。",
     "songUnavailable": "歌曲已下架",
     "externalPlayerMovedOn": "播放器已换到其他歌曲，已暂停",
+    "externalPlaybackStalled": "播放器卡住了，已停在原处。可再点播放重试",
+    "externalPlaybackStalledRetrying": "播放器卡住了，正在重试…",
     "externalVideoExportUnavailable": "这首歌由平台自己的播放器播放，声音不经过 Folia，无法导出视频。",
     "externalBypassTitle": "这首歌由平台自己的播放器播放",
     "externalBypassBody": "声音不经过 Folia，这里的均衡器和音效不会改变你听到的声音。设置会保留，播放其他歌曲时照常生效。",

@@ -10,6 +10,7 @@ import { MediaShim } from '../mediaShim';
 import { omni } from './omni';
 import { externalQueueSuccessors } from './externalQueue';
 import { useAudioSettingsStore } from '../../stores/useAudioSettingsStore';
+import { noteExternalPlaybackSnapshot, type ExternalPlaybackSnapshot } from './externalPlaybackDiagnostics';
 
 // src/services/onlineMusic/externalPlayback.ts
 // The playback route for a provider whose audio plays in a player of its own outside this app
@@ -41,11 +42,21 @@ const REPEAT_WRAP_SLACK_SEC = 3;
  * rebuild): it follows the player again.
  */
 const HANDOVER_RECLAIM_MS = 10_000;
+/** Apple WebView can report playing while a DRM media element sits in waiting/readyState=2. */
+const STALL_RECOVER_AFTER_MS = 8_000;
+const MAX_STALL_RECOVERIES = 2;
+/**
+ * Where a restart lands: a little before where the stream stuck, so it asks for a fresh segment
+ * instead of the one that never arrived. The second try goes further back.
+ */
+const STALL_RESTART_BACK_SEC = [3, 20];
 
 export type ExternalPlaybackEvent =
     | { type: 'status' }
     | { type: 'ended' }
     | { type: 'failure'; error: unknown }
+    /** The stream stuck in the player: `paused` is false while a restart is under way, true once it is left stopped. */
+    | { type: 'stalled'; paused: boolean; positionSec: number }
     | { type: 'foreign-track' };
 
 type ExternalSession = {
@@ -73,6 +84,18 @@ type ExternalSession = {
     positionRevision: number;
     seekPending: boolean;
     seeking: boolean;
+    /** When the player first said "playing" without its position moving, else null. */
+    stalledSinceMs: number | null;
+    /** How many times this session has tried to push a stuck stream along. */
+    stallRecoveries: number;
+    /** The stream is known to be stuck, not merely still: read from the position or from the provider. */
+    stalled: boolean;
+    /** The restarts did not help: left stopped where it stuck until the listener starts it again. */
+    stallPaused: boolean;
+    /** When the last restart was sent, so the provider's own stall reading cannot fire twice for it. */
+    stallActedAtMs: number;
+    /** The listener asked for a pause: a still position is that pause, never a stuck stream. */
+    pauseRequested: boolean;
 };
 
 export const externalMediaShim = new MediaShim('external:');
@@ -140,6 +163,32 @@ export const isExternalPaused = () => session ? !session.playing : false;
 /** The song the external player was told to play, or null. */
 export const getExternalSong = () => session?.song ?? null;
 
+/**
+ * Hands the diagnostics report the route's own view of the stream. Written on every answer and on
+ * every change, so a report taken after a stall says how far it got and whether it was restarted.
+ */
+const publishSnapshot = (): void => {
+    const current = session;
+    if (!current) {
+        noteExternalPlaybackSnapshot(null);
+        return;
+    }
+    const snapshot: ExternalPlaybackSnapshot = {
+        route: isExternalRoute(),
+        announced: current.announced,
+        playing: current.playing,
+        starting: current.starting,
+        stalled: current.stalled,
+        stalledForMs: current.stalledSinceMs === null ? null : Math.max(0, Math.round(performance.now() - current.stalledSinceMs)),
+        recoveries: current.stallRecoveries,
+        gaveUp: current.stallPaused,
+        seekPending: current.seekPending,
+        positionSec: Math.round(current.clock.read() * 10) / 10,
+        durationSec: current.durationSec,
+    };
+    noteExternalPlaybackSnapshot(snapshot);
+};
+
 /** Notified on every change the UI has to react to (state, end of track, a failed answer). */
 export const subscribeExternalPlayback = (listener: (event: ExternalPlaybackEvent) => void): (() => void) => {
     listeners.add(listener);
@@ -203,6 +252,10 @@ const markPlaying = (positionSec: number, preserveClock = false) => {
     if (!session) return;
     session.playing = true;
     session.ended = false;
+    // The listener (or the player) started it: whatever was stuck is being played again.
+    session.stalled = false;
+    session.stalledSinceMs = null;
+    session.pauseRequested = false;
     if (!preserveClock) syncClock(positionSec, false, performance.now(), true);
     externalMediaShim.markPlaying();
     if (usePlaybackStore.getState().playerState !== PlayerState.PLAYING) setPlayerState(PlayerState.PLAYING);
@@ -284,6 +337,61 @@ function syncExternalRepeatOne(): void {
     });
 }
 
+/**
+ * Apple WebView can get stuck in a DRM waiting state while still reporting isPlaying=true. Do not let
+ * that state fall through to the normal ended/next-track path: start the same song again from just
+ * before where it stuck, twice at most, then leave it stopped there and say so — never skip it as if
+ * the song had ended.
+ */
+const recoverStalledExternalPlayback = (current: ExternalSession, positionSec: number, atMs: number): void => {
+    current.stallActedAtMs = atMs;
+    if (current.stallRecoveries >= MAX_STALL_RECOVERIES) {
+        // The player is stuck in the same place again: stopped there, said plainly, rather than left
+        // showing a playing track that does not advance, or skipped as if the song had ended.
+        current.stallPaused = true;
+        current.playing = false;
+        current.starting = false;
+        current.seekPending = false;
+        markPaused(positionSec);
+        console.warn('[ExternalPlayback] the player is stuck in the same place; left stopped there', {
+            songKey: current.songKey,
+            positionSec,
+            recoveries: current.stallRecoveries,
+        });
+        emit({ type: 'stalled', paused: true, positionSec });
+        return;
+    }
+    const backSec = STALL_RESTART_BACK_SEC[current.stallRecoveries] ?? STALL_RESTART_BACK_SEC[STALL_RESTART_BACK_SEC.length - 1];
+    const fromSec = Math.max(0, positionSec - backSec);
+    const revision = ++current.positionRevision;
+    current.stallRecoveries += 1;
+    // Waits for the answer after the restart to say whether it helped: a restart already acted on
+    // must not be acted on again by the answers of the stream it replaced.
+    current.stalled = false;
+    current.stalledSinceMs = null;
+    current.seekPending = true;
+    current.sampledPosition = fromSec;
+    console.warn('[ExternalPlayback] the player is stuck; the song starts again from just before it', {
+        songKey: current.songKey,
+        positionSec,
+        fromSec,
+        recovery: current.stallRecoveries,
+    });
+    emit({ type: 'stalled', paused: false, positionSec: fromSec });
+    void omni.playSongExternally(current.song, fromSec).then(() => {
+        if (session !== current || current.positionRevision !== revision) return;
+        current.seekPending = false;
+        current.starting = false;
+        emit({ type: 'status' });
+    }, (error: unknown) => {
+        if (session !== current || current.positionRevision !== revision) return;
+        current.seekPending = false;
+        current.playing = false;
+        console.warn('[ExternalPlayback] the stuck player could not be started again', error);
+        emit({ type: 'failure', error });
+    });
+};
+
 const markEnded = (positionSec: number) => {
     if (!session || session.ended) return;
     if (loopsCurrentTrack()) {
@@ -348,6 +456,42 @@ const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number
     }
     // An accepted start that is still buffering is loading, not a pause of the listener's.
     current.starting = status.starting === true && !status.isPlaying;
+    // A stream stuck in the player: MusicKit keeps saying it plays while the element under it sits in
+    // waiting and its position stops moving (Apple's Android WebView has done this mid-song). A
+    // position that does not move is not listening time, is not the end of the track, and is not a
+    // pause of the listener's: it is pushed along from where it stopped, and said so when that fails.
+    const positionMoved = previousSample !== null && positionSec > previousSample + 0.05;
+    if (current.pauseRequested) {
+        // The listener paused: a still position is that pause.
+        current.stalled = false;
+        current.stalledSinceMs = null;
+    } else if (status.isPlaying && !status.seeking && !current.starting && !current.live) {
+        // A live broadcast has no position to move: its stillness says nothing.
+        if (positionMoved) {
+            current.stalled = false;
+            current.stalledSinceMs = null;
+            current.stallPaused = false;
+        } else {
+            current.stalledSinceMs ??= sampledAtMs;
+            if (sampledAtMs - current.stalledSinceMs >= STALL_RECOVER_AFTER_MS) current.stalled = true;
+        }
+    }
+    // The provider's own reading of the same stall (it watches the element's clock) counts at once,
+    // but not for the stream a restart just replaced.
+    if (status.stalled === true && !current.starting
+        && sampledAtMs - current.stallActedAtMs >= STALL_RECOVER_AFTER_MS) current.stalled = true;
+    if (current.stalled && !current.live && !atEnd && status.ended !== true) {
+        if (!current.stallPaused) {
+            recoverStalledExternalPlayback(current, status.mediaId ? positionSec : previousSample ?? current.clock.read(), sampledAtMs);
+            return;
+        }
+        // Left stopped where it stuck: said so, and not alternated with the player's optimistic
+        // "playing" until the listener starts it again.
+        const stoppedAtSec = previousSample ?? positionSec;
+        if (current.playing) markPaused(stoppedAtSec);
+        else syncClock(stoppedAtSec, true, sampledAtMs, true);
+        return;
+    }
     if (current.starting) {
         current.playing = false;
         syncClock(current.clock.read(), true, sampledAtMs, true);
@@ -432,6 +576,7 @@ async function poll(): Promise<void> {
         if (session !== current || !isExternalRoute() || current.positionRevision !== positionRevision) return;
         // The answer names a position the page read about half a round trip ago.
         applyStatus(status, (startedAt + performance.now()) / 2);
+        publishSnapshot();
         failureNoted = false;
         // A repeat write that failed (or was skipped while handed over) is sent again.
         if (appliedRepeatOne === null) syncExternalRepeatOne();
@@ -449,6 +594,7 @@ async function poll(): Promise<void> {
         if (current.playing || current.starting) markPaused(current.clock.read());
     } finally {
         pollRunning = false;
+        if (session === current) publishSnapshot();
         if (session === current && !current.handedOver && isExternalRoute()) schedulePoll(delay);
     }
 }
@@ -525,7 +671,8 @@ export async function beginExternalPlayback(song: SongResult, startSec = 0): Pro
     clock.sync({ positionSec: Math.max(0, startSec), paused: true });
     session = {
         song, songKey, attempt, clock, durationSec,
-        announced: false, playing: false, starting: false, sampledPosition: Math.max(0, startSec), prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false,
+        announced: false, playing: false, starting: false, sampledPosition: Math.max(0, startSec), prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false, stalledSinceMs: null, stallRecoveries: 0,
+        stalled: false, stallPaused: false, stallActedAtMs: Number.NEGATIVE_INFINITY, pauseRequested: false,
     };
     failureNoted = false;
     externalMediaShim.beginTrack(songKey);
@@ -602,7 +749,8 @@ export async function adoptExternalPlayback(song: SongResult): Promise<boolean> 
     clock.sync({ positionSec: 0, paused: true });
     session = {
         song, songKey, attempt, clock, durationSec,
-        announced: false, playing: false, starting: false, sampledPosition: null, prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false,
+        announced: false, playing: false, starting: false, sampledPosition: null, prefetchReady: false, live: false, ended: false, foreign: false, handedOver: false, preparedQueueKey: '', positionRevision: 0, seekPending: false, seeking: false, stalledSinceMs: null, stallRecoveries: 0,
+        stalled: false, stallPaused: false, stallActedAtMs: Number.NEGATIVE_INFINITY, pauseRequested: false,
     };
     failureNoted = false;
     externalMediaShim.beginTrack(songKey);
@@ -764,6 +912,7 @@ export function stopExternalPlayback(reason: string): void {
     handOverOnAdoption = false;
     session = null;
     externalMediaShim.reset();
+    noteExternalPlaybackSnapshot(null);
     if (!current) return;
     emit({ type: 'status' });
     console.info('[ExternalPlayback] left the external player', { reason, songKey: current.songKey });
@@ -796,6 +945,10 @@ export function yieldExternalPlayback(reason: string): void {
 export const pauseExternalPlayback = (): boolean => {
     const current = session;
     if (!current) return false;
+    // Said here, not read off the player: from here on, a position that does not move is the pause.
+    current.pauseRequested = true;
+    current.stalled = false;
+    current.stalledSinceMs = null;
     markPaused(current.clock.read());
     void omni.pauseExternalPlayback(current.song).catch(error => {
         console.warn('[ExternalPlayback] pause failed', error);
@@ -808,8 +961,19 @@ export const pauseExternalPlayback = (): boolean => {
 export const resumeExternalPlayback = (): boolean => {
     const current = session;
     if (!current) return false;
+    // A stream that was left stopped because restarts did not help is started again from where it
+    // stopped, with the attempts it was given: `mk.play()` alone would leave it stuck.
+    const restartFromSec = current.stallPaused ? Math.max(0, current.clock.read()) : null;
+    if (restartFromSec !== null) {
+        current.stallPaused = false;
+        current.stallRecoveries = 0;
+        current.stallActedAtMs = Number.NEGATIVE_INFINITY;
+    }
     markPlaying(current.clock.read());
-    void omni.resumeExternalPlayback(current.song).catch(error => {
+    const write = restartFromSec === null
+        ? omni.resumeExternalPlayback(current.song)
+        : omni.playSongExternally(current.song, restartFromSec);
+    void write.catch(error => {
         console.warn('[ExternalPlayback] resume failed', error);
         markPaused(current.clock.read());
         emit({ type: 'failure', error });

@@ -491,6 +491,11 @@ export interface ProviderExternalPlaybackStatus {
     seeking?: boolean;
     /** The player accepted a start/resume and is still buffering; this is not a user pause. */
     starting?: boolean;
+    /**
+     * The player says it is playing but its position has not moved for a while: a stream stuck in the
+     * player (Apple's WebView has done this on DRM buffering). Not an end of the track, not a pause.
+     */
+    stalled?: boolean;
 }
 
 /**

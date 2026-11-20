@@ -708,6 +708,8 @@ export default {
     "providerLibraryUnavailable": "{{provider}} does not provide a playlist library.",
     "songUnavailable": "Song has been taken down",
     "externalPlayerMovedOn": "The player moved to another track; playback is paused",
+    "externalPlaybackStalled": "The player stalled and playback is stopped there. Press play to try again.",
+    "externalPlaybackStalledRetrying": "The player stalled; trying again…",
     "externalVideoExportUnavailable": "This song plays in the platform's own player and its sound does not pass through Folia, so no video can be exported.",
     "externalBypassTitle": "This song plays in the platform's own player",
     "externalBypassBody": "Its sound does not pass through Folia, so the equalizer and effects here do not change what you hear. The settings are kept and apply to other songs as usual.",

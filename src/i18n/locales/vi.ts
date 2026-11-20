@@ -708,6 +708,8 @@ export default {
     "providerLibraryUnavailable": "{{provider}} không cung cấp thư viện danh sách phát.",
     "songUnavailable": "Bài hát đã bị gỡ",
     "externalPlayerMovedOn": "Trình phát đã chuyển sang bài khác; đã tạm dừng",
+    "externalPlaybackStalled": "Trình phát bị kẹt và đã dừng tại đó. Nhấn phát để thử lại.",
+    "externalPlaybackStalledRetrying": "Trình phát bị kẹt; đang thử lại…",
     "externalVideoExportUnavailable": "Bài hát này phát trong trình phát riêng của nền tảng và âm thanh không đi qua Folia, nên không thể xuất video.",
     "externalBypassTitle": "Bài hát này phát trong trình phát riêng của nền tảng",
     "externalBypassBody": "Âm thanh không đi qua Folia, nên bộ cân bằng và hiệu ứng ở đây không thay đổi những gì bạn nghe. Thiết lập vẫn được giữ và áp dụng cho các bài khác như bình thường.",

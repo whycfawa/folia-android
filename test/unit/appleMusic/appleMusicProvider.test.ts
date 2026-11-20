@@ -183,6 +183,34 @@ describe('Apple Music lyrics and external playback', () => {
         await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '123', ended: true });
     });
 
+    // MusicKit keeps saying it plays while the element under it sits in waiting and its position
+    // stops (Apple's Android WebView, mid-song on DRM, 2026-11-20). That stillness is not listening
+    // time: counted as such it carries the song to its end, and the track is skipped with no reason.
+    it('reads a stalled stream as stalled, and does not count its stillness as listening', async () => {
+        let now = 1_000_000;
+        vi.spyOn(Date, 'now').mockImplementation(() => now);
+        let data: Record<string, unknown> = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, repeatMode: 0, positionMs: 148300, durationMs: 200000 };
+        const request = vi.fn(async () => ({ ok: true, data }));
+        vi.stubGlobal('window', { electron: { appleMusicRequest: request } });
+        const external = createAppleMusicProvider(() => ({ configured: true })).externalPlayback!;
+        await external.play(song, 0);
+        const first = await external.getStatus(song);
+        expect(first).toMatchObject({ mediaId: '123', isPlaying: true, ended: false });
+        expect(first.stalled).toBeUndefined();
+        // Six seconds of answers that do not move: the stream is stuck, and said so.
+        for (let answer = 0; answer < 13; answer += 1) {
+            now += 500;
+            await external.getStatus(song);
+        }
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '123', isPlaying: true, ended: false, stalled: true });
+
+        // The player then gives up and clears its item a minute later. None of that minute was
+        // listened to: the song never reached its end, and must not be skipped as if it had.
+        now += 60000;
+        data = { itemId: '', catalogId: '', isPlaying: false, state: 4, repeatMode: 0, positionMs: 0, durationMs: 0 };
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '', ended: false });
+    });
+
     it('sees the end through MusicKit going back to 0 before it clears the item', async () => {
         let now = 1_000_000;
         vi.spyOn(Date, 'now').mockImplementation(() => now);

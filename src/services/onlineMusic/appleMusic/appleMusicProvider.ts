@@ -22,6 +22,11 @@ const isEndedState = (state: number | null): boolean => state === 5 || state ===
 // this close to its end.
 const STOPPED_STATE = 4;
 const STOPPED_AT_END_SLACK_MS = 3000;
+// A moving stream advances about as far apart as two answers are; this much is real movement.
+const STALL_MOVE_SLACK_MS = 50;
+// MusicKit keeps saying it plays while the element under it sits in waiting: from this long without
+// any movement the answer is a stalled stream, not listening time.
+const STALL_AFTER_MS = 6000;
 // Chromium's intensive throttling lets a hidden page's chained timers run once a minute.
 const HEARD_GAP_LIMIT_MS = 90_000;
 // MusicKit's PlayerRepeatMode.one: going round passes through a stopped answer with no item, which
@@ -101,7 +106,11 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
     // Only a change is logged: the player is asked twice a second while a track is loaded.
     let lastHadTrack: boolean | null = null;
     // MusicKit clears nowPlayingItem at completion. Retain only this attempt's observed identity.
-    let playback: { catalogId: string; hasPlayed: boolean; durationMs: number; positionMs: number; heardAtMs: number; heardPlaying: boolean; nextIds: string[]; nativeNextId: string; queueRevision: number } | null = null;
+    let playback: {
+        catalogId: string; hasPlayed: boolean; durationMs: number; positionMs: number;
+        heardAtMs: number; heardPlaying: boolean; nextIds: string[]; nativeNextId: string;
+        queueRevision: number; stalledSinceMs: number; stalled: boolean;
+    } | null = null;
     // Attempts whose stopped-at-end reading has been logged: the player is asked again until Folia moves on.
     const stoppedEndLogged = new WeakSet();
 
@@ -307,7 +316,7 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 const adoptCurrent = handoffId === catalogId && seconds === 0;
                 handoffId = null;
                 const requestKey = `play_${playNonce}_${++playSequence}`;
-                const attempt = { catalogId, hasPlayed: false, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [] as string[], nativeNextId: '', queueRevision: 0 };
+                const attempt = { catalogId, hasPlayed: false, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [] as string[], nativeNextId: '', queueRevision: 0, stalledSinceMs: 0, stalled: false };
                 playback = attempt;
                 let result;
                 try {
@@ -333,7 +342,7 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                     return;
                 }
                 liveStationId = null;
-                playback = { catalogId: appleMusicPlaybackSongId(song), hasPlayed: true, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [], nativeNextId: '', queueRevision: 0 };
+                    playback = { catalogId: appleMusicPlaybackSongId(song), hasPlayed: true, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [], nativeNextId: '', queueRevision: 0, stalledSinceMs: 0, stalled: false };
             },
             async pause() {
                 await requestAppleMusic('pause');
@@ -365,6 +374,8 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 const data = await requestAppleMusic<unknown>('playbackStatus');
                 const answeredAtMs = Date.now();
                 let status = externalStatus(data);
+                /** This answer reads the same song, still playing, at the same place: a stalled stream. */
+                let stalledAnswer = false;
                 if (attempt && playback === attempt && attempt.catalogId === (appleMusicLiveStationId(song) || appleMusicPlaybackSongId(song))) {
                     if (status.mediaId === attempt.catalogId) {
                         attempt.hasPlayed ||= status.isPlaying;
@@ -374,9 +385,24 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                         const wentBackAtEnd = !status.isPlaying && status.positionMs === 0 && attempt.heardPlaying
                             && attempt.durationMs > 0 && attempt.positionMs >= attempt.durationMs - STOPPED_AT_END_SLACK_MS;
                         if (!wentBackAtEnd) {
+                            // MusicKit keeps saying it plays while the element under it sits in waiting
+                            // and its clock stops (Apple's Android WebView has, mid-song on DRM). An
+                            // answer that does not move is a stalled stream, not listening time: read
+                            // as listening it pushes a later answer to the end of the song, and the
+                            // track is skipped with nothing said about why.
+                            const moved = status.positionMs > attempt.positionMs + STALL_MOVE_SLACK_MS;
+                            if (moved || !status.isPlaying || status.seeking === true) {
+                                attempt.stalled = false;
+                                attempt.stalledSinceMs = 0;
+                            } else if (attempt.stalledSinceMs === 0) {
+                                attempt.stalledSinceMs = answeredAtMs;
+                            } else if (answeredAtMs - attempt.stalledSinceMs >= STALL_AFTER_MS) {
+                                attempt.stalled = true;
+                            }
                             attempt.positionMs = status.positionMs;
                             attempt.heardAtMs = answeredAtMs;
-                            attempt.heardPlaying = status.isPlaying && status.seeking !== true;
+                            attempt.heardPlaying = status.isPlaying && status.seeking !== true && !attempt.stalled;
+                            stalledAnswer = attempt.stalled;
                         }
                     } else if (status.mediaId && attempt.hasPlayed && (status.mediaId === attempt.nextIds[0] || status.mediaId === attempt.nativeNextId)) {
                         handoffId = status.mediaId;
@@ -423,7 +449,11 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                         queueKeys: (data as { queueKeys?: unknown } | null)?.queueKeys ?? null,
                     });
                 }
-                return status;
+                // Told at once, with the same answer: the route then restarts the stream rather than
+                // waiting to read the same stillness off a second and third answer of its own.
+                return stalledAnswer && !status.ended && status.mediaId === attempt?.catalogId
+                    ? { ...status, stalled: true }
+                    : status;
             },
             // The companion reports the catalog id it was given (an upload: its library id), so a library song matches too.
             isStatusForSong(song, status) {
