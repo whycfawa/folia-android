@@ -100,7 +100,15 @@ export const StatusToast: React.FC<{ toast: AppStatusToast }> = ({ toast }) => {
                                     {toast.actionLabel}
                                     <span className="status-toast-seconds">{countdown.seconds}</span>
                                 </span>
-                                <span aria-hidden className="status-toast-fill" style={{ animationDuration: `${countdown.totalMs}ms` }}>
+                                {/* The fill the listener watches IS the countdown: when it reaches the end the
+                                    action happens, even if the count's own timer (which the player's state may
+                                    cancel) is gone. The action itself is once-only, so both endings are safe. */}
+                                <span
+                                    aria-hidden
+                                    className="status-toast-fill"
+                                    style={{ animationDuration: `${countdown.totalMs}ms` }}
+                                    onAnimationEnd={action}
+                                >
                                     {toast.actionLabel}
                                 </span>
                             </button>

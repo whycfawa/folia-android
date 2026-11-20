@@ -558,6 +558,49 @@ describe('skip unplayable songs setting', () => {
         expect(loader.mock.calls[0][0]).toBe(songs[1]);
         expect(queue.playbackAutoSkipCountRef.current).toBe(1);
     });
+
+    it('keeps the countdown timer when the player flashes playing during a content refusal', async () => {
+        audioSettings.autoSkipUnplayable = true;
+        loader.mockResolvedValue(unavailable('content-restricted'));
+        const queue = controller();
+        queue.skipAfterPlaybackFailure(failureOf('content-restricted'), { failedSongKey: getPlaybackSongKey(songs[0]) });
+        expect(message()).toMatchObject({ text: 'failure.contentRestricted', persistent: true, sticky: true, countdown: { text: 'failure.skipCountdown' } });
+
+        usePlaybackStore.setState({ playerState: PlayerState.PLAYING });
+        await vi.waitFor(() => expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PLAYING));
+
+        countdownSkip();
+        await vi.waitFor(() => expect(loader).toHaveBeenCalledOnce());
+        expect(loader.mock.calls[0][0]).toBe(songs[1]);
+        expect(queue.playbackAutoSkipCountRef.current).toBe(1);
+    });
+
+    it('lands a song refused while it waited paused, under the countdown that says why', async () => {
+        audioSettings.autoSkipUnplayable = true;
+        const lyricsState = deferred<null>();
+        vi.mocked(loadOnlineLyricsState).mockReturnValueOnce(lyricsState.promise);
+        loader.mockResolvedValueOnce({ kind: 'ok', audioSrc: 'https://cdn.example/1.mp3' });
+        const queue = controller();
+        const landing = queue.playSong(songs[0], songs);
+        await vi.waitFor(() => expect(loader).toHaveBeenCalledOnce());
+
+        // The player refuses the song this play is landing, as Apple's page does after accepting it.
+        queue.skipAfterPlaybackFailure(failureOf('content-restricted'), { failedSongKey: getPlaybackSongKey(songs[0]) });
+        expect(message()).toMatchObject({ text: 'failure.contentRestricted', sticky: true, countdown: { text: 'failure.skipCountdown' } });
+
+        lyricsState.resolve(null);
+        await landing;
+
+        // The prompt and its count stay (this song is the one they are about), and it is not shown playing.
+        expect(message()).toMatchObject({ text: 'failure.contentRestricted', countdown: { text: 'failure.skipCountdown' } });
+        expect(window.clearTimeout).not.toHaveBeenCalled();
+        expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PAUSED);
+
+        const skip = vi.mocked(window.setTimeout).mock.calls.at(-1)![0] as () => void;
+        skip();
+        await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(2));
+        expect(loader.mock.calls[1][0]).toBe(songs[1]);
+    });
 });
 
 describe('stale requests', () => {
@@ -826,7 +869,10 @@ describe('skipAfterPlaybackFailure', () => {
         expect(window.setTimeout).toHaveBeenCalledOnce();
         expect(message()).toMatchObject({ type: 'error', text: 'status.playbackError', persistent: true, countdown: { text: 'failure.skipCountdown' } });
 
-        controller({ skipsSoFar: 2 }).skipAfterPlaybackFailure();
+        const lastSkips = controller({ skipsSoFar: 2 });
+        lastSkips.clearPendingUnavailableSkip();
+        useStatusMessageStore.setState({ message: null });
+        lastSkips.skipAfterPlaybackFailure();
         expect(window.setTimeout).toHaveBeenCalledOnce();
         expect(usePlaybackStore.getState().playerState).toBe(PlayerState.IDLE);
         expect(message()).toMatchObject({ type: 'error', text: 'status.playbackError' });
@@ -888,6 +934,8 @@ describe('skipAfterPlaybackFailure', () => {
 
         load.resolve({ kind: 'ok', audioSrc: 'https://cdn.example/2.mp3' });
         await pending;
+        queue.clearPendingUnavailableSkip();
+        useStatusMessageStore.setState({ message: null });
         expect(askedSongKeyRef.current).toBe(getPlaybackSongKey(songs[1]));
         expect(message()?.persistent).toBeFalsy();
         expect(window.clearTimeout).toHaveBeenCalled();

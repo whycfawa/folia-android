@@ -34,6 +34,7 @@ export const useStatusMessageStore = create<StatusMessageState>((set) => ({
             : next;
         // A timed unavailable-song prompt is the user's only explanation for the automatic skip. Keep
         // ordinary loading/success/error chatter from replacing it; its own skip/cancel callbacks clear it.
+        if (state.message?.sticky && message === null) return state;
         if (state.message?.sticky && message && !message.sticky && message !== state.message) return state;
         if (message !== state.message && message) {
             if (message.activity === 'loading' && message.activityId === undefined) {
@@ -54,6 +55,13 @@ export const useStatusMessageStore = create<StatusMessageState>((set) => ({
  */
 export const setStatusMessage: StatusSetter = (next) => {
     useStatusMessageStore.getState().setMessage(next);
+};
+
+/** Explicitly dismisses the current toast, including a sticky skip prompt when requested. */
+export const clearStatusMessage = (force = false): void => {
+    const current = useStatusMessageStore.getState().message;
+    if (current?.sticky && !force) return;
+    useStatusMessageStore.setState({ message: null, held: false });
 };
 
 /** Subscribe to the current toast. Only the component that renders it should call this. */

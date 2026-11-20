@@ -61,7 +61,7 @@ export type ExternalPlaybackEvent =
      * The player itself refused this song (Apple: content restricted). Nothing here can fix it: said
      * once, with the song left paused, so the caller can tell the listener why and move the queue on.
      */
-    | { type: 'unplayable'; reason: string }
+    | { type: 'unplayable'; reason: string; song: SongResult }
     | { type: 'foreign-track' };
 
 type ExternalSession = {
@@ -433,7 +433,9 @@ const refuseUnplayableSong = (current: ExternalSession, reason: string): void =>
     current.playing = false;
     console.warn('[ExternalPlayback] the player refuses this song', { songKey: current.songKey, reason });
     markPaused(current.clock.read());
-    emit({ type: 'unplayable', reason });
+    // The song comes with it: the refused start may still be landing in the app, so the store's
+    // current song is not yet this one, and the caller needs to know which song the refusal is about.
+    emit({ type: 'unplayable', reason, song: current.song });
 };
 
 const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number) => {

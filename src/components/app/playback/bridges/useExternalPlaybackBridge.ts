@@ -5,6 +5,7 @@ import { installExternalPlayback, subscribeExternalPlayback } from '../../../../
 import { onlineFailureOf, type OnlineFailure } from '../../../../services/onlineMusic/failure/onlineFailureCase';
 import { setStatusMessage } from '../../../../stores/useStatusMessageStore';
 import { usePlaybackStore } from '../../../../stores/usePlaybackStore';
+import { getPlaybackSongKey } from '../../../../utils/appPlaybackGuards';
 import { onlineFailureToast } from '../source/onlineFailureToast';
 import type { PlaybackFailureSkipOptions } from '../start/usePlaybackQueueController';
 
@@ -53,12 +54,15 @@ export function useExternalPlaybackBridge({ handleNextTrack, skipAfterPlaybackFa
             if (event.type === 'unplayable') {
                 // 平台自己的播放器明确拒绝这首歌（版权/内容受限）：不是卡住，重开也没用。走和「未返回
                 // 音频」同一条路，说成同一个提示框，跳过与否则由那一套（含「无法播放时自动跳过」）决定。
-                const song = usePlaybackStore.getState().currentSong;
+                // The refused song comes with the event: its start may still be landing, so the store's
+                // current song can be the one before it.
+                const song = event.song ?? usePlaybackStore.getState().currentSong;
                 const providerId = song?.sourceRef?.kind === 'online' ? song.sourceRef.providerId : undefined;
                 latestRef.current.skipAfterPlaybackFailure(
                     onlineFailureOf({ operation: 'audio', providerId }, {
                         detail: { case: event.reason === 'no-audio' ? 'no-audio' : 'content-restricted' },
                     }),
+                    { failedSongKey: song ? getPlaybackSongKey(song) : undefined },
                 );
                 return;
             }

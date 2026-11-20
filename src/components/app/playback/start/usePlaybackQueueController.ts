@@ -56,7 +56,7 @@ import type { SearchKind, SearchReturnView, SearchSource } from '../../../../sto
 import { dispatchSearchTrackAction } from '../../search/searchTrackActions';
 import { playbackFade } from '../../../../services/playbackFade';
 import { getProviderSongMetadata } from '../../../../services/onlineMusic/songMetadata';
-import { setStatusMessage as setStatusMsg, beginStatusLoading, completeStatusLoading, failStatusLoading, cancelStatusLoading, reviseStatusLoading, withStatusLoadingResult } from '../../../../stores/useStatusMessageStore';
+import { setStatusMessage as setStatusMsg, clearStatusMessage, useStatusMessageStore, beginStatusLoading, completeStatusLoading, failStatusLoading, cancelStatusLoading, reviseStatusLoading, withStatusLoadingResult } from '../../../../stores/useStatusMessageStore';
 import { setAudioSrc, setCachedCoverUrl, setCurrentLineIndex, setCurrentSong, setDuration, setIsFmMode, setPlayQueue, setPlayerState, startLoadingToPlay, usePlaybackStore } from '../../../../stores/usePlaybackStore';
 import { askedSongKeyRef, askForSong, keepSongsOfProvidersStanding, playsDroppedSoFar, providerDropsSoFar, providerPlaysDroppedSoFar, showSong, startOfAskedSong, startPlay, withdrawAsk } from '../currentSong';
 import { personalFmEndingsSoFar } from '../personalFmEndings';
@@ -213,7 +213,7 @@ const withSignInAction = (
             ...said,
             actionLabel: t('failure.signIn'),
             onAction: () => {
-                setStatusMsg(null);
+                clearStatusMessage(true);
                 openLoginWindow(signInTo);
             },
         };
@@ -223,7 +223,7 @@ const withSignInAction = (
         ...said,
         actionLabel: t('failure.openSetup'),
         onAction: () => {
-            setStatusMsg(null);
+            clearStatusMessage(true);
             openLoginWindow(setUp, null, 'setup');
         },
     } : said;
@@ -284,12 +284,17 @@ export function usePlaybackQueueController({
     // in App.tsx only because everything about playback used to be.
     /** Rising id per playSong call: a newer call supersedes an older one still awaiting `beforePlay`. */
     const playSongCallIdRef = useRef(0);
+    /** The song the newest playSong was asked for, even before it is asked of the player (see skipAfterPlaybackFailure). */
+    const playRequestedSongKeyRef = useRef<string | null>(null);
     /** FM state from before the oldest play that has not shown its song yet; a play that does not land puts it back. */
     // `queueWrites`: the whole-queue writes when it was kept. One that came since (a mod's replaceQueue ended FM)
     // makes it stale: no later play puts FM back to it.
     const fmModeBeforePendingPlayRef = useRef<{ isFm: boolean; queueWrites: number; fmEndings: number } | null>(null);
     const pendingUnavailableSkipTimerRef = useRef<number | null>(null);
     const pendingUnavailableSkipIntervalRef = useRef<number | null>(null);
+    const pendingUnavailableSkipNonceRef = useRef(0);
+    /** The song the shown skip prompt is about: a play of that same song must not land as if it played. */
+    const pendingUnavailableSkipSongKeyRef = useRef<string | null>(null);
 
     // The stage takes the same audio element and drops the plays in flight (`dropPlaysInFlight`): a dropped
     // play never puts back the FM state it wrote, and openStagePlayer has just kept that state in the main
@@ -404,6 +409,9 @@ export function usePlaybackQueueController({
     }, [appendOnlineSongsToMainQueue]);
 
     const clearPendingUnavailableSkip = useCallback(() => {
+        // The prompt this count belonged to is over: a timer that still fires must not skip later.
+        pendingUnavailableSkipNonceRef.current = 0;
+        pendingUnavailableSkipSongKeyRef.current = null;
         if (pendingUnavailableSkipTimerRef.current !== null) {
             window.clearTimeout(pendingUnavailableSkipTimerRef.current);
             pendingUnavailableSkipTimerRef.current = null;
@@ -413,7 +421,15 @@ export function usePlaybackQueueController({
             window.clearInterval(pendingUnavailableSkipIntervalRef.current);
             pendingUnavailableSkipIntervalRef.current = null;
         }
-    }, [pendingUnavailableSkipIntervalRef, pendingUnavailableSkipTimerRef]);
+    }, [pendingUnavailableSkipIntervalRef, pendingUnavailableSkipNonceRef, pendingUnavailableSkipSongKeyRef, pendingUnavailableSkipTimerRef]);
+
+    // A refusal can make the player's own state flash PLAYING again while the old song is still shown
+    // (Apple's CONTENT_RESTRICTED). That must not cancel the countdown already on screen: its timer and
+    // its toast have the same nonce, and only that countdown's own skip/cancel clears it.
+    const clearPendingUnavailableSkipFor = useCallback((nonce: number) => {
+        if (pendingUnavailableSkipNonceRef.current !== nonce) return;
+        clearPendingUnavailableSkip();
+    }, [clearPendingUnavailableSkip, pendingUnavailableSkipNonceRef]);
 
     // Keeps unavailable provider entries in the queue so they can be retried after configuration changes.
     const getPlayableOnlineQueue = useCallback((queue: SongResult[]) => {
@@ -464,20 +480,26 @@ export function usePlaybackQueueController({
     const showTimedSkipPrompt = useCallback((
         said: StatusMessage,
         onSkip: () => void,
-        onCancel?: () => void
+        onCancel?: () => void,
+        failedSongKey?: string,
     ) => {
+        // A new countdown replaces the one before it: its timer and its interval go with it.
         clearPendingUnavailableSkip();
-
-        let remainingSeconds = Math.ceil(UNAVAILABLE_SKIP_CONFIRM_TIMEOUT_MS / 1000);
         const nonce = ++skipPromptCount;
+        let remainingSeconds = Math.ceil(UNAVAILABLE_SKIP_CONFIRM_TIMEOUT_MS / 1000);
+        pendingUnavailableSkipNonceRef.current = nonce;
+        pendingUnavailableSkipSongKeyRef.current = failedSongKey ?? null;
         const skip = () => {
-            clearPendingUnavailableSkip();
-            setStatusMsg(null);
+            // Only this countdown's own end acts: a prompt put up since has its own timer.
+            if (pendingUnavailableSkipNonceRef.current !== nonce) return;
+            clearPendingUnavailableSkipFor(nonce);
+            clearStatusMessage(true);
             onSkip();
         };
         const cancel = () => {
-            clearPendingUnavailableSkip();
-            setStatusMsg(null);
+            if (pendingUnavailableSkipNonceRef.current !== nonce) return;
+            clearPendingUnavailableSkipFor(nonce);
+            clearStatusMessage(true);
             onCancel?.();
         };
         const resultMessage = withStatusLoadingResult(said);
@@ -515,7 +537,7 @@ export function usePlaybackQueueController({
                 return lastBuilt;
             });
         }, UNAVAILABLE_SKIP_CONFIRM_INTERVAL_MS);
-    }, [clearPendingUnavailableSkip, pendingUnavailableSkipIntervalRef, pendingUnavailableSkipTimerRef, setStatusMsg, t]);
+    }, [clearPendingUnavailableSkip, clearPendingUnavailableSkipFor, pendingUnavailableSkipIntervalRef, pendingUnavailableSkipNonceRef, pendingUnavailableSkipSongKeyRef, pendingUnavailableSkipTimerRef, setStatusMsg, t]);
 
     // Loads one requested song and normalizes queue behavior across sources.
     const playSong = useCallback(async (
@@ -531,6 +553,7 @@ export function usePlaybackQueueController({
         // An automix advance skips the hook (see `isAutomixAdvance`).
         const onFmLanding = takePersonalFmLanding(queue);
         const playSongCallId = ++playSongCallIdRef.current;
+        playRequestedSongKeyRef.current = getPlaybackSongKey(requestedSong);
         // A route that empties the player while this play waits drops it too (`dropPlaysInFlight`), and so
         // does a sign-out of the requested song's platform (`dropPlaysOfProvider`).
         const droppedAtStart = playsDroppedSoFar();
@@ -606,7 +629,8 @@ export function usePlaybackQueueController({
         // A new play takes the place of the previous song's dialog of another version.
         setPendingUnavailableReplacement(null);
         clearPendingUnavailableSkip();
-        setStatusMsg(prev => prev?.persistent || prev?.activity === 'loading' || prev?.activity === 'success' ? null : prev);
+        if (useStatusMessageStore.getState().message?.persistent) clearStatusMessage(true);
+        else setStatusMsg(prev => prev?.activity === 'loading' || prev?.activity === 'success' ? null : prev);
         const shouldNavigateToPlayer = options.shouldNavigateToPlayer ?? true;
         const wasFmMode = usePlaybackStore.getState().isFmMode;
         // With an earlier play still not landed, the FM state it kept stands: the one it wrote never
@@ -754,7 +778,7 @@ export function usePlaybackQueueController({
                         ...deferredPlayOptions,
                         unavailableSkipCount: skipCount + 1,
                     });
-                }, stopsPlayback(shown) ? () => { if (isLatestPlaybackRequest()) stopHere(); } : undefined);
+                }, stopsPlayback(shown) ? () => { if (isLatestPlaybackRequest()) stopHere(); } : undefined, getPlaybackSongKey(song));
                 tellFailure(shown, true);
                 return;
             }
@@ -765,7 +789,7 @@ export function usePlaybackQueueController({
                     ...said,
                     actionLabel: t('ui.retry'),
                     onAction: () => {
-                        setStatusMsg(null);
+                        clearStatusMessage(true);
                         // After a whole-queue write the retry plays within the queue and FM of now (the song
                         // goes back in front of a queue that no longer holds it, as any replay of it does).
                         const rewritten = queueRewritten();
@@ -807,7 +831,7 @@ export function usePlaybackQueueController({
                 // and the dialog closed leaves the song before it playing.
                 isLatestPlaybackRequest.abandon();
                 cancelStatusLoading(loadingMessage);
-                setStatusMsg(null);
+                clearStatusMessage(true);
                 setPendingUnavailableReplacement({
                     originalSong: song,
                     replacementSong: replacement.song,
@@ -1007,16 +1031,24 @@ export function usePlaybackQueueController({
             isLatestPlaybackRequest.abandon();
             return;
         }
+        // This very play may have been refused while it waited: the player says CONTENT_RESTRICTED
+        // once its start was accepted, so the answer arrives here. The song still lands (the countdown
+        // steps past it by its place in the queue), but the prompt and its timer stay, and it is shown
+        // paused rather than as a song that plays with no sound.
+        const refusedThisSong = pendingUnavailableSkipSongKeyRef.current === getPlaybackSongKey(song);
         // The song before may have failed while this one loaded (its countdown, its toast that stays):
         // that is no longer about what plays, as at the start of this play.
-        clearPendingUnavailableSkip();
-        completeStatusLoading(loadingMessage, t('status.loadingComplete'));
-        setStatusMsg(prev => prev?.persistent ? null : prev);
+        if (!refusedThisSong) {
+            clearPendingUnavailableSkip();
+            completeStatusLoading(loadingMessage, t('status.loadingComplete'));
+            if (useStatusMessageStore.getState().message?.persistent) clearStatusMessage(true);
+            else setStatusMsg(prev => prev);
+        } else cancelStatusLoading(loadingMessage);
         fmModeBeforePendingPlayRef.current = null;
 
         // Written only now: a play that gave up above leaves the intent to play, the time to resume
         // at and the address's fetch time to the song the key went back to.
-        shouldAutoPlayRef.current = true;
+        shouldAutoPlayRef.current = !refusedThisSong;
         pendingResumeTimeRef.current = null;
         lastAudioRecoverySourceRef.current = null;
         currentOnlineAudioUrlFetchedAtRef.current = null;
@@ -1059,9 +1091,15 @@ export function usePlaybackQueueController({
         if (shouldNavigateToPlayer) {
             navigateToPlaybackView();
         }
-        startLoadingToPlay();
-        // The song is on screen: the external player may now drive the transport and the shim.
-        if (isExternal) announceExternalPlayback();
+        if (refusedThisSong) {
+            // The player refused it: on screen, yes, but paused, under the countdown that explains it.
+            setPlayerState(PlayerState.PAUSED);
+            setIsLyricsLoading(false);
+        } else {
+            startLoadingToPlay();
+            // The song is on screen: the external player may now drive the transport and the shim.
+            if (isExternal) announceExternalPlayback();
+        }
 
         const cachedCoverUrl = await getCachedSongCoverUrl(song);
         if (askedSongKeyRef.current !== songKey || startOfAskedSong() !== askedStart) {
@@ -1158,6 +1196,7 @@ export function usePlaybackQueueController({
         audioRef,
         blobUrlRef,
         clearPendingUnavailableSkip,
+        pendingUnavailableSkipSongKeyRef,
         currentOnlineAudioUrlFetchedAtRef,
         currentTime,
         getNextPlayableQueueSong,
@@ -1171,6 +1210,7 @@ export function usePlaybackQueueController({
         onPlayLocalSong,
         onPlayNavidromeSong,
         pendingResumeTimeRef,
+        playRequestedSongKeyRef,
         persistLastPlaybackCache,
         playQueue,
         playbackAutoSkipCountRef,
@@ -1506,12 +1546,21 @@ export function usePlaybackQueueController({
     const skipAfterPlaybackFailure = useCallback((shown?: OnlineFailure, options: PlaybackFailureSkipOptions = {}) => {
         const { failedSongKey, failedStart, retry } = options;
         // Whether the play that failed still plays: the same song, and not started again since.
-        const isFailedPlaybackCurrent = () => (!failedSongKey || askedSongKeyRef.current === failedSongKey)
+        const isFailedPlaybackCurrent = () => (!failedSongKey
+                || askedSongKeyRef.current === failedSongKey
+                // The refused start may not have been asked for yet (the external player answers after
+                // accepting it): the newest play's own request names it.
+                || playRequestedSongKeyRef.current === failedSongKey)
             && (failedStart === undefined || startOfAskedSong() === failedStart);
         if (!isFailedPlaybackCurrent()) return;
         clearPendingUnavailableSkip();
         const skipCount = playbackAutoSkipCountRef.current;
-        const currentIndex = queueIndexOf(playQueue, currentSong);
+        // The refused song may still be landing (the player answers after accepting the start), so the
+        // store's current song can be the one before it: the failed one is named by its key instead.
+        const failedSong = failedSongKey
+            ? playQueue.find(queued => getPlaybackSongKey(queued) === failedSongKey) ?? currentSong
+            : currentSong;
+        const currentIndex = queueIndexOf(playQueue, failedSong);
         const hasNextTrack = hasTrackToSkipTo(playQueue.length, currentIndex, loopMode, isFmMode);
         const said: StatusMessage = shown
             ? shown.case === 'content-restricted'
@@ -1519,7 +1568,7 @@ export function usePlaybackQueueController({
                 : onlineFailureToast(shown, t)
             : { type: 'error', text: t('status.playbackError') };
         const tell = (willAutoSkip: boolean) => {
-            notifyPlaybackFailed({ song: currentSong, reason: shown?.case ?? null, phase: 'mid-playback', willAutoSkip });
+            notifyPlaybackFailed({ song: failedSong, reason: shown?.case ?? null, phase: 'mid-playback', willAutoSkip });
         };
         // A refusal the listener can act on stops the song where it is: it was playing, so PAUSED.
         const stopHere = (stopped: OnlineFailure) => {
@@ -1545,16 +1594,16 @@ export function usePlaybackQueueController({
             // Where asking again may help: the caller's retry (the same address once more, where it
             // played), else the song from its start.
             const retryPlay = shown && offersRetry(shown)
-                ? retry ?? (currentSong ? () => {
+                ? retry ?? (failedSong ? () => {
                     const live = usePlaybackStore.getState();
-                    void latestQueueActionsRef.current.playSong(currentSong, live.playQueue, live.isFmMode, { shouldNavigateToPlayer: false });
+                    void latestQueueActionsRef.current.playSong(failedSong, live.playQueue, live.isFmMode, { shouldNavigateToPlayer: false });
                 } : undefined)
                 : undefined;
             setStatusMsg(retryPlay ? {
                 ...said,
                 actionLabel: t('ui.retry'),
                 onAction: () => {
-                    setStatusMsg(null);
+                    clearStatusMessage(true);
                     if (isFailedPlaybackCurrent()) retryPlay();
                 },
             } : said);
@@ -1572,11 +1621,12 @@ export function usePlaybackQueueController({
                 unavailableSkipCount: nextSkipCount,
                 // The track that failed is the one on the active deck, which mid-blend is NOT the
                 // one on screen. Skipping from the displayed track would step onto the broken one.
-                fromSong: currentSong ?? undefined,
+                fromSong: failedSong ?? undefined,
             });
-        }, shown && stopsPlayback(shown) ? () => { if (isFailedPlaybackCurrent()) stopHere(shown); } : undefined);
+        }, shown && stopsPlayback(shown) ? () => { if (isFailedPlaybackCurrent()) stopHere(shown); } : undefined,
+        failedSongKey ?? (failedSong ? getPlaybackSongKey(failedSong) : undefined));
         tell(true);
-    }, [audioRef, clearPendingUnavailableSkip, currentSong, isFmMode, loopMode, playQueue, playbackAutoSkipCountRef, setPlayerState, shouldAutoPlayRef, showTimedSkipPrompt, t]);
+    }, [audioRef, clearPendingUnavailableSkip, currentSong, isFmMode, loopMode, playQueue, playRequestedSongKeyRef, playbackAutoSkipCountRef, setPlayerState, shouldAutoPlayRef, showTimedSkipPrompt, t]);
 
     const buildStageQueueOperationSnapshot = useCallback((
         nextCurrentSong: SongResult | null,
