@@ -1382,6 +1382,8 @@ export interface StatusMessage {
   cancelLabel?: string;
   onCancel?: () => void;
   persistent?: boolean;
+  /** A failure skip prompt owns the status channel until its action or cancel clears it. */
+  sticky?: boolean;
 }
 
 // Search API Types

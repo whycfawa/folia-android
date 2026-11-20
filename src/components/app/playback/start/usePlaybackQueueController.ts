@@ -484,6 +484,7 @@ export function usePlaybackQueueController({
         const buildMessage = (seconds: number): StatusMessage => ({
             ...resultMessage,
             nonce,
+            sticky: true,
             countdown: { text: t('failure.skipCountdown', { seconds }), seconds, totalMs: UNAVAILABLE_SKIP_CONFIRM_TIMEOUT_MS },
             persistent: true,
             actionLabel: t('status.skipUnavailableAction'),
@@ -715,7 +716,9 @@ export function usePlaybackQueueController({
             // overtaken (`onceShown` in currentSong.ts). Its own answer stays, for the countdown's skip and its cancel.
             isLatestPlaybackRequest.abandon();
             setIsLyricsLoading(false);
-            const said = onlineFailureToast(shown, t);
+            const said = shown.case === 'content-restricted'
+                ? { ...onlineFailureToast(shown, t), persistent: true, sticky: true, durationMs: 10000 }
+                : onlineFailureToast(shown, t);
             const stopHere = () => {
                 shouldAutoPlayRef.current = false;
                 pauseWhatIsSounding(audioRef.current);
@@ -1510,7 +1513,11 @@ export function usePlaybackQueueController({
         const skipCount = playbackAutoSkipCountRef.current;
         const currentIndex = queueIndexOf(playQueue, currentSong);
         const hasNextTrack = hasTrackToSkipTo(playQueue.length, currentIndex, loopMode, isFmMode);
-        const said: StatusMessage = shown ? onlineFailureToast(shown, t) : { type: 'error', text: t('status.playbackError') };
+        const said: StatusMessage = shown
+            ? shown.case === 'content-restricted'
+                ? { ...onlineFailureToast(shown, t), persistent: true, sticky: true, durationMs: 10000 }
+                : onlineFailureToast(shown, t)
+            : { type: 'error', text: t('status.playbackError') };
         const tell = (willAutoSkip: boolean) => {
             notifyPlaybackFailed({ song: currentSong, reason: shown?.case ?? null, phase: 'mid-playback', willAutoSkip });
         };

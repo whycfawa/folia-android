@@ -32,6 +32,9 @@ export const useStatusMessageStore = create<StatusMessageState>((set) => ({
         let message = typeof next === 'function'
             ? (next as (prev: StatusMessage | null) => StatusMessage | null)(state.message)
             : next;
+        // A timed unavailable-song prompt is the user's only explanation for the automatic skip. Keep
+        // ordinary loading/success/error chatter from replacing it; its own skip/cancel callbacks clear it.
+        if (state.message?.sticky && message && !message.sticky && message !== state.message) return state;
         if (message !== state.message && message) {
             if (message.activity === 'loading' && message.activityId === undefined) {
                 message = { ...message, activityId: ++activitySequence };
