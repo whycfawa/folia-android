@@ -54,12 +54,22 @@ function stoppedAtEnd(data: unknown, heard: { durationMs: number; positionMs: nu
 // DRM are not the problem. No restart can change that answer.
 const REFUSED_PLAY_REASONS = ['CONTENT_RESTRICTED', 'CONTENT_UNAVAILABLE', 'NOT_AUTHORIZED'];
 const REFUSED_PLAY_CODES = ['mk-007'];
-function readPlayRefusal(value: unknown): 'content-restricted' | null {
-    const error = (value as { playError?: unknown } | null)?.playError as { reason?: unknown; mkCode?: unknown } | null | undefined;
+/**
+ * What the page says of a song it will not sound: its own MKError refusal (content restricted), or —
+ * when it says nothing at all — the page's own reading that a start it accepted delivered no media
+ * data. Both mean this song is not going to play, and both are told the same way Folia tells a song
+ * whose address it never got.
+ */
+function readPlayRefusal(value: unknown): 'content-restricted' | 'no-audio' | null {
+    const error = (value as { playError?: unknown } | null)?.playError as { reason?: unknown; mkCode?: unknown; ageMs?: unknown } | null | undefined;
     if (!error || typeof error !== 'object') return null;
     const reason = typeof error.reason === 'string' ? error.reason : '';
     const code = typeof error.mkCode === 'string' ? error.mkCode.toLowerCase() : '';
-    return REFUSED_PLAY_REASONS.includes(reason) || REFUSED_PLAY_CODES.includes(code) ? 'content-restricted' : null;
+    // A record from an earlier attempt says nothing about this one.
+    if (typeof error.ageMs === 'number' && error.ageMs > 60_000) return null;
+    if (REFUSED_PLAY_REASONS.includes(reason) || REFUSED_PLAY_CODES.includes(code)) return 'content-restricted';
+    if (reason === 'NO_AUDIO_START') return 'no-audio';
+    return null;
 }
 
 async function nameAppleMusicCatalogArtists(ids: readonly unknown[]): Promise<ProviderArtistSummary[] | null> {
@@ -480,10 +490,11 @@ export function createAppleMusicProvider(getAvailability: () => ProviderAvailabi
                 // A track the player cannot name, and the state it is in, is what a start that did
                 // not take looks like from here. Logged on the change only, never its words.
                 const hasTrack = status.mediaId !== '';
-                // 页面自己说这首放不了（CONTENT_RESTRICTED）：整首没出过声才算它的，免得把上一首
-                // 留下的拒绝记到这一首头上。这不是卡住，重开多少次都是同一个答复。
+                // 页面说这首放不了（CONTENT_RESTRICTED，或一直没有音频）：位置还是 0 才算它的。
+                // 不看 isPlaying：MusicKit 会短暂声称在放，那个闪烁不能当成「出过声」。
+                // 这不是卡住，重开多少次都是同一个答复。
                 const refusal = readPlayRefusal(data);
-                const unplayable = refusal && attempt && playback === attempt && !attempt.hasPlayed && attempt.positionMs === 0
+                const unplayable = refusal && attempt && playback === attempt && attempt.positionMs === 0
                     ? refusal
                     : null;
                 if (unplayable && attempt && !refusedLogged.has(attempt)) {

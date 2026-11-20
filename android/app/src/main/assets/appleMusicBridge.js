@@ -374,6 +374,33 @@
             }
             const elapsed = Date.now() - Number(pendingStart?.startedAt || 0);
             const playerState = Number(mk.playbackState);
+            // 兜底：页面一条错都没给，但起播等了十几秒还没有任何声音可放——播放器说在放/停着、
+            // 位置仍是 0、页面里的媒体元素一个都没攒到数据。这就是「这首没有音频」,不必等到
+            // 一分钟的超时；报上去后 Folia 会像处理「未返回音频」一样说明并往下走。
+            const deadStart = (() => {
+              if (!pendingStart || pendingStart.cancelled) return null;
+              if (pendingStart.failed === true) return null;
+              if (elapsed < 12e3) return null;
+              if (mk.isPlaying === true) return null;
+              if (Number(mk.currentPlaybackTime) > 0.5) return null;
+              if (!hasDom()) return null;
+              const players = document.querySelectorAll("audio,video");
+              for (let index = 0; index < players.length; index++) {
+                // 页面里任何一个元素真的走过半秒，就算这一首出过声：那是慢，不是没有音频。
+                if (Number(players[index].currentTime) > 0.5) return null;
+              }
+              const verdict = {
+                at: Date.now() - elapsed,
+                ageMs: elapsed,
+                mkCode: "",
+                reason: "NO_AUDIO_START",
+                name: "no-audio-start",
+                message: "start accepted, no media data after " + Math.round(elapsed / 1e3) + "s"
+              };
+              // 记在同一处：诊断报告与每次播放状态读的是同一条。
+              if (!window.__foliaPlayError) window.__foliaPlayError = verdict;
+              return verdict;
+            })();
             if (pendingStart && !pendingStart.cancelled && !pendingStart.failed && pendingStart.nudged !== true && elapsed >= 4e3 && elapsed < 15e3 && mk.isPlaying !== true && (playerState === 0 || playerState === 4)) {
               pendingStart.nudged = true;
               console.warn("[AppleMusic] start did not begin; asking the player again", { state: Number(mk.playbackState) });
@@ -406,13 +433,18 @@
               repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,
               queueLength,
               queueKeys: queue ? Object.keys(queue).slice(0, 12) : null,
-              // 页面自己拒绝播放这首歌的证据：代码与原因，没有正文。
-              playError: window.__foliaPlayError ? {
-                at: Number(window.__foliaPlayError.at) || 0,
-                ageMs: Math.max(0, Date.now() - (Number(window.__foliaPlayError.at) || 0)),
-                mkCode: String(window.__foliaPlayError.mkCode || ""),
-                reason: String(window.__foliaPlayError.reason || "")
-              } : null,
+              // 这首歌放不出来：页面自己给的拒绝（代码 + 原因），或兜底判出的「一直没有音频」。
+              // 都没有正文；正文只进诊断报告。
+              playError: (() => {
+                const recorded = window.__foliaPlayError || deadStart;
+                if (!recorded) return null;
+                return {
+                  at: Number(recorded.at) || 0,
+                  ageMs: Math.max(0, Date.now() - (Number(recorded.at) || 0)),
+                  mkCode: String(recorded.mkCode || ""),
+                  reason: String(recorded.reason || "")
+                };
+              })(),
               positionMs: Number.isFinite(position) && position >= 0 ? Math.round(position * 1e3) : 0,
               durationMs: !liveStation && Number.isFinite(duration) && duration >= 0 ? duration : 0
             } };
@@ -703,6 +735,9 @@
           if (request.operation === "playSong") {
             if (typeof mk.setQueue !== "function" || typeof mk.play !== "function") return { ok: false, error: "unsupported" };
             window.__foliaStart = null;
+            // 上一首留下的播放错误不算在这一首头上。必须在 setQueue 之前清：MusicKit 的
+            // CONTENT_RESTRICTED 正是在 setQueue 里抛出来的，之后清会把它一起擦掉。
+            window.__foliaPlayError = null;
             let playbackStage = "prepared-queue";
             let storefront = null;
             try {
@@ -720,8 +755,6 @@
               const queueOptions = { song: request.params.catalogId, startPlaying: android };
               if (!android || request.params.startSec > 0) queueOptions.startTime = request.params.startSec;
               await mk.setQueue(queueOptions);
-              // 新的一首：上一首留下的播放错误不算在这一首头上。
-              window.__foliaPlayError = null;
               playbackStage = "play";
               console.info("[AppleMusic] Playback stage: play");
               const attempt = { failed: false, cancelled: false, sought: false, pending: true, nudged: false, stage: "play", error: "", startedAt: Date.now() };
@@ -1080,6 +1113,19 @@
             const line = level + " " + args.map(describe).join(" ");
             window.__foliaLog.push(line.slice(0, 300));
             if (window.__foliaLog.length > LOG_LIMIT) window.__foliaLog.shift();
+            // MusicKit 对「这首不能播」只在页面里喊一声（MKError: [mk-007] CONTENT_RESTRICTED），
+            // 它的订阅者列表外面加不进去。这一声进日志的同时就记下来：起播被接受、位置却一直是 0
+            // 的时候，这就是「这首放不了」的证据。记录的时机就是日志的时机，不会是上一首的旧话。
+            const marker = /\bmk-\d{3}\b/i.exec(line);
+            if (marker && /\bMKError\b/.test(line)) {
+              window.__foliaPlayError = {
+                at: Date.now(),
+                mkCode: marker[0].toLowerCase(),
+                reason: /(CONTENT_RESTRICTED|CONTENT_UNAVAILABLE|NOT_AUTHORIZED|STREAM_UNAVAILABLE)/.exec(line)?.[1] || "",
+                name: "MKError",
+                message: line.slice(0, 200)
+              };
+            }
           } catch {
           }
           return original(...args);

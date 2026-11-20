@@ -349,6 +349,18 @@ describe('Apple Music lyrics and external playback', () => {
         expect(status.ended).toBe(false);
     });
 
+    // 页面一条错也没给、只是起播后一直没有音频：也报上去，界面按「未返回音频」处理。
+    it('reports a start that delivered no media data as unplayable', async () => {
+        const data: Record<string, unknown> = {
+            itemId: '', catalogId: '', isPlaying: false, state: 4, positionMs: 0, durationMs: 0,
+            playError: { at: Date.now(), ageMs: 12000, mkCode: '', reason: 'NO_AUDIO_START' },
+        };
+        vi.stubGlobal('window', { electron: { appleMusicRequest: vi.fn(async () => ({ ok: true, data })) } });
+        const external = createAppleMusicProvider(() => ({ configured: true })).externalPlayback!;
+        await external.play(song, 0);
+        await expect(external.getStatus(song)).resolves.toMatchObject({ unplayable: 'no-audio' });
+    });
+
     it('keeps an already prepared handoff when an edit arrives after native advancement', async () => {
         let data = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 179000, durationMs: 180000 };
         let stale = false;

@@ -56,7 +56,9 @@ export function useExternalPlaybackBridge({ handleNextTrack, skipAfterPlaybackFa
                 const song = usePlaybackStore.getState().currentSong;
                 const providerId = song?.sourceRef?.kind === 'online' ? song.sourceRef.providerId : undefined;
                 latestRef.current.skipAfterPlaybackFailure(
-                    onlineFailureOf({ operation: 'audio', providerId }, { detail: { case: 'content-restricted' } }),
+                    onlineFailureOf({ operation: 'audio', providerId }, {
+                        detail: { case: event.reason === 'no-audio' ? 'no-audio' : 'content-restricted' },
+                    }),
                 );
                 return;
             }

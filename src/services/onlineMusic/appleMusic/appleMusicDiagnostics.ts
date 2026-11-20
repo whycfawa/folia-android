@@ -179,7 +179,8 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
         lines.push(`  play error: code=${text(playError.mkCode, '(none)')}`
             + ` reason=${text(playError.reason, '(none)')}`
             + ` name=${text(playError.name, '(none)')}`
-            + ` ageMs=${count(playError.ageMs)}`);
+            + ` ageMs=${count(playError.ageMs)}`
+            + ` message=${String(text(playError.message, '(none)')).slice(0, 80)}`);
     } else {
         lines.push('  play error: (none)');
     }
