@@ -29,3 +29,19 @@ export const noteExternalPlaybackSnapshot = (value: ExternalPlaybackSnapshot | n
 };
 
 export const readExternalPlaybackSnapshot = (): ExternalPlaybackSnapshot | null => snapshot;
+
+/** 最近一次判「这首歌结束了」的依据：报告里能看出是哪一条误判把歌跳了过去。 */
+export type ExternalPlaybackEnd = {
+    atMs: number;
+    reason: string;
+    positionSec: number;
+    durationSec: number | null;
+};
+
+let lastEnd: ExternalPlaybackEnd | null = null;
+
+export const noteExternalPlaybackEnd = (value: ExternalPlaybackEnd): void => {
+    lastEnd = value;
+};
+
+export const readExternalPlaybackEnd = (): ExternalPlaybackEnd | null => lastEnd;

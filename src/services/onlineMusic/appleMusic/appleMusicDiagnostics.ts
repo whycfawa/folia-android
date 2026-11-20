@@ -2,7 +2,7 @@
 // Apple Music 在 Android 上的播放现场：最近一次起播的结论，加上伴随 WebView 里那份页面的自述。
 // 只写阶段名、布尔值、状态码、长度和计数；歌曲 id、账号、cookie 和地址都不进报告。
 
-import { readExternalPlaybackSnapshot } from '../externalPlaybackDiagnostics';
+import { readExternalPlaybackEnd, readExternalPlaybackSnapshot } from '../externalPlaybackDiagnostics';
 
 export type AppleMusicPlayAttempt = {
     at: number;
@@ -149,6 +149,17 @@ export const readAppleMusicDiagnosticLines = async (): Promise<string[]> => {
         + ` volume=${count(player?.volume)} queue=${count(player?.queueLength)}@${count(player?.queuePosition)}`
         + ` itemIdLen=${count(player?.itemIdLength)}${stalledText}`);
     lines.push(`  account storefront: ${text(page.accountStorefront, '(unknown)')}`);
+
+    // 「这首歌是怎么被判成播完的」：跳歌抱怨的现场只有这一行能说明是哪条判定。
+    const ended = readExternalPlaybackEnd();
+    if (ended) {
+        lines.push(`  end: at=${new Date(ended.atMs).toISOString()}`
+            + ` reason=${ended.reason}`
+            + ` position=${Math.round(ended.positionSec * 10) / 10}s`
+            + ` duration=${ended.durationSec === null ? 'n/a' : `${Math.round(ended.durationSec * 10) / 10}s`}`);
+    } else {
+        lines.push('  end: (none)');
+    }
 
     const start = asRecord(page.start);
     if (start) {

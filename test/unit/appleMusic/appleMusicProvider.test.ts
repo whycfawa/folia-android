@@ -307,6 +307,21 @@ describe('Apple Music lyrics and external playback', () => {
     });
 
 
+    // 2026-11-20（安卓 .474 报告）：一首放不动的歌，MusicKit 自己走到预备队列的下一首。原先这种
+    // 移动被当成「上一首播完了」，于是这首歌被静默跳过。只有听到结尾附近才算它自己的结束。
+    it('does not take the player leaving an unplayed song for that song end', async () => {
+        let data = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 148300, durationMs: 200000 };
+        vi.stubGlobal('window', { electron: { appleMusicRequest: vi.fn(async () => ({ ok: true, data })) } });
+        const external = createAppleMusicProvider(() => ({ configured: true })).externalPlayback!;
+        await external.play(song, 0);
+        await external.getStatus(song);
+        const next = normalizeAppleMusicSong({ id: '456', type: 'songs', attributes: { name: 'Next' } });
+        await external.prepareNext!(song, [next]);
+        // 51 秒之前就换了歌：这首歌没有播到它的结尾。
+        data = { ...data, itemId: '456', catalogId: '456', isPlaying: true, positionMs: 1200 };
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '456', ended: false, movedOn: true });
+    });
+
     it('keeps an already prepared handoff when an edit arrives after native advancement', async () => {
         let data = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 179000, durationMs: 180000 };
         let stale = false;

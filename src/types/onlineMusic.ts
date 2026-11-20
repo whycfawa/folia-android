@@ -496,6 +496,12 @@ export interface ProviderExternalPlaybackStatus {
      * player (Apple's WebView has done this on DRM buffering). Not an end of the track, not a pause.
      */
     stalled?: boolean;
+    /**
+     * The player left this song for another one before the song was heard to its end (a stream it
+     * could not play, or the page's own queue moving on). Not an end of the track: the route starts
+     * it again instead of skipping it.
+     */
+    movedOn?: boolean;
 }
 
 /**

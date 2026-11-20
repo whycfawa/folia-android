@@ -10,7 +10,7 @@ import { MediaShim } from '../mediaShim';
 import { omni } from './omni';
 import { externalQueueSuccessors } from './externalQueue';
 import { useAudioSettingsStore } from '../../stores/useAudioSettingsStore';
-import { noteExternalPlaybackSnapshot, type ExternalPlaybackSnapshot } from './externalPlaybackDiagnostics';
+import { noteExternalPlaybackEnd, noteExternalPlaybackSnapshot, type ExternalPlaybackSnapshot } from './externalPlaybackDiagnostics';
 
 // src/services/onlineMusic/externalPlayback.ts
 // The playback route for a provider whose audio plays in a player of its own outside this app
@@ -392,8 +392,10 @@ const recoverStalledExternalPlayback = (current: ExternalSession, positionSec: n
     });
 };
 
-const markEnded = (positionSec: number) => {
+const markEnded = (positionSec: number, reason: string) => {
     if (!session || session.ended) return;
+    // Kept for the diagnostics report: which reading ended the song, and where it was heard to.
+    noteExternalPlaybackEnd({ atMs: Date.now(), reason, positionSec, durationSec: session.durationSec });
     if (loopsCurrentTrack()) {
         replayEndedTrack(session);
         return;
@@ -416,6 +418,17 @@ const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number
     if (!current.announced && !status.mediaId) return;
     if (status.mediaId && !omni.isExternalPlaybackStatusForSong(current.song, status)) {
         if (!current.announced) return;
+        // The player went on to another song with this one unheard to its end (a stream it could not
+        // play). That is not the end of this song: start it again here rather than let the next song
+        // sound as if the queue had simply moved on.
+        if (status.movedOn === true) {
+            // Never the listener's doing, so never a pause and never the end: left stopped, or asked
+            // again once the restart it already got has had a stall's worth of time to take.
+            if (current.stallPaused) return;
+            if (sampledAtMs - current.stallActedAtMs < STALL_RECOVER_AFTER_MS) return;
+            recoverStalledExternalPlayback(current, previousSample ?? current.clock.read(), sampledAtMs);
+            return;
+        }
         // The player is on a track this app did not ask for (someone used its own window). Stop it
         // rather than let a song Folia knows nothing about keep sounding under Folia's controls.
         if (!current.foreign) {
@@ -531,7 +544,7 @@ const applyStatus = (status: ProviderExternalPlaybackStatus, sampledAtMs: number
     }
     current.seeking = status.seeking === true;
     if (status.ended || (current.playing && !status.isPlaying && atEnd)) {
-        markEnded(durationSec ?? positionSec);
+        markEnded(durationSec ?? positionSec, status.ended ? 'the player said the song ended' : 'the position reached the end');
         return;
     }
     if (status.isPlaying) {
@@ -895,7 +908,7 @@ export function announceExternalPlayback(): void {
     if (current.ended) {
         // A completed sample before announcement still has to notify the queue exactly once.
         current.ended = false;
-        markEnded(current.clock.read());
+        markEnded(current.clock.read(), 'the player said the song ended before it was shown');
         return;
     }
     // Only an answer from the player itself says it is playing. Without one the transport stays in

@@ -706,6 +706,24 @@ describe('external playback route', () => {
             expect(omniMock.playSongExternally).toHaveBeenCalledTimes(1);
             expect(usePlaybackStore.getState().playerState).toBe(PlayerState.PLAYING);
         });
+
+        // 2026-11-20：一首放不动的歌，MusicKit 自己走到下一首。那不是这首歌结束，不能当成播完跳过去。
+        it('starts the song again when the player leaves it for the next one unheard', async () => {
+            await engine.beginExternalPlayback(song, 0);
+            engine.announceExternalPlayback();
+            const events: string[] = [];
+            const unsubscribe = engine.subscribeExternalPlayback(event => events.push(event.type));
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ positionMs: 30000, isPlaying: true }));
+            await vi.advanceTimersByTimeAsync(3000);
+            expect(engine.getExternalPosition()).toBeGreaterThan(25);
+            omniMock.isExternalPlaybackStatusForSong.mockReturnValue(false);
+            omniMock.getExternalPlaybackStatus.mockResolvedValue(status({ mediaId: '999', positionMs: 1200, isPlaying: true, movedOn: true }));
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(omniMock.playSongExternally).toHaveBeenLastCalledWith(song, 27);
+            expect(events).not.toContain('ended');
+            expect(events).not.toContain('foreign-track');
+            unsubscribe();
+        });
     });
 
     // Two providers play through players of their own (the companion, Spotify's Soloist): a song of
