@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ThemedDialog from '../shared/ThemedDialog';
 import { SheetButton } from '../shared/Sheet';
+import { useSettingsKitTheme } from '../modal/settings/kit/kitTheme';
 import { useAppUpdateStore } from '../../stores/useAppUpdateStore';
 
 // src/components/appUpdate/UpdateDialog.tsx
@@ -15,6 +16,7 @@ const formatBytes = (bytes: number): string => {
 
 const UpdateDialog: React.FC = () => {
     const { t } = useTranslation();
+    const { isDaylight } = useSettingsKitTheme();
     const { status, update, promptVisible, progress, error, dismiss, download, install, openInstallSettings } = useAppUpdateStore();
     const open = Boolean(update) && promptVisible && status !== 'idle' && status !== 'checking';
     if (!open || !update) return null;
@@ -55,6 +57,7 @@ const UpdateDialog: React.FC = () => {
         <ThemedDialog
             isOpen={open}
             onClose={dismiss}
+            isDaylight={isDaylight}
             title={t('appUpdate.title')}
             description={description}
             size="s"
