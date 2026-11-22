@@ -30,7 +30,6 @@ const SENTINELS = [
     // 网易云探索页路由 / 安卓桥登录
     'explore:route',
     'explore:daily:source',
-    'explore:first',
     'daily:read',
     'ne:qr:key:start',
     // 播放失败可见化
@@ -51,6 +50,30 @@ for (let index = 2; index < process.argv.length; index += 1) {
 const sentinels = [...SENTINELS, ...extra];
 
 const readText = (file) => readFileSync(file, 'utf8');
+
+// Tailwind v4 默认把断点写成媒体查询区间语法（`@media (width >= 48rem)`），Chromium 104 才支持。
+// 旧 Android System WebView 会把整档规则静默丢掉，JS 的 matchMedia 却照常匹配，布局两半裂开
+// （横屏设置弹窗整页空白就是这么来的）。构建里已经改写成经典语法，这里守住不让它再漏出来。
+// 判定和构建插件共用一套：媒体/容器查询参数里只要出现比较符号就算不合法。
+const AT_RULE_PARAMS = /@(?:media|container)\b[^{;]*/g;
+
+const findRangeQueries = (css) => (css.match(AT_RULE_PARAMS) ?? []).filter(params => /[<>]/.test(params));
+
+const scanCssForRangeQueries = (root) => {
+    if (!existsSync(root)) return null;
+    const offenders = [];
+    const walk = (directory) => {
+        for (const entry of readdirSync(directory, { withFileTypes: true })) {
+            const path = join(directory, entry.name);
+            if (entry.isDirectory()) { walk(path); continue; }
+            if (!entry.name.endsWith('.css')) continue;
+            const hits = findRangeQueries(readText(path));
+            if (hits.length > 0) offenders.push({ path, hits });
+        }
+    };
+    walk(root);
+    return offenders;
+};
 
 const scanRoot = (root) => {
     if (!existsSync(root)) return { root, missing: sentinels, files: 0 };
@@ -81,6 +104,23 @@ for (const root of ROOTS) {
         failed = true;
         console.error(`[verify-android] ❌ ${root}（${result.files} 个 js，缺 ${result.missing.length} 个标记）`);
         for (const missing of result.missing) console.error(`  - ${missing}`);
+    }
+}
+
+for (const root of ROOTS) {
+    const offenders = scanCssForRangeQueries(root);
+    if (offenders === null) {
+        failed = true;
+        console.error(`[verify-android] ❌ ${root}（目录不存在，没法核对 css）`);
+    } else if (offenders.length === 0) {
+        console.log(`[verify-android] ✅ ${root}（css 里没有区间语法的媒体查询）`);
+    } else {
+        failed = true;
+        console.error(`[verify-android] ❌ ${root}（css 里还有区间语法的媒体查询，旧 WebView 会整档丢弃）`);
+        for (const offender of offenders) {
+            console.error(`  - ${offender.path}`);
+            for (const hit of offender.hits.slice(0, 3)) console.error(`      ${hit}`);
+        }
     }
 }
 

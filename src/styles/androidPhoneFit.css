@@ -8,7 +8,11 @@
 
 html[data-folia-phone-fit='true'] [data-folia-app-shell] {
   width: 100%;
+  /* 旧 Android System WebView（Chromium 99）不认 dvh：上一行 vh 是它的兜底，
+     认得 dvh 的浏览器会因为后一行覆盖而用 dvh。 */
+  height: 100vh;
   height: 100dvh;
+  max-height: 100vh;
   max-height: 100dvh;
 }
 
@@ -62,10 +66,36 @@ html[data-folia-phone-fit='true'] [data-folia-settings-overlay] {
     max(6px, env(safe-area-inset-left));
 }
 
+/* 手机适配下弹窗的骨架自己定，不再借上游的 `md:grid`。
+ *
+ * 上游那颗类同时管 display、grid-template-columns 和宽度；只要 `md:` 那一档媒体查询被判掉
+ * （旧 Android System WebView 不认 `@media (width >= 48rem)` 的区间语法，整档直接丢弃），
+ * 面板就退回 flex 单列，而 JS 的 matchMedia('(min-width: 768px)') 照样匹配、仍然渲染左侧栏 ——
+ * aside 的 w-full 占满整块面板，右侧内容列高度归零，横屏设置弹窗整页空白（0.7.29-android.473）。
+ *
+ * 这里用和 JS 同一个阈值（768px，经典语法）自己写骨架：窄档竖排（紧凑导航 + 内容），
+ * 宽档两栏（212px 侧栏 + 内容）。选择器比 `.md\:grid` 具体，两档都不会打架。
+ */
+html[data-folia-phone-fit='true'] [data-folia-settings-panel] {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  html[data-folia-phone-fit='true'] [data-folia-settings-panel] {
+    display: grid;
+    grid-template-columns: 212px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
 html[data-folia-phone-fit='true'] [data-folia-settings-panel] {
   width: 100% !important;
   max-width: 100% !important;
+  /* 同上：vh 兜底 dvh（Chromium 99 不认 dvh，会让整条声明失效）。 */
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
   height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
+  max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
   max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
   min-height: 0;
   padding: 14px !important;
@@ -99,6 +129,7 @@ html[data-folia-phone-fit='true'] [data-folia-themed-overlay] {
 html[data-folia-phone-fit='true'] [data-folia-themed-dialog] {
   width: 100% !important;
   max-width: 100% !important;
+  max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
   max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px) !important;
   overflow-y: auto;
   padding: 16px !important;
@@ -495,6 +526,7 @@ html[data-folia-phone-fit='true'] [data-folia-audio-effects] .grid {
 html[data-folia-phone-fit='true'][data-folia-phone-orientation='landscape'] [data-folia-themed-dialog-kind='playlist-selection'] {
   width: min(64vw, 26rem) !important;
   max-width: min(64vw, 26rem) !important;
+  max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px) !important;
   max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px) !important;
   padding: 10px !important;
 }
@@ -504,6 +536,7 @@ html[data-folia-phone-fit='true'][data-folia-phone-orientation='landscape'] [dat
 }
 
 html[data-folia-phone-fit='true'][data-folia-phone-orientation='landscape'] [data-folia-playlist-list='true'] {
+  max-height: min(36vh, 190px);
   max-height: min(36dvh, 190px);
 }
 

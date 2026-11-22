@@ -5,7 +5,7 @@
 <div align="center">
 <a href="https://trendshift.io/repositories/71740?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-71740" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/71740" alt="chthollyphile%2Ffolia-major | Trendshift" width="250" height="55"/></a>
 
-# Folia
+# Folia for Android
 
 Lyrics Reimagined // 辞曲新境
 
@@ -30,6 +30,13 @@ Lyrics Reimagined // 辞曲新境
 [技术说明](docs/technical.md)
 
 </div>
+
+> [!IMPORTANT]
+> **本仓库是 Folia 的非官方 Android 移植 fork，与上游作者无关。**
+>
+> - 上游项目：[chthollyphile/folia-major](https://github.com/chthollyphile/folia-major)
+> - 本仓库基于上游项目进行 Android 移植和维护，包含 Capacitor Android 容器、平台桥、后台播放、锁屏媒体控制与本地音乐等 Android 功能。
+> - 本仓库仍按上游项目的 **AGPL-3.0** 许可证发布，第三方组件与许可见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
 
 ## 项目简介
 
