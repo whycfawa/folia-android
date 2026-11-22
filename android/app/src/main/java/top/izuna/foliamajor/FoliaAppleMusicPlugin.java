@@ -120,7 +120,7 @@ public class FoliaAppleMusicPlugin extends Plugin {
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
-        settings.setSupportMultipleWindows(true);
+        settings.setSupportMultipleWindows(false);
         settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         // Apple's sign-in and its player read cookies from more than the top-level origin.
         CookieManager.getInstance().setAcceptCookie(true);
