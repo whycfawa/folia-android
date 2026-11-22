@@ -17,12 +17,14 @@ import {
 } from '../services/appUpdate/appUpdateInstaller';
 import { appUpdateEndpoint } from '../services/appUpdate/appUpdateClient';
 import { noteAppUpdateDiagnostics } from '../services/appUpdate/appUpdateDiagnostics';
+import { getStoredBoolean, setStoredBoolean } from './storagePrimitives';
 
 // src/stores/useAppUpdateStore.ts
-// 应用内更新：启动后查一次、之后每 6 小时查一次；弹窗的打开与下载安装状态都在这。
+// 应用内更新：每次启动检查 GitHub Release，之后每 6 小时查一次；弹窗的打开与下载安装状态都在这。
 // 版本号取自安装包本身（原生插件），不解析界面上的版本名。
 
 const SKIPPED_KEY = 'app_update_skipped_version';
+const PROMPT_ENABLED_KEY = 'app_update_prompt_enabled';
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const START_DELAY_MS = 5000;
 
@@ -35,8 +37,11 @@ type AppUpdateState = {
     progress: number;
     error: string | null;
     manualResult: 'up-to-date' | 'failed' | null;
+    promptEnabled: boolean;
+    promptVisible: boolean;
     check: (manual: boolean) => Promise<void>;
     dismiss: () => void;
+    setPromptEnabled: (enabled: boolean) => void;
     download: () => Promise<void>;
     install: () => Promise<void>;
     openInstallSettings: () => Promise<void>;
@@ -79,6 +84,8 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     progress: 0,
     error: null,
     manualResult: null,
+    promptEnabled: getStoredBoolean(PROMPT_ENABLED_KEY, true),
+    promptVisible: false,
 
     async check(manual) {
         if (checking) return;
@@ -103,7 +110,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
             const installed = await resolveInstalledVersion();
             noteAppUpdateDiagnostics({ installed });
             if (!installed) throw new Error('installed version unavailable');
-            const info = await fetchAppUpdateInfo(installed.versionCode);
+            const info = await fetchAppUpdateInfo(installed.versionCode, { currentVersionName: installed.versionName });
             noteAppUpdateDiagnostics({
                 lastCheck: {
                     at: new Date().toISOString(),
@@ -118,16 +125,16 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
                 // 手动检查时不受「以后再说」影响。
                 skippedVersionCode: manual ? null : readSkippedVersion(),
             });
-            if (info && (decision === 'offer' || decision === 'forced')) {
+            if (info && decision === 'offer') {
                 console.info('[AppUpdate] update available', {
                     installed: installed.versionCode,
                     available: info.versionCode,
                     decision,
                 });
-                set({ status: 'available', update: info, decision, progress: 0 });
+                set({ status: 'available', update: info, decision, progress: 0, promptVisible: manual || get().promptEnabled });
                 return;
             }
-            set({ status: 'idle', update: null, decision: 'none', manualResult: manual ? 'up-to-date' : null });
+            set({ status: 'idle', update: null, decision: 'none', promptVisible: false, manualResult: manual ? 'up-to-date' : null });
         } catch (error) {
             console.warn('[AppUpdate] check failed', error);
             noteAppUpdateDiagnostics({
@@ -148,7 +155,12 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     dismiss() {
         const { update, decision } = get();
         if (update && decision === 'offer') writeSkippedVersion(update.versionCode);
-        set({ status: 'idle', update: null, decision: 'none', progress: 0, error: null });
+        set({ status: 'idle', update: null, decision: 'none', promptVisible: false, progress: 0, error: null });
+    },
+
+    setPromptEnabled(enabled) {
+        setStoredBoolean(PROMPT_ENABLED_KEY, enabled);
+        set({ promptEnabled: enabled });
     },
 
     async download() {
@@ -156,7 +168,13 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
         if (!update || status === 'downloading') return;
         set({ status: 'downloading', progress: 0, error: null });
         try {
-            await downloadApk(update.apkUrl, percent => set({ progress: percent }));
+            try {
+                await downloadApk(update.apkUrl, percent => set({ progress: percent }));
+            } catch (proxyError) {
+                if (!update.fallbackApkUrl) throw proxyError;
+                console.warn('[AppUpdate] proxy download failed, retrying GitHub', proxyError);
+                await downloadApk(update.fallbackApkUrl, percent => set({ progress: percent }));
+            }
             set({ status: 'downloaded', progress: 100 });
             console.info('[AppUpdate] download finished', { versionCode: update.versionCode });
         } catch (error) {
@@ -177,6 +195,9 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
         try {
             await installApk();
             console.info('[AppUpdate] install requested', { versionCode: update.versionCode });
+            // 插件成功表示已调起系统安装器，不代表用户已经确认安装；保留下载结果，
+            // 这样用户取消或返回时弹窗仍有可操作的“安装”按钮，而不会卡在安装中。
+            set({ status: 'downloaded' });
         } catch (error) {
             console.warn('[AppUpdate] install failed', error);
             set({ status: 'failed', error: error instanceof Error ? error.message : String(error) });

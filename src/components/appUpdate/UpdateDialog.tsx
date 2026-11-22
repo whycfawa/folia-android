@@ -5,8 +5,7 @@ import { SheetButton } from '../shared/Sheet';
 import { useAppUpdateStore } from '../../stores/useAppUpdateStore';
 
 // src/components/appUpdate/UpdateDialog.tsx
-// 应用内更新弹窗。外框用项目共享的 ThemedDialog/Sheet：Esc、焦点、主题和明暗都在那里；
-// 强制更新时把关闭路径整条禁掉，用户只剩「下载并安装」。
+// 应用内更新弹窗直接复用项目共享的 ThemedDialog/Sheet，与其他确认提示保持同一套布局和主题变量。
 
 const formatBytes = (bytes: number): string => {
     if (!Number.isFinite(bytes) || bytes <= 0) return '';
@@ -16,21 +15,20 @@ const formatBytes = (bytes: number): string => {
 
 const UpdateDialog: React.FC = () => {
     const { t } = useTranslation();
-    const { status, update, decision, progress, error, dismiss, download, install, openInstallSettings } = useAppUpdateStore();
-    const open = Boolean(update) && status !== 'idle' && status !== 'checking';
+    const { status, update, promptVisible, progress, error, dismiss, download, install, openInstallSettings } = useAppUpdateStore();
+    const open = Boolean(update) && promptVisible && status !== 'idle' && status !== 'checking';
     if (!open || !update) return null;
 
-    const forced = decision === 'forced';
     const size = formatBytes(update.size);
     const description = t('appUpdate.versionLine', { version: update.versionName }) + (size ? ' · ' + size : '');
 
     const footer = (
         <>
-            {status === 'available' && !forced && (
-                <SheetButton onClick={dismiss}>{t('appUpdate.later')}</SheetButton>
+            {status === 'available' && (
+                <SheetButton onClick={dismiss}>{t('appUpdate.skipVersion')}</SheetButton>
             )}
             {status === 'available' && (
-                <SheetButton variant="primary" onClick={() => void download()}>{t('appUpdate.download')}</SheetButton>
+                <SheetButton variant="primary" onClick={() => void download()}>{t('appUpdate.updateNow')}</SheetButton>
             )}
             {status === 'downloaded' && (
                 <SheetButton variant="primary" onClick={() => void install()}>{t('appUpdate.install')}</SheetButton>
@@ -51,23 +49,19 @@ const UpdateDialog: React.FC = () => {
         ? t('appUpdate.downloading', { percent: Math.round(progress) })
         : status === 'installing'
             ? t('appUpdate.installing')
-            : forced
-                ? t('appUpdate.forcedHint')
-                : undefined;
+            : undefined;
 
     return (
         <ThemedDialog
             isOpen={open}
             onClose={dismiss}
-            closeDisabled={forced}
-            closeDisabledTitle={forced ? t('appUpdate.forcedHint') : undefined}
-            title={forced ? t('appUpdate.titleForced') : t('appUpdate.title')}
+            title={t('appUpdate.title')}
             description={description}
-            size="m"
+            size="s"
             footer={footer}
             footerNote={footerNote}
         >
-            <div className="max-h-[38vh] overflow-y-auto whitespace-pre-wrap break-words text-[13px] leading-[21px] text-[color:var(--st-t2)]">
+            <div className="max-h-[38vh] overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-[color:var(--st-t2)]">
                 {update.notes.trim() || t('appUpdate.noNotes')}
             </div>
             {status === 'downloading' && (

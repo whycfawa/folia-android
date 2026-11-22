@@ -23,6 +23,10 @@ const COOKIE_BATCH_TIMEOUT_MS = 8000;
 const COOKIE_CACHE_TTL_MS = 1500;
 
 const API_HOSTS = [
+  // 更新清单通过 GitHub API 与公共镜像获取；Android WebView 不依赖目标站点的 CORS 头。
+  'api.github.com',
+  'gh-proxy.org',
+  'github.com',
   'music.163.com',
   'interface.music.163.com',
   'interface3.music.163.com',

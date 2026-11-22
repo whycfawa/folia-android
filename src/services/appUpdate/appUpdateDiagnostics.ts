@@ -19,7 +19,7 @@ export type AppUpdateDiagnostics = {
 };
 
 const state: AppUpdateDiagnostics = {
-    endpoint: '',
+    endpoint: 'https://api.github.com/repos/whycfawa/folia-android/releases/latest',
     configured: false,
     installer: 'unchecked',
     installed: null,

@@ -69,7 +69,7 @@ const AppOverlays: React.FC<AppOverlaysProps> = ({ model }) => {
             {/* The one HiFi signal-path sheet: the badge, the controls tab tile and the palette command open it through hifiPanelStore. */}
             <HifiSignalPathPanel />
 
-            {/* 自建更新服务的弹窗：有可安装的新版本时才出现。 */}
+            {/* GitHub Release 更新弹窗：发现新版本且开启提示时出现。 */}
             <UpdateDialog />
 
             {/* 性能检测在安卓上的全屏浮层：桌面上走独立窗口，这里什么都不画。 */}

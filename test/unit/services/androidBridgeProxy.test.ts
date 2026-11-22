@@ -9,6 +9,15 @@ import { isBridgedApiUrl, resolveBridgedRequestUrl } from '@/services/nativeAndr
 // 都是静默失败。这里锁住「同源代理请求解回真实地址交给原生」这条规则，以及它只认同源。
 
 describe('resolveBridgedRequestUrl', () => {
+    it('routes update metadata and GitHub assets through the native bridge', () => {
+        expect(resolveBridgedRequestUrl('https://gh-proxy.org/https://api.github.com/repos/whycfawa/folia-android/releases/latest'))
+            .toBe('https://gh-proxy.org/https://api.github.com/repos/whycfawa/folia-android/releases/latest');
+        expect(resolveBridgedRequestUrl('https://api.github.com/repos/whycfawa/folia-android/releases/latest'))
+            .toBe('https://api.github.com/repos/whycfawa/folia-android/releases/latest');
+        expect(resolveBridgedRequestUrl('https://github.com/whycfawa/folia-android/releases/download/v0.7.29-android.487/Folia.apk'))
+            .toBe('https://github.com/whycfawa/folia-android/releases/download/v0.7.29-android.487/Folia.apk');
+    });
+
     it('passes whitelisted hosts straight through', () => {
         expect(resolveBridgedRequestUrl('https://u.y.qq.com/cgi-bin/musicu.fcg?format=json'))
             .toBe('https://u.y.qq.com/cgi-bin/musicu.fcg?format=json');

@@ -24,7 +24,7 @@ import { useAppUpdateStore } from '../../../../stores/useAppUpdateStore';
 
 const LANGUAGE: SettingsGroupDef = { id: 'languageSettings', titleKey: 'options.languageSettings' };
 const LAUNCH: SettingsGroupDef = { id: 'labWindowAndTools', titleKey: 'options.settingsHeadingLaunch' };
-const UPDATE: SettingsGroupDef = { id: 'updateCheck', titleKey: 'options.updateCheck', electronOnly: true };
+const UPDATE: SettingsGroupDef = { id: 'updateCheck', titleKey: 'options.updateCheck' };
 const PONDER: SettingsGroupDef = { id: 'ponderHints', titleKey: 'options.ponderHints' };
 // Android 外壳：只有 Capacitor WebView 里这些开关才有意义（桌面上整组不渲染）。
 const ANDROID_SHELL: SettingsGroupDef = { id: 'androidShell', titleKey: 'options.settingsHeadingAndroid' };
@@ -34,9 +34,10 @@ const O = {
     autoPlay: option(LAUNCH, 'autoPlayOnLaunch', 'options.autoPlayOnLaunch'),
     openPlayer: option(LAUNCH, 'openPlayerOnLaunch', 'options.openPlayerOnLaunch', { electronOnly: true }),
     titlebarButtons: option(LAUNCH, 'alwaysShowMainWindowTitlebar', 'options.alwaysShowMainWindowTitlebar'),
-    updateCheck: option(UPDATE, 'enableUpdateCheck', 'options.enableUpdateCheck'),
-    autoUpdate: option(UPDATE, 'enableAutoUpdate', 'options.enableAutoUpdate'),
-    updateChannel: option(UPDATE, 'updateChannel', 'options.updateChannel'),
+    updateCheck: option(UPDATE, 'enableUpdateCheck', 'options.enableUpdateCheck', { electronOnly: true }),
+    androidUpdatePrompt: option(UPDATE, 'appUpdatePromptEnabled', 'appUpdate.promptEnabled'),
+    autoUpdate: option(UPDATE, 'enableAutoUpdate', 'options.enableAutoUpdate', { electronOnly: true }),
+    updateChannel: option(UPDATE, 'updateChannel', 'options.updateChannel', { electronOnly: true }),
     ponderHints: option(PONDER, 'ponderHintVisibility', 'options.ponderHints'),
     ponderTouchButton: option(PONDER, 'ponderTouchButton', 'options.ponderTouchButton'),
     androidAdaptiveDisplay: option(ANDROID_SHELL, 'adaptiveDisplay', 'options.adaptiveDisplay'),
@@ -44,7 +45,6 @@ const O = {
     androidPhoneFit: option(ANDROID_SHELL, 'phoneFit', 'options.phoneFit'),
     androidOrientation: option(ANDROID_SHELL, 'orientationFit', 'options.orientationFit'),
     androidNativeStage: option(ANDROID_SHELL, 'nativeStage', 'options.nativeStage'),
-    androidAppUpdate: option(ANDROID_SHELL, 'appUpdateCheck', 'appUpdate.checkNow'),
 };
 
 export const OPTIONS: SettingsOptionDef[] = Object.values(O);
@@ -68,6 +68,8 @@ const GeneralPage: React.FC = () => {
     const setNativeStageEnabled = useDesktopSettingsStore(state => state.handleToggleNativeStage);
     const appUpdateStatus = useAppUpdateStore(state => state.status);
     const appUpdateManualResult = useAppUpdateStore(state => state.manualResult);
+    const appUpdatePromptEnabled = useAppUpdateStore(state => state.promptEnabled);
+    const setAppUpdatePromptEnabled = useAppUpdateStore(state => state.setPromptEnabled);
     const checkAppUpdate = useAppUpdateStore(state => state.check);
     const appUpdateLabel = appUpdateStatus === 'checking'
         ? t('appUpdate.checking')
@@ -168,11 +170,6 @@ const GeneralPage: React.FC = () => {
                     <Row option={O.androidNativeStage} hint={t('options.nativeStageDesc')} note={t('options.nativeStageDescSub')}>
                         <Toggle checked={nativeStageEnabled} onChange={setNativeStageEnabled} />
                     </Row>
-                    <Row option={O.androidAppUpdate} hint={t('appUpdate.checkNowHint')}>
-                        <Button variant="quiet" icon={RefreshCw} onClick={() => void checkAppUpdate(true)} disabled={appUpdateStatus === 'checking'}>
-                            {appUpdateLabel}
-                        </Button>
-                    </Row>
                     <AnalysisModelsGroup />
                     {phoneFitEnabled && (
                         <Row option={O.androidOrientation} hint={t('options.orientationFitDesc')}>
@@ -188,57 +185,61 @@ const GeneralPage: React.FC = () => {
                     )}
                 </Group>
             )}
-            {isElectron && (
+            {(isElectron || IS_ANDROID_WEBVIEW) && (
                 <Group
                     def={UPDATE}
-                    // The state of the check; pressing it checks again.
                     action={(
                         <Button
                             variant="quiet"
                             icon={RefreshCw}
-                            onClick={() => void update.onCheckForUpdates()}
-                            disabled={!electronSettings.ENABLE_UPDATE_CHECK || !updateStatus?.updateCheckSupported || updateStatus?.status === 'checking'}
+                            onClick={() => void (isElectron ? update.onCheckForUpdates() : checkAppUpdate(true))}
+                            disabled={isElectron
+                                ? (!electronSettings.ENABLE_UPDATE_CHECK || !updateStatus?.updateCheckSupported || updateStatus?.status === 'checking')
+                                : appUpdateStatus === 'checking'}
                         >
-                            {update.updateBadgeLabel}
+                            {isElectron ? update.updateBadgeLabel : appUpdateLabel}
                         </Button>
                     )}
-                    foot={t(autoUpdateSupported ? 'options.autoUpdateGithubNotice' : 'options.updateCheckGithubNotice')}
+                    foot={isElectron ? t(autoUpdateSupported ? 'options.autoUpdateGithubNotice' : 'options.updateCheckGithubNotice') : t('appUpdate.checkNowHint')}
                 >
-                    <FoundUpdateRow />
-                    <ChinaDrivesRow />
-                    <Row
-                        option={O.updateCheck}
-                        hint={t(updateStatus?.updateCheckSupportReason === 'channel' ? 'options.updateUnsupportedChannel' : 'options.enableUpdateCheckDesc')}
-                        disabled={!updateStatus?.updateCheckSupported}
-                    >
-                        <Toggle checked={electronSettings.ENABLE_UPDATE_CHECK} onChange={() => void update.onToggleUpdateCheck()} />
-                    </Row>
-                    <Reveal when={electronSettings.ENABLE_UPDATE_CHECK}>
-                        {/* Kept in view where the app cannot update itself: the reason is under the label. */}
+                    {isElectron ? <>
+                        <FoundUpdateRow />
+                        <ChinaDrivesRow />
                         <Row
-                            sub
-                            option={O.autoUpdate}
-                            hint={t(autoUpdateSupported
-                                ? 'options.enableAutoUpdateDesc'
-                                : updateStatus?.autoUpdateSupportReason === 'system' ? 'options.updateUnsupportedSystem' : 'options.manualUpdateOnlyDesc')}
-                            disabled={!update.canEnableAutoUpdate}
+                            option={O.updateCheck}
+                            hint={t(updateStatus?.updateCheckSupportReason === 'channel' ? 'options.updateUnsupportedChannel' : 'options.enableUpdateCheckDesc')}
+                            disabled={!updateStatus?.updateCheckSupported}
                         >
-                            <Toggle checked={electronSettings.ENABLE_AUTO_UPDATE && autoUpdateSupported} onChange={() => void update.onToggleAutoUpdate()} />
+                            <Toggle checked={electronSettings.ENABLE_UPDATE_CHECK} onChange={() => void update.onToggleUpdateCheck()} />
                         </Row>
-                    </Reveal>
-                    <Row option={O.updateChannel} disabled={isInternalBuild}>
-                        <Select
-                            value={electronSettings.UPDATE_CHANNEL}
-                            options={isInternalBuild
-                                ? [{ value: 'internal', label: t('options.updateChannelInternal') }]
-                                : [
-                                    { value: 'realeco', label: t('options.updateChannelRealeco') },
-                                    { value: 'limo', label: t('options.updateChannelLimo') },
-                                    { value: 'cielo', label: t('options.updateChannelCielo') },
-                                ]}
-                            onChange={channel => void update.onUpdateChannelChange(channel as 'realeco' | 'limo' | 'cielo')}
-                        />
-                    </Row>
+                        <Reveal when={electronSettings.ENABLE_UPDATE_CHECK}>
+                            <Row
+                                sub
+                                option={O.autoUpdate}
+                                hint={t(autoUpdateSupported
+                                    ? 'options.enableAutoUpdateDesc'
+                                    : updateStatus?.autoUpdateSupportReason === 'system' ? 'options.updateUnsupportedSystem' : 'options.manualUpdateOnlyDesc')}
+                                disabled={!update.canEnableAutoUpdate}
+                            >
+                                <Toggle checked={electronSettings.ENABLE_AUTO_UPDATE && autoUpdateSupported} onChange={() => void update.onToggleAutoUpdate()} />
+                            </Row>
+                        </Reveal>
+                        <Row option={O.updateChannel} disabled={isInternalBuild}>
+                            <Select
+                                value={electronSettings.UPDATE_CHANNEL}
+                                options={isInternalBuild
+                                    ? [{ value: 'internal', label: t('options.updateChannelInternal') }]
+                                    : [
+                                        { value: 'realeco', label: t('options.updateChannelRealeco') },
+                                        { value: 'limo', label: t('options.updateChannelLimo') },
+                                        { value: 'cielo', label: t('options.updateChannelCielo') },
+                                    ]}
+                                onChange={channel => void update.onUpdateChannelChange(channel as 'realeco' | 'limo' | 'cielo')}
+                            />
+                        </Row>
+                    </> : <Row option={O.androidUpdatePrompt} hint={t('appUpdate.promptEnabledDesc')}>
+                        <Toggle checked={appUpdatePromptEnabled} onChange={setAppUpdatePromptEnabled} />
+                    </Row>}
                 </Group>
             )}
 
