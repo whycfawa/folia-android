@@ -2215,6 +2215,7 @@ export default {
     "communityQq": "QQ self-help group",
     "communityQqHint": "{{number}} · click to copy",
     "qqGroupNumberCopied": "Group number copied",
+    "officialWebsite": "Official website",
       "copyDiagnostics": "Copy diagnostics",
       "openAppleMusicWindow": "Open the Apple Music window",
       "openAppleMusicWindowDescription": "Apple's own page, full screen, to play a song by hand and see whether the page itself can sound here.",

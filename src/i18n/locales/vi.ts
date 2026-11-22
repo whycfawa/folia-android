@@ -2231,6 +2231,7 @@ export default {
     "communityQq": "Nhóm hỗ trợ QQ",
     "communityQqHint": "{{number}} · nhấp để sao chép",
     "qqGroupNumberCopied": "Đã sao chép số nhóm",
+    "officialWebsite": "Trang web chính thức",
     "releaseNotes": "Có gì mới",
     "releaseNotesDescription": "Xem các thay đổi trong phiên bản này",
     "majorUpdateLabel": "Cập nhật {{codename}} · Bản cập nhật lớn",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideAppUpdate, normalizeGitHubRelease, appUpdateSources, type AppUpdateInfo } from '../../../src/services/appUpdate/appUpdateClient';
+import { decideAppUpdate, extractAndroidIteration, normalizeGitHubRelease, appUpdateSources, type AppUpdateInfo } from '../../../src/services/appUpdate/appUpdateClient';
 
 // test/unit/appUpdate/appUpdateClient.test.ts
 // 更新清单的解析与判定：不可信的字段要丢掉，强制 / 跳过 / 不提示的边界用纯函数钉住。
@@ -41,6 +41,12 @@ describe('normalizeAppUpdate', () => {
 });
 
 describe('decideAppUpdate', () => {
+    it('extracts Android release iterations from version names', () => {
+        expect(extractAndroidIteration('0.7.29-android.488')).toBe(488);
+        expect(extractAndroidIteration('v0.7.29-android.489')).toBe(489);
+        expect(extractAndroidIteration('0.7.29')).toBeNull();
+    });
+
     it('does nothing without an update', () => {
         expect(decideAppUpdate(null, { currentVersionCode: 463, skippedVersionCode: null })).toBe('none');
     });
@@ -54,6 +60,25 @@ describe('decideAppUpdate', () => {
         const next = info({ versionCode: 464 });
         expect(decideAppUpdate(next, { currentVersionCode: 463, skippedVersionCode: null })).toBe('offer');
         expect(decideAppUpdate(next, { currentVersionCode: 463, skippedVersionCode: 464 })).toBe('skip');
+    });
+
+    it('compares release iterations instead of Android versionCode', () => {
+        expect(decideAppUpdate(
+            info({ versionCode: 489, versionName: '0.7.29-android.489' }),
+            {
+                currentVersionCode: 526,
+                currentVersionName: '0.7.29-android.488',
+                skippedVersionCode: null,
+            },
+        )).toBe('offer');
+        expect(decideAppUpdate(
+            info({ versionCode: 488, versionName: '0.7.29-android.488' }),
+            {
+                currentVersionCode: 525,
+                currentVersionName: '0.7.29-android.487',
+                skippedVersionCode: null,
+            },
+        )).toBe('offer');
     });
 
     it('keeps every update optional after a skipped version', () => {

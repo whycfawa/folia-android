@@ -1,12 +1,12 @@
 import React from 'react';
-import { Check, ChevronRight, CircleHelp, ExternalLink, FileDown, FileText, Lightbulb, Loader2, Sparkles, Trash2, Users, type LucideIcon } from 'lucide-react';
+import { Check, ChevronRight, CircleHelp, ExternalLink, FileDown, FileText, Globe, Lightbulb, Loader2, Sparkles, Trash2, Users, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { openPonderNavigation } from '../../../../services/ponder/pagePonderTarget';
 import { BUILD_KIND_TAGS, getBuildKind } from '../../../../utils/buildProvenance';
 import { IS_ANDROID_WEBVIEW, PRIMARY_MODIFIER_LABEL } from '../../../../utils/platform';
 import { QQ_COMMUNITY_GROUP_NUMBER } from '../../../shared/qqCommunity';
 import { HELP_TAB_PLAYER_CONTROLS, HELP_TAB_PRIMARY_SHORTCUTS } from '../../userGuideContent';
-import { Button, CopyButton, CopyValue, Group, Keys, Row, type SettingsGroupDef } from '../kit';
+import { Button, CopyButton, CopyValue, Group, Keys, Row, Value, type SettingsGroupDef } from '../kit';
 import { openOutsideLink } from '../../../../utils/system/outsideLink';
 import { FoundUpdateRow } from './FoundUpdateRow';
 import { ChinaDrivesRow } from './ChinaDrivesRow';
@@ -25,6 +25,8 @@ import { copyText } from '../../../../utils/system/clipboard';
 
 const REPOSITORY_URL = 'https://github.com/whycfawa/folia-android';
 const REPOSITORY_NAME = 'whycfawa/folia-android';
+const OFFICIAL_WEBSITE_URL = 'https://folia.cnsuiyue.cn';
+const OFFICIAL_WEBSITE_HOST = 'folia.cnsuiyue.cn';
 const BUILD_KIND = getBuildKind();
 const VERSION_INFO = (__DOCKER_STACK_VERSION__
     ? `${__APP_VERSION_LABEL__} v${__APP_VERSION__} · Stack ${__DOCKER_STACK_VERSION__} · ${__COMMIT_HASH__}`
@@ -223,6 +225,9 @@ const HelpPage: React.FC<HelpPageProps> = ({ onOpenReleaseNotes, onOpenAiHelp, o
                 {/* A QQ group has no link that opens it: the row gives its number to copy. */}
                 <Row label={iconLabel(Users, t('help.communityQq'))}>
                     <CopyValue value={QQ_COMMUNITY_GROUP_NUMBER} />
+                </Row>
+                <Row label={iconLabel(Globe, t('help.officialWebsite'))} onClick={() => openOutsideLink(OFFICIAL_WEBSITE_URL)}>
+                    <Value>{OFFICIAL_WEBSITE_HOST}</Value>
                 </Row>
             </Group>
 

@@ -73,6 +73,21 @@ const versionParts = (value: string): [number, number, number, number] | null =>
     return match ? [Number(match[1]), Number(match[2]), Number(match[3]), Number(match[4])] : null;
 };
 
+/**
+ * 从安装包/Release 版本名提取安卓版迭代号。
+ *
+ * Android 的 versionCode 与 Release 迭代号不是同一个计数器（例如
+ * 0.7.29-android.488 的 versionCode 是 526），所以更新判断不能拿两者
+ * 直接比较。版本名里的 `android.N` 才是发布迭代号。
+ */
+export const extractAndroidIteration = (value: string | undefined | null): number | null => {
+    if (typeof value !== 'string') return null;
+    const match = /(?:^|-)android\.(\d+)(?:$|[-+])/i.exec(value.trim());
+    if (!match) return null;
+    const iteration = Number(match[1]);
+    return Number.isSafeInteger(iteration) && iteration >= 0 ? iteration : null;
+};
+
 export const compareAppVersions = (left: string, right: string): number => {
     const a = versionParts(left);
     const b = versionParts(right);
@@ -88,9 +103,12 @@ export const decideAppUpdate = (
     context: { currentVersionCode: number; currentVersionName?: string; skippedVersionCode: number | null },
 ): AppUpdateDecision => {
     if (!info) return 'none';
-    const currentVersion = context.currentVersionName || '';
-    const isNewer = currentVersion
-        ? compareAppVersions(info.versionName, currentVersion) > 0
+    const currentIteration = extractAndroidIteration(context.currentVersionName);
+    const remoteIteration = extractAndroidIteration(info.versionName);
+    // 优先比较 Release 迭代号。它与 APK 的 versionCode 独立，能正确处理
+    // 已安装包 0.7.29-android.488 (versionCode 526) → Release 489。
+    const isNewer = currentIteration !== null && remoteIteration !== null
+        ? remoteIteration > currentIteration
         : info.versionCode > context.currentVersionCode;
     if (!isNewer) return 'none';
     if (context.skippedVersionCode === info.versionCode) return 'skip';

@@ -2215,6 +2215,7 @@ export default {
     "communityQq": "Grup bantuan mandiri QQ",
     "communityQqHint": "{{number}} · klik untuk menyalin",
     "qqGroupNumberCopied": "Nomor grup disalin",
+    "officialWebsite": "Situs web resmi",
       "copyDiagnostics": "Salin diagnostik",
       "openAppleMusicWindow": "Buka jendela Apple Music",
       "openAppleMusicWindowDescription": "Halaman Apple sendiri, layar penuh, untuk memutar lagu secara manual dan melihat apakah halamannya bisa berbunyi di sini.",

@@ -111,19 +111,25 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
             noteAppUpdateDiagnostics({ installed });
             if (!installed) throw new Error('installed version unavailable');
             const info = await fetchAppUpdateInfo(installed.versionCode, { currentVersionName: installed.versionName });
+            const skippedVersionCode = manual ? null : readSkippedVersion();
+            const decision = decideAppUpdate(info, {
+                currentVersionCode: installed.versionCode,
+                currentVersionName: installed.versionName,
+                skippedVersionCode,
+            });
             noteAppUpdateDiagnostics({
                 lastCheck: {
                     at: new Date().toISOString(),
                     status: 'ok',
                     availableVersionCode: info ? info.versionCode : null,
-                    decision: decideAppUpdate(info, { currentVersionCode: installed.versionCode, skippedVersionCode: manual ? null : readSkippedVersion() }),
+                    remoteVersionName: info ? info.versionName : null,
+                    currentVersionCode: installed.versionCode,
+                    currentVersionName: installed.versionName,
+                    skippedVersionCode,
+                    manual,
+                    decision,
                     error: null,
                 },
-            });
-            const decision = decideAppUpdate(info, {
-                currentVersionCode: installed.versionCode,
-                // 手动检查时不受「以后再说」影响。
-                skippedVersionCode: manual ? null : readSkippedVersion(),
             });
             if (info && decision === 'offer') {
                 console.info('[AppUpdate] update available', {
@@ -142,6 +148,11 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
                     at: new Date().toISOString(),
                     status: 'failed',
                     availableVersionCode: null,
+                    remoteVersionName: null,
+                    currentVersionCode: installedVersion?.versionCode ?? 0,
+                    currentVersionName: installedVersion?.versionName ?? '',
+                    skippedVersionCode: readSkippedVersion(),
+                    manual,
                     decision: 'none',
                     error: error instanceof Error ? error.message : String(error),
                 },

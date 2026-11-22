@@ -13,6 +13,11 @@ export type AppUpdateDiagnostics = {
         at: string;
         status: string;
         availableVersionCode: number | null;
+        remoteVersionName: string | null;
+        currentVersionCode: number | null;
+        currentVersionName: string | null;
+        skippedVersionCode: number | null;
+        manual: boolean;
         decision: AppUpdateDecision;
         error: string | null;
     } | null;

@@ -292,6 +292,11 @@ const readAppUpdateLines = (): string[] => {
         ? 'at=' + update.lastCheck.at
             + ' status=' + update.lastCheck.status
             + ' available=' + (update.lastCheck.availableVersionCode ?? 'n/a')
+            + ' remote=' + (update.lastCheck.remoteVersionName ?? 'n/a')
+            + ' current=' + (update.lastCheck.currentVersionCode ?? 'n/a')
+            + ' (' + (update.lastCheck.currentVersionName ?? 'n/a') + ')'
+            + ' skipped=' + (update.lastCheck.skippedVersionCode ?? 'n/a')
+            + ' manual=' + (update.lastCheck.manual ? 'yes' : 'no')
             + ' decision=' + update.lastCheck.decision
             + (update.lastCheck.error ? ' error=' + update.lastCheck.error : '')
         : '(none)';

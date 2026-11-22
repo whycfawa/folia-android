@@ -2215,6 +2215,7 @@ export default {
     "communityQq": "QQ 自助交流群",
     "communityQqHint": "{{number}} · 点击复制群号",
     "qqGroupNumberCopied": "群号已复制",
+    "officialWebsite": "官网网址",
       "copyDiagnostics": "复制诊断数据",
       "openAppleMusicWindow": "打开 Apple Music 窗口",
       "openAppleMusicWindowDescription": "全屏打开 Apple 自己的页面，手动放一首歌，用来区分页面本身能不能出声。",
