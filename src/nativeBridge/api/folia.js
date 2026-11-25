@@ -28,6 +28,7 @@ import {
   handleQQUserPlaylists,
   handleQQPlaylistTracks,
   qqSongDetail,
+  qqSongDetailTrack,
   qqMusicRequest,
   qqGetJSON,
   buildQQAuthComm,
@@ -78,6 +79,7 @@ import {
   handleKGUserPlaylists,
   searchKGLyricCandidates,
   downloadKGLyricByCandidate,
+  fetchKGKrmAudio,
   kgPostAndroidSigned,
   upgradeKGYouthDayVip,
   handleKGEverydayRecommend,
@@ -235,11 +237,33 @@ function kgCollectionRow(item) {
   };
 }
 
-function mergeOperationParams(input, url) {
+/**
+ * 一条桥请求的参数：query + `input.params` + POST 正文。
+ *
+ * androidBridgeFetch 把写入请求的正文 `JSON.stringify` 后放在 `input.body`（字符串），不是对象；
+ * 以前这里只认 `typeof body === 'object'`，QQ 的写入就全都拿到空参数 —— 红心（user_song_like）、
+ * 歌单增删（user_playlist_tracks）、歌单/专辑收藏（user_playlist_subscribe、user_album_subscribe）
+ * 一律回 `UNSUPPORTED`，界面提示「不支持对这首歌这样操作」。字符串正文要按 JSON 解开。
+ * 网易云、酷狗、汽水、波点的写入把参数放在 query 或 `params` 里，不经过这一处。
+ */
+function operationBody(input) {
+  const body = input?.body;
+  if (typeof body === 'string') {
+    try {
+      const parsed = JSON.parse(body);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+  return body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+}
+
+export function mergeOperationParams(input, url) {
   return {
     ...Object.fromEntries(url.searchParams.entries()),
     ...(input?.params || {}),
-    ...(input?.body && typeof input.body === 'object' ? input.body : {}),
+    ...operationBody(input),
   };
 }
 
@@ -670,15 +694,21 @@ async function handleFoliaQqRequest(input, url) {
  *   2. 三条把 id 放在路径里的路由：`/getMusicPlay/<songmid>`、`/getSongListDetail/<disstid>`、
  *      `/getSongInfo/<songmid>[/<songid>]`，桥里叫 music_play / song_list_detail / song_info，
  *      id 从 url 的段里取（见各分支）。
- * 不认这两样，读「我喜欢」、读不公开歌单、解析播放地址就都会落到「桥里没有这条路由」。
+ *   3. 曲库端点用的是上游路径名、provider 用的是领域名：`/getAlbumInfo` → album_info、
+ *      `/getSingerAlbum` → artist_albums、`/getSingerHotsong` → artist_songs。以前没认这三条，
+ *      QQ 的专辑页与歌手页整页失败（Issue #18 截图里的「加载失败 / 0 张专辑」）。
+ * 不认这些，读「我喜欢」、读不公开歌单、解析播放地址、开专辑/歌手页就都会落到「桥里没有这条路由」。
  */
 const QQ_PATH_OPERATIONS = {
   getMusicPlay: 'music_play',
   getSongListDetail: 'song_list_detail',
   getSongInfo: 'song_info',
+  getAlbumInfo: 'album_info',
+  getSingerAlbum: 'artist_albums',
+  getSingerHotsong: 'artist_songs',
 };
 
-function qqOperationOf(operation, segments) {
+export function qqOperationOf(operation, segments) {
   const pathOperation = QQ_PATH_OPERATIONS[String(segments[0] || '')];
   if (pathOperation) return pathOperation;
   return String(operation || '').replace(/-/g, '_');
@@ -838,7 +868,10 @@ async function routeFoliaQqRequest(rawOperation, params, segments, url, cookie) 
   }
   if (operation === 'song_info') {
     const songmid = firstValue(params.songmid, segments[1], segments[0]);
-    const track = await qqSongDetail(songmid, params, cookie);
+    // 原始 track_info 里有嵌套的 album 对象、singer[].mid 与数字 songid；客户端按上游结构读，
+    // 以前回扁平映射会让专辑名变空、songid 变成 mid。拿不到原始体时再退回映射结果。
+    const track = await qqSongDetailTrack(songmid, cookie)
+      || await qqSongDetail(songmid, params, cookie);
     return {
       code: 0,
       response: {
@@ -1243,7 +1276,21 @@ async function handleFoliaKugouRequest(input, url) {
     );
     return { status: 1, error_code: 0, data: { lists: songs, total: songs.length } };
   }
-  if (operation === 'audio' || operation === 'krm_audio') {
+  if (operation === 'krm_audio') {
+    // 歌手 / 专辑跳转要的是 KRM 的目录信息（authors.base.author_id、album_info.album_id）。
+    // 以前这里和 audio 共用一条分支，回的是伪造的播放地址对象，于是客户端永远匹配不上哈希，
+    // 点歌手就报「在线平台未返回有效的目录 ID」。
+    const body = await fetchKGKrmAudio(
+      cookie,
+      firstValue(
+        params.album_audio_id, params.albumAudioId, params.mixsongid, params.MixSongID,
+        params.mix_song_id, params.id,
+      ),
+      params.fields,
+    );
+    return body || { status: 1, error_code: 0, data: [] };
+  }
+  if (operation === 'audio') {
     const hash = String(firstValue(params.hash, params.id)).toLowerCase();
     const info = await handleKGSongUrl(hash, params.album_id, params.album_audio_id, 'standard', cookie, {});
     return {

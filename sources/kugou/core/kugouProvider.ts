@@ -216,7 +216,7 @@ const kugouArtistNameOf = (entry: unknown): string => {
     return '';
 };
 
-/** `id` 只对 singerinfo 是真作者 id；Singers 里的 id 是内部序号，不当 catalogRef。 */
+/** `id` 只对 singerinfo / Singers 是真作者 id；其余数组的通用 id 不当 catalogRef。 */
 const kugouArtistIdOf = (entry: unknown, allowGenericId: boolean): string => {
     const base = kugouArtistBaseOf(entry);
     if (!base) return '';
@@ -233,7 +233,11 @@ const normalizeArtists = (raw: unknown): FoliumSourceNamedRef[] => {
         const value: unknown = valueOf(raw, key);
         if (value === undefined || value === null) continue;
         const list = Array.isArray(value) ? value : [value];
-        const allowGenericId = key === 'singerinfo';
+        // 搜索接口的 `Singers[].id` 实测就是作者 id：周杰伦 = 3520，与 KRM `authors.base.author_id`
+        // 完全一致（2026-11 用匿名 kugoumusicapi 对照过）。之前把它当成内部序号，搜索结果点歌手
+        // 全部落在 ref:false 上。歌单的 `singerinfo[].id` 同样是真的。
+        // `artists` 是安卓桥把歌手压缩成 `{ id, name }` 之后的形状，那里的 id 就是作者 id。
+        const allowGenericId = key === 'singerinfo' || key === 'Singers' || key === 'artists';
         const artists = list
             .map((entry, index): FoliumSourceNamedRef => {
                 const authorId = kugouArtistIdOf(entry, allowGenericId);
@@ -335,7 +339,21 @@ export const normalizeKugouSong = (raw: unknown): FoliumSourceSong => {
     const base = item?.base ?? {};
     const audioInfo = item?.audio_info ?? item?.audioInfo ?? {};
     const hash = hashOf(item);
-    const rawArtists = normalizeArtists(item);
+    let rawArtists = normalizeArtists(item);
+    // 安卓桥把搜索/歌单行压成了扁平 DTO：歌手只剩 `artist` 字符串与 `singerId` 一个 id，
+    // 数组形式的载荷已经没有了。没有 artists 数组时用这一对补回来，否则这些歌的歌手一律 ref:false。
+    if (rawArtists.length === 0 || (rawArtists.length === 1 && rawArtists[0].ref === false)) {
+        const flatName = String(valueOf(item, 'artist', 'SingerName', 'singername', 'author_name') ?? '').trim();
+        const flatId = idText(valueOf(item, 'singerId', 'singerid', 'SingerId', 'artistId')).trim();
+        if (flatName && flatId) {
+            rawArtists = [{
+                id: flatId,
+                name: flatName,
+            }];
+        } else if (rawArtists.length === 0 && flatName) {
+            rawArtists = [{ id: 'kugou-artist-0', name: flatName, ref: false }];
+        }
+    }
     const nestedAlbum = valueOf(item, 'album_info', 'albumInfo', 'albuminfo', 'album') ?? {};
     const albumId = valueOf(item, 'AlbumID', 'album_id', 'albumId')
         ?? valueOf(nestedAlbum, 'album_id', 'albumId')
@@ -555,7 +573,15 @@ type KugouUserCollectionType = 'playlist' | 'album';
 // Distinguishes KuGou's mixed user-library response before normalizing collection ids.
 const getKugouUserCollectionType = (raw: any): KugouUserCollectionType => {
     const source = Number(valueOf(raw, 'source'));
-    return source === 2 || valueOf(raw, 'musiclib_id', 'musicLibId') !== undefined
+    if (source === 2 || valueOf(raw, 'musiclib_id', 'musicLibId') !== undefined) return 'album';
+    // 有些收藏专辑行既没有 `source` 也没有 `musiclib_id`，只剩专辑 id 与专辑名；歌单行不会有专辑 id，
+    // 而专辑行不会带 listid / global_collection_id。两个条件同时成立才按专辑算，避免误判真歌单
+    //（Issue #18：酷狗登录下收藏的专辑被分到「歌单」一栏）。
+    const albumId = valueOf(raw, 'album_id', 'albumid', 'albumId');
+    const playlistId = valueOf(raw, 'global_collection_id', 'globalCollectionId', 'gid', 'listid', 'list_id', 'specialid');
+    const hasAlbumId = albumId !== undefined && albumId !== null && String(albumId).trim() !== '';
+    const hasPlaylistId = playlistId !== undefined && playlistId !== null && String(playlistId).trim() !== '';
+    return hasAlbumId && !hasPlaylistId
         ? 'album'
         : 'playlist';
 };

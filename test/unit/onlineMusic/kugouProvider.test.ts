@@ -293,9 +293,30 @@ describe('kugouProvider', () => {
             },
         });
         expect(song.kgHash).toBe('AB12CD');
-        expect(song.artists[0]).toMatchObject({ id: 'kugou-artist-0', name: '歌手' });
-        expect(song.artists[0].catalogRef).toBeUndefined();
+        // 搜索结果的 Singers[].id 实测就是 author_id（与 KRM 的 authors.base.author_id 一致），
+        // 这样点搜索/歌单里的歌手才不用先等 KRM 解析。
+        expect(song.artists[0]).toMatchObject({ id: '7', name: '歌手' });
+        expect(song.artists[0].catalogRef).toEqual({ providerId: 'kugou', kind: 'artist', id: '7' });
         expect(song.album.catalogRef).toEqual({ providerId: 'kugou', kind: 'album', id: '9' });
+    });
+
+    // 安卓桥交回的是扁平 DTO：歌手只剩 `artist` 与 `singerId`。以前这种歌的歌手一律 ref:false，
+    // 点歌手只能先等 KRM 解析；现在用 `singerId` 直接带上目录 id。
+    it('keeps the artist ref of a flat bridge DTO that only has singerId', () => {
+        const song = normalizeKugouSong({
+            id: 'ab12cd',
+            hash: 'ab12cd',
+            name: '晴天',
+            artist: '周杰伦',
+            singerId: '3520',
+            albumId: '966846',
+            albumAudioId: '32100650',
+        });
+
+        expect(song.artists).toEqual([
+            expect.objectContaining({ id: '3520', name: '周杰伦' }),
+        ]);
+        expect(song.artists[0].catalogRef).toEqual({ providerId: 'kugou', kind: 'artist', id: '3520' });
     });
 
     // 专辑曲目：歌名带后缀，后缀另在 trans_param.songname_suffix，没有 OriSongName（2026-11-05 album_songs 实测）。
@@ -1286,6 +1307,39 @@ describe('kugouProvider', () => {
         ]);
         expect(requestMock).toHaveBeenNthCalledWith(1, 'user_playlist', { userid: 'user', page: 1, pagesize: 50 });
         expect(requestMock).toHaveBeenNthCalledWith(2, 'user_playlist', { userid: 'user', page: 1, pagesize: 50 });
+    });
+
+    // Issue #18：有的收藏专辑既没有 source=2 也没有 musiclib_id，只剩专辑 id；以前会被当歌单塞进「歌单」一栏。
+    it('keeps a collected album without source or musiclib_id out of the playlist list', async () => {
+        requestMock.mockResolvedValue({
+            data: {
+                info: [
+                    {
+                        global_collection_id: 'collection_3_user_1_0',
+                        listid: 11,
+                        type: 0,
+                        name: '自建歌单',
+                        count: 3,
+                    },
+                    {
+                        album_id: 966846,
+                        album_name: '叶惠美',
+                        count: 11,
+                    },
+                ],
+                list_count: 2,
+            },
+        });
+
+        const playlists = await kugouProvider.library?.getUserPlaylists?.('user', 50, 0);
+        const albums = await kugouProvider.library?.getUserAlbums?.('user', 50, 0);
+
+        expect(playlists?.items).toEqual([
+            expect.objectContaining({ id: 'collection_3_user_1_0', type: 'playlist' }),
+        ]);
+        expect(albums?.items).toEqual([
+            expect.objectContaining({ id: '966846', name: '叶惠美', type: 'album' }),
+        ]);
     });
 
     it('only exposes owned non-liked KuGou playlists as add destinations', async () => {

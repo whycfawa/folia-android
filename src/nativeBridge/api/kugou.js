@@ -972,7 +972,8 @@ async function kgPostAndroidSigned(baseURL, urlPath, cookieHeader, bodyData, ext
   cookieHeader = await enrichKGCookieHeader(cookieHeader, opts);
   const userId = kgCookieUserId(cookieHeader);
   const token = kgCookieToken(cookieHeader);
-  if (!userId || !token) return null;
+  // 只读接口（KRM 的 /kmr/v2/audio）匿名也能问：没有登录时按游客签名，别把 token/userid 发成空串。
+  if ((!userId || !token) && !opts.allowAnonymous) return null;
   const mid = await getKGMid(cookieHeader);
   const dfid = kgCookieDfid(cookieHeader) || '-';
   const clienttime = Math.floor(Date.now() / 1000);
@@ -988,8 +989,8 @@ async function kgPostAndroidSigned(baseURL, urlPath, cookieHeader, bodyData, ext
     appid: KG_ANDROID_APPID,
     clientver: KG_ANDROID_CLIENTVER,
     clienttime,
-    token,
-    userid: userId,
+    ...(token ? { token } : {}),
+    ...(userId ? { userid: userId } : {}),
   }, extraParams);
   params.signature = signatureKGAndroidParams(params, bodyJson);
   const qs = Object.keys(params)
@@ -1018,6 +1019,37 @@ async function kgPostAndroidSigned(baseURL, urlPath, cookieHeader, bodyData, ext
   if (opts.responseBytes) return await kgFetchBytes(url, request);
   // trace 透传下去：kgFetchJSON 在响应不是 JSON 时会把状态码与原文头部记进留痕。
   return kgFetchJSON(url, Object.assign({ trace: opts.trace }, request));
+}
+
+/**
+ * KuGouMusicApi `/kmr/v2/audio`：按 album_audio_id（MixSongID）取歌手、专辑与音频信息。
+ *
+ * 歌手主页与专辑页要的是 KRM 的 `authors.base.author_id` / `album_info.album_id`，搜索与歌单
+ * 返回的是另一套字段。之前安卓桥把这个操作当成取播放地址，回了一份伪造的 `{hash,url}`，于是
+ * `resolveKugouSongCatalogRefs` 永远匹配不上，点歌手就报「未返回有效的目录 ID」。
+ */
+export async function fetchKGKrmAudio(cookieHeader, albumAudioId, fields) {
+  const ids = String(albumAudioId || '')
+    .split(',')
+    .map(id => id.trim())
+    .filter(Boolean);
+  if (!ids.length) return null;
+  const body = {
+    data: ids.map(id => {
+      const numeric = Number(id);
+      return { entity_id: Number.isFinite(numeric) && numeric > 0 ? numeric : id };
+    }),
+    fields: fields || 'album_info,authors.base,base,audio_info',
+  };
+  return await kgPostAndroidSigned(
+    'https://openapi.kugou.com',
+    '/kmr/v2/audio',
+    cookieHeader,
+    body,
+    {},
+    { 'x-router': 'openapi.kugou.com', 'kg-tid': '238' },
+    { allowAnonymous: true, trace: 'kg:krm-audio' },
+  );
 }
 
 /**
@@ -1518,13 +1550,34 @@ function mapKGSong(item, fromSearch) {
     || item.ID || '',
   ).trim();
   const fee = extractKGFee(item);
-  const authors = item.authors || item.singerinfo || item.SingerList || item.singers || [];
-  const authorNames = Array.isArray(authors)
-    ? authors.map((a) => stripKGHighlightHtml(a && (a.author_name || a.singername || a.name || a.AuthorName || ''))).filter(Boolean)
-    : [];
-  const authorIds = Array.isArray(authors)
-    ? authors.map((a) => String((a && (a.author_id || a.singerid || a.singer_id || a.id)) || '').trim()).filter(Boolean)
-    : [];
+  // 歌手的真 id 在哪个字段，取决于这份载荷是哪条接口给的：
+  //   authors（KRM / album_songs）→ author_id；
+  //   singerinfo（歌单）→ id；Singers（搜索）→ id，实测就是 author_id（周杰伦 3520，与 KRM 一致），
+  //   所以这两个数组里的通用 id 也可以当目录 id；其余来源仍只认显式的 author_id / singerid。
+  const authorArrays = [
+    ['authors', item.authors, false],
+    ['singerinfo', item.singerinfo, true],
+    ['Singers', item.Singers, true],
+    ['SingerList', item.SingerList, false],
+    ['singers', item.singers, false],
+  ];
+  const authorEntry = authorArrays.find(([, value]) => Array.isArray(value) && value.length > 0);
+  const authors = authorEntry ? authorEntry[1] : [];
+  const authorAllowsGenericId = authorEntry ? authorEntry[2] : false;
+  const authorRefs = (Array.isArray(authors) ? authors : [])
+    .map((a) => {
+      if (!a || typeof a !== 'object') return { id: '', name: stripKGHighlightHtml(a) };
+      const name = stripKGHighlightHtml(a.author_name || a.singername || a.name || a.AuthorName || '');
+      const base = a.base && typeof a.base === 'object' ? a.base : a;
+      const id = String(
+        (base.author_id || base.singerid || base.singer_id
+          || (authorAllowsGenericId ? base.id : '') || a.author_id || a.singerid || '') || '',
+      ).trim();
+      return { id, name };
+    })
+    .filter((artist) => artist.name);
+  const authorNames = authorRefs.map((artist) => artist.name);
+  const authorIds = authorRefs.map((artist) => artist.id).filter(Boolean);
   let rawName = stripKGHighlightHtml(item.SongName || item.songname || item.song_name || '');
   let name = stripKGAudioExt(rawName);
   let artist = stripKGHighlightHtml(
@@ -1563,6 +1616,7 @@ function mapKGSong(item, fromSearch) {
     albumAudioId,
     singerId,
     artistId: singerId,
+    artists: authorRefs,
     name,
     artist,
     album: stripKGHighlightHtml(item.AlbumName || item.album_name || item.album || ''),

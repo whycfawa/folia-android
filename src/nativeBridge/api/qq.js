@@ -495,6 +495,28 @@ async function qqSongDetail(mid, fallback, cookieHeader) {
   return mapQQTrack(data && data.track_info, fallback);
 }
 
+/**
+ * `/getSongInfo` 的原始 `track_info`：歌单补 mid、歌手/专辑跳转解析都读这套字段。
+ *
+ * 桥以前把 `qqSongDetail` 的扁平结果（`album` 是字符串、没有 `singer`、`songid` 被换成 mid）
+ * 当成上游 `track_info` 交给客户端。`normalizeQqSong` 是照上游原始结构写的，于是专辑名会读成空、
+ * 数字 songid 也会变成字符串 mid。这里回原样，别让桥自己再造一份形状。
+ */
+export async function qqSongDetailTrack(mid, cookieHeader) {
+  const songmid = String(mid || '').trim();
+  if (!songmid) return null;
+  const json = await qqMusicRequest({
+    comm: { ct: 24, cv: 0 },
+    songinfo: {
+      module: 'music.pf_song_detail_svr',
+      method: 'get_song_detail_yqq',
+      param: { song_mid: songmid },
+    },
+  }, cookieHeader);
+  const track = json && json.songinfo && json.songinfo.data && json.songinfo.data.track_info;
+  return track && typeof track === 'object' ? track : null;
+}
+
 function mapQQComment(raw) {
   raw = raw || {};
   const user = raw.commentnick || raw.nick || raw.user || {};
