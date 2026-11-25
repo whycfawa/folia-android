@@ -115,6 +115,25 @@ describe('Apple Music lyrics and external playback', () => {
         expect(external.isStatusForSong({ ...song, sourceRef: { kind: 'online', providerId: 'appleMusic', mediaId: 'i.other' } }, status)).toBe(false);
     });
 
+    // 页面说这首放不了（Apple 的 CONTENT_RESTRICTED，或一直没有音频）：原样交给路线，别的一概当没说。
+    it('carries the page refusal of a song to the caller, and nothing else', async () => {
+        let data: Record<string, unknown> = {
+            itemId: '123', catalogId: '123', isPlaying: false, state: 4, positionMs: 0, durationMs: 180000,
+            unplayable: 'content-restricted',
+        };
+        stubAppleMusicBridge(vi.fn(async () => ({ ok: true, data })));
+        const provider = freshAppleMusicProvider();
+        const external = provider.externalPlayback!;
+        await external.play(song);
+        await expect(external.getStatus(song)).resolves.toMatchObject({ unplayable: 'content-restricted' });
+
+        data = { ...data, unplayable: 'no-audio' };
+        await expect(external.getStatus(song)).resolves.toMatchObject({ unplayable: 'no-audio' });
+
+        data = { ...data, unplayable: 'something-else' };
+        expect((await external.getStatus(song)).unplayable).toBeUndefined();
+    });
+
     it('marks the end the player reports and rejects a malformed status', async () => {
         const request = vi.fn(async (): Promise<unknown> => ({ ok: true, data: {
             itemId: '123', catalogId: '123', isPlaying: false, state: 5, positionMs: 180000, durationMs: 180000,

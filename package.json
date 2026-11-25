@@ -8,7 +8,7 @@
     "email": "chthollyphile@users.noreply.github.com"
   },
   "private": true,
-  "version": "0.8.0-android.493",
+  "version": "0.8.0-android.494",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "electron/main.cjs",

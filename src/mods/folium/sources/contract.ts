@@ -599,6 +599,13 @@ export interface FoliumSourceExternalStatus {
     seeking?: boolean;
     /** It accepted a start and is still buffering. */
     starting?: boolean;
+    /**
+     * The player itself says this song cannot play at all: Apple answers `CONTENT_RESTRICTED` (mk-007) for a
+     * few tracks in some storefronts, and a start it accepted may deliver no media data at all. No restart
+     * changes that answer, so the host says it once — the same notice a song with no address gets, "content
+     * restricted"/"no audio" — and leaves the queue to the listener's skip setting.
+     */
+    unplayable?: 'content-restricted' | 'no-audio';
 }
 
 /** Folium 2: `playback.external@1`, a player of the source's own that the host drives and follows. */

@@ -68,6 +68,7 @@ function externalStatus(value: unknown): FoliumSourceExternalStatus {
     const status = value as {
         itemId?: unknown; catalogId?: unknown; isPlaying?: unknown;
         positionMs?: unknown; durationMs?: unknown; state?: unknown; live?: unknown; starting?: unknown;
+        unplayable?: unknown;
     } | null;
     const mediaId = typeof status?.catalogId === 'string' && status.catalogId
         ? status.catalogId
@@ -87,6 +88,10 @@ function externalStatus(value: unknown): FoliumSourceExternalStatus {
         throw appleMusicError('invalid-response', 'Apple Music playback status is invalid');
     }
     const state = typeof status.state === 'number' && Number.isInteger(status.state) ? status.state : null;
+    // 页面说这首放不了（Apple 的 CONTENT_RESTRICTED，或一直没有音频）：只认这两个字面量，别的一概当没说。
+    const unplayable = status.unplayable === 'content-restricted' || status.unplayable === 'no-audio'
+        ? status.unplayable
+        : null;
     return {
         // Empty means the player has nothing loaded (before the queue starts, or between tracks):
         // a state to wait through, not a malformed answer.
@@ -98,6 +103,7 @@ function externalStatus(value: unknown): FoliumSourceExternalStatus {
         ...(status.live === true ? { live: true } : {}),
         ...(state === 6 ? { seeking: true } : {}),
         ...(status.starting === true ? { starting: true } : {}),
+        ...(unplayable ? { unplayable } : {}),
     };
 }
 

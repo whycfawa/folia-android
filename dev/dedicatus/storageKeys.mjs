@@ -162,6 +162,7 @@ export const STORAGE_KEYS = [
     'web:folia_playback_fade_enabled',
     'web:folia_playback_source',
     'web:folia_ponder_seen',
+    'web:folia_qq_profile_cache',
     'web:folia_recent_plays',
     'web:folia_scratchpad_entries',
     'web:folia_search_history_v1',

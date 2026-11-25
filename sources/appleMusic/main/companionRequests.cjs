@@ -96,6 +96,9 @@ function validateRequest(message) {
 
 // This function runs inside the Apple page; return only fields required by the provider.
 async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTracks, readPersonalStation, alignStorefront) {
+    // MusicKit 对少数歌在少数区服直接给 CONTENT_RESTRICTED（mk-007）：拒绝的是这首歌本身，账号和 DRM 都没问题。
+    // 重开多少次都是同一个答复，所以这几种答复由页面照着说一次，别让外面把它当成卡住反复重来。
+    const REFUSED_PLAY_REASONS = ['CONTENT_RESTRICTED', 'CONTENT_UNAVAILABLE', 'NOT_AUTHORIZED'];
     try {
         const mk = window.MusicKit?.getInstance();
         const modern = mk?.api?.v3;
@@ -207,7 +210,20 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
             // the listener a failure, both wrong for a player that recovers on its own.
             const holding = start?.failed === true && start.recoverable === true
                 && Date.now() - (start.failedAt || 0) < 3000;
-            if (window.__foliaStart?.failed && !holding) {
+            // 页面自己的答复：MusicKit 不收这首歌（CONTENT_RESTRICTED/mk-007 之类），或者起播一直没有音频。
+            // 位置还是 0 才算这一首的（出过声之后再失败是中断，不是拒绝）；记录超过一分钟就不再算数。
+            const refusal = (() => {
+                if (!start || start.cancelled) return '';
+                if (Number(mk.currentPlaybackTime) > 0.5) return '';
+                const seen = window.__foliaPlayerError;
+                const fresh = seen && Date.now() - Number(seen.at || 0) <= 60000;
+                const reason = fresh ? String(seen.code || '') : String(start.errorCode || '');
+                const mkCode = fresh ? String(seen.mkCode || '').toLowerCase() : '';
+                if (REFUSED_PLAY_REASONS.includes(reason) || mkCode === 'mk-007') return 'content-restricted';
+                if (reason === 'NO_AUDIO_START') return 'no-audio';
+                return '';
+            })();
+            if (window.__foliaStart?.failed && !holding && !refusal) {
                 return { ok: false, error: 'playback-failed', playbackStage: 'play',
                     ...(window.__foliaStart.errorCode ? { playerError: window.__foliaStart.errorCode } : {}) };
             }
@@ -229,6 +245,7 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                 catalogId: liveStation || (typeof params.catalogId === 'string' ? params.catalogId : ''),
                 isPlaying: mk.isPlaying === true,
                 ...((window.__foliaStart?.pending && !window.__foliaStart.cancelled) || holding ? { starting: true } : {}),
+                ...(refusal ? { unplayable: refusal } : {}),
                 // MusicKit's own state tells "stopped" and "ended" apart from a pause.
                 state: Number.isInteger(state) ? state : null,
                 repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,
@@ -536,10 +553,14 @@ async function readFromPage(request, controlQueue, updateFavorite, addPlaylistTr
                     window.__foliaErrorHook = mk;
                     const events = window.MusicKit?.Events || {};
                     mk.addEventListener(events.mediaPlaybackError || 'mediaPlaybackError', event => {
-                        const raw = [event?.errorCode, event?.error?.errorCode, event?.name, event?.error?.name]
+                        const candidates = [event?.errorCode, event?.error?.errorCode, event?.name, event?.error?.name];
+                        const raw = candidates
                             .find(value => typeof value === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(value));
                         const code = raw || 'unknown';
-                        window.__foliaPlayerError = { code, at: Date.now() };
+                        // MusicKit 的拒绝码（mk-007 之类）单独留着：安卓/iOS 上「内容受限」只能从它认出来。
+                        const mkCode = candidates
+                            .find(value => typeof value === 'string' && /^mk-\d{1,4}$/i.test(value)) || '';
+                        window.__foliaPlayerError = { code, mkCode, at: Date.now() };
                         const current = window.__foliaStart;
                         // A rejected play() may have failed the start already; the code still says why.
                         if (current && !current.cancelled && !current.played) {

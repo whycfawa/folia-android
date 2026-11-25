@@ -425,6 +425,19 @@
             const position = liveStation ? 0 : Number(mk.currentPlaybackTime);
             const duration = Number(item?.attributes?.durationInMillis);
             const state = Number(mk.playbackState);
+            // 页面说这首放不了（MusicKit 的拒绝，或兜底判出的「一直没有音频」）：位置还是 0 才算它的，
+            // 重开多少次都是同一个答复。外面据此说明一次，再交给「无法播放自动跳过」。
+            const refusal = (() => {
+              const recorded = window.__foliaPlayError;
+              if (!recorded) return "";
+              if (Date.now() - Number(recorded.at || 0) > 6e4) return "";
+              if (Number(position) > 0.5) return "";
+              const reason = String(recorded.reason || "");
+              const code = String(recorded.mkCode || "").toLowerCase();
+              if (["CONTENT_RESTRICTED", "CONTENT_UNAVAILABLE", "NOT_AUTHORIZED"].indexOf(reason) >= 0 || code === "mk-007") return "content-restricted";
+              if (reason === "NO_AUDIO_START") return "no-audio";
+              return "";
+            })();
             const queue = mk.queue;
             const queueLength = Number.isInteger(queue?.length) ? queue.length : Array.isArray(queue?.items) ? queue.items.length : null;
             return { ok: true, data: {
@@ -433,6 +446,7 @@
               catalogId: liveStation || (typeof params.catalogId === "string" ? params.catalogId : ""),
               isPlaying: mk.isPlaying === true,
               ...window.__foliaStart?.pending && !window.__foliaStart.cancelled ? { starting: true } : {},
+              ...refusal ? { unplayable: refusal } : {},
               // MusicKit's own state tells "stopped" and "ended" apart from a pause.
               state: Number.isInteger(state) ? state : null,
               repeatMode: Number.isInteger(mk.repeatMode) ? mk.repeatMode : null,

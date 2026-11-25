@@ -166,14 +166,43 @@ describe('Apple Music companion: a start the player gives up', () => {
         expect((await run('playbackStatus')).data.starting).toBeUndefined();
     });
 
-    it('fails a rejected play() at once, and keeps it failed even if the player sounds later', async () => {
+    // 页面说这首放不了：答复不是「起播失败」，而是「这首歌不收」（外面据此说明一次，再按设置跳过）。
+    it('answers a refused song as unplayable instead of failing the start it rejects', async () => {
+        const { mk, run, emit, settle } = setUp();
+        mk.play = vi.fn(async () => { throw new Error('refused'); });
+        await run('playSong', { catalogId: '123' });
+        await settle();
+        emit('mediaPlaybackError', { error: { errorCode: 'CONTENT_RESTRICTED' } });
+        expect(await run('playbackStatus')).toMatchObject({ ok: true, data: { unplayable: 'content-restricted' } });
+        // 同一首歌每次都这么说：不是卡住，也不需要别的说法。
+        expect(await run('playbackStatus')).toMatchObject({ ok: true, data: { unplayable: 'content-restricted' } });
+    });
+
+    it('reads the refusal from MusicKit code alone, and keeps a plain rejection a failed start', async () => {
+        const { mk, run, emit, settle } = setUp();
+        mk.play = vi.fn(async () => { throw new Error('refused'); });
+        await run('playSong', { catalogId: '123' });
+        await settle();
+        emit('mediaPlaybackError', { error: { errorCode: 'mk-007' } });
+        expect(await run('playbackStatus')).toMatchObject({ ok: true, data: { unplayable: 'content-restricted' } });
+
+        const second = setUp();
+        second.mk.play = vi.fn(async () => { throw new Error('refused'); });
+        await second.run('playSong', { catalogId: '123' });
+        await second.settle();
+        second.emit('mediaPlaybackError', { error: { errorCode: 'MEDIA_KEY' } });
+        second.advance(HOLD_MS);
+        expect(await second.run('playbackStatus')).toMatchObject({ ok: false, playerError: 'MEDIA_KEY' });
+    });
+
+    it('does not call a song refused once it has sounded', async () => {
         const { mk, run, emit, settle, sound } = setUp();
         mk.play = vi.fn(async () => { throw new Error('refused'); });
         await run('playSong', { catalogId: '123' });
         await settle();
         emit('mediaPlaybackError', { error: { errorCode: 'CONTENT_RESTRICTED' } });
-        expect(await run('playbackStatus')).toMatchObject({ ok: false, playerError: 'CONTENT_RESTRICTED' });
-        expect(await sound()).toMatchObject({ ok: false, playerError: 'CONTENT_RESTRICTED' });
+        // 出过声之后再失败是中断，不是「这首歌不收」。
+        expect((await sound(10)).data?.unplayable).toBeUndefined();
     });
 
     it('names an error without a usable code unknown, never by its text', async () => {

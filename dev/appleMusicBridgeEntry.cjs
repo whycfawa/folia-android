@@ -1,4 +1,6 @@
-const { validateRequest, requestExpression } = require('../electron/appleMusic/companionRequests.cjs');
+// 上游 0.8.0 把 Apple Music 的页面脚本搬进了音源模组：入口跟着走，路径不再是 electron/appleMusic/。
+// 注意 android/app/src/main/assets/appleMusicBridge.js 是这份入口的打包产物，改了这里的依赖要重新打包。
+const { validateRequest, requestExpression } = require('../sources/appleMusic/main/companionRequests.cjs');
 
 // Runs inside the Android Apple Music WebView. Java asks for the page expression, then evaluates it
 // directly so Apple's CSP never sees an eval().

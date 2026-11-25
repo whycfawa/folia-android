@@ -1066,3 +1066,36 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 - 单测：随结构变化删掉/改写了旧安卓用例；`npx vitest run` 剩余失败（`packages/coven/*`、`appearanceImportPlan`）
   在纯上游 v0.8.0 上同样失败，与移植无关。
 
+
+### 0.8.0-android.494：补回合并时丢掉的安卓专用补丁
+
+.493 合并 v0.8.0 时，随上游改结构丢掉的安卓专用补丁在这一版补回。逐项对照 .493 那一节末尾列的清单：
+
+- **Apple Music 的内容受限 / 没有音频**：页面照旧认这两件事（`appleMusicBridge.js` 里 MusicKit 的
+  `CONTENT_RESTRICTED`/`mk-007` 拒绝，以及起播 12 秒还没有任何媒体数据的兜底判定），并在
+  `playbackStatus` 里报成 `unplayable: 'content-restricted' | 'no-audio'`。丢掉的是**读的一方**：
+  上游 0.8.0 的 client（`sources/appleMusic/client/appleMusicProvider.ts`）只读 `playError`，
+  合并后没人认这两个字面量，于是又变回「接受起播、一直不出声、当成卡住反复重开」。
+  现在 `externalStatus()` 把 `unplayable` 交给路线（`src/services/onlineMusic/externalPlayback.ts`
+  上游本来就有 `refuseUnplayableSong`），提示与「未获取到音频」同款，之后按「无法播放自动跳过」走。
+  位置不在 0 的不算（出过声之后的失败是中断，不是拒绝）。
+- **桌面伴侣页也补上**：`sources/appleMusic/main/companionRequests.cjs` 的 `playbackStatus` 同样会
+  报 `unplayable`（它读 MusicKit 的 `mediaPlaybackError` 代码与 `__foliaPlayerError.mkCode`）。
+  注意这个文件是用 `readFromPage.toString()` 注入页面的，所以判定用的常量必须写在 `readFromPage` 里，
+  不能放模块作用域。
+- **QQ 资料缓存**：`sources/qq/core/qqProvider.ts` 找回 `folia_qq_profile_cache`（按账号 id 缓存昵称/头像，
+  最多 8 条，只在字段缺失时补齐）。这次是**真的接上了**：`getLoginStatus` 读到的用户先补齐再写回缓存
+  （上一版这三个函数是没被调用的死代码）。键登记在 `dev/dedicatus/storageKeys.mjs`（D507 要求登记与实际写入一致）。
+- **酷狗概念版 VIP**（会员识别 `kgConceptVipTypeOf`、取链失败按会员状态重试、失败补领、youth 联合会员）：
+  这次不用动——`src/nativeBridge/api/kugou.js` 在合并没有被改，只换了 `krcDecrypt` 的 import 路径；
+  `dev/verify-android-bundle.mjs` 的标记照样能在包里查到。
+- **验证脚本**：`dev/verify-android-bundle.mjs` 新增标记 `folia_qq_profile_cache`，少了这个键就说明
+  QQ 缓存又没进包。
+- **`dev/appleMusicBridgeEntry.cjs`**：合并后它 require 的 `electron/appleMusic/companionRequests.cjs`
+  已经搬走，指向 `sources/appleMusic/main/companionRequests.cjs`。`android/app/src/main/assets/appleMusicBridge.js`
+  是这个入口的打包产物，本轮的内容按同样的形状手工同步（本机没有 esbuild，没法重新打包）。
+- 单测：`test/unit/appleMusic/companionStartFailure.test.ts` 原有一条「被拒绝的起播算失败」改成新口径
+  （答 `unplayable` 而不是 `playback-failed`），另加三条：mk-007 认得出来、普通拒绝仍是失败、出过声的不算拒绝；
+  `test/unit/appleMusic/appleMusicProvider.test.ts` 加一条「页面说放不了就原样交给路线，别的一概当没说」。
+- 未真机验证：这些改动只过了 `tsc --noEmit`、`dev/sources/typecheck.mjs`、相关单测与打包标记检查，
+  内容受限的歌到底会不会按预期提示并跳过，要等真机点一首受限的歌才知道。

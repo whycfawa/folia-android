@@ -41,6 +41,8 @@ const SENTINELS = [
     'LunaOpenSDK/1.0.10',
     'sendCookies',
     'qishuiDeviceId',
+    // 0.8.0-android.494：合并时丢掉、这轮补回的安卓专用补丁
+    'folia_qq_profile_cache',
 ];
 
 const extra = [];
