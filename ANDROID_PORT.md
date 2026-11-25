@@ -1107,3 +1107,214 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
   卡住的流报 `stalled` 且静止不算收听、没播到结尾就换歌报 `movedOn`（后两条是从 .472/.474 的旧用例搬回来的）。
 - 未真机验证：这些改动只过了 `tsc --noEmit`、`dev/sources/typecheck.mjs`、相关单测与打包标记检查，
   内容受限的歌到底会不会按预期提示并跳过，要等真机点一首受限的歌才知道。
+
+### 0.8.0-android.495：洛雪（LX Music）自定义源脚本的安卓支持
+
+上游 v0.8.0 把九个平台搬进了 `sources/<id>/`，其中 `sources/lxmusic/`（洛雪音源）只在桌面端开箱可用：
+它的 `main` 入口要用 Electron 的隐藏窗口跑沙箱、用 Node 的 `http`/`dns` 自己解析地址来做受控出口、
+用 `api.media.serve` 的 `Readable` 转发音频，安卓一样都没有。这一轮就是把这三件事换成安卓的做法，
+**逻辑一份都不重写**，换掉的只是「谁在下面答话」。
+
+- **曲库、脚本库、脚本头解析、声明清洗、音源定义、命令**：直接用上游的
+  `sources/lxmusic/main/{catalog,scripts,musicInfo,egressGuard}.ts` 与 `sources/lxmusic/client/*`。
+  这几个文件本身没有 Node 依赖（只有类型 import），安卓网页包能原样编译进去。
+  唯一的例外是 `scripts.ts` 里 `Buffer.byteLength` 那一句：`androidLx/backend.ts` 在模块求值时补了一个
+  `globalThis.Buffer.byteLength`（`TextEncoder` 实现）。
+- **`main/index.ts` 的 rpc 面**：`src/services/onlineMusic/web/androidLx/backend.ts` 按同一组名字
+  （`state`/`importScript`/`selectScript`/`removeScript`/`setPlatform`/`catalog`/`audio`/`lyric`）
+  与同样的回答形状（`{ok,data}` / `{ok,code,message}`）重写了一遍，逐条对照上游那个文件；
+  出口拦截原因、脚本没给地址、脚本不支持这家平台这些失败码都没变。
+- **受控出口**：`LxSandboxServer.java`（127.0.0.1 上的小 HTTP 服务）+ `LxEgress.java`（网段判定，
+  照抄桌面 `egressGuard.ts` 的规矩）。沙箱页面的 `lx.request` 只能走到这个服务，服务再按
+  「先判名字、再解析、解析出的任一地址被拦就整条拒」的规矩用 OkHttp 发出去，**跳转自己跟、
+  每一跳重判**（`followRedirects(false)`），跨源跳转不带 `authorization`/`cookie`。
+  入口正文 2 MB、回答 8 MB、在途 24 个、危险端口（邮件/IRC 等）一律不连，和桌面 `sandboxHost.ts` 的
+  `MAX_*` 与 `egress.ts` 的 `BLOCKED_PORTS` 对得上。
+- **沙箱窗口**：`FoliaLxSandboxPlugin.java`，一个挂在 Activity 内容视图里的 1×1 隐藏 WebView。
+  `shouldInterceptRequest` 只放行本服务那个源，别的 http(s) 一律 403；`shouldOverrideUrlLoading` 全拒；
+  `allowFileAccess`/`allowContentAccess`/多窗口/弹窗全关；权限请求一律 deny；只关这个窗口的第三方 Cookie
+  （**不动** `CookieManager` 的全局开关，否则会连累 Apple Music / YouTube Music 的登录）。
+  页面地址不是桌面的 `https://lx-sandbox.invalid` 而是 `http://127.0.0.1:<port>/`：安卓的 WebView 没有
+  `session.intercept`，能读到请求正文的只有本地 socket。注入 `sandbox.cjs` 时把里面的 `SANDBOX_ORIGIN`
+  替换成这个源，页面的 `fetch` 就落在同一个源上，CSP 的 `connect-src 'self'` 也才过得去。
+  页面 CSP 与桌面那份一致（`default-src 'none'` + 只放 `unsafe-inline`/`unsafe-eval` + `connect-src 'self'`）。
+- **音频转发**：不再需要 `api.media.serve` 那套 `Readable`。脚本算出地址后，先过一遍
+  `egressGuard.ts` 的 `hostnameBlockReason`，再交给 `FoliaNative.registerRemoteAudio`（本地 Range 服务，
+  带 CORS 与拖动支持）。`registerRemoteAudio` 这一轮加了一个 `allowAnyHost` 参数：洛雪的主机是脚本现算的，
+  不在那张固定白名单里，收口改由 `LxEgress` 在取流时做（同一个判定），没传这个参数的调用行为完全没变。
+- **脚本导入**：命令面板里那条「洛雪音源：导入自定义源脚本…」照旧来自上游 `client/lxCommands.ts`，
+  只是 `importScript` 在安卓上走 `ACTION_OPEN_DOCUMENT`（`FoliaLxSandbox.pickScript`）挑文件、读成文本，
+  再走和桌面一样的 `normalizeLxScript` → `validateLxScript` → 沙箱里跑一遍拿 `sources` 声明 → 存进脚本库。
+  脚本库存在 WebView 的 localStorage（前缀 `folia:lxmusic:`），等价桌面的模组 `api.storage`。
+- **注册**：`src/services/onlineMusic/web/androidLx/index.ts` 照 `foliumWebSource.ts` 的做法装语言表、
+  按受信表的短 id 登记音源，然后调上游 `client/index.ts` 的 `activate(folium)`——只给它用到的
+  `rpc` / `sources` / `registries.commands` / `i18n` / `log` 五个成员。`androidSources.ts` 的注册表里
+  加了 `lxmusic`（排在最后，和 `providerRegistry.ts` 的顺序一致）。
+- **打包**：`sandbox.cjs` 要进 APK，`npm run build:capacitor` 末尾挂了 `node dev/android/lxSandboxAsset.mjs`，
+  把 `dist-mods/lxmusic/sandbox.cjs` 拷成 `android/app/src/main/assets/lxSandbox.js`。
+  `dev/verify-android-bundle.mjs` 新增标记 `FoliaLxSandbox`、`folia:lxmusic:`。
+  这一步要求 `dist-mods/lxmusic/` 已经构建出来：`$env:FOLIA_BUNDLED_SOURCES='lxmusic'; npm run sources:build`
+  （不设 `FOLIA_BUNDLED_SOURCES` 时默认全带，也包含它）。
+- **D507 登记**：`folia:lxmusic:` 这个 localStorage 前缀追加进 `dev/dedicatus/storageKeys.mjs`，
+  以 `web:folia:lxmusic:*` 的名义登记 —— 和 `web:folia_playback_report:*` 一样是通配键。
+- 单测：`test/unit/lxmusic`（169 条）、`foliumSourcesRegistry`/`foliumSourceEquivalence`/
+  `providerRegistry`/`webSources`/`sourceRegistered`/`builtinManifests`/`sourceBoundaries` 全过；
+  `test/unit/dedicatus`（95 条，含 D507 全键登记）全过；`tsc --noEmit`、`dev/sources/typecheck.mjs` 通过。
+- **未真机验证（重要）**：本机没有设备也没有模拟器，这一轮只到「编译过、打包标记在、签名对」。
+  真机上要确认的是四件事：①命令面板能导入脚本并且脚本库列表出现；②搜索/榜单能出歌（曲库走原生 OkHttp）；
+  ③点播放能出声（音频走本地 Range 服务）；④`lx.request` 的受控出口确实拦内网（例如脚本里写一个
+  `http://192.168.x.x/` 应当报 `egress blocked (private)`）。
+  另外 `FoliaLxSandbox.call` 每次都把脚本文本一起交给原生（便于换脚本时重开窗口），
+  大脚本会多一点序列化开销；真机上如果换歌明显变慢，下一版改成「脚本只在 load 时传一次」。
+
+### 0.8.0-android.496：模组窗口列出内置音源模组 + 「社区模组」开关
+
+两处毛病，根子都在「桌面版由主进程提供，安卓没有主进程」：
+
+- **内置模组一片空白**：桌面版的内置音源模组放在 `resources/builtin-mods`，由主进程 `listMods` 读出来交给界面。
+  安卓的 `src/mods/android/androidModsBridge.ts` 只问原生 `FoliaMods.list()`（那是用户自己装的 zip 包），
+  而自带的那十家音源的代码是直接编进网页包的（`androidSources.ts`），清单从来不进列表 ——
+  模组窗口里「内置模组」自然是空的。
+  改法：`dev/sources/webSourcePlugin.mjs` 新增虚拟模块 `virtual:folia-builtin-mods`，
+  构建期把 `sources/<id>/mod.json` 汇总成 `[{ id: 目录名, manifest }]`（不受 `FOLIA_BUNDLED_SOURCES` 影响），
+  `androidModsBridge.listMods` 把它翻译成 `ModRuntimeInfo`（`tier: 'builtin'`、`kind: 'source'`、
+  `signature.status: 'builtin'`、`status: 'loaded' | 'disabled'`），排在自己装的包前面返回。
+- **「社区模组」开关拨不动**：`useDesktopSettingsStore.handleToggleCommunityMods` 只走
+  `window.electron.mods.setCommunityMods`，安卓上永远 `no-electron-bridge`，于是只弹一句「没能切换社区模组」，
+  开关状态不变。改法：安卓上这个开关落在 WebView 的 localStorage（新文件
+  `src/mods/android/androidModPrefs.ts`，键 `mod_community_enabled`），`androidModsBridge` 也补了
+  `setCommunityMods` / `getCommunityMods` 供模组窗口的「需要打开社区模组」按钮使用。
+  关着时用户装的包照样列出来，但标成 `disabled`（`clientLoader` 只启动 `status === 'loaded'` 的，所以不会跑），
+  这样用户看得见它、也知道为什么没跑。
+- **顺带**：每个内置模组自己的开关也要能在模组窗口里拨。存在 `mod_builtin_disabled_mods`
+  （JSON 数组，记被关掉的模组 id —— 单键、不拼键名，D507 才扫得到）。
+  拨动时 `applyAndroidBuiltinSourceEnabled` 当场把这家的音源从宿主上注销（`unregisterFoliumWebSource` /
+  `unregisterLxMusic`）或重新 `register()`，下一次启动 `registerAndroidSources` 也会跳过被关掉的那些。
+- **顺带**：`modSystemEnabled` 的初值在安卓上原来是 `false`（`ModsPage` 整页禁用，看起来像模组功能没做），
+  改成 `getStoredBoolean(MOD_SYSTEM_ENABLED_STORAGE_KEY, isCapacitorAndroid())`，安卓默认开。
+- **D507 登记**：`dev/dedicatus/storageKeys.mjs` 追加 `web:mod_community_enabled`、
+  `web:mod_builtin_disabled_mods`。
+- 单测 `test/unit/dedicatus`（95 条）全过，`tsc --noEmit`、`dev/sources/typecheck.mjs`、`verify-android-bundle` 通过。
+- **未真机验证（重要）**：内置模组列表来自构建期虚拟模块，只按「编译过、数据在包里、签名对」交付。
+  真机要看：①模组窗口列出十家内置音源且带「内置」标记；②拨掉某一家后它从音源列表里消失，再拨回来能恢复；
+  ③设置 → 模组里「社区模组」开关能拨、杀掉重开后状态还在。
+
+### 0.8.0-android.497：QQ 扫码后「读取账号失败」、波点 / 汽水二维码空白
+
+都是安卓那层「替主进程答话」的桥跟桌面的约定没对上，两处：
+
+- **QQ：扫码确认成功，紧接着读账号失败（`account-refresh-failed` / `account-not-read`）**。
+  桌面版扫码确认（803）时后端会回一串 `qqmusic_session=<token>`，页面侧 `qqTransport.persistConfirmedSession`
+  把它存进 page store；此后 `hasQqSession()` 才有值，才会去问 `login_status`。
+  安卓的桥在这一步回的是 `cookie: ''` —— 真凭据其实都在原生 cookie 罐（`foliaBridgeQqCookie` +
+  CookieManager）里，`getQQCookie()` 每次现读，但页面以为「没有会话」，连 `login_status` 都不发，
+  读账号自然是「没读到账号」。现在 `src/nativeBridge/api/folia.js` 的 803 回一个固定标记
+  `qqmusic_session=native-cookie-jar`（只当「有会话」的标记，不当凭据用；请求里的 `?cookie=` 桥本来就不读）。
+  顺带补了 `login_refresh` 的答话（`{ rotated: false }`）：桌面那是拿 token 换新 token，安卓没有可换的，
+  以前每小时撞一次「路由不存在」，诊断里留一串 network 警告。
+- **波点 / 汽水：二维码打不开（连 key 都拿不到）**。
+  这两个平台的桥（`nativeBridge/api/bodian.js`、`qishui.js`）照桌面 rpc 的形状回
+  `{ ok: true, data }` / `{ ok: false, error }`；而 `androidSources.ts` 的 `extensionCall` 又给每个平台的回答
+  套了一层 `{ ok: true, data: answer }`。于是客户端拿到 `result.data` 是**整个** `{ ok, data }`，
+  `(await requestBodian('login_qr_create', { key })).imageUrl` 是 undefined —— 二维码空白；
+  `login_qr_key` 的 `.key` 同样成了 undefined，后面的 `login_qr_create` / `check` 全跟着失败
+  （汽水还会先撞上它自己的 `key` 格式校验）。现在 `extensionCall` 按平台区分：波点 / 汽水的回答原样交出去，
+  错误码（`not-playable`、`region-restricted`……）也才能一路传到客户端；其余平台仍是旧约定
+  （原样数据 + `__foliaBridgeError` 标记）。
+  同一个原因也解释了「波点 / 汽水的账号读不出来」—— `login_status` 读到的同样是套了一层的东西。
+- 单测 / 检查：`tsc --noEmit`、`dev/sources/typecheck.mjs`、`verify-android-bundle` 通过。
+- **未真机验证（重要）**：本机没有设备。要确认的是：①QQ 扫码确认后能读到昵称与歌单（不再报「没读到账号」）；
+  ②波点、汽水点「扫码登录」能出二维码、扫完能进账号；③三家的歌单/喜欢能读。
+
+### 0.8.0-android.498：「我喜欢」加载失败（QQMusicApi request failed: 502）、QQ 播放地址解析失败
+
+497 修好扫码之后，QQ 的账号读到了、歌单列出来了（报告里 `login_status` 有昵称、`user_playlist` 12 张），
+但点开「我喜欢」只看到 `加载失败：QQMusicApi request failed: 502`，播放也解析不出来。两个原因，都在
+`androidBridgeFetch` 那个把 HTTP 路径翻成桥操作名的小函数上：
+
+- **名字对不上**：0.8.0 的 QQ 客户端按 qq-music-api 的路由发请求，段名里有连字符
+  （`/user/liked-songs`、`/user/playlist-detail`、`/recommend/new-songs`…），而它只把 `/` 换成 `_`，
+  于是到桥里是 `user_liked-songs`，桥认的是 `user_liked_songs` → 落到「桥里没有这条路由」。
+  现在连字符也换成下划线。
+- **三条把 id 放在路径里的路由**（`/getMusicPlay/<songmid>`、`/getSongListDetail/<disstid>`、
+  `/getSongInfo/<songmid>/<songid>`）翻出来是 `getMusicPlay_<mid>` 这种名字，桥里叫
+  `music_play` / `song_list_detail` / `song_info`（id 从 url 的段里取）。这条对不上，QQ 的播放地址就一直
+  解析失败（报告里 `playback:stage=resolve outcome=error provider=qq`）。按路径头补了一张对照表。
+- **顺带把「桥里没有这条路由」改成 404**：以前一律当上游 502 回，客户端把它读成网络故障 —— 于是不会按
+  「旧后端没有这条路由」回退，界面上就是一条「加载失败」。改成 404 之后，客户端读到的是 `unsupported`，
+  走它本来给旧后端写的那套回退（例如搜索退回匿名直连、自建歌单读不到就用匿名歌单详情）。
+  桥里还没实现的几条（会员等级、音乐云盘、听歌排行、猜你喜欢模式、首页 feed、每日 30 首历史、
+  音乐偏好、建歌单、不喜欢）就此表现为「这一栏没有」，而不是一整页报错。
+- 检查：`tsc --noEmit`、`dev/sources/typecheck.mjs`、`verify-android-bundle` 通过。
+- **未真机验证（重要）**：要确认的是：①「我喜欢」能列出歌、能往下翻页；②点开自己建的歌单能出歌；
+  ③QQ 的歌能播（播放地址不再解析失败）；④QQ 搜索能用（带会话的 `/search` 桥里还没实现，会走匿名直连）。
+
+### 0.8.0-android.499：导入洛雪自定义源脚本报「脚本没有声明它支持任何一家」（no-platform）
+
+桌面版导入同一份脚本成功、安卓 498 报「脚本没有声明它支持酷我、酷狗、QQ 音乐或网易云中的任何一家」。
+脚本本身没问题（头注释、`send('inited', { sources })` 都正常），错在安卓把沙箱的**返回值多套了一层**：
+
+- 页面里 `globalThis.__lxHost.load(...)` 的答话是 `{ sources }`（和桌面 `sandboxHost.ts` 的
+  `loaded?.sources ?? null` 同一层意思）；`FoliaLxSandboxPlugin` 的 `load` 却把这个整包塞进回答的
+  `sources` 字段，JS 侧拿到的就是 `{ sources: { sources: { kw: … } } }`。
+- `sanitizeDeclaredSources` 只在最外层找 `kw/kg/tx/wy`，这样一个都找不到，于是 `record.sources` 为空，
+  导入被判成 `no-platform`。
+- 现在 `load` 只交出里层的 `sources`（`value.opt("sources")`），和桌面同形状。顺带把脚本声明的
+  `sources` 打进日志（`FoliaLxSandbox` 标签，`script declared: …`，截 300 字），下次再有脚本声明不对能直接看。
+- 检查：`tsc --noEmit`、`verify-android-bundle` 通过；签名证书不变（`363221d9…ab0d58`）。
+- **未真机验证（重要）**：要确认的是：①导入这份 HelloWorld 脚本能过（不再报 no-platform）、能选到
+  酷我/酷狗/QQ/网易云；②搜歌、榜单出得来；③点播能出声音。
+- 已知边界：`LX_PLATFORMS` 只有 `kw/kg/tx/wy`，脚本里的 `mg`（咪咕）和 `local`（本地音乐）会被丢掉；
+  只声明咪咕的脚本仍会被判 no-platform。
+
+### 0.8.0-android.500：补上洛雪出口的三道限制（照上游 rateLimit.ts）
+
+之前安卓的出口只有「拦」（LxEgress 判本机 / 内网 / 端口）没有「限」：上游 `sources/lxmusic/main/rateLimit.ts`
+那三道闸一条都没搬过来，导入的脚本可以无限刷请求、无限开流。现在按上游数值原样补上，新增
+`android/.../LxLimits.java`（数值与 `LIMITS` 一行对一行）：
+
+- **每秒请求数**（`RateGate`）：脚本 `lx.request` 一个主机一口气 20 个、之后每秒 2 个；整个模组 40、之后 4 个；
+  要等超过 10 秒直接拒绝。接在 `LxSandboxServer.forward` 的每一跳上——**判定之后才算**（被拦的去处不占名额），
+  跳转的每一跳各算一次，和上游 `egress.ts` 同一条。
+- **同时在途数**（`ConcurrencyGate`）：一个主机 4 个、整个模组 8 个，超了排队，队满 16 个再来的直接拒绝。
+  套住整个 `lx.request`（`LxSandboxServer.answer`）。
+- **音频转发**（只对脚本给的地址生效）：另一套桶（一个主机 60/10、整个模组 120/20，不和脚本的请求抢额度）；
+  同时在转发的流最多 8 条，满了顶掉最久没人读的那条；一条流最多 4 GiB；上游 30 秒不来数据就断
+  （`scriptedAudioClient` 的读超时，因为这里是阻塞式转发，只有下游确实要数据时才会阻塞在 read 上）。
+  别家平台（酷我 / 网易 / 酷狗 / 汽水 / 飞牛）的转发走原来那份 client，一条限制都不加。
+- 开关是显式的：JS 侧 `native.ts` 的 `registerRemoteAudio` 传 `scripted: true`，
+  `FoliaNativePlugin` 转发给 `LocalAudioServer`；不传就完全走旧路。
+- 拒绝的文案和上游一致：`rate limited (too many requests)` / `rate limited (too many requests at once)`，
+  页面侧会把它当成这次 `lx.request` 的失败（脚本自己的重试逻辑照常）。
+- 检查：`tsc --noEmit`、`verify-android-bundle` 通过；签名证书不变（`363221d9…ab0d58`）。
+- **未真机验证（重要）**：要确认的是：①导入脚本后搜歌、点播照常（正常用法碰不到这些上限）；
+  ②快速连点、连续切歌不会莫名失败；③酷我 / 网易 / 汽水这些既有平台的播放没受影响。
+- 已知与上游的剩余差异：上游「本机 / 内网」判定还包含网卡自身的地址、在链子网（`own-address` / `on-link`），
+  `LxEgress` 目前只按网段判。端口黑名单两份逐项相同（上一条消息的「压缩表」是我说错了，已更正），不缺。
+
+### 0.8.0-android.501：洛雪出口补齐上游 egress.ts 的默认头与 URL 处理
+
+同一个导入脚本在 PC 版能取流，安卓报「所有API均失败(128k)」。报告里失败的是脚本自己拼的五个 API 的错
+（`url:请求超时 | api:connection closed | resolve-url:响应中未找到有效链接 | qq.music:Chain validation failed`），
+不是导入或沙箱接头。对照上游 `sources/lxmusic/main/egress.ts`，安卓出口 `LxSandboxServer` 缺了几件东西，一并补上：
+
+- **默认 UA / Accept**：上游 `headers['user-agent'] ??= DEFAULT_USER_AGENT`（桌面 Chromium 120 的 UA）、
+  `accept ??= '*/*'`，脚本没给时由出口补。之前安卓让 OkHttp 用它自己的 UA 发，几个 API 回空或错误页
+  ——就是脚本那句「响应中未找到有效链接」。这次一字不差地搬了上游的 UA 常量，脚本显式给的不会被覆盖。
+- **URL 里的账号密码 / #fragment**：上游每一跳都把 `username / password / hash` 去掉再判定、再连；
+  安卓加上了（query 保留，脚本的参数大多在那里）。
+- **重定向时去掉 `content-*`**：上游是 `!name.startsWith('content-')`，安卓之前只去掉 `content-type`，
+  改成整族。
+- **压缩回答**：上游 `fetchBytes` 按 `content-encoding` 解压（gzip / deflate / br）并把那条头和
+  `content-length` 从交给脚本的头里删掉。安卓的 OkHttp 默认自己解 gzip；只有脚本显式要了压缩编码时
+  才走到新加的解压逻辑（gzip / deflate，br 安卓侧不支持，留给 OkHttp 处理），解压后同样删那两条头。
+- 检查：`tsc --noEmit`、`verify-android-bundle` 通过；签名证书不变（`363221d9…ab0d58`）。
+- **未真机验证（重要）**：要确认的是：①同一个脚本在这版能取到流（失败详情里不再出现「响应中未找到有效链接」）；
+  ②`qq.music:Chain validation failed` 是证书链问题，浏览器式信任集不同，这版不解决；③脚本自己给的 UA 没被覆盖。
+- 已知边界：上游 `br` 解压在安卓没搬（OkHttp 默认请求不带 br，脚本显式要 br 时答复会原样交给脚本）。
+
+### 0.8.0-android.502：仅递增版本号（用于测试更新流程）
+
+- 只把 `package.json` / `package-lock.json` 的版本改成 `0.8.0-android.502`、`android/app/build.gradle` 的
+  `versionCode` 递增到 `540`，不改任何功能或界面代码；用于从已安装的 501 测「发现新版本 → 下载 → 安装」流程。
+- 检查：`verify-android-bundle` 通过；签名证书不变（`363221d9…ab0d58`）。

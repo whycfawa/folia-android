@@ -12,6 +12,8 @@ import i18n from '../i18n/config';
 import type { RemoteLyricLayout } from '../types/remoteControl';
 import { DEFAULT_REMOTE_LYRIC_LAYOUT, parseRemoteLyricLayout, serializeRemoteLyricLayout } from '../utils/remoteLyricLayout';
 import { DEFAULT_UI_ZOOM_STEP, readUiZoomStep, stepUiZoom, type UiZoomStep } from '../utils/uiZoom';
+import { isCapacitorAndroid } from '../platform/runtime';
+import { readCommunityModsEnabled, writeCommunityModsEnabled } from '../mods/android/androidModPrefs';
 
 export const MINIMIZE_TO_TRAY_STORAGE_KEY = 'minimize_to_tray';
 
@@ -184,11 +186,20 @@ export const useDesktopSettingsStore = create<DesktopSettingsState>((set, get) =
     closeToTray: getStoredBoolean(CLOSE_TO_TRAY_STORAGE_KEY, false),
     voiceInputPauseEnabled: getStoredBoolean(VOICE_INPUT_PAUSE_STORAGE_KEY, false),
     preventDisplaySleepDuringPlayback: getStoredBoolean(PREVENT_DISPLAY_SLEEP_DURING_PLAYBACK_STORAGE_KEY, false),
-    modSystemEnabled: getStoredBoolean(MOD_SYSTEM_ENABLED_STORAGE_KEY, false),
+    /*
+     * 安卓没有主进程来推这个开关的初值，默认值要自己给对：Folium 2.0 起模组系统是**默认开着**的
+     * （桌面那边主进程的配置库就是这么写的，窗口只是显示它）。以前这里对安卓也是 false，
+     * 于是模组窗口里连自带音源模组都列不出来 —— 看起来就像「模组功能没做」。
+     */
+    modSystemEnabled: getStoredBoolean(MOD_SYSTEM_ENABLED_STORAGE_KEY, isCapacitorAndroid()),
     modResolutionGuardEnabled: getStoredBoolean(MOD_RESOLUTION_GUARD_STORAGE_KEY, false),
     modResolutionGuardLevel: readModResolutionGuardLevel(getStoredString(MOD_RESOLUTION_GUARD_LEVEL_STORAGE_KEY, 'medium')),
     nativeStageEnabled: getStoredBoolean(NATIVE_STAGE_STORAGE_KEY, false),
-    modCommunityEnabled: false,
+    /*
+     * 桌面版由主进程推（setDesktopPreferenceSnapshot），这个开关从不镜像到 localStorage。
+     * 安卓没有主进程：开关就是 androidModPrefs 里那个键，由 androidModsBridge 执行（关着时用户装的包不加载）。
+     */
+    modCommunityEnabled: isCapacitorAndroid() ? readCommunityModsEnabled() : false,
     hideTaskbarIcon: getStoredBoolean(HIDE_TASKBAR_ICON_STORAGE_KEY, false),
     hideRemoteControlTaskbarIcon: getStoredBoolean(REMOTE_CONTROL_SKIP_TASKBAR_STORAGE_KEY, false),
     hideRemoteControlTitlebar: getStoredBoolean(REMOTE_CONTROL_HIDE_TITLEBAR_STORAGE_KEY, false),
@@ -338,6 +349,16 @@ export const useDesktopSettingsStore = create<DesktopSettingsState>((set, get) =
     },
     // Straight to the preload bridge, like MOD_SYSTEM_ENABLED's saveSettings: a desktop setting, not mod code.
     handleToggleCommunityMods: async (enable) => {
+        /*
+         * 安卓没有主进程：这个开关就在网页这一侧，记在 androidModPrefs 里，由 androidModsBridge 执行
+         * （关着时用户自己装的模组不加载，自带的音源模组不受影响）。以前这里只问 Electron 桥，
+         * 于是安卓上按下去只会弹一句「不可用」，开关看起来是坏的。
+         */
+        if (!window.electron?.mods?.setCommunityMods && isCapacitorAndroid()) {
+            writeCommunityModsEnabled(enable);
+            set({ modCommunityEnabled: enable });
+            return enable;
+        }
         const result = await window.electron?.mods?.setCommunityMods?.(enable) ?? { ok: false, error: 'no-electron-bridge' };
         const now = typeof result.enabled === 'boolean' ? result.enabled : get().modCommunityEnabled;
         set({ modCommunityEnabled: now });

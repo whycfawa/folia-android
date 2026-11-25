@@ -14,3 +14,12 @@ declare module 'virtual:folia-web-sources' {
     const sources: readonly WebSource[];
     export default sources;
 }
+
+// The mods this installation carries (sources/<dir>/mod.json, every one of them): what the mods window lists as
+// 「内置模组」 where there is no main process to read resources/builtin-mods (the Android build).
+declare module 'virtual:folia-builtin-mods' {
+    import type { WebSourceManifest } from '@/services/onlineMusic/web/foliumWebSource';
+    /** `id` 是 sources/ 下的目录名（注册函数认的那个短 id）；`manifest.id` 才是模组 id。 */
+    const packages: readonly { id: string; manifest: WebSourceManifest }[];
+    export default packages;
+}

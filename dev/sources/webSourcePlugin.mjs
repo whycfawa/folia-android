@@ -27,6 +27,16 @@ const RESOLVED_WEB_SOURCES = `\0${WEB_SOURCES_MODULE}`;
 export const WEB_SOURCE_MODULE_PREFIX = 'virtual:folia-source/';
 const RESOLVED_PREFIX = `\0${WEB_SOURCE_MODULE_PREFIX}`;
 
+/*
+ * `virtual:folia-builtin-mods`：安装包自带的那批模组的清单（sources/ 下每个有 mod.json 的目录一份）。
+ *
+ * 桌面版由主进程从 resources/builtin-mods 读出来交给界面；网页/安卓那一侧没有主进程，模组窗口要列「内置模组」
+ * 就没有第二个来源。清单本来就随 sources/ 进仓库，这里把它原样交给渲染层即可，不签入生成的文件。
+ * 不受 FOLIA_BUNDLED_SOURCES 影响：安卓的 bootstrap 无论构建参数如何都会把这十家注册进宿主。
+ */
+export const BUILTIN_MODS_MODULE = 'virtual:folia-builtin-mods';
+const RESOLVED_BUILTIN_MODS = `\0${BUILTIN_MODS_MODULE}`;
+
 // 目录名就是受信表里的短 id：只认字母数字（不让 `../` 之类走出 sources/）。
 const SOURCE_ID = /^[a-zA-Z][a-zA-Z0-9]*$/;
 
@@ -54,6 +64,17 @@ export const readWebSourcePackage = (id, root = SOURCES_DIR) => {
 };
 
 /**
+ * 每个自带模组的 `{ id, manifest }`，`id` 是 sources/ 下的目录名（也就是注册函数认的那个短 id），
+ * `manifest.id` 才是模组 id（Apple Music 的目录叫 appleMusic、模组 id 是 apple-music）。
+ * 按目录名排序：结果稳定，界面不会因为文件系统顺序抖。
+ */
+export const builtinModPackages = (root = SOURCES_DIR) => fs.readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && SOURCE_ID.test(entry.name))
+    .filter((entry) => fs.existsSync(path.join(root, entry.name, 'mod.json')))
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map((entry) => ({ id: entry.name, manifest: readWebSourcePackage(entry.name, root).manifest }));
+
+/**
  * 网页版带的平台：有 core 和网页版文件（`webDir`/<id>.ts）的音源目录里 `bundled`（缺省读 FOLIA_BUNDLED_SOURCES）选中的，
  * 按受信表的顺序（列表本来就按注册表排，这里只为结果稳定）。
  */
@@ -79,10 +100,12 @@ export const webSourcePlugin = ({ root = SOURCES_DIR, bundled = process.env.FOLI
     enforce: 'pre',
     resolveId(id) {
         if (id === WEB_SOURCES_MODULE) return RESOLVED_WEB_SOURCES;
+        if (id === BUILTIN_MODS_MODULE) return RESOLVED_BUILTIN_MODS;
         return id.startsWith(WEB_SOURCE_MODULE_PREFIX) ? `\0${id}` : null;
     },
     load(id) {
         if (id === RESOLVED_WEB_SOURCES) return webSourcesModuleCode(webSourceIds({ root, bundled }));
+        if (id === RESOLVED_BUILTIN_MODS) return `export default ${JSON.stringify(builtinModPackages(root))};\n`;
         if (!id.startsWith(RESOLVED_PREFIX)) return null;
         const source = readWebSourcePackage(id.slice(RESOLVED_PREFIX.length), root);
         return `export default ${JSON.stringify(source)};\n`;

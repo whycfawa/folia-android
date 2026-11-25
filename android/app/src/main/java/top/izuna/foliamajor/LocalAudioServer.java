@@ -103,9 +103,19 @@ final class LocalAudioServer {
         .followRedirects(true)
         .followSslRedirects(true)
         .build();
+    /**
+     * 洛雪音源那一路（脚本给的地址）另用一份：读超时 30 秒，对应桌面 rateLimit.ts 的 `streamIdleMs`
+     * ——「我们在等、上游 30 秒不来数据就断」。别的平台（酷我 / 网易 / 酷狗 / 汽水 / 飞牛）仍用上面那份，
+     * 行为一点不动：这里的转发是阻塞式读，只有下游确实想要数据时才会阻塞在 read 上，正好是上游那条规则的条件。
+     */
+    private final OkHttpClient scriptedAudioClient = remoteAudioClient.newBuilder()
+        .readTimeout(LxLimits.Limits.STREAM_IDLE_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+        .build();
     private final Map<String, String> remoteAudioUrls = new LinkedHashMap<>();
     /** 转发时要额外带上的请求头（按 token 存）；没有时为 null，见 {@link #registerRemoteAudio}。 */
     private final Map<String, Map<String, String>> remoteAudioHeaders = new LinkedHashMap<>();
+    /** 哪些 token 来自洛雪脚本（要过限速、算在音频流上限里）。 */
+    private final java.util.Set<String> scriptedTokens = new java.util.HashSet<>();
     private ServerSocket serverSocket;
     private int port;
 
@@ -158,6 +168,15 @@ final class LocalAudioServer {
      * 两个开关都由调用方显式打开，白名单那一路（Kuwo / 网易）行为不变。
      */
     synchronized String registerRemoteAudio(String value, Map<String, String> headers, boolean allowAnyHost) throws IOException {
+        return registerRemoteAudio(value, headers, allowAnyHost, false);
+    }
+
+    /**
+     * 同上，多一个 `scripted`：洛雪音源给的地址要按桌面 `rateLimit.ts` 那套收口（音频流的每秒请求数、
+     * 同时在转发的 8 条流、单流 4 GiB、上游 30 秒不来数据就断）。别家平台的流走原路，一条限制都不加。
+     */
+    synchronized String registerRemoteAudio(String value, Map<String, String> headers, boolean allowAnyHost, boolean scripted)
+        throws IOException {
         URL url = new URL(value);
         String host = url.getHost() == null ? "" : url.getHost().toLowerCase(Locale.ROOT);
         if (!("http".equals(url.getProtocol()) || "https".equals(url.getProtocol()))
@@ -174,10 +193,13 @@ final class LocalAudioServer {
             remoteAudioUrls.put(token, value);
             remoteAudioHeaders.remove(token);
             if (headers != null && !headers.isEmpty()) remoteAudioHeaders.put(token, new HashMap<>(headers));
+            if (scripted) scriptedTokens.add(token);
+            else scriptedTokens.remove(token);
             while (remoteAudioUrls.size() > 128) {
                 String oldest = remoteAudioUrls.keySet().iterator().next();
                 remoteAudioUrls.remove(oldest);
                 remoteAudioHeaders.remove(oldest);
+                scriptedTokens.remove(oldest);
             }
         }
         return "http://127.0.0.1:" + localPort + REMOTE_AUDIO_PATH_PREFIX + token;
@@ -307,7 +329,7 @@ final class LocalAudioServer {
                 return;
             }
             if (path.startsWith(REMOTE_AUDIO_PATH_PREFIX)) {
-                streamRemoteAudio(output, requestParts, headers, path.substring(REMOTE_AUDIO_PATH_PREFIX.length()));
+                streamRemoteAudio(output, client, requestParts, headers, path.substring(REMOTE_AUDIO_PATH_PREFIX.length()));
                 return;
             }
             if (!path.startsWith(AUDIO_PATH_PREFIX)) {
@@ -438,13 +460,18 @@ final class LocalAudioServer {
      */
     private void streamRemoteAudio(
         BufferedOutputStream output,
+        Socket clientSocket,
         String[] requestParts,
         Map<String, String> headers,
         String token
     ) throws IOException {
         String target;
+        Map<String, String> extraHeaders;
+        boolean scripted;
         synchronized (remoteAudioUrls) {
             target = remoteAudioUrls.get(token);
+            extraHeaders = remoteAudioHeaders.get(token);
+            scripted = scriptedTokens.contains(token);
         }
         if (target == null) {
             Log.w(TAG, "remote audio token unknown: " + token);
@@ -452,10 +479,26 @@ final class LocalAudioServer {
             return;
         }
 
-        Map<String, String> extraHeaders;
-        synchronized (remoteAudioUrls) {
-            extraHeaders = remoteAudioHeaders.get(token);
+        // 洛雪脚本给的地址：过音频那套令牌桶（和脚本的 lx.request 不共用额度），并算在「同时在转发的流」上限里。
+        LxLimits.StreamSlot slot = null;
+        OkHttpClient client = remoteAudioClient;
+        if (scripted) {
+            try {
+                LxLimits.audioRate().take(hostOfUrl(target));
+            } catch (LxLimits.RateLimitedException error) {
+                Log.w(TAG, "audio rate limited: " + target);
+                writeStatus(output, 429, "Too Many Requests");
+                return;
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                writeStatus(output, 503, "Interrupted");
+                return;
+            }
+            slot = LxLimits.streams().begin(token);
+            slot.bind(clientSocket);
+            client = scriptedAudioClient;
         }
+
         Request.Builder request = new Request.Builder().url(target);
         // 有些 CDN 看 UA / Referer 决定给不给资源，不带的话会回一段 HTML 而不是音频
         // —— 那种回包喂进 <audio> 正是「Format error」的经典来源。
@@ -471,13 +514,25 @@ final class LocalAudioServer {
         // 调用方带来的头（汽水的 Referer/UA、飞牛的 music-token）最后写：同名的以它为准。
         if (extraHeaders != null) {
             for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {
+                /*
+                 * 空值是「不要发这个头」：注册时带一个空的 referer 就能压掉上面那条默认的 Referer。
+                 * 洛雪音源的地址是用户导入的脚本现算的，主机哪家都有，桌面版转发时一条 Referer 都不带
+                 * （乱带 www.kuwo.cn 会被别的 CDN 回一段 HTML，喂进 <audio> 就是 Format error）。
+                 */
+                if (entry.getValue() == null || entry.getValue().isEmpty()) continue;
                 request.header(entry.getKey(), entry.getValue());
             }
         }
         String range = headers.get("range");
         if (range != null && range.startsWith("bytes=")) request.header("Range", range);
 
-        Response upstream = remoteAudioClient.newCall(request.build()).execute();
+        Response upstream;
+        try {
+            upstream = client.newCall(request.build()).execute();
+        } catch (IOException error) {
+            if (slot != null) LxLimits.streams().release(token);
+            throw error;
+        }
         try {
             ResponseBody body = upstream.body();
             if (!upstream.isSuccessful() || body == null) {
@@ -526,6 +581,14 @@ final class LocalAudioServer {
                     byte[] buffer = new byte[64 * 1024];
                     int read;
                     while ((read = audio.read(buffer)) != -1) {
+                        if (slot != null) {
+                            if (!slot.addBytes(read)) {
+                                // 一条流最多 4 GiB（桌面 guardStream 的 maxBytes）。
+                                Log.w(TAG, "audio stream over the size limit, closing: " + target + " (" + slot.bytesSoFar() + " bytes)");
+                                break;
+                            }
+                            LxLimits.streams().touch(token);
+                        }
                         output.write(buffer, 0, read);
                     }
                 }
@@ -533,6 +596,17 @@ final class LocalAudioServer {
             output.flush();
         } finally {
             upstream.close();
+            if (slot != null) LxLimits.streams().release(token);
+        }
+    }
+
+    /** 限速按主机记账：取地址的主机名（取不到就给空串，和别处一样当同一个未知去处）。 */
+    private static String hostOfUrl(String value) {
+        try {
+            String host = new URL(value).getHost();
+            return host == null ? "" : host;
+        } catch (Exception error) {
+            return "";
         }
     }
 

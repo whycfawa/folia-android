@@ -776,7 +776,16 @@ public class FoliaNativePlugin extends Plugin {
             // 汽水（抖音）那批 CDN 的流地址有时只认特定的 Referer / UA / 自定义头，
             // 而 <audio> 自己一条头都加不了，只能注册时把调用方要的头带进来。
             // 不传 headers 时走和以前完全一样的那条路（本地服务补默认 UA / Referer）。
-            String localUrl = localAudioServer.registerRemoteAudio(url, headerMap(call.getObject("headers")), false);
+            // allowAnyHost：[洛雪音源] 的播放地址是用户导入的脚本现算出来的，主机不在那张白名单里，
+            // 出口的收口已经由 LxEgress 在取流时做过一遍（同一个判定），这里不再按主机名二次收窄。
+            Boolean anyHost = call.getBoolean("allowAnyHost", false);
+            boolean allowAnyHost = anyHost != null && anyHost;
+            // scripted：[洛雪音源] 的流要按桌面 rateLimit.ts 那套收口（音频流的每秒请求数、同时 8 条、
+            // 单流 4 GiB、上游 30 秒不来数据就断）；别家平台不传这个标记，行为一点不变。
+            Boolean scriptedFlag = call.getBoolean("scripted", false);
+            boolean scripted = scriptedFlag != null && scriptedFlag;
+            String localUrl = localAudioServer.registerRemoteAudio(
+                url, headerMap(call.getObject("headers")), allowAnyHost, scripted);
             JSObject result = new JSObject();
             result.put("url", localUrl);
             call.resolve(result);

@@ -53,6 +53,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FoliaAppleMusicPlugin.class);
         registerPlugin(FoliaYtmPlugin.class);
         registerPlugin(FoliaFnMusicPlugin.class);
+        registerPlugin(FoliaLxSandboxPlugin.class);
         registerPlugin(top.izuna.foliamajor.coloros.FoliaColorOsLyricsPlugin.class);
         super.onCreate(savedInstanceState);
         attachYtmSignInLauncher();

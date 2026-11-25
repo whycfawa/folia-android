@@ -1,10 +1,70 @@
 import { registerPlugin } from '@capacitor/core';
-import type { ModRuntimeInfo, ModsListPayload, ModSetEnabledResult } from '../types';
+import type { ModRuntimeInfo, ModSetEnabledResult, ModSourceInfo, ModsListPayload } from '../types';
 import { isCapacitorAndroid } from '../../platform/runtime';
+import builtinModPackages from 'virtual:folia-builtin-mods';
+import type { WebSourceManifest } from '../../services/onlineMusic/web/foliumWebSource';
+import {
+    readBuiltinModEnabled, readCommunityModsEnabled, writeBuiltinModEnabled, writeCommunityModsEnabled,
+} from './androidModPrefs';
 
 // src/mods/android/androidModsBridge.ts
 // Android 端只加载客户端模组：原生负责 zip 安装、目录、启用状态与本地 HTTP 文件服务，
 // 这里把原生列表翻译成渲染层已有的 ModRuntimeInfo，复用 clientLoader 的注册/清理逻辑。
+//
+// 这里还补上了桌面主进程本来提供的一样东西：**内置模组的清单**。桌面版的内置音源模组在 resources/builtin-mods，
+// 由主进程读出来列进模组窗口；安卓没有主进程，那些模组的代码是直接编进网页包的（androidSources.ts），
+// 清单则由 Vite 的 `virtual:folia-builtin-mods` 在构建期交出。不列出来，模组窗口里就只剩用户自己装的包，
+// 「内置模组」那一片永远是空的。
+
+/** 内置（自带）音源模组的一条：清单里的东西 + 各自的开关。 */
+const builtinModEntry = (manifest: WebSourceManifest, enabled: boolean): ModRuntimeInfo => {
+    const sources: ModSourceInfo[] = manifest.sources.map((source) => ({
+        id: source.id,
+        localId: source.id,
+        name: source.name,
+        state: 'enabled',
+        keepForMatching: source.keepForMatching === true,
+        takeover: false,
+        requires: source.requires ?? [],
+    }));
+    return {
+        id: manifest.id,
+        name: manifest.name,
+        version: typeof manifest.version === 'string' ? manifest.version : null,
+        author: typeof manifest.author === 'string' ? manifest.author : null,
+        description: typeof manifest.description === 'string' ? manifest.description : null,
+        permissions: [],
+        status: enabled ? 'loaded' : 'disabled',
+        error: null,
+        enabled,
+        trustStale: false,
+        signature: { status: 'builtin', reason: null, keyId: null, keyLabel: null, signedAt: null },
+        devSource: false,
+        experimental: [],
+        embedOrigins: [],
+        folia: null,
+        hasMain: false,
+        clientUrl: null,
+        folium: 2,
+        tier: 'builtin',
+        kind: 'source',
+        contexts: null,
+        locales: typeof manifest.locales === 'string' ? manifest.locales : null,
+        sources,
+    };
+};
+
+/** 自带模组的 id 集合：它们的开关是网页这一侧的事，不走原生插件。 */
+const BUILTIN_MOD_IDS = new Set(builtinModPackages.map(entry => entry.manifest.id));
+
+export const isAndroidBuiltinModId = (modId: string): boolean => BUILTIN_MOD_IDS.has(modId);
+
+const builtinMods = (): ModRuntimeInfo[] => builtinModPackages.map(
+    entry => builtinModEntry(entry.manifest, readBuiltinModEnabled(entry.manifest.id)),
+);
+
+/** 「社区模组」开关：关着时用户自己装的包一律不加载（自带的照旧）。 */
+export const isAndroidCommunityModsEnabled = (): boolean => readCommunityModsEnabled();
 
 // 模组总开关由界面层注入：模组服务的闭包不许碰应用 store（D114），这里只留一个探针。
 let modSystemEnabledProbe: () => boolean = () => true;
@@ -47,6 +107,7 @@ const parseMod = (native: NativeMod): ModRuntimeInfo | null => {
     }
     const id = text(manifest.id, native.id);
     const hasMain = Boolean(manifest.main);
+    const kind = Array.isArray(manifest.sources) && manifest.sources.length > 0 ? 'source' : 'standard';
     return {
         id,
         name: text(manifest.name, id),
@@ -65,6 +126,10 @@ const parseMod = (native: NativeMod): ModRuntimeInfo | null => {
         folia: text(manifest.folia) || null,
         hasMain,
         clientUrl: native.clientUrl ?? null,
+        // 用户自己装进来的包：模组窗口把它当「社区模组」，开关关着时先按住。
+        folium: manifest.folium === 2 ? 2 : 1,
+        tier: 'user',
+        kind,
     };
 };
 
@@ -78,24 +143,53 @@ export const listAndroidMods = async (): Promise<ModsListPayload> => {
     if (!isCapacitorAndroid()) return empty;
     // 总开关关闭时不加载任何模组代码：连列表都不返回，clientLoader 不会启动它们。
     if (!modSystemEnabledProbe()) return empty;
+    // 自带的音源模组一直在：它们的代码已经编进网页包，跟总开关没关系（总开关关掉时界面本来就不显示这一页）。
+    const mods = builtinMods();
+    let userMods: ModRuntimeInfo[] = [];
     try {
         const answer = await FoliaMods.list();
-        const mods = (Array.isArray(answer?.mods) ? answer.mods : [])
+        userMods = (Array.isArray(answer?.mods) ? answer.mods : [])
             .map(parseMod)
             .filter((mod): mod is ModRuntimeInfo => mod !== null);
-        return { ...empty, mods };
     } catch (error) {
         console.warn('[Mods] Android list failed', error);
-        return empty;
     }
+    // 社区模组关着：用户装的包照旧列出来（不然用户找不到、也不知道为什么没跑），但标成未启用，
+    // clientLoader 只启动 status === 'loaded' 的那些，所以它们不会运行。
+    if (!isAndroidCommunityModsEnabled()) {
+        userMods = userMods.map((mod) => (mod.enabled ? { ...mod, enabled: false, status: 'disabled' } : mod));
+    }
+    return { ...empty, mods: [...mods, ...userMods] };
 };
 
 export const setAndroidModEnabled = async (id: string, enabled: boolean): Promise<ModSetEnabledResult> => {
+    // 自带的音源模组：开关存在网页这一侧，拨完要当场把它那一家音源注册/注销掉。
+    if (isAndroidBuiltinModId(id)) {
+        writeBuiltinModEnabled(id, enabled);
+        try {
+            const { applyAndroidBuiltinSourceEnabled } = await import('../../services/onlineMusic/web/androidSources');
+            if (!applyAndroidBuiltinSourceEnabled(id, enabled)) {
+                console.warn(`[Mods] Android: ${id} has no source to switch`);
+            }
+        } catch (error) {
+            console.warn(`[Mods] Android: ${id} could not be switched`, error);
+            return { ok: false, error: 'enable-failed', mods: (await listAndroidMods()).mods };
+        }
+        return { ok: true, mods: (await listAndroidMods()).mods };
+    }
+    // 社区模组关着时不许把用户装的包打开：这正是那个开关的意思。
+    if (enabled && !isAndroidCommunityModsEnabled()) {
+        return { ok: false, error: 'community-off', mods: (await listAndroidMods()).mods };
+    }
     try {
         await FoliaMods.setEnabled({ id, enabled });
         return { ok: true, mods: (await listAndroidMods()).mods };
     } catch (error) {
-        return { ok: false, error: error instanceof Error ? error.message : String(error), mods: [] };
+        return {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+            mods: (await listAndroidMods()).mods,
+        };
     }
 };
 
@@ -296,4 +390,10 @@ export const androidModsBridge = {
     invokeModSecrets: invokeAndroidSecrets,
     // App 的主机桥会在播放状态变化时推快照；Android 没有主进程接收，吞掉即可。
     pushRuntimeSnapshot: async () => undefined,
+    // 桌面版这两个在主进程里（communityMods.cjs 的 MOD_COMMUNITY_ENABLED）；安卓上就是 androidModPrefs 那个键。
+    setCommunityMods: async (enable: boolean) => {
+        writeCommunityModsEnabled(enable === true);
+        return { ok: true, enabled: enable === true };
+    },
+    getCommunityMods: async () => ({ ok: true, enabled: isAndroidCommunityModsEnabled() }),
 };

@@ -89,7 +89,7 @@ const hostMatcher = (hosts: readonly string[]): ((url: URL) => boolean) => {
 };
 
 /** The mod as the adapter is told of it: a built-in source mod, loaded, every source of its manifest enabled. */
-const runtimeInfoOf = (manifest: WebSourceManifest): ModRuntimeInfo => ({
+export const runtimeInfoOf = (manifest: WebSourceManifest): ModRuntimeInfo => ({
     id: manifest.id, name: manifest.name, version: manifest.version, author: null, description: null, permissions: [],
     status: 'loaded', error: null, enabled: true, trustStale: false,
     signature: { status: 'builtin', reason: null, keyId: null, keyLabel: null, signedAt: null },
@@ -142,4 +142,15 @@ export const registerFoliumWebSource = ({ package: source, create, proxiedCoverH
         handles.forEach((handle) => { handle.unregister(); });
     });
     return handles.map((handle) => handle.id);
+};
+
+/**
+ * 把一家音源从宿主上拿掉（安卓关掉某个内置音源模组时用）。已经不在的返回 false。
+ * 拿掉之后同一个 id 再 registerFoliumWebSource 会当成第一次注册。
+ */
+export const unregisterFoliumWebSource = (modId: string): boolean => {
+    const undo = registered.get(modId);
+    if (!undo) return false;
+    undo();
+    return true;
 };

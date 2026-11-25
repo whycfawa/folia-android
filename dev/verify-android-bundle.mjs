@@ -43,6 +43,9 @@ const SENTINELS = [
     'qishuiDeviceId',
     // 0.8.0-android.494：合并时丢掉、这轮补回的安卓专用补丁
     'folia_qq_profile_cache',
+    // 0.8.0-android.495：洛雪自定义源脚本（隐藏 WebView 沙箱 + 受控出口）
+    'FoliaLxSandbox',
+    'folia:lxmusic:',
 ];
 
 const extra = [];

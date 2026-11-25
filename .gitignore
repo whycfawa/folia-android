@@ -12,6 +12,9 @@ dist
 dist-ssr
 # Folium 2.0：dev/sources/build.mjs 从 sources/ 构建出的内置音源模组（开发版的内置目录，打包时放进 resources/builtin-mods）
 dist-mods/
+# dev/android/lxSandboxAsset.mjs 在 build:capacitor 里把 dist-mods/lxmusic/sandbox.cjs 拷进 APK 的 assets：
+# 生成物，不提交（和 assets/public 一样由构建产生）。
+android/app/src/main/assets/lxSandbox.js
 # dev/sources/pack.mjs（npm run sources:pack）打出的音源模组 zip
 dist-mod-packs/
 *.local

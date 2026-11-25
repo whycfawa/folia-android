@@ -251,6 +251,10 @@ export const STORAGE_KEYS = [
     'web:mod_resolution_guard_enabled',
     'web:mod_resolution_guard_level',
     'web:mod_system_enabled',
+    // 0.8.0-android.495：安卓没有主进程，「社区模组」开关与每个自带模组自己的开关都落在 localStorage
+    // （src/mods/android/androidModPrefs.ts）。桌面版对应的两个键是 main:MOD_COMMUNITY_ENABLED / main:MOD_SYSTEM_ENABLED。
+    'web:mod_builtin_disabled_mods',
+    'web:mod_community_enabled',
     'web:native_stage_enabled',
     'web:navidrome_config',
     'web:navidrome_config_origin',
@@ -375,6 +379,9 @@ export const STORAGE_KEYS = [
     // Folium 2.0（2026-11-20）：每个音源上次在本窗口加载时声明的能否只用于匹配（音源 id → 布尔），停用的音源靠它在设置与命令面板里仍给三态。
     'web:folia.sources.matchOnly',
     'web:folia_perf_check_offered',
+    // 0.8.0-android.495：安卓上的洛雪音源把用户导入的脚本存在 WebView 的 localStorage
+    // （src/services/onlineMusic/web/androidLx/storage.ts，前缀 folia:lxmusic:）。
+    'web:folia:lxmusic:*',
     'web:visualizer_picker_keep_open',
     // 网易云更早的版本存登录 cookie / 匿名 cookie 的旧名（之后放在 online_provider:netease: 下）：宿主的页面存储在建网易云的
     // 那一份时搬一次（src/mods/folium/registries/sourcePageStore.ts）；迁成模组之前由宿主的 provider 当旧键读。

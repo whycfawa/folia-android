@@ -20,8 +20,13 @@ const providerOf = (segment: string): FoliaBridgeProvider | null => (
     (PROVIDERS as readonly string[]).includes(segment) ? segment as FoliaBridgeProvider : null
 );
 
-/** `/song/url/new` → `song_url_new`：路径名与桥的操作名是同一套叫法（KugouMusicApi 的路由）。 */
-const operationOf = (segments: string[]): string => segments.join('/').replace(/\//g, '_');
+/**
+ * `/song/url/new` → `song_url_new`：路径名与桥的操作名是同一套叫法（KugouMusicApi / qq-music-api 的路由）。
+ * 段名里的连字符在操作名里是下划线：0.8.0 的 QQ 用 `/user/liked-songs`、`/user/playlist-detail`、
+ * `/recommend/new-songs` 这些带连字符的路径，只换 `/` 的话到这里是 `user_liked-songs`，桥里的
+ * `user_liked_songs` 匹配不上，回 UNSUPPORTED，页面就只看到「加载失败：QQMusicApi request failed」。
+ */
+const operationOf = (segments: string[]): string => segments.join('/').replace(/[/-]/g, '_');
 
 const jsonResponse = (body: unknown, status = 200): Response => new Response(JSON.stringify(body ?? {}), {
     status,
@@ -56,8 +61,11 @@ export const installAndroidBridgeFetch = (): void => {
                 ? (answer as { __foliaBridgeError?: unknown }).__foliaBridgeError
                 : undefined;
             if (failure) {
-                // 桥自己的失败：AUTH_REQUIRED 是没登录（401），其余当成上游 502 —— 音源按状态区分它俩。
-                const status = failure === 'AUTH_REQUIRED' ? 401 : 502;
+                // 桥自己的失败：AUTH_REQUIRED 是没登录（401）；「桥里没有这条路由」照上游旧后端的 404 回 ——
+                // 音源把 404 读成 `unsupported`，按自己的回退走（旧后端缺路由时的同一套），而不是当成网络故障
+                // 反复失败；其余当成上游 502。
+                const missingRoute = failure === 'UNSUPPORTED' || failure === 'ROUTE_NOT_IMPLEMENTED';
+                const status = failure === 'AUTH_REQUIRED' ? 401 : missingRoute ? 404 : 502;
                 const message = String((answer as { message?: unknown }).message || `Folia bridge failed: ${String(failure)}`);
                 return jsonResponse({ code: status, message }, status);
             }

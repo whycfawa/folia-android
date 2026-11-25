@@ -627,7 +627,9 @@ async function handleSubscribe(url, body, cookie, path) {
 }
 
 async function handleFoliaQqRequest(input, url) {
-  const operation = String(input.operation || url.pathname);
+  // 显示与留痕用的名字和路由认的名字一致（见 qqOperationOf）：报告里才不会又是 `user_liked-songs`
+  // 又是 `user_liked_songs` 两种写法。
+  const operation = qqOperationOf(String(input.operation || url.pathname), pathSegments(url));
   const params = mergeOperationParams(input, url);
   const segments = pathSegments(url);
   const cookie = await getQQCookie();
@@ -662,11 +664,38 @@ async function handleFoliaQqRequest(input, url) {
   }
 }
 
-async function routeFoliaQqRequest(operation, params, segments, url, cookie) {
+/*
+ * 0.8.0 的 QQ 客户端是照 qq-music-api 的路由发的，路径名到桥里的操作名有两处对不上：
+ *   1. 段名里的连字符：`/user/liked-songs` 在操作名里是 `user_liked_songs`（androidBridgeFetch 只换 `/`）；
+ *   2. 三条把 id 放在路径里的路由：`/getMusicPlay/<songmid>`、`/getSongListDetail/<disstid>`、
+ *      `/getSongInfo/<songmid>[/<songid>]`，桥里叫 music_play / song_list_detail / song_info，
+ *      id 从 url 的段里取（见各分支）。
+ * 不认这两样，读「我喜欢」、读不公开歌单、解析播放地址就都会落到「桥里没有这条路由」。
+ */
+const QQ_PATH_OPERATIONS = {
+  getMusicPlay: 'music_play',
+  getSongListDetail: 'song_list_detail',
+  getSongInfo: 'song_info',
+};
+
+function qqOperationOf(operation, segments) {
+  const pathOperation = QQ_PATH_OPERATIONS[String(segments[0] || '')];
+  if (pathOperation) return pathOperation;
+  return String(operation || '').replace(/-/g, '_');
+}
+
+async function routeFoliaQqRequest(rawOperation, params, segments, url, cookie) {
+  const operation = qqOperationOf(rawOperation, segments);
 
   if (operation === 'login_channels') {
     // 本地桥同时支持两条扫码通道：qq（ptlogin + MQTT）与 wechat（微信 OAuth + musicu）。
     return { code: 200, data: { channels: ['qq', 'wechat'] } };
+  }
+  if (operation === 'login_refresh') {
+    // 桌面后端会拿 token 去换新的（rotated: true）。安卓没有那个仓库：凭据在原生 cookie 罐里，续期由平台自己
+    // 的 cookie 到期决定，没有可换的东西。回 rotated: false，让页面侧每小时一次的续期安静跳过，
+    // 而不是撞上「这条路由不存在」、在诊断里留一串 network 警告。
+    return { code: 200, data: { rotated: false } };
   }
   if (operation === 'login_status') {
     const status = await getQQLoginStatus(cookie);
@@ -752,7 +781,15 @@ async function routeFoliaQqRequest(operation, params, segments, url, cookie) {
         ? await qqWechatCheckLoginQr({ qrsig: key.qrsig, ptqrtoken: key.ptqrtoken })
         : await handleQQLoginQrCheck(key.qrsig, key.ptqrtoken);
     if (result?.isOk || result?.loggedIn) {
-      return { code: 803, message: result.message || 'Login successful', cookie: '' };
+      // 安卓没有主进程那个「后端会话仓库」：真正的凭据在原生 CookieManager / foliaBridgeQqCookie 里，
+      // getQQCookie() 每次请求现读。但页面侧的 qqTransport 用存着的这串 `qqmusic_session=…` 判断「有没有会话」
+      // （hasQqSession）。这里回空串，就是扫码确认成功、紧接着「没读到账号（account-refresh-failed）」：
+      // 凭据都在，只是页面以为没人登录，连 login_status 都不去问。所以给一个固定的标记值，不当凭据用。
+      return {
+        code: 803,
+        message: result.message || 'Login successful',
+        cookie: 'qqmusic_session=native-cookie-jar',
+      };
     }
     if (result?.refresh) return { code: 800, message: result.message || 'QR expired' };
     if (result?.status === 'scanned' || Number(result?.code) === 67 || Number(result?.code) === 802) {
