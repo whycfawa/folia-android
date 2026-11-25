@@ -36,7 +36,8 @@ const SENTINELS = [
     'media-error-',
     // 0.7.22 汽水音乐安卓桥：协议移植、可用性、原生 HTTP/媒体白名单
     'qishuiSessionV1',
-    'Qishui Android bridge request failed',
+    // 0.8.0：音源搬进 sources/<id>/ 之后，安卓由宿主自己接（伪主机 → 原生内置桥）
+    'folia-bridge.invalid',
     'LunaOpenSDK/1.0.10',
     'sendCookies',
     'qishuiDeviceId',

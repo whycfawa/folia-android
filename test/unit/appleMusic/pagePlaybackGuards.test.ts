@@ -70,7 +70,7 @@ describe('Apple Music Android playback guards', () => {
 
     // 判失败要留退路：真响了（位置在往前走）就把可恢复的失败收回，别把正在放的歌报成失败。
     it('lets a recoverable rejection give way to a track that is actually sounding', async () => {
-        const mk = player({ playbackState: 2, isPlaying: true, currentPlaybackTime: 1 });
+        const mk = player({ playbackState: 2, isPlaying: true, currentPlaybackTime: 1 }) as ReturnType<typeof player> & { currentPlaybackTime: number };
         const context = { window: { MusicKit: { getInstance: () => mk } }, console };
         const playback = (context.window as { __foliaStart?: unknown });
         await run(context, 'playSong', { catalogId: '123' });

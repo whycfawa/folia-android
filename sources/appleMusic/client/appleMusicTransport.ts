@@ -70,7 +70,8 @@ export const appleMusicHttpStatusOf = (error: unknown): number | null => {
  * Evergreen); Linux stays visible with a line of the source's own and never starts an unsupported player.
  */
 export const appleMusicAvailability = (platform: string, linuxUnsupported: FoliumText): FoliumSourceAvailability => {
-    if (platform === 'darwin' || platform === 'win32') return { configured: true };
+    // 安卓移植：安卓有自己的 WebView 伴侣（FoliaAppleMusic 插件），和 Win/macOS 的系统 WebView 同等可用。
+    if (platform === 'darwin' || platform === 'win32' || platform === 'android') return { configured: true };
     if (platform === 'linux') return { configured: false, reason: 'not-configured', message: linuxUnsupported };
     return { configured: false, reason: 'runtime-unavailable' };
 };

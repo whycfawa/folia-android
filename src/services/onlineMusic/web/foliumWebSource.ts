@@ -72,6 +72,11 @@ export interface FoliumWebSource {
     create: (env: WebSourceEnv) => FoliumSourceDef | FoliumSourceDef[];
     /** Picture hosts (`host` or `*.domain`) fetched through the lyric proxy on the web. */
     proxiedCoverHosts?: readonly string[];
+    /**
+     * 安卓：模组的 main 入口在原生插件里（没有主进程），这个取代「网页上没有 main」的那个永远拒绝的 call。
+     * 不给就还是网页版的行为。
+     */
+    call?: WebSourceEnv['call'];
 }
 
 // What one registration put in place, taken out before the next one of the same mod (registerWebSources may run again).
@@ -98,7 +103,7 @@ const runtimeInfoOf = (manifest: WebSourceManifest): ModRuntimeInfo => ({
 });
 
 /** Registers a moved platform on the web; hands back the host ids of its sources. */
-export const registerFoliumWebSource = ({ package: source, create, proxiedCoverHosts }: FoliumWebSource): string[] => {
+export const registerFoliumWebSource = ({ package: source, create, proxiedCoverHosts, call }: FoliumWebSource): string[] => {
     const { manifest, locales } = source;
     const modId = manifest.id;
     registered.get(modId)?.();
@@ -110,7 +115,7 @@ export const registerFoliumWebSource = ({ package: source, create, proxiedCoverH
     const texts = createFoliumI18n((key, params) => i18n.t(`${namespace}:${key}`, { ...params, defaultValue: '' }));
     const env: WebSourceEnv = {
         modId,
-        call: (name) => Promise.reject(new Error(`[web] ${modId}: no main entry on the web for ${name}`)),
+        call: call ?? ((name) => Promise.reject(new Error(`[web] ${modId}: no main entry on the web for ${name}`))),
         text: (key, params) => texts.key(key, params),
         translate: (key, params) => texts.text(key, params),
         error: createFoliumSourceError,

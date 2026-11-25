@@ -1038,3 +1038,31 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
 ### 0.7.26-android.428：Apple Music WebView 恢复媒体计时器
 
 - onResume/resumeTimers/setKeepScreenOn，避免隐藏 WebView 音频被挂起。
+
+### 0.8.0-android.493：合并上游 v0.8.0（音源变成音源模组）
+
+上游 v0.8.0 把九个平台从 `src/services/onlineMusic/<平台>/` 搬进 `sources/<平台>/`，变成「音源模组」：
+`core/`（纯逻辑 + createSource）、`client/`（模组 client 入口：连 transport、注册音源）、`main/`（Electron 主进程那一侧，
+放着平台自己的协议实现）、`mod.json` + `locales/`。桌面版由主进程的模组运行时加载 client；网页版没有模组，
+`src/services/onlineMusic/web/<id>.ts` 用 `sources/<id>/core` 的 `createSource(env, web)` 自己注册。
+
+安卓既没有 Electron 主进程，也没有模组运行时（模组的 client 要靠 `folium.rpc` 问 main），所以两边都用不上：
+
+- **带 apiBase 通道的三个平台**（网易云、酷狗、QQ）：走网页版那条通道（`web/androidSources.ts`），
+  `web.apiBase` 指向伪主机 `https://folia-bridge.invalid/<platform>`，由 `web/androidBridgeFetch.ts` 的 fetch shim
+  翻译成 `requestFoliaExtension({provider, operation, path, method, query, body})`，交给原生内置桥
+  （`src/nativeBridge/api/folia.js`，经 Capacitor 的 FoliaNative 插件）——也就是 .492 之前走的那条路。
+- **其余六个走原生插件的平台**（Apple Music、Spotify、YouTube Music、汽水、波点、飞牛）：这些模组的 transport 换成
+  原生插件（`window.foliaAppleMusicRequest` / `window.foliaFnMusicRequest` / `requestYtmOnAndroid` /
+  `requestFoliaExtension`），音源定义仍用模组自己的 `create…Source`，由 `registerFoliumWebSource` 注册。
+- `registerFoliumWebSource` 多了一个可选的 `call`（安卓拿它顶上「网页上没有 main 入口」的那个永远拒绝的实现）。
+- Dedicatus D131 加了一条窄口子：只有 `src/services/onlineMusic/web/android*.ts` 可以直接值导入 `sources/<id>/client/`。
+- `bootstrap.tsx`：安卓走 `registerAndroidSources()`，网页版/桌面照旧（`isModsBridgeAvailable()` 判桌面）。
+- `appleMusicTransport.appleMusicAvailability` 认 `android`（安卓有自己的 WebView 伴侣，与 Win/macOS 同等可用）。
+- 随上游一起丢掉的安卓专用补丁（要补需要在新结构里重做）：酷狗概念版 VIP 识别/取链重试/补领、QQ 资料缓存、
+  汽水/波点/Spotify/YTM 旧 transport 里的安卓分支、Apple Music 的 stalled / movedOn / 内容受限判定。
+- 酷狗的两处移植修复重新贴到 `sources/kugou/core/kugouProvider.ts`：歌手字段（空数组不再挡住后面的歌手字段）、
+  歌单与收藏按客户端顺序展示（接口返回是反的）。
+- 单测：随结构变化删掉/改写了旧安卓用例；`npx vitest run` 剩余失败（`packages/coven/*`、`appearanceImportPlan`）
+  在纯上游 v0.8.0 上同样失败，与移植无关。
+

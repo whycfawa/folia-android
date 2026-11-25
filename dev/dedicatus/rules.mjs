@@ -50,8 +50,13 @@ export const BOUNDARY_RULES = [
         code: 'D131',
         from: /^(src|electron|shared)\//,
         to: /^sources\//,
-        when: (from, to) => !(from.startsWith('src/services/onlineMusic/web/') && /^sources\/[^/]+\/core\//.test(to)),
-        why: '宿主只经 src/services/onlineMusic/web/* 用 sources/*/core（网页版的 adapter），别处经模组运行时和 omni',
+        when: (from, to) => !(from.startsWith('src/services/onlineMusic/web/') && (
+            /^sources\/[^/]+\/core\//.test(to)
+            // 安卓没有模组运行时（音源的 client 要 main 入口才跑得起来）：只有安卓那份 adapter
+            // （src/services/onlineMusic/web/android*.ts）可以直接接 sources/<id>/client。
+            || (/^sources\/[^/]+\/client\//.test(to) && /^src\/services\/onlineMusic\/web\/android/.test(from))
+        )),
+        why: '宿主只经 src/services/onlineMusic/web/* 用 sources/*/core（网页版的 adapter；安卓的 adapter 另可接 client），别处经模组运行时和 omni',
     },
     {
         code: 'D132',

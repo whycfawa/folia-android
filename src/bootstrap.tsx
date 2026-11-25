@@ -19,6 +19,8 @@ import { installSourceSwitchCommands } from './components/command-palette/source
 import { installSongNoteTagCommands } from './components/command-palette/songNoteTagCommandsInstaller';
 import { isModsBridgeAvailable } from './mods/ipc';
 import { registerWebSources } from './services/onlineMusic/web';
+import { registerAndroidSources } from './services/onlineMusic/web/androidSources';
+import { isCapacitorAndroid } from './platform/runtime';
 import { noteFoliumFirstScreenMounted, startFoliumForMainWindow } from './mods/runtime/mainWindowStart';
 import { installModResolutionGuard } from './mods/runtime/modResolutionGuard';
 import { installNativeDragGuard } from './utils/nativeDragGuard';
@@ -110,7 +112,10 @@ if (isMainApp) installPlaybackHeartbeat();
 if (isMainApp) installLibrarySuiteChromeCommands();
 // The web build has no mod runtime: its three platforms are registered here, in every window, before
 // anything renders (Folium 2.0 plan §8, services/onlineMusic/web/). The desktop gets them from their source mods.
-if (!isModsBridgeAvailable()) registerWebSources();
+// 安卓没有模组运行时（音源模组要主进程的 rpc 才跑得起来），带 apiBase 通道的三个平台由 web/androidSources.ts
+// 经原生内置桥注册；桌面/网页版照旧。
+if (isCapacitorAndroid()) registerAndroidSources();
+else if (!isModsBridgeAvailable()) registerWebSources();
 // One search command per registered online source (no default platform), put in again when the sources change.
 if (isMainApp) installProviderSearchCommands();
 // One command per state each source can be switched to (Settings → Sources), following the main process's states.
