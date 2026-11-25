@@ -16,6 +16,7 @@ import type { ModManagerClasses } from '../manager/modManagerClasses';
 import type { ModNotice } from '../manager/ModStorageUsage';
 import { useModMarketStore } from './useModMarketStore';
 import { switchModOn } from './modSwitch';
+import { noteModError } from '../android/androidModDiagnostics';
 import { buildModViewItems, isModOn, isEmptyModsQuery, searchModViewItems, sectionModViewItems, type ModViewItem, type ModsSort } from './marketModel';
 import { parseModsQuery } from './modsQuery';
 import { ModsSidebar } from './ModsSidebar';
@@ -149,6 +150,7 @@ export const ModsWorkbench: React.FC<ModsWorkbenchProps> = ({ classes, isDayligh
             return;
         }
         if (answer.error && DECLINED.has(answer.error)) return;
+        noteModError('mods-workbench', answer.error);
         setNotice({ kind: 'error', text: translateModError(t, answer.error, fallback) });
     }, [t]);
 

@@ -29,8 +29,9 @@ import { androidModsBridge, isAndroidModsAvailable } from './android/androidMods
 type ElectronModsBridge = NonNullable<typeof window.electron>['mods'];
 
 const bridge = (): ElectronModsBridge => (
-    window.electron?.mods
-    ?? (isAndroidModsAvailable() ? androidModsBridge as unknown as ElectronModsBridge : undefined)
+    // 安卓上 window.electron 可能由某个网页库注入一个残缺的 mods 对象；优先用原生桥，
+    // 否则 setModEnabled / getMarketCatalog 会落到空实现上，报「当前环境不支持模组系统」。
+    (isAndroidModsAvailable() ? androidModsBridge as unknown as ElectronModsBridge : window.electron?.mods)
 ) as ElectronModsBridge;
 
 export const isModsBridgeAvailable = (): boolean => Boolean(window.electron?.mods) || isAndroidModsAvailable();

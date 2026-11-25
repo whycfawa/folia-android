@@ -6,6 +6,11 @@ import type { WebSourceManifest } from '../../services/onlineMusic/web/foliumWeb
 import {
     readBuiltinModEnabled, readCommunityModsEnabled, writeBuiltinModEnabled, writeCommunityModsEnabled,
 } from './androidModPrefs';
+import { androidModMarketBridge } from './androidModMarket';
+import {
+    answerAndroidSourcesOnboarding, getAndroidSourceStates, setAndroidSourceState, setAndroidSourceStatesForMod,
+    subscribeAndroidSourceStates,
+} from './androidSourceStates';
 
 // src/mods/android/androidModsBridge.ts
 // Android 端只加载客户端模组：原生负责 zip 安装、目录、启用状态与本地 HTTP 文件服务，
@@ -166,6 +171,7 @@ export const setAndroidModEnabled = async (id: string, enabled: boolean): Promis
     // 自带的音源模组：开关存在网页这一侧，拨完要当场把它那一家音源注册/注销掉。
     if (isAndroidBuiltinModId(id)) {
         writeBuiltinModEnabled(id, enabled);
+        setAndroidSourceStatesForMod(id, enabled ? 'enabled' : 'disabled');
         try {
             const { applyAndroidBuiltinSourceEnabled } = await import('../../services/onlineMusic/web/androidSources');
             if (!applyAndroidBuiltinSourceEnabled(id, enabled)) {
@@ -396,4 +402,14 @@ export const androidModsBridge = {
         return { ok: true, enabled: enable === true };
     },
     getCommunityMods: async () => ({ ok: true, enabled: isAndroidCommunityModsEnabled() }),
+    // 桌面版的模组市场在主进程（market.cjs）；安卓用同一份目录协议的原生桥实现。
+    getMarketCatalog: androidModMarketBridge.getMarketCatalog,
+    getMarketReadme: androidModMarketBridge.getMarketReadme,
+    installFromMarket: androidModMarketBridge.installFromMarket,
+    onMarketProgress: androidModMarketBridge.onMarketProgress,
+    // 桌面版音源开关表在主进程；安卓用同形的本地表 + 现成的音源注册/注销。
+    getSourceStates: getAndroidSourceStates,
+    setSourceState: setAndroidSourceState,
+    answerSourcesOnboarding: answerAndroidSourcesOnboarding,
+    onSourceStatesChanged: subscribeAndroidSourceStates,
 };

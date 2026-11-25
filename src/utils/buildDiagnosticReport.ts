@@ -35,6 +35,7 @@ import {
 import { useVideoLayerSettingsStore } from '../stores/useVideoLayerSettingsStore';
 import { collectWebGL2Diagnostics, formatWebGL2DiagnosticsLine } from './webglDiagnostics';
 import { getModResolutionGuardStats } from '../mods/runtime/modResolutionGuard';
+import { readModDiagnosticLines } from '../mods/android/androidModDiagnostics';
 import { getNativeStageStatsSnapshot } from '../services/nativeStageDiagnostics';
 import { BUILTIN_VISUALIZER_BACKGROUND_MODES } from '../types/visualizerModes';
 import {
@@ -832,6 +833,9 @@ export const buildDiagnosticReport = async (): Promise<string> => {
         formatWebGL2DiagnosticsLine(collectWebGL2Diagnostics()),
         `mod resolution guard: enabled=${getModResolutionGuardStats().enabled} level=${getModResolutionGuardStats().level} scale=${getModResolutionGuardStats().scale} canvases=${getModResolutionGuardStats().canvases}`,
         `native stage: enabled=${getNativeStageStatsSnapshot().enabled} active=${getNativeStageStatsSnapshot().active} renderer=${getNativeStageStatsSnapshot().renderer} vulkan=${getNativeStageStatsSnapshot().vulkan} pipeline=${getNativeStageStatsSnapshot().pipeline} vulkanError=${getNativeStageStatsSnapshot().vulkanError || '(none)'} canvasMs=${getNativeStageStatsSnapshot().canvasMs} surface=${getNativeStageStatsSnapshot().surface} playing=${getNativeStageStatsSnapshot().playing} frames=${getNativeStageStatsSnapshot().frames}`,
+        '',
+        'mod system:',
+        ...(await readModDiagnosticLines()),
         '',
         'visualizer backgrounds:',
         ...readVisualizerBackgroundLines(),

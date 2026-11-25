@@ -255,6 +255,11 @@ export const STORAGE_KEYS = [
     // （src/mods/android/androidModPrefs.ts）。桌面版对应的两个键是 main:MOD_COMMUNITY_ENABLED / main:MOD_SYSTEM_ENABLED。
     'web:mod_builtin_disabled_mods',
     'web:mod_community_enabled',
+    // 0.8.0-android.503：安卓端模组市场目录缓存与音源开关表（没有桌面主进程，落在 WebView 存储里）。
+    'web:mod_market_catalog',
+    'web:mods_source_states',
+    'web:mods_sources_onboarding',
+    'web:mod_last_error',
     'web:native_stage_enabled',
     'web:navidrome_config',
     'web:navidrome_config_origin',

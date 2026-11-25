@@ -183,27 +183,75 @@ const idText = (value: unknown): string => (
 const dataText = (data: KugouSongData | undefined, key: string): string => idText(data?.[key]);
 
 // Artists without an id of KuGou's get one of their own, which opens nowhere (`ref: false`).
+// 安卓移植修复（曾随上游重写丢失，这里按 0.7.18 那版补全）：候选字段逐个试到真值为止。
+// 空数组 `authors: []` 同样是「有值」，若取第一个就停，会挡住后面真带歌手的字段，整路歌单
+// 全部显示未知歌手。数组元素可能是字符串、对象，还可能包在 base / singer 里，键名也各家不同。
+const KUGOU_ARTIST_ARRAY_KEYS = [
+    'Singers', 'singers', 'singerinfo', 'SingerList', 'singer_list',
+    'authors', 'artists', 'artist_list', 'author_list', 'artistList',
+] as const;
+
+const KUGOU_ARTIST_NAME_KEYS = [
+    'name', 'author_name', 'authorName', 'singername', 'singerName', 'singer_name', 'nickname',
+] as const;
+
+const KUGOU_ARTIST_ID_KEYS = ['author_id', 'authorId', 'singerid', 'singer_id', 'id'] as const;
+
+const kugouArtistBaseOf = (entry: unknown): any => {
+    if (!entry || typeof entry !== 'object') return null;
+    const candidate = entry as any;
+    if (candidate.base && typeof candidate.base === 'object') return candidate.base;
+    if (candidate.singer && typeof candidate.singer === 'object') return candidate.singer;
+    return candidate;
+};
+
+const kugouArtistNameOf = (entry: unknown): string => {
+    if (typeof entry === 'string') return entry.trim();
+    const base = kugouArtistBaseOf(entry);
+    if (!base) return '';
+    for (const key of KUGOU_ARTIST_NAME_KEYS) {
+        const text = base[key];
+        if (typeof text === 'string' && text.trim()) return text.trim();
+    }
+    return '';
+};
+
+/** `id` 只对 singerinfo 是真作者 id；Singers 里的 id 是内部序号，不当 catalogRef。 */
+const kugouArtistIdOf = (entry: unknown, allowGenericId: boolean): string => {
+    const base = kugouArtistBaseOf(entry);
+    if (!base) return '';
+    for (const key of KUGOU_ARTIST_ID_KEYS) {
+        if (key === 'id' && !allowGenericId) continue;
+        const value = base[key];
+        if (value !== undefined && value !== null && value !== '') return idText(value);
+    }
+    return '';
+};
+
 const normalizeArtists = (raw: unknown): FoliumSourceNamedRef[] => {
-    // 逐个候选试到有结果为止，而不是取第一个「有值」的：`authors: []` 同样是「有值」，
-    // 会把后面真正带着歌手的字段整个挡住，表现就是整路歌单全显示未知歌手（安卓移植修过，随上游重写丢失）。
-    for (const key of ['Singers', 'singers', 'singerinfo', 'authors', 'artists']) {
-        const singers: unknown = valueOf(raw, key);
-        if (!Array.isArray(singers)) continue;
-        const usesSingerInfo = key === 'singerinfo';
-        const artists = singers.map((artist: unknown, index: number): FoliumSourceNamedRef => {
-            const base: unknown = valueOf(artist, 'base') ?? artist;
-            const authorId = valueOf(base, 'author_id', 'authorId')
-                ?? (usesSingerInfo ? valueOf(base, 'id') : undefined);
-            const id = idText(authorId);
-            return {
-                id: id || `kugou-artist-${index}`,
-                name: String(valueOf(base, 'name', 'author_name', 'singername') || ''),
-                ...(id ? {} : { ref: false }),
-            };
-        }).filter(artist => artist.name);
+    for (const key of KUGOU_ARTIST_ARRAY_KEYS) {
+        const value: unknown = valueOf(raw, key);
+        if (value === undefined || value === null) continue;
+        const list = Array.isArray(value) ? value : [value];
+        const allowGenericId = key === 'singerinfo';
+        const artists = list
+            .map((entry, index): FoliumSourceNamedRef => {
+                const authorId = kugouArtistIdOf(entry, allowGenericId);
+                return {
+                    id: authorId || `kugou-artist-${index}`,
+                    name: kugouArtistNameOf(entry),
+                    ...(authorId ? {} : { ref: false }),
+                };
+            })
+            .filter(artist => artist.name);
         if (artists.length > 0) return artists;
     }
-    const names = String(valueOf(raw, 'SingerName', 'singername', 'singer_name', 'author_name', 'Singer') || '')
+    // 顶层单歌手字段同样逐键取真值，空字符串不能挡住后面的键。
+    const single = [
+        'SingerName', 'singername', 'singerName', 'singer_name', 'author_name', 'authorName',
+        'Singer', 'singer', 'artist_name', 'artistName', 'artist', 'album_artist', 'AlbumArtist',
+    ].map(key => String(valueOf(raw, key) || '')).find(text => text.trim());
+    const names = String(single || '')
         .split(/[、,&/]/).map(name => name.trim()).filter(Boolean);
     return names.map((name, index) => ({ id: `kugou-artist-${index}-${name}`, name, ref: false }));
 };

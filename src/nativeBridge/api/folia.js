@@ -1181,7 +1181,35 @@ async function handleFoliaKugouRequest(input, url) {
     return await handleKGLoginQrCreate(firstValue(params.key, params.qrcode));
   }
   if (operation === 'login_qr_check') {
-    return await handleKGLoginQrCheck(firstValue(params.key, params.qrcode));
+    const result = await handleKGLoginQrCheck(firstValue(params.key, params.qrcode));
+    // 桌面桥回给窗口的是 KuGouMusicApi 的 body 外加一份会话 cookie（kugouApiBridge.cjs），
+    // 网页通道的 transport 只在 login_qr_check 这一步把 token / userid / cookie 写进页面存储
+    // （kugouTransport.ts 的 persistWebSession → confirmedSignIn，认的是 data.userid 或 cookie）。
+    // 以前这里回的是扁平结果：既没有 body、cookie，字段名也是 userId 不是 userid，
+    // 于是扫码成功后页面里的 userid 仍是空，getLoginStatus() 在 web 运行时第一步就回 null，
+    // 登录窗口只能报「没读到账号」（account-refresh-failed）。形状照上游补齐；
+    // 原有扁平字段一并保留，旧的 /api/kg/login/qr/check 路由不受影响。
+    const cookieHeader = await ensureKGCookie();
+    const cookieEntries = cookieHeader
+      ? cookieHeader.split(';').map(entry => entry.trim()).filter(Boolean)
+      : [];
+    const status = Number(result?.status ?? result?.code) || 0;
+    return {
+      ...result,
+      body: {
+        status: 1,
+        error_code: 0,
+        data: {
+          status,
+          userid: String(result?.userId || ''),
+          token: String(result?.token || ''),
+          nickname: result?.nickname || '',
+          pic: result?.avatar || '',
+          vip_type: Number(result?.vipType) || 0,
+        },
+      },
+      cookie: cookieEntries,
+    };
   }
   if (operation === 'logout') {
     return { status: 1, error_code: 0, code: 200 };

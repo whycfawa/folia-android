@@ -323,6 +323,47 @@ public class FoliaModsPlugin extends Plugin {
         }
     }
 
+    /** 安装从模组市场下载并已校验 SHA-256 的 zip；来源不是用户选的文件选择器。 */
+    @PluginMethod
+    public void installZipFromBase64(PluginCall call) {
+        String modId = call.getString("id", "");
+        String base64 = call.getString("base64", "");
+        if (modId == null || modId.isEmpty() || base64 == null || base64.isEmpty()) {
+            call.reject("id and base64 are required");
+            return;
+        }
+        if (!modId.matches("[a-z0-9][a-z0-9-]*")) {
+            call.reject("invalid mod id");
+            return;
+        }
+        if (!importing.add("market:" + modId)) {
+            call.reject("import-in-progress");
+            return;
+        }
+        new Thread(() -> {
+            File zip = null;
+            try {
+                zip = new File(getContext().getCacheDir(), "mod-market-" + System.nanoTime() + ".zip");
+                try (OutputStream output = new FileOutputStream(zip)) {
+                    output.write(android.util.Base64.decode(base64, android.util.Base64.NO_WRAP));
+                }
+                String imported = installZip(getContext(), android.net.Uri.fromFile(zip));
+                JSObject answer = new JSObject();
+                answer.put("imported", imported);
+                call.resolve(answer);
+            } catch (Exception error) {
+                Log.w(TAG, "market mod install failed", error);
+                call.reject(error.getMessage() == null ? "market install failed" : error.getMessage(), error);
+            } finally {
+                importing.remove("market:" + modId);
+                if (zip != null) {
+                    //noinspection ResultOfMethodCallIgnored
+                    zip.delete();
+                }
+            }
+        }).start();
+    }
+
     private static File modsDir(Context context) {
         File dir = new File(context.getFilesDir(), "mods");
         if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) return null;
