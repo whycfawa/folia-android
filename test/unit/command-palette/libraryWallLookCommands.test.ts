@@ -30,6 +30,8 @@ const createContext = (state: Settings) => {
     const setLibraryWallLook = vi.fn((look: LibraryWallLook) => { state.look = look; });
     const setLibraryWallWindowsPerBlock = vi.fn((count: number) => { state.windows = count; });
     const toggleLibraryWallStackEdges = vi.fn();
+    const toggleLibraryWallCollectionTilt = vi.fn();
+    const toggleLibraryWallHomeFinite = vi.fn();
     const toggleLibraryWallSeamClear = vi.fn();
     const toggleLibraryWallBackdropLyrics = vi.fn();
     const toggleLibraryWallBackdropBlur = vi.fn();
@@ -40,6 +42,8 @@ const createContext = (state: Settings) => {
         shared: { t: (_key: string, fallback?: string) => fallback ?? '' },
         settings: {
             toggleLibraryWallStackEdges,
+            toggleLibraryWallCollectionTilt,
+            toggleLibraryWallHomeFinite,
             toggleLibraryWallSeamClear,
             toggleLibraryWallBackdropLyrics,
             toggleLibraryWallBackdropBlur,
@@ -61,6 +65,8 @@ const createContext = (state: Settings) => {
         setLibraryWallLook,
         setLibraryWallWindowsPerBlock,
         toggleLibraryWallStackEdges,
+        toggleLibraryWallCollectionTilt,
+        toggleLibraryWallHomeFinite,
         toggleLibraryWallSeamClear,
         toggleLibraryWallBackdropLyrics,
         toggleLibraryWallBackdropBlur,
@@ -180,6 +186,26 @@ describe('library wall windows picker', () => {
         expect(toggleLibraryWallStackEdges).toHaveBeenCalledTimes(1);
         expect(anchor.execute('', context)).toBe(true);
         expect(openSettings).toHaveBeenCalledWith('options', 'home', null, 'bravaisSettings');
+    });
+
+    it('toggles the collection tilt only while bravais is the effective suite', () => {
+        const toggle = command('library-wall-collection-tilt-toggle');
+        expect(toggle.group).toBe('settings');
+        expect(toggle.executeShortcut).toBeUndefined();
+        expect(toggle.isAvailable?.(createContext({ available: false, look: 'solid', windows: 3 }).context)).toBe(false);
+        const { context, toggleLibraryWallCollectionTilt } = createContext({ available: true, look: 'solid', windows: 3 });
+        expect(toggle.execute('', context)).toBe(true);
+        expect(toggleLibraryWallCollectionTilt).toHaveBeenCalledTimes(1);
+    });
+
+    it('toggles the finite home wall only while bravais is the effective suite', () => {
+        const toggle = command('library-wall-home-finite-toggle');
+        expect(toggle.group).toBe('settings');
+        expect(toggle.executeShortcut).toBeUndefined();
+        expect(toggle.isAvailable?.(createContext({ available: false, look: 'solid', windows: 3 }).context)).toBe(false);
+        const { context, toggleLibraryWallHomeFinite } = createContext({ available: true, look: 'solid', windows: 3 });
+        expect(toggle.execute('', context)).toBe(true);
+        expect(toggleLibraryWallHomeFinite).toHaveBeenCalledTimes(1);
     });
 });
 

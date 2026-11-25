@@ -1,4 +1,4 @@
-import type { YtmWireArtist, YtmWireCollection, YtmWireSong } from '../ytmTransport';
+import type { YtmWireArtist, YtmWireCollection, YtmWireSong } from '../../../../../sources/ytm/client/ytmTransport';
 
 // src/services/onlineMusic/ytm/android/ytmAndroidCatalog.ts
 // Android App：把 youtubei.js 解析好的 YouTube Music 页面节点（搜索、专辑、歌手、播放队列）读成线上格式，

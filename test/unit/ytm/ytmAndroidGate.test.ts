@@ -32,7 +32,7 @@ vi.mock('youtubei.js', () => ({
     YTNodes: {},
 }));
 vi.mock('@/i18n/config', () => ({ default: { t: (key: string) => key } }));
-import type { YtmOperation } from '@/services/onlineMusic/ytm/ytmTransport';
+import type { YtmOperation } from '../../../sources/ytm/client/ytmTransport';
 
 // 原生那一罐的假账：restore 读到的就是罐里存的，save 写进去，clear 抹掉。
 const cannedSession = vi.hoisted(() => ({ box: null as unknown }));

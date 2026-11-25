@@ -4,7 +4,8 @@ import { LIBRARY_CORE, libraryLayerOf } from '../mcp/ts-code-map/libraryLayers.m
 // 分层边界规则的唯一来源：左边不该在运行时依赖右边，每条带一个 Dedicatus 代码。
 // 代码地图（dev/mcp/ts-code-map/codemap.mjs）和 Dedicatus 的边界检查都从这里读。
 // 只看值导入——`import type` 在运行时不存在，把它算成违规会产生大量假警报
-// （比如 stores 只是 `import type { PanelTab }` 就会被误判成依赖了组件）。
+// （比如 stores 只是 `import type { PanelTab }` 就会被误判成依赖了组件）。带 `types: true` 的规则例外：
+// 它管的是编译边界（音源模组只对着公开类型编译），`import type` 也算。
 
 export const BOUNDARY_RULES = [
     { code: 'D101', from: /^src\/stores\//, to: /^src\/(components|library\/(suites|app))\//, why: 'store 不应依赖组件' },
@@ -31,9 +32,34 @@ export const BOUNDARY_RULES = [
     {
         code: 'D110',
         from: /^src\/(components|hooks|stores|library\/(core|suites|app))\//,
-        to: /^src\/services\/onlineMusic\/.*(Provider|Transport)\.ts$/,
+        // Folium 2.0：平台的代码从 src/services/onlineMusic/<id>/ 逐家搬进 sources/<id>/（S5），搬的过程中两边都查。
+        to: /^(src\/services\/onlineMusic\/.*(Provider|Transport)\.ts|sources\/.*)$/,
         when: from => !from.startsWith(LIBRARY_CORE) || ['state', 'binding'].includes(libraryLayerOf(from)),
         why: '普通调用应经过 omni，不应直连 provider adapter/transport',
+    },
+    // Folium 2.0 方案 §6.1：仓库里的音源模组（sources/<id>/）只用公开接口。`types: true`：连 `import type` 也算，
+    // 它们只对着 mods/folium.d.ts 和 kit 编译（sources/tsconfig.json 没有 @/ 别名，相对路径的 import type 在这里拦）。
+    {
+        code: 'D130',
+        from: /^sources\//,
+        to: /^(src|electron|shared)\//,
+        types: true,
+        why: '音源模组只用公开接口（mods/folium.d.ts、@folia/folium-source-kit），不 import 宿主',
+    },
+    {
+        code: 'D131',
+        from: /^(src|electron|shared)\//,
+        to: /^sources\//,
+        when: (from, to) => !(from.startsWith('src/services/onlineMusic/web/') && /^sources\/[^/]+\/core\//.test(to)),
+        why: '宿主只经 src/services/onlineMusic/web/* 用 sources/*/core（网页版的 adapter），别处经模组运行时和 omni',
+    },
+    {
+        code: 'D132',
+        from: /^sources\/[^/]+\//,
+        to: /^sources\/[^/]+\//,
+        types: true,
+        when: (from, to) => sourceOf(from) !== sourceOf(to),
+        why: '音源模组之间不互相 import：各自打成自己的 bundle，共用的放 packages/folium-source-kit',
     },
     // src/library：headless core 与 UI suites 分开。core 按功能分文件夹，层由文件名说（libraryLayers.mjs），
     // 与老目录一一对应——contract≈types、model≈utils、service≈services、state≈stores、binding≈hooks；
@@ -88,6 +114,9 @@ export const BOUNDARY_RULES = [
     },
 ];
 
+/** `sources/<id>/...` 的音源目录名。 */
+const sourceOf = file => /^sources\/([^/]+)\//.exec(file)?.[1] ?? null;
+
 /** `src/library/suites/<id>/...` 的 suite id。 */
 const suiteOf = file => /^src\/library\/suites\/([^/]+)\//.exec(file)?.[1] ?? null;
 
@@ -96,6 +125,16 @@ const suiteOf = file => /^src\/library\/suites\/([^/]+)\//.exec(file)?.[1] ?? nu
  * 是纯模块住进了 UI 目录（修法是把它挪进 core 对应的功能文件夹或 utils，不是改依赖）。
  */
 export const UI_DIRS = /^src\/(components\/|library\/(suites\/|app\/|registry\.))/;
+
+/**
+ * D190 的例外：用相对路径的 `import.meta.glob` 收集同目录文件的注册表。它必须和被收集的文件住在一起，
+ * 挪出 UI 目录 glob 就找不到它们（被找的文件按 file-modularization 也不能挪），所以 D190 的修法（挪目录）对它不成立。
+ * 指向这里登记的文件、目标又不含 UI 的边不报 D190；目标含 UI 时照常按规则报。
+ * 2026-11-17 维护者在 Coven Op. 2 的升级 e1 里定下；新加一条要写明 glob 收集的是什么。
+ */
+export const GLOB_PINNED_REGISTRIES = [
+    { file: 'src/components/visualizer/tuningRegistry.ts', why: "eager glob 收集 './*/tuning.ts' 和 './backgrounds/*/{tuning,settings}.ts'" },
+];
 
 export const ruleMatches = (rule, from, to) => rule.from.test(from) && rule.to.test(to) && (!rule.when || rule.when(from, to));
 

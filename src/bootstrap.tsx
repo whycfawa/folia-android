@@ -14,6 +14,11 @@ import ObsPlayerCapSourceApp from './components/obs/ObsPlayerCapSourceApp';
 import { initializeLocalCoverRuntime } from './services/localCoverRuntime';
 import { installFoliumHomePageDismissal } from './components/app/home/foliumHomePageDismissal';
 import { installLibrarySuiteChromeCommands } from './library/app/installLibrarySuiteChromeCommands';
+import { installProviderSearchCommands } from './components/command-palette/providerSearchCommandsInstaller';
+import { installSourceSwitchCommands } from './components/command-palette/sourceSwitchCommandsInstaller';
+import { installSongNoteTagCommands } from './components/command-palette/songNoteTagCommandsInstaller';
+import { isModsBridgeAvailable } from './mods/ipc';
+import { registerWebSources } from './services/onlineMusic/web';
 import { noteFoliumFirstScreenMounted, startFoliumForMainWindow } from './mods/runtime/mainWindowStart';
 import { installModResolutionGuard } from './mods/runtime/modResolutionGuard';
 import { installNativeDragGuard } from './utils/nativeDragGuard';
@@ -21,6 +26,7 @@ import { prewarmSavedVisualizer, prewarmVisualizersWhenIdle } from './components
 import { bootNavidromeServerPreset } from './services/navidromeServerPreset';
 import { isNavidromeEnabled } from './services/navidromeService';
 import { setNavidromeEnabledState } from './stores/useLibraryStore';
+import { installUiZoom } from './services/uiZoomRuntime';
 import { isMainAppSurface, isObsBrowserSourceSurface, isPerfCheckSurface, isRemoteControlSurface, obsSourceKind } from './utils/appSurface';
 // 副作用 import：store 在模块加载时就把 `<html data-reduce-motion>` 写好并保持同步。放在 bootstrap
 // 而不是 App 里，是因为下面按 URL 挂的根不止 App —— 远程控制窗口的进度辉光也读这个属性。
@@ -102,6 +108,18 @@ const renderApp = () => root.render(
 // Android 移植：播放心跳（前台服务/通知状态刷新）。桌面上是空操作。
 if (isMainApp) installPlaybackHeartbeat();
 if (isMainApp) installLibrarySuiteChromeCommands();
+// The web build has no mod runtime: its three platforms are registered here, in every window, before
+// anything renders (Folium 2.0 plan §8, services/onlineMusic/web/). The desktop gets them from their source mods.
+if (!isModsBridgeAvailable()) registerWebSources();
+// One search command per registered online source (no default platform), put in again when the sources change.
+if (isMainApp) installProviderSearchCommands();
+// One command per state each source can be switched to (Settings → Sources), following the main process's states.
+if (isMainApp) installSourceSwitchCommands();
+// One #tag command per song-note tag (opens the scratchpad's Moments sheet at that tag), following the tags.
+if (isMainApp) installSongNoteTagCommands();
+
+// 界面缩放（#1264）在首屏渲染前套上，免得先按 100% 排一遍版再缩。只缩主窗口。
+if (isMainApp) installUiZoom();
 
 // 保存的歌词样式可以趁首屏加载遮罩还在时先准备（雾笺在后台编着色器，见 visualizer/prewarmVisualizers.ts）。
 // 不等它，和下面的 mod 加载一起跑；别的启动慢的样式等首屏出来、页面空闲时再准备（FirstScreenMounted）。

@@ -1,7 +1,7 @@
 import CryptoJS from '../vendor/crypto-es.mjs';
 import { noteLibraryStep } from './libraryTrace.js';
 import { buildQrDataUrl } from './qrImage.js';
-import { krcDecrypt } from '../../services/onlineMusic/kugou/krcDecrypt';
+import { krcDecrypt } from '@folia/folium-source-kit';
 import {
   clearCookieCache,
   getKGCookie as readKGCookie,

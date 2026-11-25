@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { YTM_HISTORY_BROWSE_ID, readYtmAccountHistory, type YtmAndroidHistoryHost } from '@/services/onlineMusic/ytm/android/ytmAndroidHistory';
-import type { YtmWireSong } from '@/services/onlineMusic/ytm/ytmTransport';
+import type { YtmWireSong } from '../../../sources/ytm/client/ytmTransport';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

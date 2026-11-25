@@ -59,8 +59,9 @@ describe('validateManifest', () => {
         expect(result.ok).toBe(false);
     });
 
+    // Folium 2.0 (plan §5.1): 1 and 2 are read; anything else is not.
     it('rejects an unsupported folium version', () => {
-        const result = validateManifest({ ...validManifest, folium: 2 });
+        const result = validateManifest({ ...validManifest, folium: 3 });
         expect(result.ok).toBe(false);
         if (!result.ok) {
             expect(result.errors.join()).toContain('folium');
@@ -194,6 +195,13 @@ describe('validateManifest Folium entries and opt-ins', () => {
         }
         const both = ['visualizer.background', 'visualizer.animationIntensity'];
         expect(validateManifest({ ...validManifest, permissions: both }).value.permissions).toEqual(both);
+    });
+
+    // Folium 1.10: folium.theme.apply / release.
+    it('accepts theme.write', () => {
+        const result = validateManifest({ ...validManifest, permissions: ['theme.write'] });
+        expect(result.ok).toBe(true);
+        expect(result.value.permissions).toEqual(['theme.write']);
     });
 
     it('accepts an optional preview image path inside the mod directory', () => {

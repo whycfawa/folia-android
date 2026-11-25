@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 
 // test/unit/player-panel/localFavoriteHeart.test.ts
 // 本地收藏的端到端回归：点一次红心之后，面板上的红心必须当场变亮。
-// 两条曾经各自让它失效的路径都在这里：memo 依赖用了身份恒定的 isLocalSongLiked，
+// 两条曾经各自让它失效的路径都在这里：memo 依赖用了身份恒定的 isFoliaSongLiked，
 // 以及重复导入的副本被写成 canonical id 后读不回来。
 
 const env = vi.hoisted(() => {
@@ -40,6 +41,7 @@ import { createRoot } from 'react-dom/client';
 import { useLibraryPlaybackController } from '@/components/app/playback/start/useLibraryPlaybackController';
 import { usePlayerPanelModel } from '@/components/app/player-panel/usePlayerPanelModel';
 import { usePlaybackStore } from '@/stores/usePlaybackStore';
+import { appDatabase } from '@/services/appDatabase';
 import type { LocalSong, SongResult } from '@/types';
 
 const localSongRecord = (id: string, filePath: string, addedAt: number): LocalSong => ({
@@ -74,6 +76,10 @@ describe('local favorite heart', () => {
         (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
         env.cache = new Map();
         env.songs = [canonicalSong, duplicateSong];
+        // 歌单服务在自己的事务里直接读曲库表和缓存表，不经过上面 mock 的 db 模块。
+        await appDatabase.delete();
+        await appDatabase.open();
+        await appDatabase.local_music.bulkPut([canonicalSong, duplicateSong]);
         usePlaybackStore.setState({ currentSong: playingDuplicate } as never);
 
         const likedStates: boolean[] = [];
@@ -95,12 +101,12 @@ describe('local favorite heart', () => {
             } as never) as {
                 handleLike: () => Promise<void>;
                 loadLocalSongs: () => Promise<void>;
-                isLocalSongLiked: (song: SongResult | null) => boolean;
+                isFoliaSongLiked: (song: SongResult | null) => boolean;
             };
             handleLike = controller.handleLike;
             loadLocalSongs = controller.loadLocalSongs;
             const model = usePlayerPanelModel({
-                isLocalSongLiked: controller.isLocalSongLiked,
+                isFoliaSongLiked: controller.isFoliaSongLiked,
                 shouldHidePlayerRightPanelButton: false,
                 localSongs: [],
                 localLibraryCatalog: emptyLocalLibraryCatalog,
@@ -117,11 +123,12 @@ describe('local favorite heart', () => {
         await act(async () => { await loadLocalSongs(); });
         expect(likedStates.at(-1)).toBe(false);
 
+        // 写完之后歌单的 store 自己跟着重读（服务会叫一声），handleLike 不再等它：这里等到面板跟上。
         await act(async () => { await handleLike(); });
-        expect(likedStates.at(-1)).toBe(true);
+        await act(async () => { await vi.waitFor(() => expect(likedStates.at(-1)).toBe(true)); });
 
         await act(async () => { await handleLike(); });
-        expect(likedStates.at(-1)).toBe(false);
+        await act(async () => { await vi.waitFor(() => expect(likedStates.at(-1)).toBe(false)); });
 
         await act(async () => { root.unmount(); });
     });

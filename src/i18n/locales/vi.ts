@@ -1,31 +1,75 @@
-// Vietnamese (vi) interface text, laid out line for line like en.ts.
+
 
 export default {
-  "appUpdate": {
-    "title": "Có bản cập nhật mới",
-    "versionLine": "Phiên bản mới {{version}}",
-    "noNotes": "Bản cập nhật này không có ghi chú.",
-    "download": "Tải bản cập nhật",
-    "downloading": "Đang tải {{percent}}%",
-    "downloadingHint": "Đang tải. Hãy giữ ứng dụng ở phía trước.",
-    "later": "Để sau",
-    "skipVersion": "Bỏ qua phiên bản này",
-    "updateNow": "Cập nhật ngay",
-    "install": "Cài đặt",
-    "installing": "Đang mở trình cài đặt…",
-    "openInstallSetting": "Cho phép cài đặt",
-    "retry": "Thử lại",
-    "checkNow": "Kiểm tra cập nhật",
-    "checkNowHint": "Kiểm tra qua proxy tăng tốc GitHub trước, rồi chuyển sang GitHub nếu thất bại.",
-    "promptEnabled": "Hộp thoại cập nhật",
-    "promptEnabledDesc": "Hiện hộp thoại khi phát hiện phiên bản mới.",
-    "checking": "Đang kiểm tra…",
-    "upToDate": "Bạn đang dùng phiên bản mới nhất",
-    "checkFailed": "Kiểm tra thất bại",
-    "notConfigured": "Bản dựng này chưa cấu hình nguồn cập nhật"
-  },
-  "appleMusic": {
-    "libraryPlaylistName": "Tất cả bài hát"
+  "sourcesSettings": {
+    "groupList": "Nguồn",
+    "groupNotices": "Tiếp quản và thay thế",
+    "groupInstall": "Cài đặt",
+    "groupOther": "Nguồn khác",
+    "searchStates": "Bật, chỉ để khớp, tắt",
+    "listFoot": "Nguồn đã tắt không có trong bộ chuyển, cửa sổ đăng nhập, tìm kiếm và nguồn lời bài hát; bài hát của nó vẫn ở trong hàng đợi và danh sách phát, và trở lại khi bật lại. \"Chỉ để khớp\" chỉ tìm lời và thông tin cho bài hát cục bộ, như chưa đăng nhập. Cục tẩy là xóa dữ liệu: đăng xuất và xóa bộ nhớ đệm cùng dữ liệu mod, có hỏi trước; tắt thì không xóa dữ liệu.",
+    "empty": "Không đọc được nguồn nào.",
+    "stateEnabled": "Bật",
+    "stateMatching": "Chỉ để khớp",
+    "stateDisabled": "Tắt",
+    "matchOnlyUnknown": "Chưa từng chạy trên máy này: hãy bật một lần để biết nó có thể chỉ dùng để khớp không",
+    "tierHost": "Có sẵn trong ứng dụng (chưa thành mod)",
+    "tierBuiltin": "Mod tích hợp",
+    "tierOverride": "Bản thay thế",
+    "tierUser": "Mod bên thứ ba",
+    "tierTakeover": "Mod tiếp quản",
+    "runHost": "Phần trong tiến trình chính vẫn chạy như thường",
+    "runHostHidden": "Chỉ ẩn trong giao diện; phần trong tiến trình chính vẫn chạy như thường",
+    "run_starting": "Đang khởi động",
+    "run_stopped": "Không chạy",
+    "run_mod-off": "Mod của nó đang tắt ở trang Mod; mục này tạm chưa có tác dụng",
+    "runFailed": "Không khởi động được: {{error}}",
+    "usage": "Dữ liệu {{data}} · bộ nhớ đệm {{cache}}",
+    "hostNote": "Nền tảng này chưa thành mod nguồn; ứng dụng tự đăng ký nó. Tắt nó hoặc chỉ giữ để khớp chỉ thay đổi chỗ nó xuất hiện: phần của nó trong tiến trình chính không bị ảnh hưởng và vẫn chạy như thường. Xóa dữ liệu chỉ có khi nó thành mod; muốn xóa đăng nhập bây giờ, hãy bật lại trước rồi đăng xuất trong cửa sổ đăng nhập.",
+    "selfSignedNote": "Khi kết nối tới máy chủ do bạn tự nhập (ví dụ NAS ở nhà), nguồn này chấp nhận chứng chỉ tự ký của máy chủ đó.",
+    "clearData": "Xóa dữ liệu",
+    "clearDataTip": "Xóa dữ liệu của {{name}}…",
+    "clearDone": "Đã xóa dữ liệu của {{name}}; lần chạy tới nó ở trạng thái chưa đăng nhập.",
+    "clearPartial": "Dữ liệu của {{name}} chỉ được xóa một phần; phần còn lại có trong nhật ký chạy.",
+    "clearFailed": "Dữ liệu của {{name}} chưa được xóa: {{reason}}",
+    "switchFailed": "{{name}} chưa được chuyển: {{reason}}",
+    "noticeActionFailed": "\"{{name}}\" chưa được đổi: {{reason}}",
+    "actionAssignClaim": "Để nó tiếp quản…",
+    "actionConfirmOverride": "Xác nhận thay thế…",
+    "notice_claim-unconfirmed": "\"{{mod}}\" muốn tiếp quản {{source}} nhưng bạn chưa xác nhận, nên nó đang chạy dưới tên riêng. Sau khi xác nhận, nó dùng đăng nhập bạn đã có trên nền tảng đó.",
+    "notice_claim-taken": "\"{{mod}}\" cũng muốn tiếp quản {{source}}, nhưng {{source}} hiện do \"{{other}}\" giữ, nên nó không được tải.",
+    "notice_claim-signature-invalid": "Tệp của \"{{mod}}\" đã thay đổi sau khi ký, nên nó không thể tiếp quản nguồn khác và chỉ chạy dưới tên riêng.",
+    "notice_claim-unknown-source": "{{source}} mà \"{{mod}}\" muốn tiếp quản không có trong bảng tin cậy của các nguồn tích hợp; không thể tiếp quản.",
+    "notice_claim-outside-row": "Dữ liệu cũ mà \"{{mod}}\" muốn tiếp quản vượt quá những gì {{source}} có; không thể tiếp quản.",
+    "notice_override-unconfirmed": "Thư mục mod có v{{version}} của \"{{mod}}\" (ký chính thức, mới hơn bản tích hợp); sau khi xác nhận nó sẽ thay bản tích hợp.",
+    "notice_override-not-verified": "v{{version}} của \"{{mod}}\" trong thư mục mod không qua kiểm tra chữ ký chính thức; vẫn dùng bản tích hợp.",
+    "notice_override-not-newer": "v{{version}} của \"{{mod}}\" trong thư mục mod không mới hơn bản tích hợp; vẫn dùng bản tích hợp.",
+    "notice_override-host-range": "v{{version}} của \"{{mod}}\" trong thư mục mod cần phiên bản Folia khác; vẫn dùng bản tích hợp.",
+    "notice_override-superseded": "v{{version}} của \"{{mod}}\" không được tải: bản tích hợp đã được thay bằng \"{{other}}\".",
+    "notice_bundled-source-missing": "Bản cài đặt cho biết có {{source}}, nhưng thiếu bản tích hợp của nó; bản cài có thể bị hỏng, hãy cài lại Folia. Vì vậy \"{{mod}}\" không được tải.",
+    "notice_shadowed": "\"{{mod}}\" tích hợp hiện được thay bằng \"{{other}}\".",
+    "notice_override-running": "\"{{mod}}\" đang chạy v{{version}} từ thư mục mod thay cho bản tích hợp.",
+    "installLabel": "Cài mod nguồn",
+    "installHint": "Mod nguồn đã cài được quản lý cùng các mod khác; bạn cũng có thể thả tệp zip vào danh sách mod.",
+    "installZipLabel": "Cài mod nguồn từ tệp zip",
+    "installZipHint": "Khi mod cộng đồng đang tắt, chỉ cài được mod nguồn có chữ ký chính thức.",
+    "installZipButton": "Chọn tệp zip",
+    "installButton": "Mở Mod",
+    "navidromeLabel": "Navidrome",
+    "navidromeHint": "Máy chủ nhạc do bạn tự dựng, không phải mod nguồn. Hãy kết nối trong Cài đặt → Kết nối & Tích hợp.",
+    "navidromeButton": "Kết nối",
+    "openFromLyrics": "Mở trong Nguồn",
+    "errors": {
+      "source-cannot-match-only": "Nguồn này không thể chỉ dùng để khớp",
+      "source-not-found": "Không tìm thấy nguồn",
+      "source-not-a-mod": "Nó chưa thành mod nguồn nên chưa thể xóa dữ liệu ở đây",
+      "no-electron-bridge": "Chỉ ứng dụng máy tính làm được",
+      "mod-content-unverifiable": "Không đọc được tệp của mod",
+      "claim-signature-invalid": "Chữ ký không khớp với tệp",
+      "mod-does-not-claim": "Mod này không khai báo tiếp quản nó",
+      "source-is-carried": "Bản cài có sẵn nguồn này; mod khác không thể tiếp quản",
+      "unknown": "Không rõ lý do"
+    }
   },
   "perfCheck": {
     "title": "Kiểm tra hiệu năng",
@@ -92,7 +136,139 @@ export default {
     "offerConfirm": "Bắt đầu kiểm tra",
     "offerLater": "Để sau"
   },
+  "songNotes": {
+    "title": "Khoảnh khắc",
+    "hint": "Gắn thẻ bài hát, viết bình luận, đánh dấu trên dòng thời gian. Xóa bài khỏi sổ ghi nhanh vẫn giữ bình luận của bài.",
+    "idleHint": "Không có gì đang phát. Mở một bài bạn vừa bình luận, hoặc phát một bài để viết về nó.",
+    "recent": "Bình luận gần đây",
+    "empty": "Chưa có bình luận. Phát một bài rồi viết vài dòng, gắn thẻ, hoặc dùng \"Đánh dấu khoảnh khắc này\" trong bảng lệnh (cũng có thể đặt làm nút bên phải viên điều khiển phát) để đánh dấu một khoảnh khắc.",
+    "viewing": "Đang xem",
+    "backToPlaying": "Quay lại bài đang phát",
+    "tags": "Thẻ",
+    "addTag": "Thẻ",
+    "tagPlaceholder": "Nhập thẻ, Enter để thêm",
+    "removeTag": "Bỏ thẻ \"{{tag}}\"",
+    "timeline": "Ghi chú trên dòng thời gian",
+    "seekTo": "Nhảy đến {{at}}",
+    "sortLabel": "Sắp xếp",
+    "sortWritten": "Theo lúc viết",
+    "sortTimeline": "Theo dòng thời gian",
+    "commentCount_one": "{{count}} bình luận",
+    "commentCount_other": "{{count}} bình luận",
+    "timedCount_one": "{{count}} mốc",
+    "timedCount_other": "{{count}} mốc",
+    "tagsOnly_one": "Chỉ có thẻ · {{count}}",
+    "tagsOnly_other": "Chỉ có thẻ · {{count}}",
+    "markOnly": "Đánh dấu tại {{at}}",
+    "markOnlyShort": "(chỉ đánh dấu)",
+    "listLabel": "Bình luận",
+    "untimedGroup": "Không gắn mốc thời gian",
+    "noComments": "Bài này chưa có bình luận. Viết bình luận đầu tiên bên dưới.",
+    "edit": "Sửa",
+    "edited": "đã sửa",
+    "delete": "Xóa",
+    "confirmDelete": "Bấm lần nữa để xóa",
+    "composerLabel": "Viết bình luận",
+    "composerPlaceholder": "Viết gì đó…",
+    "composerHint": "Enter để lưu · Shift + Enter để xuống dòng",
+    "pinAt": "Tại",
+    "pinHint": "Gắn bình luận này vào vị trí lúc bạn bấm Lưu",
+    "pinUnavailable": "Chỉ bài đang phát mới gắn được mốc thời gian",
+    "submit": "Lưu",
+    "pinNow": "Đánh dấu khoảnh khắc này",
+    "pinPlaceholder": "Thêm một dòng (không bắt buộc)",
+    "pinKeys": "Enter để lưu · Esc chỉ giữ dấu",
+    "pinDiscard": "Bỏ",
+    "markedAt": "Đã đánh dấu tại {{at}}",
+    "overviewRemoveHint": "Xóa bình luận ở trang Khoảnh khắc",
+    "tooManyComments": "Bài này đã đủ số bình luận tối đa ({{count}})",
+    "tooManyTags": "Bài này đã đủ số thẻ tối đa ({{count}})",
+    "stageSong": "Bài từ trình phát ngoài không thể bình luận",
+    "catalogNumber": "Số {{number}}",
+    "untagged": "Chưa gắn thẻ",
+    "searchPlaceholder": "Tìm tên bài, nghệ sĩ, thẻ, bình luận",
+    "searchEmpty": "Không tìm thấy. Thử từ khác.",
+    "playGroup": "Phát nhóm này",
+    "collectGroup": "Thêm nhóm này vào sổ ghi nhanh",
+    "manageTag": "Sửa thẻ",
+    "tagEditorTitle": "Sửa thẻ #{{tag}}",
+    "renameTag": "Đổi tên",
+    "mergeAsk": "Đã có thẻ #{{tag}}. Gộp vào thẻ đó?",
+    "merge": "Gộp",
+    "cancel": "Hủy",
+    "moveTagEarlier": "Chuyển lên trước",
+    "moveTagLater": "Chuyển ra sau",
+    "deleteTag": "Xóa thẻ",
+    "confirmDeleteTag": "Bấm lần nữa để xóa (bình luận vẫn giữ)",
+    "tagRenamed": "Đã đổi tên thành #{{tag}}",
+    "tagMerged": "Đã gộp vào #{{tag}}",
+    "tagDeleted": "Đã xóa thẻ #{{tag}}",
+    "batchTag": "Gắn thẻ",
+    "batchTagTitle_one": "Gắn thẻ cho {{count}} bài",
+    "batchTagTitle_other": "Gắn thẻ cho {{count}} bài",
+    "batchTagPlaceholder": "Nhập thẻ, Enter để gắn",
+    "batchTagApply": "Gắn",
+    "batchTagExisting": "Thẻ của bạn",
+    "batchTagPresent": "Thẻ trên các bài này (bấm để gỡ)",
+    "removeTagFromSelection": "Gỡ #{{tag}} khỏi các bài đã chọn",
+    "taggedSongs_one": "Đã gắn #{{tag}} cho {{count}} bài",
+    "taggedSongs_other": "Đã gắn #{{tag}} cho {{count}} bài",
+    "taggedSkipped_one": " ({{count}} bài chưa gắn được: bài từ trình phát bên ngoài, hoặc đã đủ thẻ)",
+    "taggedSkipped_other": " ({{count}} bài chưa gắn được: bài từ trình phát bên ngoài, hoặc đã đủ thẻ)",
+    "tagNoneTaken_one": "Không gắn được thẻ cho {{count}} bài: bài từ trình phát bên ngoài, hoặc đã đủ thẻ",
+    "tagNoneTaken_other": "Không gắn được thẻ cho {{count}} bài: bài từ trình phát bên ngoài, hoặc đã đủ thẻ",
+    "untaggedSongs_one": "Đã gỡ #{{tag}} khỏi {{count}} bài",
+    "untaggedSongs_other": "Đã gỡ #{{tag}} khỏi {{count}} bài",
+    "alreadyTagged": "Các bài này đã có #{{tag}}",
+    "removeFromTag": "Gỡ khỏi thẻ này",
+    "openComments": "Bình luận và thẻ",
+    "tagCommandDescription_one": "Xem {{count}} bài có thẻ này trong Khoảnh khắc của sổ ghi nhanh",
+    "tagCommandDescription_other": "Xem {{count}} bài có thẻ này trong Khoảnh khắc của sổ ghi nhanh",
+    "transferLabel": "Khoảnh khắc (bình luận và thẻ của bài hát)",
+    "transferHint": "Xuất thành một tệp rồi nhập trên thiết bị khác. Khi nhập chỉ thêm những gì còn thiếu; bình luận và thẻ hiện có giữ nguyên. Tệp xuất từ mod Music Notes cũng dùng được.",
+    "exportFile": "Xuất tệp",
+    "importFile": "Nhập tệp…",
+    "exporting": "Đang xuất…",
+    "importing": "Đang nhập…",
+    "exportDone_one": "Đã xuất khoảnh khắc của {{count}} bài",
+    "exportDone_other": "Đã xuất khoảnh khắc của {{count}} bài",
+    "exportDoneSkipped_one": "Đã xuất khoảnh khắc của {{count}} bài; {{skipped}} bài không được ghi (bài cục bộ không còn trong thư viện, hoặc bài từ nguồn không xác định)",
+    "exportDoneSkipped_other": "Đã xuất khoảnh khắc của {{count}} bài; {{skipped}} bài không được ghi (bài cục bộ không còn trong thư viện, hoặc bài từ nguồn không xác định)",
+    "exportEmpty": "Chưa có khoảnh khắc nào để xuất",
+    "exportFailed": "Xuất thất bại: không đọc được dữ liệu khoảnh khắc",
+    "importModLabel": "Nhập từ mod Music Notes",
+    "importModHint_one": "Mod trên thiết bị này có ghi chú cho {{count}} bài. Ghi chú thành bình luận, dấu mốc thành bình luận có thời điểm, thẻ được giữ nguyên; chỉ thêm những gì còn thiếu.",
+    "importModHint_other": "Mod trên thiết bị này có ghi chú cho {{count}} bài. Ghi chú thành bình luận, dấu mốc thành bình luận có thời điểm, thẻ được giữ nguyên; chỉ thêm những gì còn thiếu.",
+    "importModButton": "Nhập",
+    "importConfirmTitle": "Nhập khoảnh khắc",
+    "importConfirmBody": "Bài hát: {{songs}} · Bình luận: {{comments}} · Thẻ: {{tags}}. Những gì đã có sẽ không thêm lại.",
+    "importConfirmUnmatched_one": "{{count}} bài cục bộ không có trong thư viện và sẽ không được nhập: {{titles}}",
+    "importConfirmUnmatched_other": "{{count}} bài cục bộ không có trong thư viện và sẽ không được nhập: {{titles}}",
+    "importConfirmInvalid_one": "{{count}} bản ghi không đọc được và đã bỏ qua.",
+    "importConfirmInvalid_other": "{{count}} bản ghi không đọc được và đã bỏ qua.",
+    "importConfirmLookup": "Mod chỉ lưu tên của bài trực tuyến, nên khi nhập sẽ tra thông tin từ từng nguồn. Việc này có thể mất một lúc.",
+    "importEmpty": "Không có bài nào để nhập",
+    "importDone": "Đã nhập: {{added}} bài mới, {{merged}} bài được bổ sung, {{comments}} bình luận, {{tags}} thẻ mới",
+    "importDoneOverLimit": "Đã nhập: {{added}} bài mới, {{merged}} bài được bổ sung, {{comments}} bình luận, {{tags}} thẻ mới; {{over}} mục vượt giới hạn nên không thêm",
+    "importNothing": "Không có gì mới để thêm: mọi thứ đã có sẵn",
+    "importFailed": "Nhập thất bại; không có gì thay đổi",
+    "fileErrorNotJson": "Đây không phải tệp JSON",
+    "fileErrorUnknownFormat": "Không nhận ra tệp: không phải tệp khoảnh khắc của Folia, cũng không phải tệp xuất của Music Notes",
+    "fileErrorNewerVersion": "Tệp này do Folia mới hơn ghi. Hãy cập nhật Folia trước",
+    "fileErrorDamaged": "Tệp bị hỏng, không đọc được",
+    "fileErrorTooLarge": "Tệp quá lớn",
+    "fileErrorUnreadable": "Không đọc được tệp",
+    "modHint_one": "Mod Music Notes có ghi chú cho {{count}} bài, có thể nhập vào đây.",
+    "modHint_other": "Mod Music Notes có ghi chú cho {{count}} bài, có thể nhập vào đây.",
+    "modHintImport": "Nhập",
+    "modHintDismiss": "Không hiện lại",
+    "exportTooLarge": "Quá nhiều khoảnh khắc để đọc lại từ một tệp nên không xuất",
+    "importModUnreadable": "Không đọc được dữ liệu của mod Music Notes",
+    "fileErrorModNewerVersion": "Tệp này từ phiên bản mới hơn của mod Music Notes, phiên bản Folia này chưa đọc được",
+    "saveFailed": "Chưa lưu được bình luận (bộ nhớ cục bộ không dùng được hoặc đã đầy)"
+  },
   "scratchpad": {
+    "saveAllToPlaylist": "Lưu cả sổ ghi nhanh thành danh sách phát…",
     "title": "Sổ ghi nhanh",
     "count_one": "{{count}} bài",
     "count_other": "{{count}} bài",
@@ -140,7 +316,6 @@ export default {
     "selectedCount_other": "Đã chọn {{count}} bài",
     "removeSelected": "Bỏ ra",
     "clearSelection": "Bỏ chọn",
-    "mixedSourcesHint": "Các bài đã chọn đến từ nhiều nguồn; một danh sách phát chỉ nhận một nguồn",
     "queue": "Hàng đợi",
     "queueHint": "Hàng đợi đang phát. Bấm một bài để phát; mở rộng để chọn nhiều và kéo để sắp xếp.",
     "queueEmpty": "Hàng đợi đang trống.",
@@ -167,11 +342,15 @@ export default {
     "tipReorder": "sắp xếp",
     "tipPlayKey": "Bấm đúp",
     "tipPlay": "phát",
+    "tipOpenKey": "Bấm thẻ bài",
+    "tipOpen": "xem bình luận",
+    "tipTagKey": "Đầu nhóm",
+    "tipTag": "sửa thẻ",
     "tipDeleteKey": "Delete",
     "tipDelete": "xóa bản ghi",
     "tipEscKey": "Esc",
     "tipEsc": "bỏ chọn",
-    "overview": "Ba hàng",
+    "overview": "Bốn hàng",
     "crumbOverview": "{{title}} › Mở rộng",
     "overviewMore_one": "Còn {{count}} bài",
     "overviewMore_other": "Còn {{count}} bài",
@@ -291,7 +470,8 @@ export default {
         "v3": "Thư giãn",
         "v4": "Giờ yên tĩnh"
       }
-    }
+    },
+    "mixedSourcesHint": "Các bài đã chọn đến từ nhiều nguồn; một danh sách phát chỉ nhận một nguồn"
   },
   "libraryBravais": {
     "suiteName": "Không gian Bravais",
@@ -338,7 +518,15 @@ export default {
     "helpFilter": "Nhập để lọc trang này",
     "helpSearch": "Tìm kiếm trực tuyến (trang chủ)",
     "filterPlaceholder": "Lọc trang này",
-    "kind": {"track": "Bài hát", "playlist": "Danh sách phát", "album": "Album", "artist": "Nghệ sĩ", "folder": "Thư mục", "feed": "Radio"}
+    "kind": {
+      "track": "Bài hát",
+      "playlist": "Danh sách phát",
+      "album": "Album",
+      "artist": "Nghệ sĩ",
+      "folder": "Thư mục",
+      "feed": "Radio",
+      "tag": "Thẻ"
+    }
   },
   "wallTools": {
     "shuffle": "Xáo trộn hàng đợi phát",
@@ -361,8 +549,8 @@ export default {
     "queueCount_other": "Hàng đợi phát · {{count}} bài",
     "queueClear": "Xóa hàng đợi",
     "queueClearConfirm": "Nhấn lần nữa để xóa hàng đợi",
-    "queueSave": "Lưu thành danh sách phát nội bộ",
-    "queueSaved": "Đã lưu thành danh sách phát nội bộ “{{name}}”",
+    "queueSave": "Lưu thành danh sách phát",
+    "queueSaved": "Đã lưu thành danh sách phát “{{name}}”",
     "queueSaveFailed": "Không thể lưu danh sách phát",
     "queueDragHandle": "Kéo để sắp xếp lại",
     "queueMoved": "Đã chuyển đến vị trí {{position}}",
@@ -410,7 +598,17 @@ export default {
       "localTitle": "Chưa nhập nhạc cục bộ",
       "localBody": "Chọn “{{action}}” dưới mục “⋯” trên thanh thông tin; thư mục, album và nghệ sĩ của bạn sẽ lấp đầy bức tường này."
     },
-    "special": {"liked": "Bài hát yêu thích", "cloud": "Ổ đám mây", "personal-fm": "FM cá nhân", "fm-station": "Radio", "daily": "Gợi ý hàng ngày", "all-songs": "Tất cả bài hát", "local-favorites": "Yêu thích", "navidrome-random": "Ngẫu nhiên", "navidrome-favorites": "Đã gắn sao"}
+    "special": {
+      "liked": "Bài hát yêu thích",
+      "cloud": "Ổ đám mây",
+      "personal-fm": "FM cá nhân",
+      "fm-station": "Radio",
+      "daily": "Gợi ý hàng ngày",
+      "all-songs": "Tất cả bài hát",
+      "local-favorites": "Yêu thích",
+      "navidrome-random": "Ngẫu nhiên",
+      "navidrome-favorites": "Đã gắn sao"
+    }
   },
   "libraryTui": {
     "back": "Quay lại",
@@ -447,7 +645,16 @@ export default {
     "columnType": "Loại",
     "columnTracks": "Bài hát",
     "columnDescription": "Mô tả",
-    "itemType": {"playlist": "danh sách phát", "album": "album", "artist": "nghệ sĩ", "folder": "thư mục", "cloud": "đám mây", "radio": "radio", "daily_recommendations": "hàng ngày", "personal_fm": "FM"},
+    "itemType": {
+      "playlist": "danh sách phát",
+      "album": "album",
+      "artist": "nghệ sĩ",
+      "folder": "thư mục",
+      "cloud": "đám mây",
+      "radio": "radio",
+      "daily_recommendations": "hàng ngày",
+      "personal_fm": "FM"
+    },
     "homeHints": "↑↓ di chuyển · PgUp/PgDn chuyển trang · Tab chuyển mục · F6 nguồn · Enter mở · Esc xóa bộ lọc, rồi đóng",
     "homeTreeHints": "←→ thu gọn",
     "homeBatchHints": "Ins chọn · {{mod}}+A chọn tất cả · {{mod}}+Enter phát · {{mod}}+Shift+Enter vào hàng đợi",
@@ -528,6 +735,8 @@ export default {
     "autoAiLyricSegmentationOff": "Đã tắt tự tách từ bằng AI",
     "lyricSourceChanged": "Đã chuyển nguồn lời ưu tiên sang {{source}}",
     "progressBarHidden": "Đã ẩn thanh điều khiển dưới",
+    "progressBarChorusMarkerOn": "Thanh tiến trình đã đánh dấu điệp khúc",
+    "progressBarChorusMarkerOff": "Đã tắt đánh dấu điệp khúc trên thanh tiến trình",
     "progressBarShown": "Đã hiện thanh điều khiển dưới",
     "subtitleHidden": "Đã ẩn lớp phụ đề dưới",
     "subtitleShown": "Đã hiện lớp phụ đề dưới",
@@ -574,6 +783,8 @@ export default {
     "gpuPreferenceChanged": "Đã đổi GPU kết xuất đồ họa; vui lòng khởi động lại Folia để áp dụng",
     "backgroundThrottlingOn": "Đã bật tiết kiệm tài nguyên chạy ngầm",
     "backgroundThrottlingOff": "Đã tắt tiết kiệm tài nguyên chạy ngầm",
+    "uiZoomChanged": "Thu phóng giao diện: {{percent}}%",
+    "uiZoomOff": "Đã tắt thu phóng giao diện (100%)",
     "visualizerSwitched": "Đã chuyển sang hiệu ứng thị giác {{mode}}",
     "classicReset": "Đã đặt lại thông số Classic",
     "cadenzaReset": "Đã đặt lại thông số Cadenza",
@@ -631,6 +842,7 @@ export default {
     "queueInsertNext": "Thêm vào hàng đợi: phát tiếp theo",
     "queueAppend": "Thêm vào hàng đợi: vào cuối danh sách",
     "equalizerModCurve": "\"{{mod}}\" đã áp dụng đường cong bộ cân bằng âm thanh riêng",
+    "themeModOverride": "Mod \"{{mod}}\" đã đặt chủ đề riêng lên trên chủ đề của bài hát",
     "equalizerModMode": "\"{{mod}}\" đã chuyển âm thanh sang {{mode}}",
     "homeLayoutGrid": "Bố cục trang chủ đổi sang Vast Desktop",
     "homeLayoutCarousel": "Bố cục trang chủ đổi sang Cổ điển",
@@ -650,7 +862,7 @@ export default {
     "themeSourceAi": "Tạo chủ đề chuyển sang phân tích AI",
     "themeSourceCover": "Tạo chủ đề chuyển sang trích xuất màu bìa",
     "aiThemeUpdatedCustomPreferred": "Đã cập nhật chủ đề AI, vẫn ưu tiên chủ đề tùy chỉnh",
-    "aiThemeGeneratedCustomPreferred": "Đã tạo chủ đề AI, nhưng vẫn ưu tiên chủ đề tùy chỉnh",
+    "aiThemeGeneratedCustomPreferred": "Đã tạo chủ đề AI, nhưng vẫn ưu tiên chủ đề tùy chỉnh"
   },
   "status": {
     "playerChromeAlwaysHidden": "Giao diện luôn ẩn",
@@ -666,8 +878,6 @@ export default {
     "unmarkedPureMusic": "Đã bỏ dấu nhạc không lời; sẽ tự khớp lời lần phát sau",
     "bestLyricsMatchFailed": "Khớp lời tối ưu thất bại",
     "noSongPlaying": "Không có bài hát đang phát",
-    "neteaseApiStartupFailed": "Khởi động NetEase API thất bại. Một số tính năng trực tuyến không khả dụng.",
-    "neteaseApiStartupFailedDetail": "Khởi động NetEase API thất bại, một số tính năng trực tuyến không khả dụng: {{reason}}",
     "generatingTheme": "AI đang sáng tạo chủ đề...",
     "themeApplied": "Đã áp dụng chủ đề: {{themeName}}",
     "aiThemeUpdated": "Đã cập nhật chủ đề AI: {{themeName}}",
@@ -682,7 +892,6 @@ export default {
     "syncFailed": "Đồng bộ thất bại",
     "loginExpired": "Phiên đăng nhập hết hạn. Đăng nhập lại",
     "songPreviewOnly": "Chỉ có thể nghe thử. Đăng nhập tài khoản có quyền phát toàn bộ bài hát.",
-    "songVipFullUnavailable": "Trình phát bên thứ ba tạm thời không thể lấy bản đầy đủ của bài hát VIP",
     "songSubscriptionRequired": "Cần tài khoản {{provider}} trả phí để phát",
     "songRegionRestricted": "Chỉ phát tại Trung Quốc đại lục. Kiểm tra kết nối mạng.",
     "songRetrying": "Kết nối thất bại. Đang thử lại…",
@@ -710,8 +919,6 @@ export default {
     "providerLibraryUnavailable": "{{provider}} không cung cấp thư viện danh sách phát.",
     "songUnavailable": "Bài hát đã bị gỡ",
     "externalPlayerMovedOn": "Trình phát đã chuyển sang bài khác; đã tạm dừng",
-    "externalPlaybackStalled": "Trình phát bị kẹt và đã dừng tại đó. Nhấn phát để thử lại.",
-    "externalPlaybackStalledRetrying": "Trình phát bị kẹt; đang thử lại…",
     "externalVideoExportUnavailable": "Bài hát này phát trong trình phát riêng của nền tảng và âm thanh không đi qua Folia, nên không thể xuất video.",
     "externalBypassTitle": "Bài hát này phát trong trình phát riêng của nền tảng",
     "externalBypassBody": "Âm thanh không đi qua Folia, nên bộ cân bằng và hiệu ứng ở đây không thay đổi những gì bạn nghe. Thiết lập vẫn được giữ và áp dụng cho các bài khác như bình thường.",
@@ -727,6 +934,8 @@ export default {
     "stageActionUnavailable": "Thao tác không hỗ trợ trong chế độ Stage",
     "noPlayableSongs": "Không có bài hát khả dụng trong danh sách",
     "songUnavailableTag": "Không khả dụng",
+    "songSourceMissingTag": "Nguồn chưa bật",
+    "songSourceNotEnabled": "Nguồn của bài này chưa bật. Bật nguồn để phát lại.",
     "songVideoTag": "MV",
     "queueShuffled": "Đã xáo trộn hàng đợi",
     "loopShuffleHint": "Tìm chế độ xáo trộn?",
@@ -764,6 +973,11 @@ export default {
     "disconnected": "Mất kết nối",
     "randomVisualizerModePerSongOn": "Đã bật hiệu ứng lời ngẫu nhiên theo bài",
     "randomVisualizerModePerSongOff": "Đã tắt hiệu ứng lời ngẫu nhiên theo bài",
+    "neteaseApiStartupFailed": "Khởi động NetEase API thất bại. Một số tính năng trực tuyến không khả dụng.",
+    "neteaseApiStartupFailedDetail": "Khởi động NetEase API thất bại, một số tính năng trực tuyến không khả dụng: {{reason}}",
+    "songVipFullUnavailable": "Trình phát bên thứ ba tạm thời không thể lấy bản đầy đủ của bài hát VIP",
+    "externalPlaybackStalled": "Trình phát bị kẹt và đã dừng tại đó. Nhấn phát để thử lại.",
+    "externalPlaybackStalledRetrying": "Trình phát bị kẹt; đang thử lại…"
   },
   "commandPalette": {
     "placeholder": "Nhập lệnh hoặc tìm kiếm...",
@@ -786,14 +1000,34 @@ export default {
     "run": "Chạy",
     "recognized": "Đã nhận diện",
     "previewSearch": "Tìm bài hát {{source}}: {{query}}",
+    "searchProviderTitle": "Tìm bài hát {{provider}}",
+    "searchProviderDescription": "Tìm bài hát trên {{provider}}",
+    "sourceEnableTitle": "Bật {{source}}",
+    "sourceEnableDescription": "Bật {{source}}: hiện lại trong bộ chuyển, đăng nhập và tìm kiếm",
+    "sourceMatchingTitle": "Chỉ dùng {{source}} để khớp",
+    "sourceMatchingDescription": "Chỉ dùng {{source}} để khớp lời bài hát và thông tin bài hát, không hiện trong bộ chuyển và tìm kiếm",
+    "sourceDisableTitle": "Tắt {{source}}",
+    "sourceDisableDescription": "Tắt {{source}}: không phần nào của nó chạy; dữ liệu và bài hát của nó trong danh sách vẫn được giữ",
+    "sourceSwitched": "{{source}}: {{state}}",
     "previewQueueSearch": "Tìm trong hàng đợi: {{query}}",
     "previewQueueSearchEmpty": "Nhập tên bài hát, nghệ sĩ, album hoặc số thứ tự",
     "pickerFilterPlaceholder": "Nhập để lọc, sau đó nhấp hoặc nhấn Enter",
     "pickerCurrent": "Hiện tại: {{mode}}",
     "pickerKeepOpen": "Giữ mở sau khi chọn",
     "pickerKeepOpenHint": "Giữ mở bảng lệnh sau khi chọn hiệu ứng hình ảnh để thử liên tiếp nhiều kiểu",
-    "librarySuitePicker": { "active": "Đang dùng", "switch": "Chuyển thư viện sang giao diện này" },
-    "libraryWallPicker": { "active": "Đang dùng", "windows": "Cửa sổ mỗi khối: {{count}}", "windowsShare": "{{percent}}% mỗi khối hiển thị hiệu ứng thị giác", "seamStyle": "Thanh thông tin: {{style}}", "seamTheme": "Theo màu chủ đề", "seamPrint": "Mực và giấy cố định, tương phản cao", "seamPattern": "Họa tiết tối giản theo màu chủ đề" },
+    "librarySuitePicker": {
+      "active": "Đang dùng",
+      "switch": "Chuyển thư viện sang giao diện này"
+    },
+    "libraryWallPicker": {
+      "active": "Đang dùng",
+      "windows": "Cửa sổ mỗi khối: {{count}}",
+      "windowsShare": "{{percent}}% mỗi khối hiển thị hiệu ứng thị giác",
+      "seamStyle": "Thanh thông tin: {{style}}",
+      "seamTheme": "Theo màu chủ đề",
+      "seamPrint": "Mực và giấy cố định, tương phản cao",
+      "seamPattern": "Họa tiết tối giản theo màu chủ đề"
+    },
     "pickerDescription": {
       "visualizer": {
         "still": "Một dòng đứng yên — không hoạt ảnh, không hình nền, nhẹ nhất",
@@ -917,321 +1151,1354 @@ export default {
       }
     },
     "commands": {
-      "settings-ponder-hints": { "title": "Gợi ý hướng dẫn Khám phá", "description": "Chọn thời điểm hiển thị gợi ý nhấn giữ G" },
-      "ponder-hints-always": { "title": "Gợi ý Khám phá: Luôn hiển thị", "description": "Hiển thị gợi ý giữ G trên mọi nút điều khiển có hướng dẫn" },
-      "ponder-hints-unseen": { "title": "Gợi ý Khám phá: Chỉ nơi chưa xem", "description": "Ngừng gợi ý nút điều khiển khi đã xem hướng dẫn" },
-      "ponder-hints-off": { "title": "Gợi ý Khám phá: Tắt", "description": "Không bao giờ hiển thị gợi ý giữ G" },
-      "ponder-touch-button-toggle": { "title": "Nút Khám phá trên màn cảm ứng", "description": "Hiện hoặc ẩn bóng đèn ở góc trên phải trên thiết bị cảm ứng" },
-      "search-current": { "title": "Tìm bài hát", "description": "Tìm bài hát trong nguồn hiện tại" },
-      "search-local": { "title": "Tìm bài hát nội bộ", "description": "Tìm trong thư viện nội bộ" },
-      "search-navidrome": { "title": "Tìm bài hát Navidrome", "description": "Tìm trong thư viện Navidrome" },
-      "search-netease": { "title": "Tìm bài hát NetEase", "description": "Tìm trên NetEase Cloud Music" },
-      "queue": { "title": "Hàng đợi", "description": "Tìm trong hàng đợi; dùng @ cho siêu dữ liệu và -- cho thao tác hàng loạt" },
-      "playback-volume": { "title": "Âm lượng", "description": "Điều chỉnh âm lượng phát" },
-      "playback-fm-mode": { "title": "Chế độ FM cá nhân", "description": "Chuyển chế độ hoặc ngữ cảnh FM cá nhân" },
-      "playback-station-mode": { "title": "Chế độ đài", "description": "Chuyển chế độ hoặc ngữ cảnh của đài đang phát" },
-      "playback-recommendation-preferences": { "title": "Sở thích", "description": "Điều chỉnh sở thích lưu trong tài khoản, ảnh hưởng đến những gì được gợi ý" },
-      "settings-help": { "title": "Mở Trợ giúp", "description": "Mở trợ giúp và phím tắt" },
-      "ponder-current-page": { "title": "Khám phá trang này", "description": "Mở hướng dẫn tương tác cho trang hiện tại" },
-      "provider-playback-setup": { "title": "Thiết lập phát nhạc của nền tảng", "description": "Mở danh sách thiết lập phát nhạc của nền tảng hiện tại" },
-      "settings-options": { "title": "Mở Tùy chọn", "description": "Mở trung tâm tùy chọn" },
-      "settings-now-playing-card-position": { "title": "Đổi vị trí thẻ bài hát", "description": "Kéo thẻ bài hát đang phát đến vị trí mới" },
-      "settings-ai-provider": { "title": "Cài đặt nhà cung cấp AI", "description": "Chọn nhà cung cấp AI và mô hình" },
-      "settings-appearance": { "title": "Cài đặt giao diện", "description": "Mở cài đặt thị giác và giao diện" },
-      "settings-general": { "title": "Cài đặt chung", "description": "Mở tùy chọn chung của ứng dụng" },
-      "settings-playback": { "title": "Cài đặt phát nhạc", "description": "Mở cài đặt hành vi phát nhạc" },
-      "playback-replaygain-off": { "title": "Tắt ReplayGain", "description": "Phát âm thanh không áp dụng ReplayGain" },
-      "playback-replaygain-track": { "title": "ReplayGain: Chế độ bài hát", "description": "Áp dụng cân bằng ReplayGain theo từng bài hát" },
-      "playback-replaygain-album": { "title": "ReplayGain: Chế độ album", "description": "Áp dụng cân bằng ReplayGain theo album" },
-      "playback-replaygain-auto": { "title": "ReplayGain: Cân bằng thông minh", "description": "Đo độ lớn âm thanh của từng bài và giảm những bài quá to xuống cho đồng đều" },
-      "playback-equalizer": { "title": "Hiệu ứng âm thanh", "description": "Mở bộ cân bằng và chuỗi hiệu ứng" },
-      "playback-sound-preset-flat": { "title": "Âm thanh: Flat", "description": "Đặt lại bộ cân bằng và mọi hiệu ứng" },
-      "playback-sound-preset-lofi": { "title": "Âm thanh: Lo-Fi", "description": "Lọc dải tần, giảm bit và rung lắc kèm tiếng đĩa than" },
-      "playback-sound-preset-radio": { "title": "Âm thanh: Radio", "description": "Dải tần hẹp, âm sắc phát thanh gần như mono" },
-      "playback-sound-preset-hall": { "title": "Âm thanh: Hall", "description": "Không gian stereo rộng cùng âm vang" },
-      "playback-sound-preset-vocal": { "title": "Âm thanh: Vocal", "description": "Nâng dải giọng hát và siết gọn dải động" },
-      "playback-sound-preset-bass": { "title": "Âm thanh: Bass Boost", "description": "Dải trầm dày hơn và lực đánh mạnh mẽ" },
-      "playback-sound-preset-custom1": { "title": "Âm thanh: Tùy chỉnh 1", "description": "Áp dụng cấu hình âm thanh tùy chỉnh 1" },
-      "playback-sound-preset-custom2": { "title": "Âm thanh: Tùy chỉnh 2", "description": "Áp dụng cấu hình âm thanh tùy chỉnh 2" },
-      "playback-sound-mod-curve-release": { "title": "Âm thanh: Quay lại cấu hình của tôi", "description": "Bỏ đường cong cân bằng âm thanh do mod áp dụng" },
-      "settings-local-lyrics-priority": { "title": "Độ ưu tiên lời bài hát nội bộ", "description": "Chọn ưu tiên lời nội bộ hay trực tuyến cho bài hát nội bộ" },
-      "settings-local-lyric-format-order": { "title": "Độ ưu tiên định dạng tệp lời nội bộ", "description": "Chọn định dạng ưu tiên khi bài hát có nhiều tệp lời" },
-      "settings-integration": { "title": "Cài đặt tích hợp", "description": "Mở cài đặt Stage, Đang phát và Navidrome" },
-      "automix-toggle": { "title": "Chuyển tiếp thông minh", "description": "Bật hoặc tắt chuyển tiếp thông minh FOLIA" },
-      "transition-mode-crossfade": { "title": "Chế độ chuyển tiếp: Folia Crossfade", "description": "Dùng hiệu ứng chuyển mờ đơn giản ra/vào" },
-      "transition-mode-automix": { "title": "Chế độ chuyển tiếp: Folia Automix", "description": "Phân tích cả hai bài và tự động phối trộn" },
-      "transition-performance-toggle": { "title": "Chế độ hiệu ứng chuyển tiếp", "description": "Bật/tắt chuyển tiếp táo bạo hơn (cần mô hình tách stem)" },
-      "settings-discord-presence": { "title": "Trạng thái phát Discord", "description": "Mở cài đặt Discord Rich Presence" },
-      "lyric-staff-policy-cycle": { "title": "Xử lý thông tin sản xuất (Credits)", "description": "Chuyển đổi cách xử lý khối thông tin sản xuất (Credits) ở đầu bài" },
-      "lyric-staff-absorb-cycle": { "title": "Chế độ gộp thông tin sản xuất (Credits)", "description": "Chuyển đổi việc gộp các dòng lân cận vào khối thông tin sản xuất (Credits)" },
-      "settings-obs-browser-source": { "title": "Nguồn trình duyệt OBS", "description": "Mở cài đặt nguồn trình duyệt OBS" },
-      "obs-toggle-keep-main-window-animation": { "title": "OBS: giữ hiệu ứng động cửa sổ chính", "description": "Bật/tắt giữ hiệu ứng động ở cửa sổ chính khi kết nối OBS" },
-      "obs-toggle-track-card": { "title": "OBS: hiện thẻ bài đang phát", "description": "Bật/tắt vẽ thẻ bài đang phát trong nguồn trình duyệt OBS" },
-      "desktop-toggle-lyric-api": { "title": "API lời bài hát", "description": "Bật/tắt endpoint lời bài hát nội bộ không cần xác thực" },
-      "settings-obs-copy-css": { "title": "Sao chép CSS OBS", "description": "Sao chép CSS tùy chỉnh nguồn OBS kèm tài nguyên đã tải lên" },
-      "settings-storage": { "title": "Cài đặt lưu trữ", "description": "Mở cài đặt bộ nhớ đệm và lưu trữ" },
-      "settings-r2-sync": { "title": "Cài đặt máy chủ đồng bộ", "description": "Mở cài đặt máy chủ đồng bộ" },
-      "sync-now": { "title": "Đồng bộ ngay", "description": "Đồng bộ chủ đề AI" },
-      "export-lyric-cache": { "title": "Xuất bộ nhớ đệm lời bài hát", "description": "Lưu toàn bộ lời bài hát trên máy vào tệp zip chứa định dạng .fia và LRC nâng cao" },
-      "export-current-lyrics-fia": { "title": "Xuất lời bài hát hiện tại dạng .fia", "description": "Lưu lời bài hát ở định dạng không suy hao của Folia, bao gồm cả phân tách từ" },
-      "export-current-lyrics-lrc": { "title": "Xuất lời bài hát hiện tại dạng LRC", "description": "Lưu lời bài hát dạng LRC nâng cao tương thích với các trình phát khác" },
-      "settings-local-library-watch": { "title": "Cài đặt theo dõi thư mục nội bộ", "description": "Mở cài đặt tự động quét thư mục nội bộ đã nhập" },
-      "local-library-auto-scan-toggle": { "title": "Tự động quét thư mục nội bộ", "description": "Bật hoặc tắt tự động quét lại thư mục nội bộ đã nhập" },
-      "settings-desktop": { "title": "Cài đặt Desktop", "description": "Mở cài đặt ứng dụng desktop" },
-      "settings-remote": { "title": "Cài đặt điều khiển từ xa", "description": "Mở cài đặt cửa sổ điều khiển từ xa: các công tắc và các dòng lời" },
-      "settings-update-channel": { "title": "Kênh cập nhật", "description": "Chọn kênh phát hành ứng dụng desktop" },
-      "desktop-toggle-voice-input-pause": { "title": "Tạm dừng khi nhập giọng nói", "description": "Bật/tắt tự động tạm dừng phát khi nhập bằng giọng nói" },
-      "desktop-toggle-prevent-display-sleep": { "title": "Ngăn màn hình ngủ khi đang phát", "description": "Giữ màn hình luôn sáng khi đang phát nhạc" },
-      "desktop-toggle-background-throttling": { "title": "Tiết kiệm tài nguyên chạy ngầm", "description": "Bật/tắt giảm tốc độ kết xuất và giữ hoạt cảnh lời bài hát khi Folia thu nhỏ hoặc ẩn" },
-      "settings-graphics": { "title": "Cài đặt đồ họa", "description": "Mở chế độ tĩnh, giới hạn khung hình, sửa lỗi phát sáng Linux và giảm chuyển động" },
-      "settings-gpu-preference": { "title": "Cài đặt GPU kết xuất", "description": "Đi tới tùy chọn chọn card đồ họa ứng dụng sử dụng để kết xuất" },
-      "gpu-preference-auto": { "title": "GPU kết xuất: Tự động", "description": "Để Windows tự chọn card đồ họa; áp dụng sau khi khởi động lại" },
-      "gpu-preference-high-performance": { "title": "GPU kết xuất: Hiệu năng cao", "description": "Kết xuất trên GPU rời; áp dụng sau khi khởi động lại" },
-      "gpu-preference-low-power": { "title": "GPU kết xuất: Tiết kiệm điện", "description": "Kết xuất trên GPU tích hợp; áp dụng sau khi khởi động lại" },
-      "settings-mods": { "title": "Cài đặt Mod", "description": "Mở công tắc hệ thống mod và các bản mod đã cài" },
-      "settings-lab": { "title": "Cài đặt thử nghiệm", "description": "Mở cài đặt các tính năng thử nghiệm" },
-      "settings-player-bottom-bar-position": { "title": "Đổi vị trí thanh điều khiển đáy", "description": "Kéo thanh đáy trình phát và nút bảng điều khiển đến độ cao mới (thẻ bài hát đi theo, trừ khi đã có vị trí riêng)" },
-      "settings-player-control-slots": { "title": "Vị trí nút trình phát", "description": "Chọn thao tác cho hai nút cạnh thanh tiến trình" },
-      "video-layer-toggle": { "title": "Lớp video nền sau lời bài hát", "description": "Hiện hoặc ẩn lớp video tắt tiếng phía sau lời bài hát" },
-      "video-layer-pick": { "title": "Lớp video: Chọn video nội bộ", "description": "Chọn video nội bộ phát phía sau lời bài hát" },
-      "visualizer-toggle-random-per-song": { "title": "Hiệu ứng thị giác ngẫu nhiên theo bài", "description": "Bật/tắt hiệu ứng lời bài hát ngẫu nhiên mỗi khi đổi bài" },
-      "visualizer-machi-camera-bar": { "title": "Machi: Khung ngắm", "description": "Hiện hoặc ẩn thanh khung ngắm của Machi trên trang phát để chỉnh góc nhìn, lấy nét, khẩu độ và chuyển động máy quay" },
-      "visualizer-nebbia-behind-cycle": { "title": "Nebbia: Đổi cảnh ngoài cửa sổ", "description": "Đổi cảnh ngoài cửa sổ của Nebbia: phố đêm, Biển mơ đom đóm hoặc hình nền; kính phía trước giữ nguyên" },
-      "visualizer-nebbia-glass-cycle": { "title": "Nebbia: Đổi kính phía trước", "description": "Đổi kính phía trước cửa sổ của Nebbia giữa kính mưa, sương đọng và tuyết" },
-      "visualizer-toggle-glow-blur-quantize": { "title": "Sửa lỗi đơ hiệu ứng lời bài hát trên Linux", "description": "Đổi cách hiển thị phát sáng của hoạt ảnh lời bài hát, khắc phục lỗi treo khi phát lâu trên Linux" },
-      "perf-check-run": { "title": "Chạy kiểm tra hiệu năng", "description": "Đo tốc độ khung hình của hoạt ảnh lời khi phân tích đang chạy, và thử giới hạn khung hình, độ phân giải, khử răng cưa" },
-      "settings-visualizer": { "title": "Cài đặt hiệu ứng thị giác", "description": "Mở khu vực tùy biến hoạt ảnh lời bài hát" },
-      "settings-theme-park": { "title": "Màu sắc", "description": "Mở trình chỉnh sửa chủ đề" },
-      "settings-global-lyric-offset": { "title": "Độ lệch thời gian chung", "description": "Khắc phục độ trễ âm thanh của thiết bị hoặc Bluetooth" },
-      "settings-lyric-filter": { "title": "Bộ lọc lời bài hát", "description": "Mở cài đặt bộ lọc lời bài hát" },
-      "settings-wallpaper-mode": { "title": "Cài đặt chế độ hình nền", "description": "Mở cài đặt chế độ hình nền" },
-      "desktop-toggle-wallpaper-mode": { "title": "Bật/tắt chế độ hình nền", "description": "Chuyển ứng dụng thành hình nền lời bài hát trên desktop" },
-      "desktop-toggle-wallpaper-dock-autohide": { "title": "Tự động ẩn Dock ở chế độ hình nền", "description": "Tự động ẩn Dock khi dùng chế độ hình nền trên Mac (chỉ áp dụng Dock ở đáy)" },
-      "desktop-toggle-close-to-tray": { "title": "Đóng cửa sổ xuống khay hệ thống", "description": "Duy trì ứng dụng ở khay hệ thống khi đóng cửa sổ chính" },
-      "desktop-toggle-remote-control-hide-titlebar": { "title": "Cửa sổ điều khiển: Ẩn thanh nổi trên cùng", "description": "Bật/tắt thanh điều khiển nổi ở cạnh trên của cửa sổ điều khiển" },
-      "desktop-toggle-remote-control-expand-cover": { "title": "Cửa sổ điều khiển: Mở rộng ảnh bìa", "description": "Bật/tắt mở rộng ảnh bìa thành ảnh lớn trong cửa sổ điều khiển khi không hoạt động" },
-      "desktop-toggle-remote-control-text-shade": { "title": "Điều khiển từ xa: nền tối cho chữ", "description": "Bật/tắt lớp nền tối mờ dưới chữ ở trạng thái chờ trên nền trong suốt của cửa sổ điều khiển từ xa" },
-      "desktop-toggle-remote-control-lyric-pairs": { "title": "Điều khiển từ xa: hai cặp lời", "description": "Bật/tắt việc cửa sổ điều khiển từ xa hiện thêm câu tiếp theo ở góc dưới bên phải khi chờ" },
-      "desktop-unlock-remote-control": { "title": "Mở khóa cửa sổ điều khiển", "description": "Tắt nhấp xuyên thấu để tương tác và di chuyển cửa sổ điều khiển" },
-      "sleep-timer": { "title": "Hẹn giờ ngủ", "description": "Tạm dừng phát sau khoảng thời gian đã chọn hoặc đóng ứng dụng" },
-      "navigate-home": { "title": "Về trang chủ", "description": "Quay lại màn hình trang chủ" },
-      "navigate-player": { "title": "Đến trình phát", "description": "Quay lại màn hình trình phát" },
-      "lattice-focus-current": { "title": "Lattice: Tiêu điểm bài hát hiện tại", "description": "Căn giữa bài hát đang phát trong hàng đợi Lattice" },
-      "locate-playing-song": { "title": "Định vị bài hát đang phát", "description": "Mở album hoặc danh sách phát chứa bài hát và cuộn đến giữa màn hình" },
-      "bravais-list": { "title": "Mở danh sách bài hát", "description": "Mở rộng thanh thông tin thành danh sách bài hát của tuyển tập này" },
-      "bravais-directory": { "title": "Mở thư mục", "description": "Mở rộng thanh thông tin thành cây thư mục để chọn hàng loạt" },
-      "bravais-seam-full": { "title": "Mở rộng thanh thông tin", "description": "Mở rộng hoàn toàn thanh thông tin trong Không gian Bravais" },
-      "bravais-seam-spine": { "title": "Thu gọn thanh thông tin", "description": "Thu gọn thanh thông tin thành cột hẹp" },
-      "bravais-seam-hide": { "title": "Gập thanh thông tin", "description": "Gập thanh thông tin và chỉ giữ lại một thẻ ở cạnh màn hình" },
-      "bravais-seam-here": { "title": "Mở thanh thông tin tại đây", "description": "Mở lại thanh thông tin trong khung nhìn hiện tại sau khi thanh cũ trượt khỏi màn hình" },
-      "bravais-locate-playing": { "title": "Định vị bài đang phát", "description": "Di chuyển tiêu điểm đến bài hát đang phát trong thư viện" },
-      "bravais-wall-look": { "title": "Độ trong suốt thư viện Bravais", "description": "Chuyển giao diện Bravais giữa đục, mờ và trong suốt" },
-      "bravais-more-windows": { "title": "Thêm khung (Bravais)", "description": "Thêm một khung trong suốt vào mỗi khối Không gian Bravais" },
-      "bravais-fewer-windows": { "title": "Bỏ bớt khung (Bravais)", "description": "Bỏ một khung trong suốt ở mỗi khối Không gian Bravais" },
-      "navigate-lattice": { "title": "Mở Lattice", "description": "Hiển thị hàng đợi phát dưới dạng queue collage" },
-      "browser-fullscreen": { "title": "Toàn màn hình", "description": "Bật/tắt toàn màn hình trình duyệt" },
-      "home-playlist": { "title": "Mở danh sách phát", "description": "Mở tab trang chủ danh sách phát" },
-      "home-local": { "title": "Mở nhạc nội bộ", "description": "Mở tab nhạc nội bộ" },
-      "home-albums": { "title": "Mở album", "description": "Mở tab album" },
-      "home-navidrome": { "title": "Mở Navidrome", "description": "Mở tab Navidrome" },
-      "home-radio": { "title": "Mở radio", "description": "Mở tab radio" },
-      "home-explore": { "title": "Mở Khám phá", "description": "Mở tab Khám phá" },
-      "grid-sort-file-name": { "title": "Sắp xếp theo tên tệp", "description": "Sắp xếp các bản nhạc nội bộ theo tên tệp" },
-      "grid-sort-modified-date": { "title": "Sắp xếp theo ngày sửa đổi", "description": "Sắp xếp các bản nhạc nội bộ theo thời gian sửa đổi tệp gần nhất" },
-      "grid-sort-album-track": { "title": "Sắp xếp theo số track album", "description": "Sắp xếp các bản nhạc nội bộ theo số đĩa và số track" },
-      "grid-sort-direction": { "title": "Đảo ngược thứ tự sắp xếp", "description": "Chuyển danh sách nhạc nội bộ giữa tăng dần và giảm dần" },
-      "grid-toggle-info-panel": { "title": "Bật/tắt bảng bộ sưu tập", "description": "Hiện hoặc ẩn bảng thông tin và thao tác bộ sưu tập" },
-      "grid-toggle-track-list": { "title": "Bật/tắt danh sách bài", "description": "Hiện hoặc ẩn danh sách bài hát cạnh lưới" },
-      "grid-resync-folder": { "title": "Nhập lại thư mục này", "description": "Quét lại thư mục nội bộ này và làm mới các bài hát" },
-      "grid-resync-all-folders": { "title": "Nhập lại tất cả thư mục", "description": "Quét lại mọi thư mục nội bộ và làm mới thư viện" },
-      "grid-organize-song-info": { "title": "Sắp xếp thông tin bài hát", "description": "Dọn dẹp tiêu đề, nghệ sĩ và album của thư mục này" },
-      "grid-export-playlist": { "title": "Xuất danh sách phát này", "description": "Lưu danh sách phát nội bộ này thành tệp m3u8" },
-      "grid-edit-entity": { "title": "Chỉnh sửa album hoặc nghệ sĩ này", "description": "Mở trình chỉnh sửa thực thể thư viện nội bộ cho bộ sưu tập này" },
-      "grid-set-cover": { "title": "Đặt ảnh bìa bộ sưu tập", "description": "Chọn ảnh bìa cố định cho thư mục, album hoặc danh sách phát cục bộ này" },
-      "grid-toggle-edit-mode": { "title": "Bật/tắt chế độ chỉnh sửa", "description": "Vào hoặc thoát chế độ cho phép xóa bài hát khỏi bộ sưu tập này" },
-      "grid-reload-online-collection": { "title": "Tải lại bộ sưu tập này", "description": "Bỏ qua bộ nhớ đệm và tải lại mọi bài hát của bộ sưu tập trực tuyến này" },
-      "grid-toggle-subscribe": { "title": "Đăng ký hoặc hủy đăng ký", "description": "Lưu danh sách phát hoặc album trực tuyến này vào thư viện, hoặc xóa nếu đã có" },
-      "grid-collect-filtered": { "title": "Thêm các bài này vào sổ ghi nhanh", "description": "Đưa bộ sưu tập này (chỉ các bài đã lọc khi đang lọc) vào sổ ghi nhanh mà không đụng đến hàng đợi" },
-      "grid-shuffle-play-filtered": { "title": "Phát ngẫu nhiên các bài này", "description": "Đặt bộ sưu tập này (chỉ các bài đã lọc khi đang lọc) làm hàng đợi theo thứ tự trộn và bắt đầu từ một bài ngẫu nhiên" },
-      "directory-play-selection": { "title": "Phát các thẻ đã chọn", "description": "Phát bài hát của các thẻ được chọn trên bản đồ theo thứ tự thẻ" },
-      "directory-enqueue-selection": { "title": "Thêm các thẻ đã chọn vào hàng đợi", "description": "Thêm bài hát của các thẻ được chọn trên bản đồ vào hàng đợi" },
-      "directory-create-playlist": { "title": "Tạo danh sách phát từ mục đã chọn", "description": "Tạo danh sách phát nội bộ từ bài hát của các thẻ đã chọn" },
-      "directory-remove-selection": { "title": "Xóa mục đã chọn khỏi thư viện", "description": "Xác nhận xóa các thư mục đã chọn cùng bài hát khỏi thư viện nội bộ" },
-      "directory-select-all": { "title": "Chọn tất cả thẻ đã lọc", "description": "Mở bảng thao tác hàng loạt và chọn tất cả thẻ xuất hiện trong bộ lọc" },
-      "directory-clear-selection": { "title": "Bỏ chọn tất cả", "description": "Bỏ chọn mọi thẻ trên bản đồ" },
-      "directory-manage-hidden": { "title": "Quản lý danh sách phát ẩn", "description": "Hiển thị danh sách phát ẩn trên bản đồ để ẩn hoặc bỏ ẩn, hoặc thoát chế độ xem" },
-      "directory-toggle-hidden": { "title": "Ẩn hoặc bỏ ẩn danh sách phát đang chọn", "description": "Ẩn danh sách phát đang chọn khỏi thư mục trang chính hoặc khôi phục lại" },
-      "directory-rescan-root": { "title": "Quét lại thư mục đã nhập đang chọn", "description": "Quét lại thư mục gốc đã nhập đang chọn" },
-      "directory-remove-root": { "title": "Xóa thư mục đã nhập đang chọn", "description": "Xác nhận xóa thư mục gốc đã nhập đang chọn và bài hát khỏi thư viện nội bộ" },
-      "directory-clear-ignore": { "title": "Khôi phục thư mục bị bỏ qua đang chọn", "description": "Ngừng bỏ qua thư mục đang chọn và quét lại" },
-      "artist-play-top-songs": { "title": "Phát bài hát nổi bật", "description": "Phát các bài hát nổi bật có thể phát của nghệ sĩ từ bài đầu tiên" },
-      "artist-shuffle-top-songs": { "title": "Phát ngẫu nhiên bài hát nổi bật", "description": "Đặt các bài hát nổi bật có thể phát của nghệ sĩ làm hàng đợi theo thứ tự trộn" },
-      "artist-enqueue-top-songs": { "title": "Thêm bài hát nổi bật vào hàng đợi", "description": "Thêm các bài hát nổi bật của nghệ sĩ vào hàng đợi phát" },
-      "artist-reload": { "title": "Tải lại nghệ sĩ", "description": "Tải lại trang nghệ sĩ từ nguồn" },
-      "artist-retry-albums": { "title": "Tiếp tục tải album", "description": "Thử lại trang album bị lỗi và tiếp tục tải phần còn lại" },
-      "artist-edit-entity": { "title": "Sửa thông tin nghệ sĩ", "description": "Mở trình chỉnh sửa thư viện nội bộ cho nghệ sĩ này" },
-      "artist-open-all-songs": { "title": "Mở tất cả bài hát", "description": "Liệt kê mọi bài hát của nghệ sĩ này trên một trang, kể cả đĩa đơn không thuộc album nào" },
-      "settings-interaction": { "title": "Cài đặt tương tác", "description": "Mở cài đặt bàn phím, phím tắt và tương tác lưới" },
-      "settings-global-shortcuts": { "title": "Phím tắt toàn cục", "description": "Đi đến phần gán phím tắt điều khiển phát nhạc toàn hệ thống" },
-      "settings-custom-shortcut": { "title": "Phím tắt tùy chỉnh", "description": "Đi đến phần gán phím tắt bàn phím tùy chỉnh" },
-      "settings-grid-action-button": { "title": "Nút tác vụ lưới", "description": "Đi đến cài đặt trượt của nút tác vụ lưới" },
-      "settings-pinned-commands": { "title": "Vị trí lệnh ghim", "description": "Chọn ba lệnh được ghim trong bảng lệnh" },
-      "settings-home-tabs": { "title": "Hiển thị thẻ Trang chủ", "description": "Chọn thẻ hiển thị trên màn hình chính" },
-      "home-card-position-toggle": { "title": "Ghi nhớ vị trí thẻ trang chủ", "description": "Bật/tắt khôi phục từng mục trang chủ về thẻ gần nhất" },
-      "settings-playback-entry-view": { "title": "Khi phát sẽ mở", "description": "Đi đến cài đặt giao diện mở ra khi nhấn phát" },
-      "playback-entry-view-player": { "title": "Khi phát mở: Hiệu ứng thị giác", "description": "Nhấn phát để mở trình phát và hiệu ứng thị giác" },
-      "playback-entry-view-lattice": { "title": "Khi phát mở: Lattice", "description": "Nhấn phát để mở hàng đợi Lattice" },
-      "playback-entry-view-stay": { "title": "Khi phát: Ở lại đây", "description": "Nhấn phát chỉ bắt đầu bài hát và giữ nguyên vị trí hiện tại" },
-      "settings-library-suite": { "title": "Giao diện thư viện", "description": "Đi đến cài đặt giao diện sử dụng cho thư viện" },
-      "library-suite-picker": { "title": "Chọn giao diện thư viện", "description": "Chuyển đổi giao diện dùng để duyệt thư viện" },
-      "library-wall-look-picker": { "title": "Chọn độ trong suốt thư viện", "description": "Chọn mức độ hiệu ứng thị giác hiển thị xuyên qua thư viện" },
-      "library-wall-windows-picker": { "title": "Số ô cửa sổ mỗi khối", "description": "Chọn số ô trong suốt làm cửa sổ trong mỗi khối Không gian Bravais" },
-      "settings-bravais": { "title": "Cài đặt Không gian Bravais", "description": "Đi đến các cài đặt chỉ áp dụng cho Không gian Bravais" },
-      "library-wall-stack-edges-toggle": { "title": "Viền xếp chồng bộ sưu tập", "description": "Hiện hoặc ẩn mép trang trên các ô album, danh sách phát và thư mục" },
-      "library-wall-seam-clear-toggle": { "title": "Thanh thông tin trong suốt", "description": "Cho phép thanh thông tin hiển thị hiệu ứng thị giác phía sau thư viện" },
-      "library-wall-seam-style-picker": { "title": "Chọn kiểu thanh thông tin", "description": "Chọn giao diện cho thanh thông tin dạng khối đặc" },
-      "library-wall-backdrop-lyrics-toggle": { "title": "Lời bài hát sau nền thư viện", "description": "Hiển thị lời bài hát trong hiệu ứng thị giác phía sau thư viện" },
-      "library-wall-backdrop-blur-toggle": { "title": "Làm mờ nền sau thư viện", "description": "Làm mờ hiệu ứng thị giác hiển thị phía sau thư viện" },
-      "library-wall-seam-direction-picker": { "title": "Chọn hướng dải thông tin", "description": "Mở dải thông tin dưới dạng cột dọc, hàng ngang trên tường, hoặc theo hình dáng màn hình" },
-      "settings-theme-presets": { "title": "Chủ đề cài sẵn", "description": "Đi tới các chủ đề cài sẵn và đã lưu" },
-      "settings-lyric-render-quality": { "title": "Độ phân giải và khử răng cưa khung lời bài hát", "description": "Đi tới độ phân giải và khử răng cưa mà mọi kiểu lời bài hát canvas / WebGL mặc định làm theo" },
-      "settings-lyrics-renderer": { "title": "Trình kết xuất lời bài hát", "description": "Đi tới cách hiển thị lời bài hát trên trình phát" },
-      "settings-grid-card-style": { "title": "Kiểu thẻ lưới", "description": "Đi tới cách hiển thị thẻ lưới trên trang chủ" },
-      "settings-queue-behavior": { "title": "Hành vi hàng đợi", "description": "Đi tới cách tạo và lưu giữ hàng đợi phát" },
-      "settings-netease-scrobble": { "title": "Báo cáo nghe nhạc NetEase", "description": "Đi tới cài đặt gửi lịch sử nghe tới NetEase Cloud Music" },
-      "netease-scrobble-toggle": { "title": "Báo cáo nghe nhạc NetEase", "description": "Bật hoặc tắt gửi lịch sử nghe tới NetEase" },
-      "auto-ai-lyric-segmentation-toggle": { "title": "Tự tách từ lời bài hát bằng AI", "description": "Bật hoặc tắt tự động dùng AI tách lời bài mới thành từ" },
-      "keep-provider-word-timing-toggle": { "title": "Giữ lời từng từ có sẵn của nền tảng", "description": "Bật hoặc tắt việc giữ lời từng từ có sẵn của Apple Music và các nền tảng tương tự" },
-      "settings-audio-output": { "title": "Đầu ra âm thanh", "description": "Đi tới cài đặt thiết bị và định dạng đầu ra âm thanh" },
-      "hifi-toggle": { "title": "Công cụ phát mpv", "description": "Chuyển bài hát cục bộ và Navidrome giữa Web Audio và mpv, công cụ gửi âm thanh thẳng đến thiết bị đầu ra" },
-      "hifi-settings": { "title": "Cài đặt công cụ phát", "description": "Mở cài đặt công cụ phát: Web Audio hoặc mpv, cùng thiết bị đầu ra, chế độ độc quyền và DSD của mpv" },
-      "hifi-exclusive-toggle": { "title": "Chế độ độc quyền HiFi", "description": "Bật hoặc tắt việc HiFi chiếm riêng thiết bị đầu ra để bộ trộn âm hệ thống không can thiệp" },
-      "hifi-navidrome-toggle": { "title": "Phát Navidrome qua HiFi", "description": "Bật hoặc tắt việc phát bài hát Navidrome qua HiFi, dùng tệp gốc không chuyển mã" },
-      "hifi-software-volume-toggle": { "title": "Âm lượng phần mềm HiFi", "description": "Bật hoặc tắt việc để thanh âm lượng của Folia điều chỉnh âm lượng mpv; khi bật sẽ không còn bit-perfect" },
-      "hifi-redetect-mpv": { "title": "Dò lại mpv", "description": "Tìm lại mpv cho HiFi, ví dụ sau khi cài đặt hoặc cập nhật mpv" },
-      "hifi-download-mpv": { "title": "Tải xuống hoặc cập nhật mpv", "description": "Tải bản mpv được khuyên dùng cho HiFi, hoặc cập nhật bản mpv mà Folia đã tải; tiến trình hiển thị trong cài đặt công cụ phát" },
-      "hifi-signal-path": { "title": "Đường tín hiệu HiFi", "description": "Xem bài hát hiện tại đi đến DAC của bạn như thế nào và có giữ được bit-perfect hay không" },
-      "settings-transition": { "title": "Chuyển bài thông minh", "description": "Đi tới cài đặt chuyển bài FOLIA" },
-      "settings-navidrome": { "title": "Máy chủ Navidrome", "description": "Đi tới kết nối máy chủ Navidrome" },
-      "settings-stage-mode": { "title": "Chế độ Stage", "description": "Đi tới cài đặt trình phát ngoài Stage" },
-      "settings-media-cache": { "title": "Bộ nhớ đệm đa phương tiện", "description": "Đi tới bộ nhớ đệm âm thanh đã tải về" },
-      "filter-view": { "title": "Lọc chế độ xem này", "description": "Thu hẹp các thẻ trên màn hình theo tên" },
-      "panel-cover": { "title": "Bảng: Ảnh bìa", "description": "Mở thẻ bảng ảnh bìa" },
-      "panel-controls": { "title": "Bảng: Điều khiển", "description": "Mở thẻ bảng điều khiển" },
-      "panel-queue": { "title": "Bảng: Hàng đợi", "description": "Mở thẻ bảng hàng đợi" },
-      "panel-account": { "title": "Bảng: Tài khoản", "description": "Mở thẻ bảng tài khoản" },
-      "panel-local": { "title": "Bảng: Nội bộ", "description": "Mở thẻ bảng nội bộ" },
-      "panel-navi": { "title": "Bảng: Navidrome", "description": "Mở thẻ bảng Navidrome" },
-      "panel-onlineLyrics": { "title": "Bảng: Lời bài hát", "description": "Mở tab bảng lời bài hát trực tuyến" },
-      "lyric-segmentation": { "title": "Chỉnh tách từ lời bài hát", "description": "Sửa cách ngắt từ của lời bài hát bằng AI hoặc thủ công" },
-      "mods": { "title": "Mod (Thử nghiệm)", "description": "Thử nghiệm: Quản lý mod và xuất video lời bài hát nền trong suốt" },
-      "playback-play": { "title": "Phát", "description": "Bắt đầu phát khi đang tạm dừng" },
-      "playback-pause": { "title": "Tạm dừng", "description": "Tạm dừng phát bài hiện tại" },
-      "playback-toggle": { "title": "Phát / Tạm dừng", "description": "Tạm dừng khi đang phát, phát tiếp khi đang tạm dừng" },
-      "playback-next": { "title": "Bài tiếp theo", "description": "Phát bài tiếp theo" },
-      "queue-keep-open": { "title": "Giữ mở bảng hàng đợi", "description": "Bật/tắt giữ mở bảng lệnh sau khi chọn bài trong hàng đợi" },
-      "playback-prev": { "title": "Bài trước", "description": "Phát bài trước" },
-      "playback-loop": { "title": "Chuyển chế độ lặp", "description": "Thay đổi chế độ lặp lại" },
-      "playback-like": { "title": "Yêu thích bài hát", "description": "Thêm hoặc xóa bài hát hiện tại khỏi mục yêu thích" },
-      "playback-add-to-playlist": { "title": "Thêm vào danh sách phát", "description": "Thêm bài hát hiện tại vào danh sách phát" },
-      "scratchpad-toggle": { "title": "Mở hoặc đóng sổ ghi nhanh", "description": "Kéo sổ ghi nhanh ra: những bài để nghe hoặc sắp xếp sau" },
-      "scratchpad-collect-current": { "title": "Ghi bài hiện tại vào sổ ghi nhanh", "description": "Giữ bài này cho lúc khác mà không đụng đến hàng đợi" },
-      "scratchpad-handle-toggle": { "title": "Hiện hoặc ẩn thẻ bên của sổ ghi nhanh", "description": "Thẻ ở mép trái dùng để mở sổ ghi nhanh" },
-      "settings-scratchpad": { "title": "Cài đặt sổ ghi nhanh", "description": "Có hiện thẻ bên cạnh không, và đặt ở độ cao nào" },
-      "playback-mute": { "title": "Tắt tiếng", "description": "Tắt tiếng hoặc bật lại âm thanh" },
-      "playback-volume-up": { "title": "Tăng âm lượng", "description": "Tăng âm lượng thêm 5%" },
-      "playback-volume-down": { "title": "Giảm âm lượng", "description": "Giảm âm lượng đi 5%" },
-      "playback-shuffle": { "title": "Xáo trộn hàng đợi", "description": "Xáo trộn hàng đợi phát hiện tại" },
-      "playback-clear-queue": { "title": "Xóa hàng đợi", "description": "Xóa toàn bộ bài hát khỏi hàng đợi phát" },
-      "playback-undo-queue-replace": { "title": "Hoàn tác thay thế hàng chờ từ mod", "description": "Khôi phục hàng đợi phát từ trước khi mod thay thế" },
-      "theme-generate-current": { "title": "Tạo chủ đề AI", "description": "Tạo chủ đề AI cho bài hát hiện tại" },
-      "theme-quick-editor": { "title": "Sửa nhanh chủ đề", "description": "Chỉnh sửa nhanh chủ đề AI cho bài hát hiện tại" },
-      "theme-source-ai": { "title": "Nguồn chủ đề: Phân tích AI", "description": "Tạo chủ đề bài hát bằng cách cho AI đọc lời bài hát" },
-      "theme-source-cover": { "title": "Nguồn chủ đề: Màu ảnh bìa", "description": "Tạo chủ đề bài hát từ bảng màu ảnh bìa" },
-      "playback-auto-match-best-lyric": { "title": "Khớp lời bài hát tốt nhất", "description": "Tự động khớp lời bài hát tối ưu cho bài hiện tại" },
-      "playback-toggle-pure-music": { "title": "Đánh dấu/bỏ nhạc không lời", "description": "Đánh dấu bài hát nội bộ là không lời để dừng tự khớp lời; chạy lại để bỏ đánh dấu" },
-      "visualizer-picker": { "title": "Chọn hiệu ứng thị giác", "description": "Duyệt chế độ hoạt họa lời và nhấp để chuyển" },
-      "background-picker": { "title": "Chọn nền", "description": "Duyệt bố cục nền và nhấp để chuyển" },
-      "visualizer-still": { "title": "Hiệu ứng thị giác: Still", "description": "Chuyển sang hiệu ứng tĩnh tiết kiệm tài nguyên" },
-      "settings-scene": { "title": "Cài đặt cảnh", "description": "Mở cửa sổ cảnh" },
-      "scene-cinema": { "title": "Cảnh: Rạp chiếu phim", "description": "Biến trang phát nhạc thành rạp chiếu phim, kiểu lời bài hát và nền của bạn hiện trên màn chiếu" },
-      "scene-exit": { "title": "Rời cảnh", "description": "Quay lại kiểu lời bài hát và nền trên trang phát nhạc" },
-      "scene-room-sound": { "title": "Bật hoặc tắt dò tia âm thanh", "description": "Nghe nhạc như trong phòng của cảnh, hoặc như trên trang phát nhạc thường" },
-      "scene-room-headphones": { "title": "Dò tia âm thanh cho tai nghe", "description": "Tạo âm thanh của cảnh để nghe bằng tai nghe" },
-      "scene-room-speakers": { "title": "Dò tia âm thanh cho loa", "description": "Tạo âm thanh của cảnh để nghe bằng loa" },
-      "scene-reload": { "title": "Tải lại cảnh", "description": "Tải lại cảnh trên trang phát nhạc, sau khi thay đổi các tệp của nó" },
-      "visualizer-classic": { "title": "Hiệu ứng thị giác: Classic", "description": "Chuyển sang hiệu ứng lời bài hát Classic" },
-      "visualizer-cadenza": { "title": "Hiệu ứng thị giác: Cadenza", "description": "Chuyển sang hiệu ứng lời bài hát Cadenza" },
-      "visualizer-partita": { "title": "Hiệu ứng thị giác: Partita", "description": "Chuyển sang hiệu ứng Partita" },
-      "visualizer-fume": { "title": "Hiệu ứng thị giác: Fume", "description": "Chuyển sang hiệu ứng Fume" },
-      "visualizer-cappella": { "title": "Hiệu ứng thị giác: Cappella", "description": "Chuyển sang hiệu ứng Cappella" },
-      "visualizer-tilt": { "title": "Hiệu ứng thị giác: Tilt", "description": "Chuyển sang hiệu ứng Tilt" },
-      "visualizer-claddagh": { "title": "Hiệu ứng thị giác: Claddagh", "description": "Chuyển sang hiệu ứng Claddagh" },
-      "visualizer-monet": { "title": "Hiệu ứng thị giác: Monet", "description": "Chuyển sang hiệu ứng Monet" },
-      "visualizer-diorama": { "title": "Hiệu ứng thị giác: Diorama", "description": "Chuyển sang hiệu ứng Diorama" },
-      "visualizer-pendolo": { "title": "Hiệu ứng thị giác: Pendolo", "description": "Chuyển sang hiệu ứng Pendolo" },
-      "visualizer-sonnet": { "title": "Hiệu ứng thị giác: Sonnet", "description": "Chuyển sang PV lời tiếng Nhật Sonnet" },
-      "smart-beat-toggle": { "title": "Bật / tắt chế độ nhịp thông minh", "description": "Bật hoặc tắt các hiệu ứng nhịp (Sonnet và Diorama theo nhịp, Pendolo theo tiếng trống)" },
-      "smart-beat-off": { "title": "Chế độ nhịp thông minh: Tắt", "description": "Tắt các hiệu ứng nhịp; giữ nguyên khung hình như ban đầu" },
-      "smart-beat-cached": { "title": "Chế độ nhịp thông minh: Chỉ bài đã phân tích", "description": "Chỉ phát hiệu ứng nhịp từ các bài đã phân tích; bản thân nhịp thông minh không phân tích bài mới và không tải GPU (không ảnh hưởng automix)" },
-      "smart-beat-on": { "title": "Chế độ nhịp thông minh: Bật", "description": "Bật các hiệu ứng nhịp (Sonnet và Diorama theo nhịp, Pendolo theo tiếng trống), tự động phân tích bài chưa phân tích" },
-      "visualizer-tempera": { "title": "Hiệu ứng thị giác: Tempera", "description": "Chuyển sang PV lời mảng màu Tempera" },
-      "visualizer-lumiere": { "title": "Hiệu ứng thị giác: Lumiere", "description": "Chuyển sang PV lời ánh đèn sân khấu Lumiere" },
-      "visualizer-nebbia": { "title": "Hiệu ứng thị giác: Nebbia", "description": "Chuyển sang Nebbia, viết lời bài hát trên cửa kính xe buýt mờ hơi nước" },
-      "visualizer-metaphor": { "title": "Hiệu ứng thị giác: Metaphor", "description": "Chuyển sang Metaphor, lời bài hát bằng mực tan chảy, halftone và hạt nhiễu, cắt cảnh dứt khoát giữa các máy quay" },
-      "visualizer-hanabi": { "title": "Hiệu ứng thị giác: Hanabi", "description": "Chuyển sang PV lời pháo hoa Hanabi" },
-      "visualizer-machi": { "title": "Hiệu ứng thị giác: Machi", "description": "Chuyển sang mô hình phố thu nhỏ Machi" },
-      "desktop-toggle-remote-control": { "title": "Bật/tắt cửa sổ điều khiển", "description": "Mở hoặc đóng cửa sổ điều khiển" },
-      "desktop-toggle-main-window-always-on-top": { "title": "Bật/tắt cửa sổ chính luôn trên cùng", "description": "Ghim hoặc bỏ ghim cửa sổ chính lên trên các cửa sổ khác" },
-      "background-monet-full-overlay": { "title": "Nền: Phủ toàn màn hình Monet", "description": "Chuyển nền sang bố cục phủ toàn màn hình Monet" },
-      "background-monet-half-gradient": { "title": "Nền: Chuyển sắc nửa màn hình Monet", "description": "Chuyển nền sang bố cục chuyển sắc nửa màn hình Monet" },
-      "background-common": { "title": "Nền: Thông thường", "description": "Chuyển nền sang bố cục chung" },
-      "background-nomand": { "title": "Nền: Nomand", "description": "Chuyển sang nền hiệu ứng ảnh Paper" },
-      "background-latent": { "title": "Nền: Latent", "description": "Chuyển sang nền shader màu bìa phản hồi âm thanh" },
-      "background-latent-dithering": { "title": "Latent: Pixel", "description": "Chỉ hiển thị lớp Dithering" },
-      "background-latent-mesh": { "title": "Latent: Dòng chảy", "description": "Chỉ hiển thị lớp MeshGradient" },
-      "background-latent-both": { "title": "Latent: Kết hợp", "description": "Hiển thị cả hai lớp shader" },
-      "background-url": { "title": "Nền: Trang Web", "description": "Chuyển nền sang chế độ trang web" },
-      "background-sora": { "title": "Nền: Sora", "description": "Chuyển nền sang bầu trời sao Sora" },
-      "settings-toggle-transparent": { "title": "Bật/tắt trong suốt", "description": "Bật/tắt nền trong suốt cho trình phát" },
-      "settings-toggle-daylight": { "title": "Chuyển đổi sáng/tối", "description": "Chuyển đổi chủ đề ngày/đêm" },
-      "settings-toggle-player-back-button": { "title": "Luôn hiện nút quay lại trình phát", "description": "Bật/tắt hiển thị cố định nút quay lại trang phát" },
-      "settings-gridview-cards": { "title": "Giao diện thẻ lưới", "description": "Chỉnh bìa tràn viền và mức thu nhỏ, làm mờ thẻ lưới theo khoảng cách" },
-      "settings-toggle-gridview-full-bleed-cover": { "title": "Bìa lưới tràn viền", "description": "Bật/tắt bìa lấp đầy toàn bộ thẻ lưới" },
-      "settings-toggle-gridview-square-cards": { "title": "Thẻ lưới vuông", "description": "Bật/tắt thẻ tràn viền dạng vuông thay vì poster" },
-      "settings-toggle-lattice-vignette": { "title": "Tối viền (Lattice & Thư viện)", "description": "Bật/tắt viền tối trên hàng đợi Lattice và Không gian Bravais" },
-      "settings-toggle-lattice-wall-form": { "title": "Tường radio Lattice", "description": "Chuyển hàng đợi Lattice giữa tường poster và tường radio; FM cá nhân luôn dùng tường radio" },
-      "settings-toggle-lattice-radio-hide-upcoming": { "title": "Ẩn bài tiếp theo trên tường radio", "description": "Úp các bài chưa phát trên tường radio của hàng đợi thường, che tên bài; FM cá nhân luôn như vậy" },
-      "settings-toggle-lattice-badge-current-only": { "title": "Chỉ đánh số bài đang phát", "description": "Ẩn số ở góc các thẻ bài hát trên hàng đợi Lattice và Không gian Bravais, trừ bài đang phát" },
-      "settings-toggle-lattice-auto-focus": { "title": "Tự động lấy nét Lattice", "description": "Bật/tắt Lattice cuộn theo bài hát đang phát khi đổi bài" },
-      "lattice-poster-tint": { "title": "Màu phủ làm dịu (Lattice & Thư viện)", "description": "Chỉnh lớp phủ làm dịu ảnh bìa ngoài tiêu điểm trên Lattice và Không gian Bravais" },
-      "settings-reduce-motion": { "title": "Giảm chuyển động", "description": "Giảm hoạt ảnh trên từng bề mặt hoặc theo cài đặt hệ thống" },
-      "settings-toggle-reduce-lattice-motion": { "title": "Giảm chuyển động trong Lattice", "description": "Chuyển hiệu ứng mở rộng, lia góc nhìn và xuất hiện ô thành tức thì" },
-      "settings-toggle-follow-system-reduced-motion": { "title": "Theo cài đặt giảm chuyển động hệ thống", "description": "Bật/tắt cho phép cài đặt hoạt ảnh hệ thống giảm chuyển động trong ứng dụng" },
-      "settings-toggle-track-switch-buttons": { "title": "Luôn hiện mũi tên chuyển bài", "description": "Bật/tắt hiển thị cố định mũi tên chuyển bài cạnh tiêu đề trên thanh tiến trình" },
-      "settings-toggle-main-window-titlebar": { "title": "Luôn hiển thị nút điều khiển cửa sổ", "description": "Bật/tắt hiển thị cố định các nút điều khiển cửa sổ chính" },
-      "settings-toggle-titlebar-side": {"title": "Đổi phía nút cửa sổ", "description": "Chuyển các nút cửa sổ giữa bên trái và bên phải"},
-      "settings-toggle-player-header-blur": { "title": "Làm mờ thanh đầu trình phát", "description": "Bật/tắt thanh mờ kính phía sau thanh tiêu đề cửa sổ ở trang trình phát để các nút luôn dễ đọc" },
-      "settings-toggle-fullscreen-titlebar-button": { "title": "Bật/tắt hiển thị nút toàn màn hình", "description": "Hiện hoặc ẩn nút toàn màn hình trong cụm điều khiển cửa sổ" },
-      "settings-toggle-native-mac-traffic-lights": { "title": "Đèn giao thông macOS gốc", "description": "Dùng đèn giao thông hệ thống thay cho các nút thu nhỏ, phóng to và đóng tự vẽ; có hiệu lực sau khi khởi động lại" },
-      "settings-toggle-native-mac-fullscreen-button": { "title": "Nút toàn màn hình macOS gốc", "description": "Bật/tắt nút điều khiển macOS vào chế độ toàn màn hình gốc thay vì phóng to" },
-      "settings-toggle-cursor-auto-hide": { "title": "Ẩn con trỏ chuột cùng thanh điều khiển", "description": "Bật/tắt tự động ẩn con trỏ chuột cùng lúc với thanh điều khiển phát" },
-      "settings-toggle-cursor-idle-hide": { "title": "Ẩn con trỏ chuột khi không hoạt động", "description": "Bật/tắt tự động ẩn con trỏ chuột khi dừng di chuột trong khi thanh điều khiển vẫn hiển thị" },
-      "settings-toggle-auto-play-on-launch": { "title": "Tự động phát khi khởi chạy", "description": "Bật/tắt tự động phát tiếp phiên trước khi mở ứng dụng" },
-      "settings-toggle-transcode-fallback": { "title": "Chuyển mã âm thanh không hỗ trợ", "description": "Bật/tắt Electron phục hồi âm thanh nội bộ và Navidrome mà Chromium không giải mã được" },
-      "settings-toggle-playback-fade": { "title": "Mờ âm khi dừng và tiếp tục", "description": "Bật/tắt hiệu ứng mờ âm ngắn khi tạm dừng và tiếp tục phát" },
-      "settings-toggle-auto-skip-unplayable": { "title": "Tự động bỏ qua bài hát không thể phát", "description": "Bật/tắt đếm ngược bỏ qua khi bài hát bị giới hạn hoặc lỗi không rõ nguyên nhân" },
-      "settings-toggle-shuffle-round-no-repeat": { "title": "Trộn theo vòng", "description": "Bật hoặc tắt: khi trộn, các bài đã nghe trong vòng này xếp ở sau, và vòng đã nghe hết sẽ tự trộn lại khi lặp danh sách" },
-      "settings-toggle-bottom-subtitle-overlay": { "title": "Bật/tắt lớp phụ đề phía dưới", "description": "Hiện hoặc ẩn toàn bộ lớp phụ đề phía dưới" },
-      "settings-cycle-subtitle-content-mode": { "title": "Chuyển chế độ nội dung phụ đề", "description": "Chuyển đổi nội dung phụ đề giữa bản dịch, phiên âm La-tinh và cả hai" },
-      "settings-subtitles": { "title": "Phụ đề", "description": "Số dòng phụ đề dưới cùng và nội dung từng dòng, nền phụ đề, cùng phụ đề phụ" },
-      "settings-toggle-subtitle-background": { "title": "Bật/tắt nền phụ đề", "description": "Hiện hoặc ẩn nền tăng độ rõ chữ phía sau phụ đề" },
-      "settings-language-system": { "title": "Theo ngôn ngữ hệ thống", "description": "Sử dụng ngôn ngữ của trình duyệt hoặc hệ thống" },
-      "settings-language-zh-CN": { "title": "Chuyển sang tiếng Trung", "description": "Sử dụng tiếng Trung giản thể cho giao diện" },
-      "settings-language-zh-TW": { "title": "Chuyển ngôn ngữ sang Tiếng Trung Phồn thể", "description": "Sử dụng Tiếng Trung Phồn thể cho giao diện" },
-      "settings-language-en": { "title": "Chuyển sang tiếng Anh", "description": "Sử dụng tiếng Anh cho giao diện" },
-      "settings-language-in": { "title": "Chuyển sang tiếng Indonesia", "description": "Sử dụng tiếng Indonesia cho giao diện" },
-      "settings-language-vi": { "title": "Chuyển sang tiếng Việt", "description": "Sử dụng tiếng Việt cho giao diện" }
+      "settings-ponder-hints": {
+        "title": "Gợi ý hướng dẫn Khám phá",
+        "description": "Chọn thời điểm hiển thị gợi ý nhấn giữ G"
+      },
+      "ponder-hints-always": {
+        "title": "Gợi ý Khám phá: Luôn hiển thị",
+        "description": "Hiển thị gợi ý giữ G trên mọi nút điều khiển có hướng dẫn"
+      },
+      "ponder-hints-unseen": {
+        "title": "Gợi ý Khám phá: Chỉ nơi chưa xem",
+        "description": "Ngừng gợi ý nút điều khiển khi đã xem hướng dẫn"
+      },
+      "ponder-hints-off": {
+        "title": "Gợi ý Khám phá: Tắt",
+        "description": "Không bao giờ hiển thị gợi ý giữ G"
+      },
+      "ponder-touch-button-toggle": {
+        "title": "Nút Khám phá trên màn cảm ứng",
+        "description": "Hiện hoặc ẩn bóng đèn ở góc trên phải trên thiết bị cảm ứng"
+      },
+      "search-current": {
+        "title": "Tìm bài hát",
+        "description": "Tìm bài hát trong nguồn hiện tại"
+      },
+      "search-local": {
+        "title": "Tìm bài hát nội bộ",
+        "description": "Tìm trong thư viện nội bộ"
+      },
+      "search-navidrome": {
+        "title": "Tìm bài hát Navidrome",
+        "description": "Tìm trong thư viện Navidrome"
+      },
+      "queue": {
+        "title": "Hàng đợi",
+        "description": "Tìm trong hàng đợi; dùng @ cho siêu dữ liệu và -- cho thao tác hàng loạt"
+      },
+      "playback-volume": {
+        "title": "Âm lượng",
+        "description": "Điều chỉnh âm lượng phát"
+      },
+      "playback-fm-mode": {
+        "title": "Chế độ FM cá nhân",
+        "description": "Chuyển chế độ hoặc ngữ cảnh FM cá nhân"
+      },
+      "playback-station-mode": {
+        "title": "Chế độ đài",
+        "description": "Chuyển chế độ hoặc ngữ cảnh của đài đang phát"
+      },
+      "playback-recommendation-preferences": {
+        "title": "Sở thích",
+        "description": "Điều chỉnh sở thích lưu trong tài khoản, ảnh hưởng đến những gì được gợi ý"
+      },
+      "settings-help": {
+        "title": "Mở Trợ giúp",
+        "description": "Mở trợ giúp và phím tắt"
+      },
+      "ponder-current-page": {
+        "title": "Khám phá trang này",
+        "description": "Mở hướng dẫn tương tác cho trang hiện tại"
+      },
+      "provider-playback-setup": {
+        "title": "Thiết lập phát nhạc của nền tảng",
+        "description": "Mở danh sách thiết lập phát nhạc của nền tảng hiện tại"
+      },
+      "settings-options": {
+        "title": "Mở Tùy chọn",
+        "description": "Mở trung tâm tùy chọn"
+      },
+      "settings-now-playing-card-position": {
+        "title": "Đổi vị trí thẻ bài hát",
+        "description": "Kéo thẻ bài hát đang phát đến vị trí mới"
+      },
+      "settings-ai-provider": {
+        "title": "Cài đặt nhà cung cấp AI",
+        "description": "Chọn nhà cung cấp AI và mô hình"
+      },
+      "settings-appearance": {
+        "title": "Cài đặt giao diện",
+        "description": "Mở cài đặt thị giác và giao diện"
+      },
+      "settings-general": {
+        "title": "Cài đặt chung",
+        "description": "Mở tùy chọn chung của ứng dụng"
+      },
+      "settings-playback": {
+        "title": "Cài đặt phát nhạc",
+        "description": "Mở cài đặt hành vi phát nhạc"
+      },
+      "playback-replaygain-off": {
+        "title": "Tắt ReplayGain",
+        "description": "Phát âm thanh không áp dụng ReplayGain"
+      },
+      "playback-replaygain-track": {
+        "title": "ReplayGain: Chế độ bài hát",
+        "description": "Áp dụng cân bằng ReplayGain theo từng bài hát"
+      },
+      "playback-replaygain-album": {
+        "title": "ReplayGain: Chế độ album",
+        "description": "Áp dụng cân bằng ReplayGain theo album"
+      },
+      "playback-replaygain-auto": {
+        "title": "ReplayGain: Cân bằng thông minh",
+        "description": "Đo độ lớn âm thanh của từng bài và giảm những bài quá to xuống cho đồng đều"
+      },
+      "playback-equalizer": {
+        "title": "Hiệu ứng âm thanh",
+        "description": "Mở bộ cân bằng và chuỗi hiệu ứng"
+      },
+      "playback-sound-preset-flat": {
+        "title": "Âm thanh: Flat",
+        "description": "Đặt lại bộ cân bằng và mọi hiệu ứng"
+      },
+      "playback-sound-preset-lofi": {
+        "title": "Âm thanh: Lo-Fi",
+        "description": "Lọc dải tần, giảm bit và rung lắc kèm tiếng đĩa than"
+      },
+      "playback-sound-preset-radio": {
+        "title": "Âm thanh: Radio",
+        "description": "Dải tần hẹp, âm sắc phát thanh gần như mono"
+      },
+      "playback-sound-preset-hall": {
+        "title": "Âm thanh: Hall",
+        "description": "Không gian stereo rộng cùng âm vang"
+      },
+      "playback-sound-preset-vocal": {
+        "title": "Âm thanh: Vocal",
+        "description": "Nâng dải giọng hát và siết gọn dải động"
+      },
+      "playback-sound-preset-bass": {
+        "title": "Âm thanh: Bass Boost",
+        "description": "Dải trầm dày hơn và lực đánh mạnh mẽ"
+      },
+      "playback-sound-preset-custom1": {
+        "title": "Âm thanh: Tùy chỉnh 1",
+        "description": "Áp dụng cấu hình âm thanh tùy chỉnh 1"
+      },
+      "playback-sound-preset-custom2": {
+        "title": "Âm thanh: Tùy chỉnh 2",
+        "description": "Áp dụng cấu hình âm thanh tùy chỉnh 2"
+      },
+      "playback-sound-mod-curve-release": {
+        "title": "Âm thanh: Quay lại cấu hình của tôi",
+        "description": "Bỏ đường cong cân bằng âm thanh do mod áp dụng"
+      },
+      "settings-local-lyrics-priority": {
+        "title": "Độ ưu tiên lời bài hát nội bộ",
+        "description": "Chọn ưu tiên lời nội bộ hay trực tuyến cho bài hát nội bộ"
+      },
+      "settings-local-lyric-format-order": {
+        "title": "Độ ưu tiên định dạng tệp lời nội bộ",
+        "description": "Chọn định dạng ưu tiên khi bài hát có nhiều tệp lời"
+      },
+      "settings-integration": {
+        "title": "Cài đặt tích hợp",
+        "description": "Mở cài đặt Stage, Đang phát và Navidrome"
+      },
+      "stem-mixer-toggle": {
+        "title": "Bộ trộn stem",
+        "description": "Bật hoặc tắt bộ trộn bốn stem trực tiếp"
+      },
+      "stem-mixer-karaoke": {
+        "title": "Bộ trộn stem: karaoke",
+        "description": "Bỏ giọng hát khỏi bài đang phát"
+      },
+      "stem-mixer-vocals": {
+        "title": "Bộ trộn stem: chỉ giọng hát",
+        "description": "Chỉ giữ giọng hát của bài đang phát"
+      },
+      "stem-mixer-reset": {
+        "title": "Bộ trộn stem: nguyên bản",
+        "description": "Đưa cả bốn stem về 1.0×"
+      },
+      "automix-toggle": {
+        "title": "Chuyển tiếp thông minh",
+        "description": "Bật hoặc tắt chuyển tiếp thông minh FOLIA"
+      },
+      "transition-mode-crossfade": {
+        "title": "Chế độ chuyển tiếp: Folia Crossfade",
+        "description": "Dùng hiệu ứng chuyển mờ đơn giản ra/vào"
+      },
+      "transition-mode-automix": {
+        "title": "Chế độ chuyển tiếp: Folia Automix",
+        "description": "Phân tích cả hai bài và tự động phối trộn"
+      },
+      "transition-performance-toggle": {
+        "title": "Chế độ hiệu ứng chuyển tiếp",
+        "description": "Bật/tắt chuyển tiếp táo bạo hơn (cần mô hình tách stem)"
+      },
+      "settings-discord-presence": {
+        "title": "Trạng thái phát Discord",
+        "description": "Mở cài đặt Discord Rich Presence"
+      },
+      "lyric-staff-policy-cycle": {
+        "title": "Xử lý thông tin sản xuất (Credits)",
+        "description": "Chuyển đổi cách xử lý khối thông tin sản xuất (Credits) ở đầu bài"
+      },
+      "lyric-staff-absorb-cycle": {
+        "title": "Chế độ gộp thông tin sản xuất (Credits)",
+        "description": "Chuyển đổi việc gộp các dòng lân cận vào khối thông tin sản xuất (Credits)"
+      },
+      "settings-obs-browser-source": {
+        "title": "Nguồn trình duyệt OBS",
+        "description": "Mở cài đặt nguồn trình duyệt OBS"
+      },
+      "obs-toggle-keep-main-window-animation": {
+        "title": "OBS: giữ hiệu ứng động cửa sổ chính",
+        "description": "Bật/tắt giữ hiệu ứng động ở cửa sổ chính khi kết nối OBS"
+      },
+      "obs-toggle-track-card": {
+        "title": "OBS: hiện thẻ bài đang phát",
+        "description": "Bật/tắt vẽ thẻ bài đang phát trong nguồn trình duyệt OBS"
+      },
+      "desktop-toggle-lyric-api": {
+        "title": "API lời bài hát",
+        "description": "Bật/tắt endpoint lời bài hát nội bộ không cần xác thực"
+      },
+      "settings-obs-copy-css": {
+        "title": "Sao chép CSS OBS",
+        "description": "Sao chép CSS tùy chỉnh nguồn OBS kèm tài nguyên đã tải lên"
+      },
+      "settings-storage": {
+        "title": "Cài đặt lưu trữ",
+        "description": "Mở cài đặt bộ nhớ đệm và lưu trữ"
+      },
+      "settings-r2-sync": {
+        "title": "Cài đặt máy chủ đồng bộ",
+        "description": "Mở cài đặt máy chủ đồng bộ"
+      },
+      "sync-now": {
+        "title": "Đồng bộ ngay",
+        "description": "Đồng bộ chủ đề AI"
+      },
+      "export-lyric-cache": {
+        "title": "Xuất bộ nhớ đệm lời bài hát",
+        "description": "Lưu toàn bộ lời bài hát trên máy vào tệp zip chứa định dạng .fia và LRC nâng cao"
+      },
+      "export-current-lyrics-fia": {
+        "title": "Xuất lời bài hát hiện tại dạng .fia",
+        "description": "Lưu lời bài hát ở định dạng không suy hao của Folia, bao gồm cả phân tách từ"
+      },
+      "export-current-lyrics-lrc": {
+        "title": "Xuất lời bài hát hiện tại dạng LRC",
+        "description": "Lưu lời bài hát dạng LRC nâng cao tương thích với các trình phát khác"
+      },
+      "settings-local-library-watch": {
+        "title": "Cài đặt theo dõi thư mục nội bộ",
+        "description": "Mở cài đặt tự động quét thư mục nội bộ đã nhập"
+      },
+      "local-library-auto-scan-toggle": {
+        "title": "Tự động quét thư mục nội bộ",
+        "description": "Bật hoặc tắt tự động quét lại thư mục nội bộ đã nhập"
+      },
+      "settings-desktop": {
+        "title": "Cài đặt Desktop",
+        "description": "Mở cài đặt ứng dụng desktop"
+      },
+      "settings-sources": {
+        "title": "Cài đặt nguồn",
+        "description": "Mở các nguồn trực tuyến: bật từng nguồn, chỉ dùng để khớp, hoặc tắt"
+      },
+      "settings-remote": {
+        "title": "Cài đặt cửa sổ điều khiển",
+        "description": "Mở cài đặt cửa sổ điều khiển: các công tắc và các dòng lời"
+      },
+      "settings-alpha-video-export": {
+        "title": "Xuất video trong suốt",
+        "description": "Chọn ffmpeg dùng để xuất video trong suốt và xem các định dạng nó ghi được"
+      },
+      "settings-update-channel": {
+        "title": "Kênh cập nhật",
+        "description": "Chọn kênh phát hành ứng dụng desktop"
+      },
+      "desktop-toggle-voice-input-pause": {
+        "title": "Tạm dừng khi nhập giọng nói",
+        "description": "Bật/tắt tự động tạm dừng phát khi nhập bằng giọng nói"
+      },
+      "desktop-toggle-prevent-display-sleep": {
+        "title": "Ngăn màn hình ngủ khi đang phát",
+        "description": "Giữ màn hình luôn sáng khi đang phát nhạc"
+      },
+      "settings-ui-zoom": {
+        "title": "Cài đặt thu phóng giao diện",
+        "description": "Chuyển đến mức thu phóng của toàn bộ cửa sổ chính"
+      },
+      "ui-zoom-toggle": {
+        "title": "Thu phóng giao diện",
+        "description": "Bật/tắt thu phóng toàn bộ cửa sổ chính theo mức đã chọn"
+      },
+      "ui-zoom-in": {
+        "title": "Phóng to giao diện",
+        "description": "Phóng to toàn bộ cửa sổ chính thêm một mức"
+      },
+      "ui-zoom-out": {
+        "title": "Thu nhỏ giao diện",
+        "description": "Thu nhỏ toàn bộ cửa sổ chính bớt một mức"
+      },
+      "desktop-toggle-background-throttling": {
+        "title": "Tiết kiệm tài nguyên chạy ngầm",
+        "description": "Bật/tắt giảm tốc độ kết xuất và giữ hoạt cảnh lời bài hát khi Folia thu nhỏ hoặc ẩn"
+      },
+      "desktop-toggle-community-mods": {
+        "title": "Mod cộng đồng",
+        "description": "Bật/tắt việc cài và chạy các mod ngoài mod nguồn chính thức"
+      },
+      "settings-graphics": {
+        "title": "Cài đặt đồ họa",
+        "description": "Mở chế độ tĩnh, giới hạn khung hình, sửa lỗi phát sáng Linux và giảm chuyển động"
+      },
+      "settings-gpu-preference": {
+        "title": "Cài đặt GPU kết xuất",
+        "description": "Đi tới tùy chọn chọn card đồ họa ứng dụng sử dụng để kết xuất"
+      },
+      "gpu-preference-auto": {
+        "title": "GPU kết xuất: Tự động",
+        "description": "Để Windows tự chọn card đồ họa; áp dụng sau khi khởi động lại"
+      },
+      "gpu-preference-high-performance": {
+        "title": "GPU kết xuất: Hiệu năng cao",
+        "description": "Kết xuất trên GPU rời; áp dụng sau khi khởi động lại"
+      },
+      "gpu-preference-low-power": {
+        "title": "GPU kết xuất: Tiết kiệm điện",
+        "description": "Kết xuất trên GPU tích hợp; áp dụng sau khi khởi động lại"
+      },
+      "settings-mods": {
+        "title": "Cài đặt Mod",
+        "description": "Mở công tắc hệ thống mod và các bản mod đã cài"
+      },
+      "settings-lab": {
+        "title": "Cài đặt thử nghiệm",
+        "description": "Mở cài đặt các tính năng thử nghiệm"
+      },
+      "settings-player-bottom-bar-position": {
+        "title": "Đổi vị trí thanh điều khiển đáy",
+        "description": "Kéo thanh đáy trình phát và nút bảng điều khiển đến độ cao mới (thẻ bài hát đi theo, trừ khi đã có vị trí riêng)"
+      },
+      "settings-player-control-slots": {
+        "title": "Vị trí nút trình phát",
+        "description": "Sắp xếp hai nút cạnh thanh tiến trình và đảo nút"
+      },
+      "video-layer-toggle": {
+        "title": "Lớp video nền sau lời bài hát",
+        "description": "Hiện hoặc ẩn lớp video tắt tiếng phía sau lời bài hát"
+      },
+      "video-layer-pick": {
+        "title": "Lớp video: Chọn video nội bộ",
+        "description": "Chọn video nội bộ phát phía sau lời bài hát"
+      },
+      "visualizer-toggle-random-per-song": {
+        "title": "Hiệu ứng thị giác ngẫu nhiên theo bài",
+        "description": "Bật/tắt hiệu ứng lời bài hát ngẫu nhiên mỗi khi đổi bài"
+      },
+      "visualizer-machi-camera-bar": {
+        "title": "Machi: Khung ngắm",
+        "description": "Hiện hoặc ẩn thanh khung ngắm của Machi trên trang phát để chỉnh góc nhìn, lấy nét, khẩu độ và chuyển động máy quay"
+      },
+      "visualizer-nebbia-behind-cycle": {
+        "title": "Nebbia: Đổi cảnh ngoài cửa sổ",
+        "description": "Đổi cảnh ngoài cửa sổ của Nebbia: phố đêm, Biển mơ đom đóm hoặc hình nền; kính phía trước giữ nguyên"
+      },
+      "visualizer-nebbia-glass-cycle": {
+        "title": "Nebbia: Đổi kính phía trước",
+        "description": "Đổi kính phía trước cửa sổ của Nebbia giữa kính mưa, sương đọng và tuyết"
+      },
+      "visualizer-toggle-glow-blur-quantize": {
+        "title": "Sửa lỗi đơ hiệu ứng lời bài hát trên Linux",
+        "description": "Đổi cách hiển thị phát sáng của hoạt ảnh lời bài hát, khắc phục lỗi treo khi phát lâu trên Linux"
+      },
+      "perf-check-run": {
+        "title": "Chạy kiểm tra hiệu năng",
+        "description": "Đo tốc độ khung hình của hoạt ảnh lời khi phân tích đang chạy, và thử giới hạn khung hình, độ phân giải, khử răng cưa"
+      },
+      "settings-visualizer": {
+        "title": "Cài đặt hiệu ứng thị giác",
+        "description": "Mở khu vực tùy biến hoạt ảnh lời bài hát"
+      },
+      "settings-theme-park": {
+        "title": "Màu sắc",
+        "description": "Mở trình chỉnh sửa chủ đề"
+      },
+      "settings-global-lyric-offset": {
+        "title": "Độ lệch thời gian chung",
+        "description": "Khắc phục độ trễ âm thanh của thiết bị hoặc Bluetooth"
+      },
+      "settings-lyric-filter": {
+        "title": "Bộ lọc lời bài hát",
+        "description": "Mở cài đặt bộ lọc lời bài hát"
+      },
+      "settings-wallpaper-mode": {
+        "title": "Cài đặt chế độ hình nền",
+        "description": "Mở cài đặt chế độ hình nền"
+      },
+      "desktop-toggle-wallpaper-mode": {
+        "title": "Bật/tắt chế độ hình nền",
+        "description": "Chuyển ứng dụng thành hình nền lời bài hát trên desktop"
+      },
+      "desktop-toggle-wallpaper-dock-autohide": {
+        "title": "Tự động ẩn Dock ở chế độ hình nền",
+        "description": "Tự động ẩn Dock khi dùng chế độ hình nền trên Mac (chỉ áp dụng Dock ở đáy)"
+      },
+      "desktop-toggle-close-to-tray": {
+        "title": "Đóng cửa sổ xuống khay hệ thống",
+        "description": "Duy trì ứng dụng ở khay hệ thống khi đóng cửa sổ chính"
+      },
+      "desktop-toggle-remote-control-hide-titlebar": {
+        "title": "Cửa sổ điều khiển: Ẩn thanh nổi trên cùng",
+        "description": "Bật/tắt thanh điều khiển nổi ở cạnh trên của cửa sổ điều khiển"
+      },
+      "desktop-toggle-remote-control-expand-cover": {
+        "title": "Cửa sổ điều khiển: Mở rộng ảnh bìa",
+        "description": "Bật/tắt mở rộng ảnh bìa thành ảnh lớn trong cửa sổ điều khiển khi không hoạt động"
+      },
+      "desktop-toggle-remote-control-text-shade": {
+        "title": "Cửa sổ điều khiển: nền tối cho chữ",
+        "description": "Bật/tắt lớp nền tối mờ dưới chữ ở trạng thái chờ trên nền trong suốt của cửa sổ điều khiển"
+      },
+      "desktop-toggle-remote-control-lyric-pairs": {
+        "title": "Cửa sổ điều khiển: hai cặp lời",
+        "description": "Bật/tắt việc cửa sổ điều khiển hiện thêm câu tiếp theo ở góc dưới bên phải khi chờ"
+      },
+      "desktop-unlock-remote-control": {
+        "title": "Mở khóa cửa sổ điều khiển",
+        "description": "Tắt nhấp xuyên thấu để tương tác và di chuyển cửa sổ điều khiển"
+      },
+      "sleep-timer": {
+        "title": "Hẹn giờ ngủ",
+        "description": "Tạm dừng phát sau khoảng thời gian đã chọn hoặc đóng ứng dụng"
+      },
+      "navigate-home": {
+        "title": "Về trang chủ",
+        "description": "Quay lại màn hình trang chủ"
+      },
+      "navigate-player": {
+        "title": "Đến trình phát",
+        "description": "Quay lại màn hình trình phát"
+      },
+      "lattice-focus-current": {
+        "title": "Lattice: Tiêu điểm bài hát hiện tại",
+        "description": "Căn giữa bài hát đang phát trong hàng đợi Lattice"
+      },
+      "locate-playing-song": {
+        "title": "Định vị bài hát đang phát",
+        "description": "Mở album hoặc danh sách phát chứa bài hát và cuộn đến giữa màn hình"
+      },
+      "bravais-list": {
+        "title": "Mở danh sách bài hát",
+        "description": "Mở rộng thanh thông tin thành danh sách bài hát của tuyển tập này"
+      },
+      "bravais-directory": {
+        "title": "Mở thư mục",
+        "description": "Mở rộng thanh thông tin thành cây thư mục để chọn hàng loạt"
+      },
+      "bravais-seam-full": {
+        "title": "Mở rộng thanh thông tin",
+        "description": "Mở rộng hoàn toàn thanh thông tin trong Không gian Bravais"
+      },
+      "bravais-seam-spine": {
+        "title": "Thu gọn thanh thông tin",
+        "description": "Thu gọn thanh thông tin thành cột hẹp"
+      },
+      "bravais-seam-hide": {
+        "title": "Gập thanh thông tin",
+        "description": "Gập thanh thông tin và chỉ giữ lại một thẻ ở cạnh màn hình"
+      },
+      "bravais-seam-here": {
+        "title": "Mở thanh thông tin tại đây",
+        "description": "Mở lại thanh thông tin trong khung nhìn hiện tại sau khi thanh cũ trượt khỏi màn hình"
+      },
+      "bravais-locate-playing": {
+        "title": "Định vị bài đang phát",
+        "description": "Di chuyển tiêu điểm đến bài hát đang phát trong thư viện"
+      },
+      "bravais-wall-look": {
+        "title": "Độ trong suốt thư viện Bravais",
+        "description": "Chuyển giao diện Bravais giữa đục, mờ và trong suốt"
+      },
+      "bravais-more-windows": {
+        "title": "Thêm khung (Bravais)",
+        "description": "Thêm một khung trong suốt vào mỗi khối Không gian Bravais"
+      },
+      "bravais-fewer-windows": {
+        "title": "Bỏ bớt khung (Bravais)",
+        "description": "Bỏ một khung trong suốt ở mỗi khối Không gian Bravais"
+      },
+      "navigate-lattice": {
+        "title": "Mở Lattice",
+        "description": "Hiển thị hàng đợi phát dưới dạng queue collage"
+      },
+      "browser-fullscreen": {
+        "title": "Toàn màn hình",
+        "description": "Bật/tắt toàn màn hình trình duyệt"
+      },
+      "home-folia": {
+        "title": "Mở danh sách phát Folia",
+        "description": "Mở tab Folia ở trang chủ"
+      },
+      "home-playlist": {
+        "title": "Mở danh sách phát",
+        "description": "Mở tab trang chủ danh sách phát"
+      },
+      "home-local": {
+        "title": "Mở nhạc nội bộ",
+        "description": "Mở tab nhạc nội bộ"
+      },
+      "home-albums": {
+        "title": "Mở album",
+        "description": "Mở tab album"
+      },
+      "home-navidrome": {
+        "title": "Mở Navidrome",
+        "description": "Mở tab Navidrome"
+      },
+      "home-radio": {
+        "title": "Mở radio",
+        "description": "Mở tab radio"
+      },
+      "home-explore": {
+        "title": "Mở Khám phá",
+        "description": "Mở tab Khám phá"
+      },
+      "grid-sort-file-name": {
+        "title": "Sắp xếp theo tên tệp",
+        "description": "Sắp xếp các bản nhạc nội bộ theo tên tệp"
+      },
+      "grid-sort-modified-date": {
+        "title": "Sắp xếp theo ngày sửa đổi",
+        "description": "Sắp xếp các bản nhạc nội bộ theo thời gian sửa đổi tệp gần nhất"
+      },
+      "grid-sort-album-track": {
+        "title": "Sắp xếp theo số track album",
+        "description": "Sắp xếp các bản nhạc nội bộ theo số đĩa và số track"
+      },
+      "grid-sort-direction": {
+        "title": "Đảo ngược thứ tự sắp xếp",
+        "description": "Chuyển danh sách nhạc nội bộ giữa tăng dần và giảm dần"
+      },
+      "grid-toggle-info-panel": {
+        "title": "Bật/tắt bảng bộ sưu tập",
+        "description": "Hiện hoặc ẩn bảng thông tin và thao tác bộ sưu tập"
+      },
+      "grid-toggle-track-list": {
+        "title": "Bật/tắt danh sách bài",
+        "description": "Hiện hoặc ẩn danh sách bài hát cạnh lưới"
+      },
+      "grid-resync-folder": {
+        "title": "Nhập lại thư mục này",
+        "description": "Quét lại thư mục nội bộ này và làm mới các bài hát"
+      },
+      "grid-resync-all-folders": {
+        "title": "Nhập lại tất cả thư mục",
+        "description": "Quét lại mọi thư mục nội bộ và làm mới thư viện"
+      },
+      "grid-organize-song-info": {
+        "title": "Sắp xếp thông tin bài hát",
+        "description": "Dọn dẹp tiêu đề, nghệ sĩ và album của thư mục này"
+      },
+      "grid-reorder-playlist": {
+        "title": "Sắp xếp lại bài hát",
+        "description": "Chỉnh sửa thứ tự bài hát trong danh sách phát Folia này"
+      },
+      "grid-export-playlist": {
+        "title": "Xuất danh sách phát này",
+        "description": "Lưu danh sách phát Folia này thành tệp JSON hoặc M3U8"
+      },
+      "grid-save-to-folia": {
+        "title": "Lưu thành danh sách phát Folia",
+        "description": "Lưu danh sách phát hoặc album của nền tảng này thành danh sách phát Folia, có thể phát qua nguồn khác"
+      },
+      "grid-refresh-from-origin": {
+        "title": "Cập nhật từ danh sách phát gốc",
+        "description": "Đọc lại danh sách phát gốc và thêm bài mới vào danh sách phát Folia này"
+      },
+      "grid-edit-entity": {
+        "title": "Chỉnh sửa album hoặc nghệ sĩ này",
+        "description": "Mở trình chỉnh sửa thực thể thư viện nội bộ cho bộ sưu tập này"
+      },
+      "grid-set-cover": {
+        "title": "Đặt ảnh bìa bộ sưu tập",
+        "description": "Chọn ảnh bìa cố định cho thư mục, album hoặc danh sách phát cục bộ này"
+      },
+      "grid-toggle-edit-mode": {
+        "title": "Bật/tắt chế độ chỉnh sửa",
+        "description": "Vào hoặc thoát chế độ cho phép xóa bài hát khỏi bộ sưu tập này"
+      },
+      "grid-reload-online-collection": {
+        "title": "Tải lại bộ sưu tập này",
+        "description": "Bỏ qua bộ nhớ đệm và tải lại mọi bài hát của bộ sưu tập trực tuyến này"
+      },
+      "grid-toggle-subscribe": {
+        "title": "Đăng ký hoặc hủy đăng ký",
+        "description": "Lưu danh sách phát hoặc album trực tuyến này vào thư viện, hoặc xóa nếu đã có"
+      },
+      "grid-collect-filtered": {
+        "title": "Thêm các bài này vào sổ ghi nhanh",
+        "description": "Đưa bộ sưu tập này (chỉ các bài đã lọc khi đang lọc) vào sổ ghi nhanh mà không đụng đến hàng đợi"
+      },
+      "grid-shuffle-play-filtered": {
+        "title": "Phát ngẫu nhiên các bài này",
+        "description": "Đặt bộ sưu tập này (chỉ các bài đã lọc khi đang lọc) làm hàng đợi theo thứ tự trộn và bắt đầu từ một bài ngẫu nhiên"
+      },
+      "directory-play-selection": {
+        "title": "Phát các thẻ đã chọn",
+        "description": "Phát bài hát của các thẻ được chọn trên bản đồ theo thứ tự thẻ"
+      },
+      "directory-enqueue-selection": {
+        "title": "Thêm các thẻ đã chọn vào hàng đợi",
+        "description": "Thêm bài hát của các thẻ được chọn trên bản đồ vào hàng đợi"
+      },
+      "directory-create-playlist": {
+        "title": "Tạo danh sách phát từ mục đã chọn",
+        "description": "Tạo danh sách phát Folia từ bài hát của các thẻ đã chọn"
+      },
+      "directory-remove-selection": {
+        "title": "Xóa mục đã chọn khỏi thư viện",
+        "description": "Xác nhận xóa các thư mục đã chọn cùng bài hát khỏi thư viện nội bộ"
+      },
+      "directory-select-all": {
+        "title": "Chọn tất cả thẻ đã lọc",
+        "description": "Mở bảng thao tác hàng loạt và chọn tất cả thẻ xuất hiện trong bộ lọc"
+      },
+      "directory-clear-selection": {
+        "title": "Bỏ chọn tất cả",
+        "description": "Bỏ chọn mọi thẻ trên bản đồ"
+      },
+      "directory-manage-hidden": {
+        "title": "Quản lý danh sách phát ẩn",
+        "description": "Hiển thị danh sách phát ẩn trên bản đồ để ẩn hoặc bỏ ẩn, hoặc thoát chế độ xem"
+      },
+      "directory-toggle-hidden": {
+        "title": "Ẩn hoặc bỏ ẩn danh sách phát đang chọn",
+        "description": "Ẩn danh sách phát đang chọn khỏi thư mục trang chính hoặc khôi phục lại"
+      },
+      "directory-rescan-root": {
+        "title": "Quét lại thư mục đã nhập đang chọn",
+        "description": "Quét lại thư mục gốc đã nhập đang chọn"
+      },
+      "directory-remove-root": {
+        "title": "Xóa thư mục đã nhập đang chọn",
+        "description": "Xác nhận xóa thư mục gốc đã nhập đang chọn và bài hát khỏi thư viện nội bộ"
+      },
+      "directory-clear-ignore": {
+        "title": "Khôi phục thư mục bị bỏ qua đang chọn",
+        "description": "Ngừng bỏ qua thư mục đang chọn và quét lại"
+      },
+      "artist-play-top-songs": {
+        "title": "Phát bài hát nổi bật",
+        "description": "Phát các bài hát nổi bật có thể phát của nghệ sĩ từ bài đầu tiên"
+      },
+      "artist-shuffle-top-songs": {
+        "title": "Phát ngẫu nhiên bài hát nổi bật",
+        "description": "Đặt các bài hát nổi bật có thể phát của nghệ sĩ làm hàng đợi theo thứ tự trộn"
+      },
+      "artist-enqueue-top-songs": {
+        "title": "Thêm bài hát nổi bật vào hàng đợi",
+        "description": "Thêm các bài hát nổi bật của nghệ sĩ vào hàng đợi phát"
+      },
+      "artist-reload": {
+        "title": "Tải lại nghệ sĩ",
+        "description": "Tải lại trang nghệ sĩ từ nguồn"
+      },
+      "artist-retry-albums": {
+        "title": "Tiếp tục tải album",
+        "description": "Thử lại trang album bị lỗi và tiếp tục tải phần còn lại"
+      },
+      "artist-edit-entity": {
+        "title": "Sửa thông tin nghệ sĩ",
+        "description": "Mở trình chỉnh sửa thư viện nội bộ cho nghệ sĩ này"
+      },
+      "artist-open-all-songs": {
+        "title": "Mở tất cả bài hát",
+        "description": "Liệt kê mọi bài hát của nghệ sĩ này trên một trang, kể cả đĩa đơn không thuộc album nào"
+      },
+      "settings-interaction": {
+        "title": "Cài đặt tương tác",
+        "description": "Mở cài đặt bàn phím, phím tắt và tương tác lưới"
+      },
+      "settings-global-shortcuts": {
+        "title": "Phím tắt toàn cục",
+        "description": "Đi đến phần gán phím tắt điều khiển phát nhạc toàn hệ thống"
+      },
+      "settings-custom-shortcut": {
+        "title": "Phím tắt tùy chỉnh",
+        "description": "Đi đến phần gán phím tắt bàn phím tùy chỉnh"
+      },
+      "settings-grid-action-button": {
+        "title": "Nút tác vụ lưới",
+        "description": "Đi đến cài đặt trượt của nút tác vụ lưới"
+      },
+      "settings-pinned-commands": {
+        "title": "Vị trí lệnh ghim",
+        "description": "Chọn ba lệnh được ghim trong bảng lệnh"
+      },
+      "settings-home-tabs": {
+        "title": "Hiển thị thẻ Trang chủ",
+        "description": "Chọn thẻ hiển thị trên màn hình chính"
+      },
+      "home-card-position-toggle": {
+        "title": "Ghi nhớ vị trí thẻ trang chủ",
+        "description": "Bật/tắt khôi phục từng mục trang chủ về thẻ gần nhất"
+      },
+      "settings-playback-entry-view": {
+        "title": "Khi phát sẽ mở",
+        "description": "Đi đến cài đặt giao diện mở ra khi nhấn phát"
+      },
+      "playback-entry-view-player": {
+        "title": "Khi phát mở: Hiệu ứng thị giác",
+        "description": "Nhấn phát để mở trình phát và hiệu ứng thị giác"
+      },
+      "playback-entry-view-lattice": {
+        "title": "Khi phát mở: Lattice",
+        "description": "Nhấn phát để mở hàng đợi Lattice"
+      },
+      "playback-entry-view-stay": {
+        "title": "Khi phát: Ở lại đây",
+        "description": "Nhấn phát chỉ bắt đầu bài hát và giữ nguyên vị trí hiện tại"
+      },
+      "settings-library-suite": {
+        "title": "Giao diện thư viện",
+        "description": "Đi đến cài đặt giao diện sử dụng cho thư viện"
+      },
+      "library-suite-picker": {
+        "title": "Chọn giao diện thư viện",
+        "description": "Chuyển đổi giao diện dùng để duyệt thư viện"
+      },
+      "library-wall-look-picker": {
+        "title": "Chọn độ trong suốt thư viện",
+        "description": "Chọn mức độ hiệu ứng thị giác hiển thị xuyên qua thư viện"
+      },
+      "library-wall-windows-picker": {
+        "title": "Số ô cửa sổ mỗi khối",
+        "description": "Chọn số ô trong suốt làm cửa sổ trong mỗi khối Không gian Bravais"
+      },
+      "settings-bravais": {
+        "title": "Cài đặt Không gian Bravais",
+        "description": "Đi đến các cài đặt chỉ áp dụng cho Không gian Bravais"
+      },
+      "library-wall-home-finite-toggle": {
+        "title": "Tường trang chủ hữu hạn",
+        "description": "Xếp tường trang chủ một lần, không lặp lại, kéo đến mép là dừng"
+      },
+      "library-wall-stack-edges-toggle": {
+        "title": "Viền xếp chồng bộ sưu tập",
+        "description": "Hiện hoặc ẩn mép trang trên các ô album, danh sách phát và thư mục"
+      },
+      "library-wall-collection-tilt-toggle": {
+        "title": "Nghiêng trang bộ sưu tập",
+        "description": "Nghiêng hoặc dựng thẳng bức tường trên trang playlist, album và nghệ sĩ"
+      },
+      "library-wall-seam-clear-toggle": {
+        "title": "Thanh thông tin trong suốt",
+        "description": "Cho phép thanh thông tin hiển thị hiệu ứng thị giác phía sau thư viện"
+      },
+      "library-wall-seam-style-picker": {
+        "title": "Chọn kiểu thanh thông tin",
+        "description": "Chọn giao diện cho thanh thông tin dạng khối đặc"
+      },
+      "library-wall-backdrop-lyrics-toggle": {
+        "title": "Lời bài hát sau nền thư viện",
+        "description": "Hiển thị lời bài hát trong hiệu ứng thị giác phía sau thư viện"
+      },
+      "library-wall-backdrop-blur-toggle": {
+        "title": "Làm mờ nền sau thư viện",
+        "description": "Làm mờ hiệu ứng thị giác hiển thị phía sau thư viện"
+      },
+      "library-wall-seam-direction-picker": {
+        "title": "Chọn hướng dải thông tin",
+        "description": "Mở dải thông tin dưới dạng cột dọc, hàng ngang trên tường, hoặc theo hình dáng màn hình"
+      },
+      "settings-theme-presets": {
+        "title": "Chủ đề cài sẵn",
+        "description": "Đi tới các chủ đề cài sẵn và đã lưu"
+      },
+      "settings-lyric-render-quality": {
+        "title": "Độ phân giải và khử răng cưa khung lời bài hát",
+        "description": "Đi tới độ phân giải và khử răng cưa mà mọi kiểu lời bài hát canvas / WebGL mặc định làm theo"
+      },
+      "settings-lyrics-renderer": {
+        "title": "Trình kết xuất lời bài hát",
+        "description": "Đi tới cách hiển thị lời bài hát trên trình phát"
+      },
+      "settings-grid-card-style": {
+        "title": "Kiểu thẻ lưới",
+        "description": "Đi tới cách hiển thị thẻ lưới trên trang chủ"
+      },
+      "settings-queue-behavior": {
+        "title": "Hành vi hàng đợi",
+        "description": "Đi tới cách tạo và lưu giữ hàng đợi phát"
+      },
+      "settings-netease-scrobble": {
+        "title": "Báo cáo nghe nhạc NetEase",
+        "description": "Đi tới cài đặt gửi lịch sử nghe tới NetEase Cloud Music"
+      },
+      "netease-scrobble-toggle": {
+        "title": "Báo cáo nghe nhạc NetEase",
+        "description": "Bật hoặc tắt gửi lịch sử nghe tới NetEase"
+      },
+      "auto-ai-lyric-segmentation-toggle": {
+        "title": "Tự tách từ lời bài hát bằng AI",
+        "description": "Bật hoặc tắt tự động dùng AI tách lời bài mới thành từ"
+      },
+      "keep-provider-word-timing-toggle": {
+        "title": "Giữ lời từng từ có sẵn của nền tảng",
+        "description": "Bật hoặc tắt việc giữ lời từng từ có sẵn của Apple Music và các nền tảng tương tự"
+      },
+      "settings-audio-output": {
+        "title": "Đầu ra âm thanh",
+        "description": "Đi tới cài đặt thiết bị và định dạng đầu ra âm thanh"
+      },
+      "hifi-toggle": {
+        "title": "Công cụ phát mpv",
+        "description": "Chuyển bài hát cục bộ và Navidrome giữa Web Audio và mpv, công cụ gửi âm thanh thẳng đến thiết bị đầu ra"
+      },
+      "hifi-settings": {
+        "title": "Cài đặt công cụ phát",
+        "description": "Mở cài đặt công cụ phát: Web Audio hoặc mpv, cùng thiết bị đầu ra, chế độ độc quyền và DSD của mpv"
+      },
+      "hifi-exclusive-toggle": {
+        "title": "Chế độ độc quyền HiFi",
+        "description": "Bật hoặc tắt việc HiFi chiếm riêng thiết bị đầu ra để bộ trộn âm hệ thống không can thiệp"
+      },
+      "hifi-navidrome-toggle": {
+        "title": "Phát Navidrome qua HiFi",
+        "description": "Bật hoặc tắt việc phát bài hát Navidrome qua HiFi, dùng tệp gốc không chuyển mã"
+      },
+      "hifi-software-volume-toggle": {
+        "title": "Âm lượng phần mềm HiFi",
+        "description": "Bật hoặc tắt việc để thanh âm lượng của Folia điều chỉnh âm lượng mpv; khi bật sẽ không còn bit-perfect"
+      },
+      "hifi-redetect-mpv": {
+        "title": "Dò lại mpv",
+        "description": "Tìm lại mpv cho HiFi, ví dụ sau khi cài đặt hoặc cập nhật mpv"
+      },
+      "hifi-download-mpv": {
+        "title": "Tải xuống hoặc cập nhật mpv",
+        "description": "Tải bản mpv được khuyên dùng cho HiFi, hoặc cập nhật bản mpv mà Folia đã tải; tiến trình hiển thị trong cài đặt công cụ phát"
+      },
+      "hifi-signal-path": {
+        "title": "Đường tín hiệu HiFi",
+        "description": "Xem bài hát hiện tại đi đến DAC của bạn như thế nào và có giữ được bit-perfect hay không"
+      },
+      "settings-transition": {
+        "title": "Chuyển bài thông minh",
+        "description": "Đi tới cài đặt chuyển bài FOLIA"
+      },
+      "settings-navidrome": {
+        "title": "Máy chủ Navidrome",
+        "description": "Đi tới kết nối máy chủ Navidrome"
+      },
+      "settings-stage-mode": {
+        "title": "Chế độ Stage",
+        "description": "Đi tới cài đặt trình phát ngoài Stage"
+      },
+      "settings-media-cache": {
+        "title": "Bộ nhớ đệm đa phương tiện",
+        "description": "Đi tới bộ nhớ đệm âm thanh đã tải về"
+      },
+      "filter-view": {
+        "title": "Lọc chế độ xem này",
+        "description": "Thu hẹp các thẻ trên màn hình theo tên"
+      },
+      "panel-cover": {
+        "title": "Bảng: Ảnh bìa",
+        "description": "Mở thẻ bảng ảnh bìa"
+      },
+      "panel-controls": {
+        "title": "Bảng: Điều khiển",
+        "description": "Mở thẻ bảng điều khiển"
+      },
+      "panel-queue": {
+        "title": "Bảng: Hàng đợi",
+        "description": "Mở thẻ bảng hàng đợi"
+      },
+      "panel-account": {
+        "title": "Bảng: Tài khoản",
+        "description": "Mở thẻ bảng tài khoản"
+      },
+      "panel-local": {
+        "title": "Bảng: Nội bộ",
+        "description": "Mở thẻ bảng nội bộ"
+      },
+      "panel-navi": {
+        "title": "Bảng: Navidrome",
+        "description": "Mở thẻ bảng Navidrome"
+      },
+      "panel-onlineLyrics": {
+        "title": "Bảng: Lời bài hát",
+        "description": "Mở tab bảng lời bài hát trực tuyến"
+      },
+      "lyric-segmentation": {
+        "title": "Chỉnh tách từ lời bài hát",
+        "description": "Sửa cách ngắt từ của lời bài hát bằng AI hoặc thủ công"
+      },
+      "mods": {
+        "title": "Mod",
+        "description": "Quản lý mod và xuất video lời bài hát nền trong suốt"
+      },
+      "mods-market": {
+        "title": "Mở chợ mod",
+        "description": "Duyệt, cài và cập nhật mod"
+      },
+      "mods-check-updates": {
+        "title": "Kiểm tra cập nhật mod",
+        "description": "Đọc lại chợ mod và liệt kê các mod có cập nhật"
+      },
+      "playback-play": {
+        "title": "Phát",
+        "description": "Bắt đầu phát khi đang tạm dừng"
+      },
+      "playback-pause": {
+        "title": "Tạm dừng",
+        "description": "Tạm dừng phát bài hiện tại"
+      },
+      "playback-toggle": {
+        "title": "Phát / Tạm dừng",
+        "description": "Tạm dừng khi đang phát, phát tiếp khi đang tạm dừng"
+      },
+      "playback-next": {
+        "title": "Bài tiếp theo",
+        "description": "Phát bài tiếp theo"
+      },
+      "queue-keep-open": {
+        "title": "Giữ mở bảng hàng đợi",
+        "description": "Bật/tắt giữ mở bảng lệnh sau khi chọn bài trong hàng đợi"
+      },
+      "playback-prev": {
+        "title": "Bài trước",
+        "description": "Phát bài trước"
+      },
+      "playback-loop": {
+        "title": "Chuyển chế độ lặp",
+        "description": "Thay đổi chế độ lặp lại"
+      },
+      "playback-like": {
+        "title": "Yêu thích bài hát",
+        "description": "Thêm hoặc xóa bài hát hiện tại khỏi mục yêu thích"
+      },
+      "playback-add-to-playlist": {
+        "title": "Thêm vào danh sách phát",
+        "description": "Thêm bài hát hiện tại vào danh sách phát"
+      },
+      "scratchpad-toggle": {
+        "title": "Mở hoặc đóng sổ ghi nhanh",
+        "description": "Kéo sổ ghi nhanh ra: những bài để nghe hoặc sắp xếp sau"
+      },
+      "scratchpad-collect-current": {
+        "title": "Ghi bài hiện tại vào sổ ghi nhanh",
+        "description": "Giữ bài này cho lúc khác mà không đụng đến hàng đợi"
+      },
+      "scratchpad-handle-toggle": {
+        "title": "Hiện hoặc ẩn thẻ bên của sổ ghi nhanh",
+        "description": "Thẻ ở mép trái dùng để mở sổ ghi nhanh"
+      },
+      "settings-scratchpad": {
+        "title": "Cài đặt sổ ghi nhanh",
+        "description": "Có hiện thẻ bên cạnh không, và đặt ở độ cao nào"
+      },
+      "song-notes-mark-moment": {
+        "title": "Đánh dấu khoảnh khắc này",
+        "description": "Để lại một dấu trên dòng thời gian của bài đang phát tại vị trí này"
+      },
+      "song-notes-write": {
+        "title": "Viết bình luận",
+        "description": "Mở trang Khoảnh khắc trong sổ ghi nhanh cho bài đang phát"
+      },
+      "playback-mute": {
+        "title": "Tắt tiếng",
+        "description": "Tắt tiếng hoặc bật lại âm thanh"
+      },
+      "playback-volume-up": {
+        "title": "Tăng âm lượng",
+        "description": "Tăng âm lượng thêm 5%"
+      },
+      "playback-volume-down": {
+        "title": "Giảm âm lượng",
+        "description": "Giảm âm lượng đi 5%"
+      },
+      "playback-shuffle": {
+        "title": "Xáo trộn hàng đợi",
+        "description": "Xáo trộn hàng đợi phát hiện tại"
+      },
+      "playback-clear-queue": {
+        "title": "Xóa hàng đợi",
+        "description": "Xóa toàn bộ bài hát khỏi hàng đợi phát"
+      },
+      "playback-undo-queue-replace": {
+        "title": "Hoàn tác thay thế hàng chờ từ mod",
+        "description": "Khôi phục hàng đợi phát từ trước khi mod thay thế"
+      },
+      "theme-generate-current": {
+        "title": "Tạo chủ đề AI",
+        "description": "Tạo chủ đề AI cho bài hát hiện tại"
+      },
+      "theme-quick-editor": {
+        "title": "Sửa nhanh chủ đề",
+        "description": "Chỉnh sửa nhanh chủ đề AI cho bài hát hiện tại"
+      },
+      "theme-source-ai": {
+        "title": "Nguồn chủ đề: Phân tích AI",
+        "description": "Tạo chủ đề bài hát bằng cách cho AI đọc lời bài hát"
+      },
+      "theme-source-cover": {
+        "title": "Nguồn chủ đề: Màu ảnh bìa",
+        "description": "Tạo chủ đề bài hát từ bảng màu ảnh bìa"
+      },
+      "playback-auto-match-best-lyric": {
+        "title": "Khớp lời bài hát tốt nhất",
+        "description": "Tự động khớp lời bài hát tối ưu cho bài hiện tại"
+      },
+      "playback-toggle-pure-music": {
+        "title": "Đánh dấu/bỏ nhạc không lời",
+        "description": "Đánh dấu bài hát nội bộ là không lời để dừng tự khớp lời; chạy lại để bỏ đánh dấu"
+      },
+      "visualizer-picker": {
+        "title": "Chọn hiệu ứng thị giác",
+        "description": "Duyệt chế độ hoạt họa lời và nhấp để chuyển"
+      },
+      "background-picker": {
+        "title": "Chọn nền",
+        "description": "Duyệt bố cục nền và nhấp để chuyển"
+      },
+      "visualizer-still": {
+        "title": "Hiệu ứng thị giác: Still",
+        "description": "Chuyển sang hiệu ứng tĩnh tiết kiệm tài nguyên"
+      },
+      "settings-scene": {
+        "title": "Cài đặt cảnh",
+        "description": "Mở cửa sổ cảnh"
+      },
+      "scene-cinema": {
+        "title": "Cảnh: Rạp chiếu phim",
+        "description": "Biến trang phát nhạc thành rạp chiếu phim, kiểu lời bài hát và nền của bạn hiện trên màn chiếu"
+      },
+      "scene-exit": {
+        "title": "Rời cảnh",
+        "description": "Quay lại kiểu lời bài hát và nền trên trang phát nhạc"
+      },
+      "scene-room-sound": {
+        "title": "Bật hoặc tắt dò tia âm thanh",
+        "description": "Nghe nhạc như trong phòng của cảnh, hoặc như trên trang phát nhạc thường"
+      },
+      "scene-room-headphones": {
+        "title": "Dò tia âm thanh cho tai nghe",
+        "description": "Tạo âm thanh của cảnh để nghe bằng tai nghe"
+      },
+      "scene-room-speakers": {
+        "title": "Dò tia âm thanh cho loa",
+        "description": "Tạo âm thanh của cảnh để nghe bằng loa"
+      },
+      "scene-reload": {
+        "title": "Tải lại cảnh",
+        "description": "Tải lại cảnh trên trang phát nhạc, sau khi thay đổi các tệp của nó"
+      },
+      "visualizer-classic": {
+        "title": "Hiệu ứng thị giác: Classic",
+        "description": "Chuyển sang hiệu ứng lời bài hát Classic"
+      },
+      "visualizer-cadenza": {
+        "title": "Hiệu ứng thị giác: Cadenza",
+        "description": "Chuyển sang hiệu ứng lời bài hát Cadenza"
+      },
+      "visualizer-partita": {
+        "title": "Hiệu ứng thị giác: Partita",
+        "description": "Chuyển sang hiệu ứng Partita"
+      },
+      "visualizer-fume": {
+        "title": "Hiệu ứng thị giác: Fume",
+        "description": "Chuyển sang hiệu ứng Fume"
+      },
+      "visualizer-cappella": {
+        "title": "Hiệu ứng thị giác: Cappella",
+        "description": "Chuyển sang hiệu ứng Cappella"
+      },
+      "visualizer-tilt": {
+        "title": "Hiệu ứng thị giác: Tilt",
+        "description": "Chuyển sang hiệu ứng Tilt"
+      },
+      "visualizer-claddagh": {
+        "title": "Hiệu ứng thị giác: Claddagh",
+        "description": "Chuyển sang hiệu ứng Claddagh"
+      },
+      "visualizer-monet": {
+        "title": "Hiệu ứng thị giác: Monet",
+        "description": "Chuyển sang hiệu ứng Monet"
+      },
+      "visualizer-diorama": {
+        "title": "Hiệu ứng thị giác: Diorama",
+        "description": "Chuyển sang hiệu ứng Diorama"
+      },
+      "visualizer-pendolo": {
+        "title": "Hiệu ứng thị giác: Pendolo",
+        "description": "Chuyển sang hiệu ứng Pendolo"
+      },
+      "visualizer-sonnet": {
+        "title": "Hiệu ứng thị giác: Sonnet",
+        "description": "Chuyển sang PV lời tiếng Nhật Sonnet"
+      },
+      "smart-beat-toggle": {
+        "title": "Bật / tắt chế độ nhịp thông minh",
+        "description": "Bật hoặc tắt các hiệu ứng nhịp (Sonnet và Diorama theo nhịp, Pendolo theo tiếng trống)"
+      },
+      "smart-beat-off": {
+        "title": "Chế độ nhịp thông minh: Tắt",
+        "description": "Tắt các hiệu ứng nhịp; giữ nguyên khung hình như ban đầu"
+      },
+      "smart-beat-cached": {
+        "title": "Chế độ nhịp thông minh: Chỉ bài đã phân tích",
+        "description": "Chỉ phát hiệu ứng nhịp từ các bài đã phân tích; bản thân nhịp thông minh không phân tích bài mới và không tải GPU (không ảnh hưởng automix)"
+      },
+      "smart-beat-on": {
+        "title": "Chế độ nhịp thông minh: Bật",
+        "description": "Bật các hiệu ứng nhịp (Sonnet và Diorama theo nhịp, Pendolo theo tiếng trống), tự động phân tích bài chưa phân tích"
+      },
+      "visualizer-tempera": {
+        "title": "Hiệu ứng thị giác: Tempera",
+        "description": "Chuyển sang PV lời mảng màu Tempera"
+      },
+      "visualizer-lumiere": {
+        "title": "Hiệu ứng thị giác: Lumiere",
+        "description": "Chuyển sang PV lời ánh đèn sân khấu Lumiere"
+      },
+      "visualizer-nebbia": {
+        "title": "Hiệu ứng thị giác: Nebbia",
+        "description": "Chuyển sang Nebbia, viết lời bài hát trên cửa kính xe buýt mờ hơi nước"
+      },
+      "visualizer-metaphor": {
+        "title": "Hiệu ứng thị giác: Metaphor",
+        "description": "Chuyển sang Metaphor, lời bài hát bằng mực tan chảy, halftone và hạt nhiễu, cắt cảnh dứt khoát giữa các máy quay"
+      },
+      "visualizer-hanabi": {
+        "title": "Hiệu ứng thị giác: Hanabi",
+        "description": "Chuyển sang PV lời pháo hoa Hanabi"
+      },
+      "visualizer-machi": {
+        "title": "Hiệu ứng thị giác: Machi",
+        "description": "Chuyển sang mô hình phố thu nhỏ Machi"
+      },
+      "desktop-toggle-remote-control": {
+        "title": "Bật/tắt cửa sổ điều khiển",
+        "description": "Mở hoặc đóng cửa sổ điều khiển"
+      },
+      "desktop-toggle-main-window-always-on-top": {
+        "title": "Bật/tắt cửa sổ chính luôn trên cùng",
+        "description": "Ghim hoặc bỏ ghim cửa sổ chính lên trên các cửa sổ khác"
+      },
+      "background-monet-full-overlay": {
+        "title": "Nền: Phủ toàn màn hình Monet",
+        "description": "Chuyển nền sang bố cục phủ toàn màn hình Monet"
+      },
+      "background-monet-half-gradient": {
+        "title": "Nền: Chuyển sắc nửa màn hình Monet",
+        "description": "Chuyển nền sang bố cục chuyển sắc nửa màn hình Monet"
+      },
+      "background-common": {
+        "title": "Nền: Thông thường",
+        "description": "Chuyển nền sang bố cục chung"
+      },
+      "background-nomand": {
+        "title": "Nền: Nomand",
+        "description": "Chuyển sang nền hiệu ứng ảnh Paper"
+      },
+      "background-latent": {
+        "title": "Nền: Latent",
+        "description": "Chuyển sang nền shader màu bìa phản hồi âm thanh"
+      },
+      "background-latent-dithering": {
+        "title": "Latent: Pixel",
+        "description": "Chỉ hiển thị lớp Dithering"
+      },
+      "background-latent-mesh": {
+        "title": "Latent: Dòng chảy",
+        "description": "Chỉ hiển thị lớp MeshGradient"
+      },
+      "background-latent-both": {
+        "title": "Latent: Kết hợp",
+        "description": "Hiển thị cả hai lớp shader"
+      },
+      "background-url": {
+        "title": "Nền: Trang Web",
+        "description": "Chuyển nền sang chế độ trang web"
+      },
+      "background-sora": {
+        "title": "Nền: Sora",
+        "description": "Chuyển nền sang bầu trời sao Sora"
+      },
+      "settings-toggle-transparent": {
+        "title": "Bật/tắt trong suốt",
+        "description": "Bật/tắt nền trong suốt cho trình phát"
+      },
+      "settings-toggle-daylight": {
+        "title": "Chuyển đổi sáng/tối",
+        "description": "Chuyển đổi chủ đề ngày/đêm"
+      },
+      "settings-toggle-player-back-button": {
+        "title": "Luôn hiện nút quay lại trình phát",
+        "description": "Bật/tắt hiển thị cố định nút quay lại trang phát"
+      },
+      "settings-gridview-cards": {
+        "title": "Giao diện thẻ lưới",
+        "description": "Chỉnh bìa tràn viền và mức thu nhỏ, làm mờ thẻ lưới theo khoảng cách"
+      },
+      "settings-toggle-gridview-full-bleed-cover": {
+        "title": "Bìa lưới tràn viền",
+        "description": "Bật/tắt bìa lấp đầy toàn bộ thẻ lưới"
+      },
+      "settings-toggle-gridview-square-cards": {
+        "title": "Thẻ lưới vuông",
+        "description": "Bật/tắt thẻ tràn viền dạng vuông thay vì poster"
+      },
+      "settings-toggle-lattice-vignette": {
+        "title": "Tối viền (Lattice & Thư viện)",
+        "description": "Bật/tắt viền tối trên hàng đợi Lattice và Không gian Bravais"
+      },
+      "settings-toggle-lattice-wall-form": {
+        "title": "Tường radio Lattice",
+        "description": "Chuyển hàng đợi Lattice giữa tường poster và tường radio; FM cá nhân luôn dùng tường radio"
+      },
+      "settings-toggle-lattice-radio-hide-upcoming": {
+        "title": "Ẩn bài tiếp theo trên tường radio",
+        "description": "Úp các bài chưa phát trên tường radio của hàng đợi thường, che tên bài; FM cá nhân luôn như vậy"
+      },
+      "settings-toggle-lattice-badge-current-only": {
+        "title": "Chỉ đánh số bài đang phát",
+        "description": "Ẩn số ở góc các thẻ bài hát trên hàng đợi Lattice và Không gian Bravais, trừ bài đang phát"
+      },
+      "settings-toggle-lattice-auto-focus": {
+        "title": "Tự động lấy nét Lattice",
+        "description": "Bật/tắt Lattice cuộn theo bài hát đang phát khi đổi bài"
+      },
+      "lattice-poster-tint": {
+        "title": "Màu phủ làm dịu (Lattice & Thư viện)",
+        "description": "Chỉnh lớp phủ làm dịu ảnh bìa ngoài tiêu điểm trên Lattice và Không gian Bravais"
+      },
+      "settings-reduce-motion": {
+        "title": "Giảm chuyển động",
+        "description": "Giảm hoạt ảnh trên từng bề mặt hoặc theo cài đặt hệ thống"
+      },
+      "settings-toggle-reduce-lattice-motion": {
+        "title": "Giảm chuyển động trong Lattice",
+        "description": "Chuyển hiệu ứng mở rộng, lia góc nhìn và xuất hiện ô thành tức thì"
+      },
+      "settings-toggle-follow-system-reduced-motion": {
+        "title": "Theo cài đặt giảm chuyển động hệ thống",
+        "description": "Bật/tắt cho phép cài đặt hoạt ảnh hệ thống giảm chuyển động trong ứng dụng"
+      },
+      "settings-toggle-track-switch-buttons": {
+        "title": "Luôn hiện mũi tên chuyển bài",
+        "description": "Bật/tắt hiển thị cố định mũi tên chuyển bài cạnh tiêu đề trên thanh tiến trình"
+      },
+      "settings-toggle-main-window-titlebar": {
+        "title": "Luôn hiển thị nút điều khiển cửa sổ",
+        "description": "Bật/tắt hiển thị cố định các nút điều khiển cửa sổ chính"
+      },
+      "settings-toggle-titlebar-side": {
+        "title": "Đổi phía nút cửa sổ",
+        "description": "Chuyển các nút cửa sổ giữa bên trái và bên phải"
+      },
+      "settings-toggle-progress-chorus-marker": {
+        "title": "Đánh dấu điệp khúc trên thanh tiến trình",
+        "description": "Bật/tắt vạch mảnh trên thanh tiến trình đánh dấu chỗ bắt đầu điệp khúc, hiện khi nguồn lời bài hát cho biết vị trí điệp khúc"
+      },
+      "settings-toggle-player-header-blur": {
+        "title": "Làm mờ thanh đầu trình phát",
+        "description": "Bật/tắt thanh mờ kính phía sau thanh tiêu đề cửa sổ ở trang trình phát để các nút luôn dễ đọc"
+      },
+      "settings-toggle-fullscreen-titlebar-button": {
+        "title": "Bật/tắt hiển thị nút toàn màn hình",
+        "description": "Hiện hoặc ẩn nút toàn màn hình trong cụm điều khiển cửa sổ"
+      },
+      "settings-toggle-native-mac-traffic-lights": {
+        "title": "Đèn giao thông macOS gốc",
+        "description": "Dùng đèn giao thông hệ thống thay cho các nút thu nhỏ, phóng to và đóng tự vẽ; có hiệu lực sau khi khởi động lại"
+      },
+      "settings-toggle-native-mac-fullscreen-button": {
+        "title": "Nút toàn màn hình macOS gốc",
+        "description": "Bật/tắt nút điều khiển macOS vào chế độ toàn màn hình gốc thay vì phóng to"
+      },
+      "settings-toggle-cursor-auto-hide": {
+        "title": "Ẩn con trỏ chuột cùng thanh điều khiển",
+        "description": "Bật/tắt tự động ẩn con trỏ chuột cùng lúc với thanh điều khiển phát"
+      },
+      "settings-toggle-cursor-idle-hide": {
+        "title": "Ẩn con trỏ chuột khi không hoạt động",
+        "description": "Bật/tắt tự động ẩn con trỏ chuột khi dừng di chuột trong khi thanh điều khiển vẫn hiển thị"
+      },
+      "settings-toggle-auto-play-on-launch": {
+        "title": "Tự động phát khi khởi chạy",
+        "description": "Bật/tắt tự động phát tiếp phiên trước khi mở ứng dụng"
+      },
+      "settings-toggle-transcode-fallback": {
+        "title": "Chuyển mã âm thanh không hỗ trợ",
+        "description": "Bật/tắt Electron phục hồi âm thanh nội bộ và Navidrome mà Chromium không giải mã được"
+      },
+      "settings-toggle-playback-fade": {
+        "title": "Mờ âm khi dừng và tiếp tục",
+        "description": "Bật/tắt hiệu ứng mờ âm ngắn khi tạm dừng và tiếp tục phát"
+      },
+      "settings-toggle-auto-skip-unplayable": {
+        "title": "Tự động bỏ qua bài hát không thể phát",
+        "description": "Bật/tắt đếm ngược bỏ qua khi bài hát bị giới hạn hoặc lỗi không rõ nguyên nhân"
+      },
+      "settings-toggle-shuffle-round-no-repeat": {
+        "title": "Trộn theo vòng",
+        "description": "Bật hoặc tắt: khi trộn, các bài đã nghe trong vòng này xếp ở sau, và vòng đã nghe hết sẽ tự trộn lại khi lặp danh sách"
+      },
+      "settings-toggle-bottom-subtitle-overlay": {
+        "title": "Bật/tắt lớp phụ đề phía dưới",
+        "description": "Hiện hoặc ẩn toàn bộ lớp phụ đề phía dưới"
+      },
+      "settings-cycle-subtitle-content-mode": {
+        "title": "Chuyển chế độ nội dung phụ đề",
+        "description": "Chuyển đổi nội dung phụ đề giữa bản dịch, phiên âm La-tinh và cả hai"
+      },
+      "settings-subtitles": {
+        "title": "Phụ đề",
+        "description": "Số dòng phụ đề dưới cùng và nội dung từng dòng, nền phụ đề, cùng phụ đề phụ"
+      },
+      "settings-toggle-subtitle-background": {
+        "title": "Bật/tắt nền phụ đề",
+        "description": "Hiện hoặc ẩn nền tăng độ rõ chữ phía sau phụ đề"
+      },
+      "settings-language-system": {
+        "title": "Theo ngôn ngữ hệ thống",
+        "description": "Sử dụng ngôn ngữ của trình duyệt hoặc hệ thống"
+      },
+      "settings-language-zh-CN": {
+        "title": "Chuyển sang tiếng Trung",
+        "description": "Sử dụng tiếng Trung giản thể cho giao diện"
+      },
+      "settings-language-zh-TW": {
+        "title": "Chuyển ngôn ngữ sang Tiếng Trung Phồn thể",
+        "description": "Sử dụng Tiếng Trung Phồn thể cho giao diện"
+      },
+      "settings-language-en": {
+        "title": "Chuyển sang tiếng Anh",
+        "description": "Sử dụng tiếng Anh cho giao diện"
+      },
+      "settings-language-in": {
+        "title": "Chuyển sang tiếng Indonesia",
+        "description": "Sử dụng tiếng Indonesia cho giao diện"
+      },
+      "settings-language-vi": {
+        "title": "Chuyển sang tiếng Việt",
+        "description": "Sử dụng tiếng Việt cho giao diện"
+      },
+      "search-netease": {
+        "title": "Tìm bài hát NetEase",
+        "description": "Tìm trên NetEase Cloud Music"
+      }
     }
   },
   "ui": {
@@ -1273,6 +2540,8 @@ export default {
     "generateAITheme": "Tạo chủ đề AI",
     "libraryConfig": "Thư viện & Cấu hình",
     "synced": "Đã đồng bộ",
+    "syncing": "Đang đồng bộ…",
+    "reset": "Đặt lại",
     "source": "Nguồn",
     "lyricsMatchSearch": "Khớp / Tìm kiếm lời",
     "songIdOrName": "ID hoặc tên bài hát",
@@ -1311,6 +2580,8 @@ export default {
     "background": "Nền",
     "default": "Mặc định",
     "aiTheme": "Chủ đề AI",
+    "themeModOverride": "Chủ đề từ mod \"{{mod}}\"",
+    "themeModOverrideRelease": "Quay lại chủ đề của bài hát",
     "generateAIVisuals": "Tạo hiệu ứng thị giác AI",
     "generatingTheme": "Đang tạo chủ đề...",
     "resetToDefaultTheme": "Về chủ đề mặc định",
@@ -1347,6 +2618,39 @@ export default {
       "width": "Độ rộng stereo",
       "space": "Không gian",
       "punch": "Độ nảy"
+    },
+    "stemMixer": {
+      "title": "Bộ trộn stem",
+      "hint": "Chỉnh trống, bass, phần khác và giọng hát riêng",
+      "toggle": "Bộ trộn stem",
+      "stem": {
+        "drums": "Trống",
+        "bass": "Bass",
+        "other": "Khác",
+        "vocals": "Giọng hát"
+      },
+      "preset": {
+        "reset": "Nguyên bản",
+        "karaoke": "Karaoke",
+        "vocals": "Chỉ giọng hát"
+      },
+      "status": {
+        "off": "Khi bật, bài đang phát được tách trực tiếp trên GPU; phần chưa tách phát nguyên bản.",
+        "waiting": "Đang chờ phát",
+        "separating": "Đang tách",
+        "ready": "Đang dùng các track đã tách",
+        "failed": "Không tách được bài này; đang phát nguyên bản",
+        "notFollowing": "Nguồn đang phát không khớp với nguồn đã tách; đang phát nguyên bản",
+        "tooLong": "Dài hơn 20 phút; không tách"
+      },
+      "block": {
+        "automix": "Không dùng được khi bật chuyển bài thông minh: cả hai cùng tiếp quản một luồng phát.",
+        "automixAction": "Tắt chuyển bài thông minh",
+        "hifi": "Không dùng được khi phát HiFi: âm thanh không đi qua đây.",
+        "external": "Không dùng được khi trình phát ngoài đang phát: âm thanh không đi qua đây.",
+        "noGpu": "Thiết bị này không dùng được: cần WebGPU và mô hình tách stem đi kèm.",
+        "tooSlow": "GPU này tách quá chậm; đã tắt trong phiên này."
+      }
     },
     "equalizerModCurve": "Đường cong này được cung cấp bởi mod \"{{name}}\"",
     "equalizerModCurveHint": "Các thiết lập sẵn và ô tùy chỉnh của bạn vẫn giữ nguyên. Để điều chỉnh đường cong này, trước tiên hãy lưu vào một ô tùy chỉnh.",
@@ -1386,7 +2690,6 @@ export default {
       "syncSettingsNoChange": "Cài đặt hiển thị đã khớp, không có thay đổi."
     },
     "unsupportedFontFormat": "Chỉ hỗ trợ tệp phông chữ woff2, woff, ttf, otf.",
-    "cloudDrive": "Ổ đĩa đám mây",
     "noItems": "Không có mục nào",
     "noItemsFound": "Không tìm thấy mục nào",
     "clear": "Xóa",
@@ -1394,14 +2697,15 @@ export default {
     "exitFullscreen": "Thoát toàn màn hình",
     "maximizeWindow": "Phóng to",
     "restoreWindow": "Khôi phục cửa sổ",
-    "remoteControl": "Điều khiển từ xa",
+    "remoteControl": "Cửa sổ điều khiển",
     "seek": "Tua",
     "clearActiveCommand": "Xóa lệnh hiện tại",
     "playPreview": "Phát xem trước",
     "pausePreview": "Tạm dừng xem trước",
     "enterThemeName": "Nhập tên chủ đề...",
     "viewLyricsTimeline": "Xem dòng thời gian lời bài hát",
-    "trashDislike": "Bỏ qua / Không thích"
+    "trashDislike": "Bỏ qua / Không thích",
+    "cloudDrive": "Ổ đĩa đám mây"
   },
   "panel": {
     "cover": "Ảnh bìa",
@@ -1489,20 +2793,146 @@ export default {
     }
   },
   "mods": {
-    "androidTitle": "Mô-đun máy khách Android",
-    "androidDesc": "Chỉ mô-đun máy khách. Mô-đun có mục main (Node) sẽ không được cài.",
-    "androidImport": "Nhập ZIP mô-đun",
-    "androidEmpty": "Chưa cài mô-đun nào.",
-    "androidIncompatible": "Mô-đun này có mục main (Node), không tương thích Android",
-    "enable": "Bật",
-    "disable": "Tắt",
-    "remove": "Xóa",
     "homeBackToLibrary": "Quay lại thư viện",
     "homePageNavigation": "Chuyển tab trang chủ",
     "title": "Quản lý mod",
-    "experimental": "Thử nghiệm",
-    "warning": "Mod tương thích với Folium v{{version}}. Các mod đánh dấu Đã xác minh được Folium kiểm duyệt và ký số; các mod khác do bên thứ ba cung cấp và chưa được kiểm duyệt. Dù đã xác minh hay chưa, khi bật mod sẽ chạy với toàn quyền ứng dụng (gồm runtime Node.js và mọi cài đặt như URL dịch vụ AI và khóa API). Chỉ bật mod từ nguồn đáng tin cậy.",
+    "warning": "Mỗi mod đều hỏi xác nhận trước khi bật. Mod có nhãn Chính thức đã được Folium xem xét; số còn lại do bên thứ ba cung cấp. Lỗi của mod hãy báo cho tác giả trong phần chi tiết.",
     "market": "Kho mod",
+    "openWindow": "Mở",
+    "windowTitle": "Mod",
+    "marketRowDesc": "Mod đã cài và kho mod: cài, cập nhật, gỡ",
+    "updatesTag": "Cập nhật: {{count}}",
+    "view": {
+      "searchPlaceholder": "Tìm mod; lọc bằng @installed, @updates…",
+      "clearSearch": "Xóa tìm kiếm",
+      "filterMenu": "Lọc",
+      "sortMenu": "Sắp xếp",
+      "more": "Thao tác khác",
+      "filter": {
+        "installed": "Đã cài",
+        "updates": "Có cập nhật",
+        "enabled": "Đang bật",
+        "disabled": "Đang tắt",
+        "builtin": "Tích hợp sẵn",
+        "source": "Nguồn nhạc",
+        "beta": "Thử nghiệm",
+        "awesome": "Awesome-Folia",
+        "expired": "Phạm vi phiên bản đã hết"
+      },
+      "sort": {
+        "updated": "Mới cập nhật",
+        "name": "Tên"
+      },
+      "section": {
+        "updates": "Có cập nhật",
+        "expired": "Phạm vi phiên bản đã hết",
+        "installed": "Đã cài",
+        "awesome": "Awesome-Folia · Tác phẩm bên ngoài"
+      },
+      "categoryOther": "Khác",
+      "noResults": "Không có mod nào khớp",
+      "refreshMarket": "Làm mới chợ mod",
+      "updateAll": "Cập nhật tất cả",
+      "reloadMods": "Tải lại mod",
+      "autoCheck": "Tự động kiểm tra cập nhật mod",
+      "openSite": "Mở chợ mod trong trình duyệt",
+      "marketLoading": "Đang đọc chợ mod…",
+      "marketUnavailable": "Hiện không kết nối được chợ mod. Bấm để thử lại. Các mod đã cài không bị ảnh hưởng.",
+      "marketStale": "Hiện không kết nối được chợ mod; đang hiện danh mục đọc lần trước.",
+      "install": "Cài",
+      "update": "Cập nhật",
+      "updateTo": "Cập nhật lên v{{version}}",
+      "uninstall": "Gỡ cài đặt",
+      "enable": "Bật",
+      "disable": "Tắt",
+      "tryLoad": "Vẫn thử tải",
+      "tryLoadAll": "Thử tải tất cả",
+      "revokeForced": "Thôi tải cưỡng bức",
+      "needsFolia": "Cần Folia mới hơn",
+      "enableCommunity": "Bật mod cộng đồng để cài",
+      "communityShort": "Cộng đồng",
+      "openRepository": "Mở kho mã",
+      "installed": "Đã cài “{{name}}”",
+      "updated": "Đã cập nhật “{{name}}”",
+      "uninstalled": "Đã gỡ {{id}}; thư mục của nó nằm trong thùng rác",
+      "phase": {
+        "download": "Đang tải…",
+        "verify": "Đang kiểm tra…",
+        "install": "Đang cài…",
+        "done": "Xong",
+        "error": "Thất bại"
+      },
+      "back": "Quay lại danh sách",
+      "repository": "Mã nguồn",
+      "reportIssue": "Báo lỗi",
+      "reportToAuthor": "Báo cho tác giả",
+      "marketPage": "Trang trên chợ",
+      "homepage": "Trang chủ",
+      "feedbackHint": "Hãy báo lỗi của mod cho tác giả, đừng gửi vào kho mã của Folia.",
+      "noFeedback": "Mod này không ghi nơi báo lỗi.",
+      "markExternal": "Liên kết ngoài",
+      "markForced": "Tải cưỡng bức",
+      "markExpired": "Hết phạm vi",
+      "betaNote": "Mod thử nghiệm chỉ mới qua kiểm tra an toàn; tính năng có thể chưa đầy đủ hoặc không hoạt động.",
+      "expiredNote": "Mod này chỉ ghi hỗ trợ Folia {{range}}. Phiên bản hiện tại nằm ngoài phạm vi đó nên chưa được tải. Bạn vẫn có thể thử tải; có lỗi hãy báo cho tác giả.",
+      "expiredInstallNote": "Mod này chỉ ghi hỗ trợ Folia {{range}}, đã hết hạn. Vẫn cài được, sau đó có thể thử tải.",
+      "needsFoliaNote": "Mod này cần Folia {{range}}. Hãy cập nhật Folia trước.",
+      "rangeOverriddenDetail": "Mod này chỉ ghi hỗ trợ Folia {{range}}; bạn đã cho phép tải. Có thể thôi trong Thao tác khác.",
+      "tabReadme": "Giới thiệu",
+      "tabSettings": "Cài đặt",
+      "tabPermissions": "Quyền",
+      "tabRuntime": "Trạng thái",
+      "tabVersion": "Phiên bản",
+      "loading": "Đang tải…",
+      "noReadme": "Mod này không kèm giới thiệu.",
+      "permissionsHeading": "Quyền",
+      "noPermissions": "Không xin quyền nào.",
+      "hasMain": "Có phần chạy nền (Node.js), chạy với toàn quyền của ứng dụng.",
+      "embedHeading": "Trang web được nhúng",
+      "experimentalHeading": "Giao diện thử nghiệm đã chọn",
+      "experimentalHint": "Giao diện thử nghiệm có thể thay đổi, nên mod như vậy dễ hỏng hơn khi Folia cập nhật.",
+      "compatHeading": "Tương thích",
+      "foliaRange": "Phiên bản Folia hỗ trợ: {{range}}",
+      "foliaAny": "Không giới hạn phiên bản Folia.",
+      "foliumVersion": "Dùng giao diện Folium {{version}}",
+      "installedVersion": "Đã cài",
+      "marketVersion": "Trên chợ",
+      "where": "Vị trí cài",
+      "channel": "Kênh",
+      "originOfficial": "Chính thức",
+      "originCommunity": "Cộng đồng",
+      "signedAt": "Ký lúc",
+      "updatedAt": "Cập nhật lúc",
+      "key": "Khóa ký",
+      "digest": "Digest đã ký",
+      "sha256": "SHA-256 của gói",
+      "copy": "Sao chép",
+      "tierBuiltin": "Tích hợp trong ứng dụng",
+      "tierOverride": "Thay thế mod tích hợp",
+      "tierUser": "Thư mục mod của người dùng",
+      "tierRepo": "Thư mục phát triển",
+      "tierResources": "Tài nguyên ứng dụng",
+      "permissions": {
+        "filesystem_data": "Lưu tệp trong thư mục dữ liệu riêng",
+        "playback_read": "Đọc bài đang phát và vị trí",
+        "playback_control": "Điều khiển phát nhạc (phát, dừng, chuyển bài, âm lượng…)",
+        "playback_queue": "Thay toàn bộ hàng đợi",
+        "equalizer_control": "Thay đổi cài đặt âm thanh",
+        "visualizer_renderQuality": "Thay đổi chất lượng kết xuất khung lời bài hát",
+        "visualizer_mode": "Đổi kiểu lời bài hát",
+        "visualizer_tuning": "Thay đổi tùy chọn của các kiểu lời tích hợp",
+        "visualizer_beatEffects": "Bật và chỉnh hiệu ứng theo nhịp",
+        "visualizer_background": "Đổi nền trình phát",
+        "visualizer_animationIntensity": "Thay đổi cường độ hoạt ảnh",
+        "theme_write": "Phủ chủ đề riêng lên chủ đề bài hát",
+        "render_export": "Xuất video",
+        "net_fetch": "Dùng mạng",
+        "net_embed": "Nhúng trang web",
+        "stageLayers": "Vẽ lớp phủ lên trình phát",
+        "platform_netease_read": "Đọc dữ liệu bằng tài khoản NetEase của bạn",
+        "platform_netease_write": "Thay đổi nội dung bằng tài khoản NetEase của bạn"
+      }
+    },
     "trustRevoked": "Tệp của mod này đã thay đổi kể từ lần xác nhận trước nên đã tự động tắt. Hãy kiểm tra nguồn rồi bật lại.",
     "devSourceHint": "Mod nguồn phát triển: sau khi xác nhận, chỉnh sửa tệp vẫn giữ nguyên quyền phê duyệt (chỉ dành cho bản dựng phát triển).",
     "platformReadHint": "Có thể đọc dữ liệu trên {{platforms}} bằng tài khoản bạn đã đăng nhập Folia, chẳng hạn như lịch sử nghe (giao diện thử nghiệm platform.raw).",
@@ -1519,6 +2949,13 @@ export default {
     "visualizerBeatEffectsHint": "Bật tắt hiệu ứng nhịp của chế độ nhịp thông minh và chỉnh cường độ; bản thân chế độ nhịp thông minh vẫn do bạn quyết định, nhưng ở chế độ Bật các hiệu ứng được bật sẽ khiến GPU phân tích bài mới.",
     "visualizerBackgroundHint": "Chuyển kiểu nền của trình phát (trừ hình ảnh và tùy chọn riêng của từng nền).",
     "visualizerAnimationIntensityHint": "Thay đổi cường độ hiệu ứng của lời bài hát và nền.",
+    "signatureBuiltin": "Tích hợp",
+    "signatureBuiltinDetail": "Mod tích hợp được cài cùng ứng dụng: không kèm tệp chữ ký và không kiểm tra chữ ký; bản cài đặt bảo đảm nguồn gốc của nó.",
+    "kindSource": "Nguồn nhạc",
+    "communityOffMark": "Cần bật mod cộng đồng",
+    "sourceSwitchHint": "Các nguồn mà nó cung cấp có thể bật, chỉ dùng để khớp hoặc tắt riêng từng cái.",
+    "sourceSwitchOpen": "Mở Cài đặt · Nguồn",
+    "themeWriteHint": "Có thể đặt chủ đề riêng lên trên chủ đề của bài hát; bất kỳ chủ đề nào bạn chọn sẽ kết thúc nó.",
     "signatureVerified": "Đã xác minh",
     "signatureVerifiedDetail": "Mang chữ ký Folium chính thức hợp lệ ({{key}}): nguồn và nội dung đã được Folium kiểm duyệt và không bị thay đổi sau khi ký. Khi bật vẫn chạy với toàn quyền ứng dụng.",
     "signatureBeta": "Bản thử nghiệm sớm (Beta)",
@@ -1539,7 +2976,7 @@ export default {
     },
     "reload": "Tải lại",
     "ffmpegMissing": "Không tìm thấy ffmpeg",
-    "ffmpegMissingHint": "Xuất video trong suốt cần ffmpeg. Đặt FOLIA_FFMPEG_PATH hoặc đặt ffmpeg vào thư mục ffmpeg-8.1.2 cạnh ứng dụng.",
+    "ffmpegMissingHint": "Xuất video trong suốt cần bản ffmpeg đầy đủ. Tìm hoặc chọn trong Cài đặt → Điều khiển từ xa → Xuất video trong suốt, hoặc đặt biến môi trường FOLIA_FFMPEG_PATH.",
     "empty": "Không tìm thấy mod nào",
     "enabled": "Đã bật",
     "disabled": "Đã tắt",
@@ -1627,16 +3064,38 @@ export default {
       "install-no-manifest": "Không tìm thấy tệp khai báo; tệp zip thiếu mod.json",
       "install-invalid-manifest": "Tệp mod.json không hợp lệ: {{value}}",
       "mod-system-disabled": "Hệ thống mod đang tắt. Bật trong Cài đặt → Mod → Hệ thống mod trước.",
-      "install-too-large": "Gói mod vượt quá dung lượng cho phép (tối đa 64 MB)",
+      "community-off": "Đây là mod cộng đồng. Hãy bật Cài đặt → Mod → Mod cộng đồng để kích hoạt.",
+      "install-community-off": "Gói này không phải mod nguồn có chữ ký chính thức. Để cài mod cộng đồng, hãy bật Cài đặt → Mod → Mod cộng đồng trước.",
+      "community-unavailable": "Không thể chuyển mod cộng đồng",
+      "install-too-large": "Gói mod vượt quá dung lượng cho phép (tối đa 96 MB)",
       "install-too-many-files": "Gói mod có quá nhiều tệp (tối đa 2000 tệp)",
       "install-main-missing": "Gói mod thiếu tệp main khai báo trong mod.json",
       "install-client-missing": "Gói mod thiếu tệp client khai báo trong mod.json",
       "host-version-mismatch": "Mod này dùng API nội bộ và không hỗ trợ phiên bản Folia này",
+      "host-range-expired": "Mod này chỉ ghi hỗ trợ Folia {{range}}, phiên bản hiện tại nằm ngoài phạm vi đó. Bạn có thể thử tải trong phần chi tiết",
+      "no-expired-range": "Không có mod hết phạm vi phiên bản nào để cho phép",
+      "range-override-failed": "Không cho phép được: {{value}}",
+      "uninstall-not-user-mod": "Chỉ gỡ được ở đây các mod trong thư mục mod của người dùng",
+      "uninstall-trash-failed": "Không chuyển được thư mục mod vào thùng rác. Mod đã dừng; bạn có thể xóa nó trong thư mục mod",
+      "uninstall-failed": "Gỡ cài đặt thất bại: {{value}}",
+      "market-mod-not-found": "Chợ mod không có mod này",
+      "market-checksum-mismatch": "Gói tải về không khớp mã kiểm tra nên đã bị bỏ",
+      "market-digest-mismatch": "Nội dung gói khác với thông tin trên chợ; đã từ chối",
+      "market-id-mismatch": "Gói chứa mod khác với thông tin trên chợ; đã từ chối",
+      "market-version-mismatch": "Phiên bản trong gói khác với thông tin trên chợ; đã từ chối",
+      "market-signature": "Chữ ký của gói không khớp kênh trên chợ ({{value}}); đã từ chối",
+      "market-signature-invalid": "Chữ ký của gói không hợp lệ ({{value}}); đã từ chối",
+      "market-http": "Chợ mod trả về lỗi (HTTP {{value}})",
+      "market-offline": "Không kết nối được chợ mod",
+      "market-timeout": "Chợ mod phản hồi quá lâu",
+      "market-too-large": "Gói vượt quá giới hạn dung lượng",
+      "market-catalog-format": "Không đọc được định dạng danh mục của chợ mod",
+      "market-readme-url": "Phần giới thiệu này không nằm trên chợ mod",
       "enable-failed": "Không thể bật mod: {{value}}",
       "mod-not-found": "Không tìm thấy mod",
       "mod-content-unverifiable": "Không thể xác minh tệp của mod (quá nhiều hoặc quá lớn), sẽ không kích hoạt",
       "install-failed": "Cài đặt thất bại: {{value}}",
-      "export-ffmpeg-not-found": "Không tìm thấy ffmpeg; cài đặt hoặc thiết lập FOLIA_FFMPEG_PATH",
+      "export-ffmpeg-not-found": "Không tìm thấy ffmpeg xuất được video trong suốt; tìm hoặc chọn trong Cài đặt → Điều khiển từ xa → Xuất video trong suốt",
       "export-already-running": "Một tác vụ xuất khác đang chạy",
       "export-no-lyrics": "Bài hát hiện tại không có lời để kết xuất",
       "export-invalid-duration": "Khoảng thời gian xuất không hợp lệ",
@@ -1644,6 +3103,10 @@ export default {
       "export-unsupported-platform": "Nền tảng này không hỗ trợ xuất",
       "export-capture-empty": "Chụp khung hình thất bại; cửa sổ kết xuất trả về khung hình trống",
       "export-cancelled": "Đã hủy xuất",
+      "export-codec-unavailable": "ffmpeg đang dùng không ghi được định dạng trong suốt này",
+      "export-unavailable": "Hiện không thể xuất",
+      "export-ffmpeg-failed": "ffmpeg mã hóa video thất bại",
+      "export-page-not-ready": "Cửa sổ kết xuất chưa sẵn sàng",
       "storage-usage-failed": "Không thể đo dung lượng mod này đang sử dụng",
       "cache-clear-failed": "Không thể xóa bộ nhớ đệm",
       "cache-clear-partial": "Không thể xóa hết bộ nhớ đệm do mod đang sử dụng tệp. Hãy tắt mod rồi thử lại.",
@@ -1652,7 +3115,16 @@ export default {
     "warnings": {
       "export-alpha-unavailable": "Nền tảng này không giữ kênh alpha; video có nền đục. Dùng chế độ chỉ chữ với nền Chủ đề, hoặc xuất trên Windows.",
       "export-alpha-not-guaranteed": "Kênh alpha có thể không được giữ trên nền tảng này; kiểm tra tệp đã xuất hoặc dùng Windows để đảm bảo nền trong suốt."
-    }
+    },
+    "androidTitle": "Mô-đun máy khách Android",
+    "androidDesc": "Chỉ mô-đun máy khách. Mô-đun có mục main (Node) sẽ không được cài.",
+    "androidImport": "Nhập ZIP mô-đun",
+    "androidEmpty": "Chưa cài mô-đun nào.",
+    "androidIncompatible": "Mô-đun này có mục main (Node), không tương thích Android",
+    "enable": "Bật",
+    "disable": "Tắt",
+    "remove": "Xóa",
+    "experimental": "Thử nghiệm"
   },
   "account": {
     "syncData": "Đồng bộ dữ liệu",
@@ -1671,6 +3143,7 @@ export default {
     "vipOnly": "Chỉ VIP"
   },
   "playlist": {
+    "lastUsed": "Dùng gần nhất",
     "play": "Phát",
     "viewTracks": "Xem bài hát",
     "locatePlaying": "Định vị bài hát đang phát trên trang này",
@@ -1813,6 +3286,9 @@ export default {
     "choosePlatform": "Chọn nền tảng",
     "searchPlatforms": "Tìm kiếm nền tảng",
     "noPlatformMatch": "Không tìm thấy nền tảng phù hợp",
+    "noSourceEnabled": "Chưa bật nguồn nào. Hãy bật trong Cài đặt → Nguồn.",
+    "noSourceInstall": "Chưa có nguồn nào. Hãy cài mod nguồn, hoặc bật một nguồn trong Cài đặt → Nguồn.",
+    "installSourceMod": "Cài mod nguồn",
     "rowSignedIn": "Đã đăng nhập",
     "rowRanOut": "Đăng nhập đã hết hạn",
     "rowChecking": "Đang kiểm tra đăng nhập…",
@@ -1826,7 +3302,12 @@ export default {
     "setupBack": "Quay lại",
     "setupSecretChange": "Thay đổi",
     "setupSecretCancel": "Giữ khóa đã lưu",
-    "setupState": { "done": "đã xong", "todo": "chưa làm", "warn": "cần chú ý", "error": "lỗi" },
+    "setupState": {
+      "done": "đã xong",
+      "todo": "chưa làm",
+      "warn": "cần chú ý",
+      "error": "lỗi"
+    },
     "openBrowser": "Mở trình duyệt",
     "details": "Chi tiết",
     "retryIn": "Có thể thử lại sau {{seconds}} giây",
@@ -1877,7 +3358,7 @@ export default {
     "submit": "Gửi",
     "submitting": "Đang gửi…",
     "formErrorUnknown": "Đăng nhập thất bại. Kiểm tra thông tin đã nhập và thử lại.",
-    "formLoggedInRefreshFailed": "Đã đăng nhập nhưng không tải được tài khoản. Thử lại hoặc mở lại cửa sổ đăng nhập.",
+    "formLoggedInRefreshFailed": "Đã đăng nhập nhưng không tải được tài khoản. Thử lại hoặc mở lại cửa sổ đăng nhập."
   },
   "failure": {
     "unreachable": "Không thể kết nối tới {{provider}}",
@@ -1885,8 +3366,6 @@ export default {
     "retryLater": "{{provider}} yêu cầu thử lại sau",
     "signInNeeded": "Phiên đăng nhập {{provider}} đã hết hạn",
     "noAudio": "{{provider}} không trả về luồng âm thanh",
-    "contentRestricted": "Nội dung {{provider}} bị hạn chế",
-    "noteContentRestricted": "Chủ sở hữu bản quyền hạn chế bài này tại đây; hãy thử bài khác hoặc nền tảng khác",
     "audioUnplayable": "Không thể phát âm thanh",
     "refused": "Yêu cầu bị {{provider}} từ chối",
     "mutationUnsupported": "{{provider}} không hỗ trợ thao tác này với bài hát này",
@@ -1903,10 +3382,18 @@ export default {
     "noteMaybeRegion": "Có thể bị giới hạn theo khu vực địa lý",
     "skipCountdown": "Sẽ chuyển sang bài tiếp theo sau {{seconds}} giây",
     "signIn": "Đăng nhập",
-    "openSetup": "Thiết lập phát nhạc"
+    "openSetup": "Thiết lập phát nhạc",
+    "contentRestricted": "Nội dung {{provider}} bị hạn chế",
+    "noteContentRestricted": "Chủ sở hữu bản quyền hạn chế bài này tại đây; hãy thử bài khác hoặc nền tảng khác"
   },
   "home": {
-    "loginNoteYtmAndroid": "YouTube Music is an entry point only on Android: sign-in, browsing and playback are not implemented yet.",
+    "foliaEmpty": "Chưa có danh sách phát. Hãy tạo mới, hoặc thêm bài hát từ bất kỳ nguồn nào bằng “Thêm vào danh sách phát”.",
+    "foliaSectionPlaylists": "Danh sách phát",
+    "foliaSectionTags": "Thẻ",
+    "foliaTagsEmpty": "Chưa có thẻ. Gắn thẻ cho bài ở trang Khoảnh khắc của sổ ghi nhanh, thẻ sẽ hiện ở đây.",
+    "foliaTagDescription": "Thẻ",
+    "foliaReorderPlaylists": "Sắp xếp danh sách phát",
+    "foliaPlaylist": "Danh sách phát Folia",
     "welcome": "Chào mừng đến với Folia",
     "lattice": "Lattice",
     "latticeLabel": "Lattice",
@@ -1944,54 +3431,12 @@ export default {
     "yourPlaylists": "Danh sách phát",
     "searchPlaceholder": "Tìm kiếm âm nhạc...",
     "songs": "bài hát",
-    "loginTitle": "Quét bằng ứng dụng Netease",
-    "loginNote": "Mở ứng dụng Netease Music > Khám phá > Quét mã QR",
-    "loginTitleKugou": "Quét bằng ứng dụng KuGou",
-    "loginNoteKugou": "Mở KuGou Music và quét mã QR này",
-    "loginTitleQq": "Quét mã đăng nhập QQ Music",
-    "loginTitleQishui": "Đăng nhập Qishui Music bằng Douyin",
-    "loginNoteQishui": "Quét mã bằng ứng dụng Douyin và xác nhận ủy quyền",
-    "loginTitleBodian": "Quét bằng Bodian Music",
-    "loginNoteBodian": "Mở ứng dụng Bodian Music quét mã QR và xác nhận đăng nhập",
-    "loginTitleFnMusic": "Đăng nhập fnOS Music",
-    "loginNoteFnMusic": "Nhập địa chỉ máy chủ và tài khoản fnOS Music để phát nhạc từ NAS của bạn",
-    "loginTitleYtm": "Đăng nhập YouTube Music",
-    "ytmSignInCancel": "Hủy",
-    "ytmSignInDone": "Xong",
-    "loginTitleAppleMusic": "Đăng nhập Apple Music",
-    "loginNoteAppleMusic": "Đăng nhập trong cửa sổ Apple. Mật khẩu của bạn chỉ được gửi cho Apple.",
-    "appleMusicLinuxUnsupported": "Chưa hỗ trợ Linux",
-    "loginNoteYtmBrowser": "Một cửa sổ trình duyệt riêng sẽ mở ra. Đăng nhập vào Google tại đó, sau khi thấy YouTube Music hiển thị tài khoản của bạn, hãy đóng cửa sổ đó.",
-    "loginNoteYtmBrowserMac": "Một cửa sổ trình duyệt riêng sẽ mở ra. Đăng nhập vào Google tại đó, sau khi thấy YouTube Music hiển thị tài khoản của bạn, hãy thoát trình duyệt (⌘Q).",
-    "loginNoBrowserYtm": "Đăng nhập YouTube Music yêu cầu đã cài đặt Chrome, Edge, Chromium hoặc Brave. Trên Windows, Chrome, Edge hoặc Brave bản portable được đặt làm trình duyệt mặc định cũng dùng được (chính chrome.exe, msedge.exe hoặc brave.exe, không phải trình khởi chạy).",
     "loginCodeWaiting": "Đang chờ xác nhận trên trình duyệt",
-    "loginTitleSpotify": "Đăng nhập Spotify",
-    "loginNoteSpotify": "Chọn “Đồng ý” trên trang Spotify mở trong trình duyệt của bạn",
-    "loginCaseSpotifyUnfinished": "Không xác nhận trong vòng 10 phút",
-    "loginCaseSpotifyDenied": "Vui lòng chọn “Đồng ý” trên trang Spotify",
-    "loginCaseSpotifyPort": "Cổng 5588 đã bị chiếm dụng",
-    "loginCaseYtmUnfinished": "Vui lòng đăng nhập trước khi đóng trình duyệt",
-    "loginCaseQqRestart": "Vui lòng khởi động lại Folia rồi thử lại",
-    "loginCaseQqWrongScanApp": "Nếu dùng ứng dụng QQ Music để quét, vui lòng đổi sang «Quét mã bằng ứng dụng QQ Music»; hoặc dùng ứng dụng QQ di động để quét mã này",
-    "loginCaseQqWrongScanAppMobileOnly": "Phương thức quét mã QQ ở đây chỉ hỗ trợ QQ di động: vui lòng dùng ứng dụng QQ trên điện thoại để quét mã này",
-    "loginCaseQqDeviceLimit": "Vui lòng mở ứng dụng QQ Music, vào «Cài đặt», cuộn xuống dưới cùng chọn «Quản lý thiết bị» và gỡ bỏ các thiết bị không còn dùng, sau đó quét mã lại",
-    "loginCaseQqAccountBanned": "Tài khoản này đã bị khóa và không thể đăng nhập",
-    "loginCaseQqAccountRestricted": "Tài khoản này hiện đang bị hạn chế đăng nhập",
-    "loginCaseQqAccountBinding": "Liên kết của tài khoản này gặp sự cố: vui lòng kiểm tra liên kết tài khoản trong ứng dụng QQ Music",
     "loginBrowserOpen": "Mở lại trình duyệt",
     "loginBrowserLoading": "Đang mở trình duyệt…",
     "loginBrowserRetry": "Đăng nhập lại",
-    "spotifyLikedSongs": "Bài hát đã thích",
-    "spotifyNewReleases": "Phát hành mới từ nghệ sĩ theo dõi",
-    "loginNoteQq": "Chọn phương thức khớp với tài khoản: Quét QQ hoặc Quét WeChat",
-    "loginTitleQqAppScan": "Quét mã bằng ứng dụng QQ, WeChat hoặc QQ Music",
-    "loginNoteQqAppScan": "Hỗ trợ 3 cách quét mã: QQ, WeChat và QQ Music",
-    "loginNoteQqWithApp": "Vui lòng chọn phương thức đăng nhập khớp với tài khoản: quét mã QQ hoặc WeChat, hoặc quét bằng ứng dụng QQ Music",
     "loginMethodTitle": "Chọn phương thức đăng nhập",
     "loginMethodPending": "Chọn phương thức đăng nhập để tạo mã QR",
-    "qqLoginMethodMobile": "Quét QQ",
-    "qqLoginMethodWechat": "Quét WeChat",
-    "qqLoginMethodQqMusic": "Quét bằng ứng dụng QQ Music",
     "switchOnlineProvider": "Đổi nền tảng nhạc trực tuyến",
     "confirmOnlineProviderSwitch": "Chuyển sang {{provider}}?",
     "onlineProvider": "Nền tảng nhạc trực tuyến",
@@ -2054,6 +3499,9 @@ export default {
     "searchDatabase": "TÌM TRÊN MẠNG...",
     "searchLocal": "Tìm nhạc trên máy...",
     "searchNavidrome": "Tìm trên Navidrome...",
+    "searchButton": "Tìm kiếm",
+    "navMenu": "Menu điều hướng",
+    "searchClose": "Đóng tìm kiếm",
     "searchHistory": "Tìm kiếm gần đây",
     "searchHistoryClear": "Xóa hết",
     "searchHistoryRemove": "Xóa \"{{query}}\" khỏi lịch sử",
@@ -2131,21 +3579,6 @@ export default {
     "exploreRecent": "Phát gần đây",
     "exploreAgain": "Nghe lại",
     "exploreSimilar": "Tương tự với «{{name}}»",
-    "neteaseDailyPlaylists": "Danh sách phát đề xuất hàng ngày",
-    "neteaseCharts": "Bảng xếp hạng",
-    "neteaseNewSongs": "Bài hát mới",
-    "neteaseNewAlbums": "Album mới",
-    "neteaseHotPlaylists": "Danh sách phát thịnh hành",
-    "qqRadar": "Khám phá bài hát",
-    "qqNewSongs": "Bài hát mới",
-    "qqNewAlbums": "Album mới",
-    "qqCharts": "Bảng xếp hạng",
-    "qqFeedForYou": "Dành cho bạn",
-    "qqRecommendedPlaylists": "Playlist đề xuất",
-    "qqGuessYouLike": "Có thể bạn thích",
-    "qqGuessYouLikeDescription": "Đài Có thể bạn thích của QQ Music; đổi chế độ nghe khi đang phát",
-    "qqGuessYouLikeSuggested": "Gợi ý",
-    "qqGuessYouLikeOther": "Khác",
     "personalFm": "FM cá nhân",
     "dailyRecommendations": "Gợi ý hàng ngày",
     "dailyRecommendationsDescription": "Bản phối hàng ngày dành riêng cho bạn",
@@ -2174,7 +3607,72 @@ export default {
     "dailyStyleSaveFailed": "Không chuyển được sang các phong cách này. Vui lòng thử lại sau",
     "dislikeRecommendationFailed": "Không thể đổi gợi ý này. Hãy thử lại sau.",
     "removeTrackFailed": "Gỡ bài hát thất bại",
-    "stage": "Sân khấu"
+    "stage": "Sân khấu",
+    "foliaTab": "Folia",
+    "onlineGroup": "Trực tuyến",
+    "onlineTabsLabel": "Các trang của {{source}}",
+    "noSourcesTitle": "Chưa bật nguồn trực tuyến nào",
+    "noSourcesBody": "Bật một nguồn trong Cài đặt → Nguồn, danh sách phát, gợi ý và album của nó sẽ hiện ở đây.",
+    "noSourcesAction": "Mở cài đặt nguồn",
+    "foliaTitle": "Danh sách phát Folia",
+    "loginNoteYtmAndroid": "YouTube Music is an entry point only on Android: sign-in, browsing and playback are not implemented yet.",
+    "loginTitle": "Quét bằng ứng dụng Netease",
+    "loginNote": "Mở ứng dụng Netease Music > Khám phá > Quét mã QR",
+    "loginTitleKugou": "Quét bằng ứng dụng KuGou",
+    "loginNoteKugou": "Mở KuGou Music và quét mã QR này",
+    "loginTitleQq": "Quét mã đăng nhập QQ Music",
+    "loginTitleQishui": "Đăng nhập Qishui Music bằng Douyin",
+    "loginNoteQishui": "Quét mã bằng ứng dụng Douyin và xác nhận ủy quyền",
+    "loginTitleBodian": "Quét bằng Bodian Music",
+    "loginNoteBodian": "Mở ứng dụng Bodian Music quét mã QR và xác nhận đăng nhập",
+    "loginTitleFnMusic": "Đăng nhập fnOS Music",
+    "loginNoteFnMusic": "Nhập địa chỉ máy chủ và tài khoản fnOS Music để phát nhạc từ NAS của bạn",
+    "loginTitleYtm": "Đăng nhập YouTube Music",
+    "ytmSignInCancel": "Hủy",
+    "ytmSignInDone": "Xong",
+    "loginTitleAppleMusic": "Đăng nhập Apple Music",
+    "loginNoteAppleMusic": "Đăng nhập trong cửa sổ Apple. Mật khẩu của bạn chỉ được gửi cho Apple.",
+    "appleMusicLinuxUnsupported": "Chưa hỗ trợ Linux",
+    "loginNoteYtmBrowser": "Một cửa sổ trình duyệt riêng sẽ mở ra. Đăng nhập vào Google tại đó, sau khi thấy YouTube Music hiển thị tài khoản của bạn, hãy đóng cửa sổ đó.",
+    "loginNoteYtmBrowserMac": "Một cửa sổ trình duyệt riêng sẽ mở ra. Đăng nhập vào Google tại đó, sau khi thấy YouTube Music hiển thị tài khoản của bạn, hãy thoát trình duyệt (⌘Q).",
+    "loginNoBrowserYtm": "Đăng nhập YouTube Music yêu cầu đã cài đặt Chrome, Edge, Chromium hoặc Brave. Trên Windows, Chrome, Edge hoặc Brave bản portable được đặt làm trình duyệt mặc định cũng dùng được (chính chrome.exe, msedge.exe hoặc brave.exe, không phải trình khởi chạy).",
+    "loginTitleSpotify": "Đăng nhập Spotify",
+    "loginNoteSpotify": "Chọn “Đồng ý” trên trang Spotify mở trong trình duyệt của bạn",
+    "loginCaseSpotifyUnfinished": "Không xác nhận trong vòng 10 phút",
+    "loginCaseSpotifyDenied": "Vui lòng chọn “Đồng ý” trên trang Spotify",
+    "loginCaseSpotifyPort": "Cổng 5588 đã bị chiếm dụng",
+    "loginCaseYtmUnfinished": "Vui lòng đăng nhập trước khi đóng trình duyệt",
+    "loginCaseQqRestart": "Vui lòng khởi động lại Folia rồi thử lại",
+    "loginCaseQqWrongScanApp": "Nếu dùng ứng dụng QQ Music để quét, vui lòng đổi sang «Quét mã bằng ứng dụng QQ Music»; hoặc dùng ứng dụng QQ di động để quét mã này",
+    "loginCaseQqWrongScanAppMobileOnly": "Phương thức quét mã QQ ở đây chỉ hỗ trợ QQ di động: vui lòng dùng ứng dụng QQ trên điện thoại để quét mã này",
+    "loginCaseQqDeviceLimit": "Vui lòng mở ứng dụng QQ Music, vào «Cài đặt», cuộn xuống dưới cùng chọn «Quản lý thiết bị» và gỡ bỏ các thiết bị không còn dùng, sau đó quét mã lại",
+    "loginCaseQqAccountBanned": "Tài khoản này đã bị khóa và không thể đăng nhập",
+    "loginCaseQqAccountRestricted": "Tài khoản này hiện đang bị hạn chế đăng nhập",
+    "loginCaseQqAccountBinding": "Liên kết của tài khoản này gặp sự cố: vui lòng kiểm tra liên kết tài khoản trong ứng dụng QQ Music",
+    "spotifyLikedSongs": "Bài hát đã thích",
+    "spotifyNewReleases": "Phát hành mới từ nghệ sĩ theo dõi",
+    "loginNoteQq": "Chọn phương thức khớp với tài khoản: Quét QQ hoặc Quét WeChat",
+    "loginTitleQqAppScan": "Quét mã bằng ứng dụng QQ, WeChat hoặc QQ Music",
+    "loginNoteQqAppScan": "Hỗ trợ 3 cách quét mã: QQ, WeChat và QQ Music",
+    "loginNoteQqWithApp": "Vui lòng chọn phương thức đăng nhập khớp với tài khoản: quét mã QQ hoặc WeChat, hoặc quét bằng ứng dụng QQ Music",
+    "qqLoginMethodMobile": "Quét QQ",
+    "qqLoginMethodWechat": "Quét WeChat",
+    "qqLoginMethodQqMusic": "Quét bằng ứng dụng QQ Music",
+    "neteaseDailyPlaylists": "Danh sách phát đề xuất hàng ngày",
+    "neteaseCharts": "Bảng xếp hạng",
+    "neteaseNewSongs": "Bài hát mới",
+    "neteaseNewAlbums": "Album mới",
+    "neteaseHotPlaylists": "Danh sách phát thịnh hành",
+    "qqRadar": "Khám phá bài hát",
+    "qqNewSongs": "Bài hát mới",
+    "qqNewAlbums": "Album mới",
+    "qqCharts": "Bảng xếp hạng",
+    "qqFeedForYou": "Dành cho bạn",
+    "qqRecommendedPlaylists": "Playlist đề xuất",
+    "qqGuessYouLike": "Có thể bạn thích",
+    "qqGuessYouLikeDescription": "Đài Có thể bạn thích của QQ Music; đổi chế độ nghe khi đang phát",
+    "qqGuessYouLikeSuggested": "Gợi ý",
+    "qqGuessYouLikeOther": "Khác"
   },
   "animation": {
     "calm": "Êm dịu",
@@ -2182,22 +3680,6 @@ export default {
     "chaotic": "Hỗn loạn"
   },
   "help": {
-    "openAppleMusicWindow": "Mở cửa sổ Apple Music",
-    "openAppleMusicWindowDescription": "Mở trang Apple ở chế độ toàn màn hình để tự phát một bài và xem trang đó có phát được âm thanh ở đây không.",
-    "copyDiagnostics": "Copy diagnostics",
-    "copyDiagnosticsDescription": "Builds a report of the current version and runtime state for bug reports.",
-    "exportDiagnostics": "Export diagnostics",
-    "exportDiagnosticsDescription": "Writes a txt file and opens the system share sheet",
-    "exportDiagnosticsShared": "Share sheet opened",
-    "exportDiagnosticsDownloaded": "Saved as a file",
-    "exportDiagnosticsFailed": "Export failed",
-    "copyDiagnosticsCopied": "Diagnostics copied",
-    "deleteDiagnostics": "Clear diagnostic reports",
-    "deleteDiagnosticsDescription": "Remove the diagnostic files exported earlier",
-    "deleteDiagnosticsDone": "Deleted {{count}} diagnostic file(s)",
-    "deleteDiagnosticsEmpty": "No diagnostic files to delete",
-    "deleteDiagnosticsFailed": "Delete failed",
-    "copyDiagnosticsFailed": "Copy failed, try again later",
     "title": "Trợ giúp",
     "navigation": "Điều hướng",
     "switchPlaylist": "Chuyển danh sách phát",
@@ -2231,64 +3713,50 @@ export default {
     "communityQq": "Nhóm hỗ trợ QQ",
     "communityQqHint": "{{number}} · nhấp để sao chép",
     "qqGroupNumberCopied": "Đã sao chép số nhóm",
-    "officialWebsite": "Trang web chính thức",
     "releaseNotes": "Có gì mới",
     "releaseNotesDescription": "Xem các thay đổi trong phiên bản này",
     "majorUpdateLabel": "Cập nhật {{codename}} · Bản cập nhật lớn",
     "servicePackLabel": "Cập nhật {{codename}} SP{{servicePack}} · Bản cập nhật lớn",
     "ponder": "Trợ giúp Khám phá",
     "ponderDescription": "Tìm hiểu thao tác cơ bản và cơ chế vận hành của Folia",
-    "version": "phiên bản"
+    "version": "phiên bản",
+    "openAppleMusicWindow": "Mở cửa sổ Apple Music",
+    "openAppleMusicWindowDescription": "Mở trang Apple ở chế độ toàn màn hình để tự phát một bài và xem trang đó có phát được âm thanh ở đây không.",
+    "copyDiagnostics": "Copy diagnostics",
+    "copyDiagnosticsDescription": "Builds a report of the current version and runtime state for bug reports.",
+    "exportDiagnostics": "Export diagnostics",
+    "exportDiagnosticsDescription": "Writes a txt file and opens the system share sheet",
+    "exportDiagnosticsShared": "Share sheet opened",
+    "exportDiagnosticsDownloaded": "Saved as a file",
+    "exportDiagnosticsFailed": "Export failed",
+    "copyDiagnosticsCopied": "Diagnostics copied",
+    "deleteDiagnostics": "Clear diagnostic reports",
+    "deleteDiagnosticsDescription": "Remove the diagnostic files exported earlier",
+    "deleteDiagnosticsDone": "Deleted {{count}} diagnostic file(s)",
+    "deleteDiagnosticsEmpty": "No diagnostic files to delete",
+    "deleteDiagnosticsFailed": "Delete failed",
+    "copyDiagnosticsFailed": "Copy failed, try again later",
+    "officialWebsite": "Trang web chính thức"
   },
-  "qishui": { "recentPlayed": "Gần đây đã phát trên Qishui", "recommended": "Được đề xuất cho bạn" },
   "listeningRank": {
-    "qqWeek": "Bảng xếp hạng nghe · Tuần này",
-    "qqYear": "Bảng xếp hạng nghe · Năm",
-    "qqWeekDescription": "Bảng xếp hạng tuần này của QQ Music, tính từ thứ Hai; tuần chưa hết thì tính đến hôm nay",
-    "qqYearDescription": "Bảng xếp hạng năm của QQ Music, tính trọn năm ngoái (1/1 đến 31/12)",
     "week": "Xếp hạng nghe · Tuần qua",
     "all": "Xếp hạng nghe · Mọi lúc",
     "description": "Bài hát xếp theo lịch sử nghe của tài khoản này trên nền tảng",
     "listenCount_one": "Đã nghe {{count}} lần",
-    "listenCount_other": "Đã nghe {{count}} lần"
-  },
-  "qqPreferences": {
-    "note": "Lưu trên tài khoản; ảnh hưởng đến mọi bài hát được đề xuất",
-    "familiarity": "Độ quen thuộc của bài hát",
-    "familiarityExplore": "Khám phá thêm",
-    "keep": "Giữ nguyên",
-    "familiarityFamiliar": "Quen thuộc hơn",
-    "mood": "Cảm xúc âm nhạc",
-    "moodSad": "Buồn hơn",
-    "moodHappy": "Vui hơn",
-    "coverLive": "Cover & live",
-    "instrumental": "Nhạc không lời",
-    "mandarin": "Tiếng Quan Thoại",
-    "english": "Tiếng Anh",
-    "japanese": "Tiếng Nhật",
-    "korean": "Tiếng Hàn",
-    "cantonese": "Tiếng Quảng Đông",
-    "ai": "Bài hát AI"
+    "listenCount_other": "Đã nghe {{count}} lần",
+    "qqWeek": "Bảng xếp hạng nghe · Tuần này",
+    "qqYear": "Bảng xếp hạng nghe · Năm",
+    "qqWeekDescription": "Bảng xếp hạng tuần này của QQ Music, tính từ thứ Hai; tuần chưa hết thì tính đến hôm nay",
+    "qqYearDescription": "Bảng xếp hạng năm của QQ Music, tính trọn năm ngoái (1/1 đến 31/12)"
   },
   "lyricProvider": {
+    "amll": "AMLLDB",
     "qishui": "Qishui Music",
     "netease": "NetEase Cloud Music",
     "qq": "QQ Music",
     "kugou": "Kugou Music",
     "spotify": "Spotify",
-    "appleMusic": "Apple Music",
-    "amll": "AMLLDB",
-  },
-  "onlineProviderName": {
-    "appleMusic": "Apple Music",
-    "netease": "NetEase",
-    "kugou": "Kugou",
-    "qq": "QQ Music",
-    "bodian": "Bodian",
-    "ytm": "YT Music",
-    "spotify": "Spotify",
-    "qishui": "Qishui",
-    "fnmusic": "fnOS",
+    "appleMusic": "Apple Music"
   },
   "globalLyricOffset": {
     "title": "Độ lệch thời gian toàn cục",
@@ -2301,7 +3769,7 @@ export default {
     "description": "Áp dụng cho mọi bài hát trên thiết bị này và không đồng bộ. Độ lệch từng bài trong bảng trình phát vẫn sẽ cộng dồn.",
     "pendingApply": "Chỉ xem trước. Hiện áp dụng: {{applied}}ms - nhấn Áp dụng để lưu.",
     "noLyrics": "Phát bài hát có lời để xem trước độ lệch",
-    "waitingForLine": "Đang đợi câu tiếp theo",
+    "waitingForLine": "Đang đợi câu tiếp theo"
   },
   "lyricFilter": {
     "title": "Bộ lọc lời bài hát",
@@ -2327,9 +3795,15 @@ export default {
     "addRule": "Thêm quy tắc",
     "addByWords": "Theo từ ngữ",
     "addWritten": "Quy tắc tự viết (nâng cao)",
-    "preset": {"copyright": "Thông báo bản quyền", "lyricSource": "Ghi chú nguồn lời"},
+    "preset": {
+      "copyright": "Thông báo bản quyền",
+      "lyricSource": "Ghi chú nguồn lời"
+    },
     "presetBadge": "Thường gặp",
-    "presetDesc": {"copyright": "Các ghi chú như “Bảo lưu mọi quyền” hoặc “không cover khi chưa được phép”", "lyricSource": "Các ghi chú như “Lời được đóng góp bởi” hoặc “Dịch bởi”"},
+    "presetDesc": {
+      "copyright": "Các ghi chú như “Bảo lưu mọi quyền” hoặc “không cover khi chưa được phép”",
+      "lyricSource": "Các ghi chú như “Lời được đóng góp bởi” hoặc “Dịch bởi”"
+    },
     "shapeStarts": "Bắt đầu bằng",
     "shapeContains": "Chứa",
     "shapeWhole": "Đúng bằng",
@@ -2380,7 +3854,7 @@ export default {
     "footerIncomplete": " (chưa kiểm tra hết)",
     "footerScanning": "Sau khi lưu: xóa {{song}} dòng ở đây; đang kiểm tra các bài đã nghe…",
     "footerSongOnly": "Sau khi lưu: xóa {{song}} dòng ở đây",
-    "untitled": "Bài hát không rõ",
+    "untitled": "Bài hát không rõ"
   },
   "lyricStaff": {
     "title": "Thông tin sản xuất đầu bài",
@@ -2410,76 +3884,19 @@ export default {
     "verdictRetime": "Hiện, dàn đều qua đoạn dạo đầu",
     "verdictHide": "Ẩn",
     "verdictSummary": "{{lines}} dòng credit, {{window}}s dạo đầu, cần {{required}}s để hiện hết",
-    "verdictSummaryAbsorbed": "{{lines}} dòng credit + {{absorbed}} dòng gộp, {{window}}s dạo đầu, cần {{required}}s để hiện hết",
+    "verdictSummaryAbsorbed": "{{lines}} dòng credit + {{absorbed}} dòng gộp, {{window}}s dạo đầu, cần {{required}}s để hiện hết"
   },
   "replayGain": {
     "off": "Tắt ReplayGain",
     "track": "ReplayGain: Bài hát",
     "album": "ReplayGain: Album",
-    "auto": "ReplayGain: Cân bằng thông minh",
+    "auto": "ReplayGain: Cân bằng thông minh"
   },
   "settings": {
     "lyricMatchPriority": "Ưu tiên khớp lời",
     "lyricMatchPriorityDesc": "Khi nhiều nguồn lời đều có kết quả khớp độ tin cậy cao, ưu tiên nguồn này trước."
   },
   "options": {
-    "latticePerformanceMode": "Performance first",
-    "latticePerformanceModeDesc": "On by default: drops the wall grain layer, vignette, poster stacking and hover filters, and lowers cover resolution one step.",
-    "aiApiKeySavedDescLocal": "The key is kept on this device (used to call the AI directly; never uploaded) and is not shown again. Type a new key and save to replace it.",
-    "localVideoCache": "Local video cache",
-    "localVideoCacheDesc": "The local video played behind the lyrics. Clearing it means picking it again.",
-    "localVideoCacheEmpty": "No local video cached",
-    "localVideoCacheCleared": "Cleared the local video",
-    "localVideoCacheClearFailed": "Could not clear the local video",
-    "colorOsLyrics": "ColorOS lock-screen lyrics",
-    "colorOsLyricsDesc": "Publish lyrics into the system MediaSession so the native lock-screen / AOD lyric page renders them. Enabled only when ColorOS 16+ is detected; there is no manual toggle. Installing ColorOS-Live-Lyrics-Bridge adds word-by-word rendering and styling.",
-    "colorOsLyricsActive": "Active",
-    "colorOsLyricsActiveDesc": "Lyrics are published to the system MediaSession.",
-    "colorOsLyricsInactive": "Inactive",
-    "colorOsLyricsInactiveDesc": "This device was not detected as ColorOS 16+, so this channel stays off.",
-    "settingsHeadingAndroid": "Android shell",
-      "modelBeatThis": "Mô hình nhịp Beat This!",
-      "modelHtdemucs": "Mô hình tách âm HTDemucs",
-      "modelInstalled": "Đã tải",
-      "modelNeedsDownload": "Cần tải (khoảng {{size}})",
-      "modelAnalysisModels": "Mô hình phân tích",
-      "modelImport": "Nhập",
-      "modelImporting": "Đang nhập…",
-      "modelImportFailed": "Nhập thất bại: sai tệp hoặc không đọc được",
-      "modelNeedsDownloadAll": "Cần tải (tổng khoảng 128 MB)",
-      "modelDownloadingName": "Đang tải {{name}} {{percent}}%",
-      "modelStorageTitle": "Mô hình phân tích",
-      "modelStorageDesc": "Trọng số cục bộ của Beat This! và HTDemucs",
-      "modelStorageEmpty": "Chưa tải",
-      "modelDeleted": "Đã xóa",
-      "modelDeleteFailed": "Xóa thất bại",
-      "modelCheck": "Kiểm tra",
-      "modelChecking": "Đang kiểm tra…",
-      "modelCheckValid": "Kiểm tra đạt: đã tải",
-      "modelCheckInvalid": "Kiểm tra thất bại: tệp không đầy đủ. Tải lại.",
-      "modelRetry": "Thử lại",
-      "modelDownload": "Tải",
-      "modelDownloading": "Đang tải {{percent}}%",
-      "modelDelete": "Xóa",
-      "modelDownloadFailed": "Tải thất bại. Kiểm tra mạng rồi thử lại.",
-    "adaptiveDisplay": "Adaptive screen resolution",
-    "adaptiveDisplayDesc": "When on, the system bars are hidden and the interface fills the whole screen; when off, the native layout is kept. If the device forces a fixed aspect ratio, turn off its app compatibility mode in the system settings.",
-    "keepScreenOn": "Keep screen on",
-    "keepScreenOnDesc": "Stops the screen from sleeping while the app is open, so lyrics stay readable on a stand or while you copy them. Turn it off to restore the system auto-sleep.",
-    "orientationFit": "Portrait / landscape fit",
-    "orientationFitDesc": "Off locks portrait compatibility; on switches to and locks landscape compatibility. It only applies while Phone layout fit is enabled.",
-    "orientationLandscape": "Current: landscape fit",
-    "orientationPortrait": "Current: portrait fit",
-    "phoneFit": "Vừa khung điện thoại",
-
-    "nativeStage": "Sân khấu phát native (thử nghiệm)",
-
-    "nativeStageDesc": "Vẽ nền và lời bài hát bằng View Android native để giảm tải WebView",
-
-    "nativeStageDescSub": "Tắt để quay lại sân khấu WebView; điều khiển, cài đặt và mô-đun vẫn giữ nguyên.",
-    "phoneFitDesc": "Forces the compact phone layout so tabs, settings, and audio effects stay inside the screen on landscape or high-resolution phones. Off by default and does not alter the upstream desktop layout.",
-    "autoHideCommandPaletteButton": "Auto-hide command palette button",
-    "autoHideCommandPaletteButtonDesc": "The bottom command palette button hides when idle and comes back on touch.",
     "aiProvider_gemini": "Google Gemini",
     "aiProvider_deepseek": "DeepSeek",
     "aiProvider_mimo": "Xiaomi MiMo",
@@ -2549,9 +3966,10 @@ export default {
     "settingsPageAi": "Dịch vụ AI",
     "settingsPageStorage": "Lưu trữ & Sao lưu",
     "settingsPageDesktop": "Ứng dụng máy tính",
-    "settingsPageRemote": "Điều khiển từ xa",
+    "settingsPageRemote": "Cửa sổ điều khiển",
     "settingsPageGraphics": "Hoạt họa & Hiệu năng",
     "settingsPageMods": "Quản lý Mod",
+    "settingsPageSources": "Nguồn",
     "settingsPageDeveloper": "Dành cho nhà phát triển",
     "settingsHeadingTheme": "Chủ đề",
     "settingsHeadingSongTheme": "Chủ đề theo bài hát",
@@ -2701,8 +4119,12 @@ export default {
     "libraryWallWindowsOption": "{{count}}/12 ô ({{percent}}%)",
     "bravaisSettings": "Không gian Bravais",
     "bravaisSettingsDesc": "Cài đặt chỉ áp dụng khi thư viện dùng giao diện Không gian Bravais.",
+    "bravaisHomeFinite": "Tường trang chủ hữu hạn",
+    "bravaisHomeFiniteDesc": "Tường trang chủ hiển thị mỗi thẻ một lần, theo thứ tự quanh dải thông tin, và dừng lại khi kéo đến mép thay vì lặp lại vô tận. Trang Khám phá giữ bố cục riêng. Khi tắt, tường trang chủ lặp lại như thường; khi lọc và ở chế độ hàng loạt luôn dùng tường hữu hạn.",
     "bravaisStackEdges": "Viền chồng bộ sưu tập",
     "bravaisStackEdgesDesc": "Album, danh sách phát và thư mục hiện các mép so le ở góc dưới phải như chồng đĩa hát. Khi tắt sẽ hiển thị dạng poster thường; số bài hát vẫn ở trên nhãn.",
+    "bravaisCollectionTilt": "Nghiêng trang bộ sưu tập",
+    "bravaisCollectionTiltDesc": "Khi trang playlist, album hoặc nghệ sĩ mở dải thông tin, bức tường và dải thông tin hơi nghiêng sang một bên. Khi tắt, các trang bộ sưu tập giữ thẳng; poster album và nghệ sĩ vẫn nghiêng.",
     "bravaisSeamClear": "Thanh thông tin trong suốt",
     "bravaisSeamClearDesc": "Thanh thông tin (thanh trang chủ, thanh thu gọn, thanh bộ sưu tập và nghệ sĩ, các bảng điều khiển) bỏ nền đặc để lộ hiệu ứng thị giác phía sau qua lớp phủ mờ, kể cả khi giao diện ở dạng màu đặc. Các kiểu thanh thông tin bên dưới không áp dụng khi bật tùy chọn này.",
     "bravaisSeamStyle": "Kiểu thanh thông tin",
@@ -2751,6 +4173,9 @@ export default {
     "showHomeTabExplore": "Hiển thị Khám phá",
     "showHomeTabAlbums": "Hiện Album",
     "showHomeTabLocal": "Hiện tệp nội bộ",
+    "homeOnlineTabsVisibility": "Các trang của nguồn trực tuyến",
+    "homeOnlineTabsVisibilityDesc": "Khi tắt hết, trang chủ không hiển thị nhóm trực tuyến.",
+    "showHomeTabFolia": "Hiển thị Folia",
     "pinnedCommands": "Lệnh đã ghim",
     "pinnedCommandsDesc": "Chọn tối đa ba lệnh để hiển thị bên dưới bảng lệnh.",
     "pinnedCommandSlot": "Vị trí {{index}}",
@@ -2895,6 +4320,12 @@ export default {
     "autoUseBestLyricDescSpotify": "Tự động tìm kiếm lời bài hát từ NetEase, AMLLDB, QQ, Kugou và Spotify; tự động ưu tiên lời từng từ khớp thời gian hoàn hảo.",
     "lyricMatchPriority": "Ưu tiên khớp lời bài hát",
     "lyricMatchPriorityDesc": "Ưu tiên nguồn này khi nhiều nguồn lời bài hát đều có kết quả khớp tin cậy cao.",
+    "lyricPreferredSourceSkipped": "Nguồn ưu tiên {{source}} {{reason}}; lời bài hát được khớp từ {{next}} cho đến khi nguồn đó trở lại.",
+    "crossSourceSkipNotEnabled": "chưa bật",
+    "crossSourceSkipNotConfigured": "chưa được thiết lập",
+    "crossSourceSkipRuntimeUnavailable": "không dùng được ở đây",
+    "crossSourceSkipNeedsAccount": "cần đăng nhập",
+    "crossSourceSkipMatchingOnly": "chỉ dùng để khớp",
     "keepProviderWordTiming": "Giữ lời từng từ có sẵn của nền tảng",
     "keepProviderWordTimingDesc": "Khi bài trên Apple Music có sẵn lời từng từ, chỉ thay lời đó nếu nguồn chọn ở Ưu tiên khớp lời bài hát cũng có lời từng từ; không tìm ở nguồn khác. Tắt để chọn trong mọi nguồn theo thứ tự ưu tiên như các bài khác.",
     "localLyricsPriority": "Ưu tiên lời bài hát nội bộ",
@@ -2935,6 +4366,8 @@ export default {
     "useNativeMacTrafficLightsDesc": "Thay các nút thu nhỏ, phóng to và đóng tự vẽ bằng đèn giao thông hệ thống",
     "useNativeMacTrafficLightsNotice": "Có hiệu lực sau khi khởi động lại Folia",
     "hidePlayerProgressBar": "Ẩn thanh điều khiển dưới",
+    "progressBarChorusMarker": "Đánh dấu điệp khúc trên thanh tiến trình",
+    "progressBarChorusMarkerDesc": "Đánh dấu chỗ bắt đầu điệp khúc bằng một vạch mảnh trên thanh tiến trình. Chỉ hiện khi nguồn lời bài hát cho biết vị trí điệp khúc; điệp khúc đoán từ các dòng lặp lại sẽ không được đánh dấu.",
     "playerBottomBarOffset": "Chiều cao điều khiển dưới",
     "playerBottomBarOffsetDesc": "Điều chỉnh thanh điều khiển dưới, thẻ bài hát, nút tác vụ và bảng bên trên mọi trang; phụ đề trình phát cũng di chuyển theo. Tối đa nửa màn hình.",
     "playerBottomBarReposition": "Chỉnh vị trí trên trang phát",
@@ -2942,7 +4375,7 @@ export default {
     "playerBottomBarReset": "Đặt lại chiều cao",
     "playerBottomBarPositioningHint": "Kéo thanh để chỉnh chiều cao",
     "playerControlSlots": "Nút thanh tiến trình",
-    "playerControlSlotsDesc": "Hai nút ở bên phải thanh tiến trình. Mặc định là chế độ lặp và dòng thời gian lời bài hát.",
+    "playerControlSlotsDesc": "Hai nút bên phải thanh tiến trình và đảo nút (hiện lên phía trên thanh khi con trỏ dừng trên thanh) dùng chung một bộ điều khiển; mỗi điều khiển chỉ nằm ở một chỗ. Kéo từ bên dưới lên đảo hoặc lên một nút. Kéo trả xuống dưới, hoặc bấm dấu trừ, để gỡ ra. Thả lên một nút sẽ hoán đổi hai nút. Nút bảng lệnh luôn ở cuối đảo.",
     "playerControlSlotPrimary": "Nút bên trái",
     "playerControlSlotSecondary": "Nút bên phải",
     "playerControlSlotAction_loop": "Chế độ lặp",
@@ -2956,14 +4389,57 @@ export default {
     "playerControlSlotAction_songWall": "Hàng đợi phát (poster)",
     "playerControlSlotAction_sleepTimer": "Hẹn giờ ngủ",
     "playerControlSlotAction_locate": "Định vị bài hát đang phát",
+    "playerControlSlotAction_markMoment": "Đánh dấu khoảnh khắc này",
+    "playerControlSlotsHint": "Kéo để sắp xếp hai nút bên phải và đảo nút",
+    "playerControlLayoutIsland": "Đảo nút",
+    "playerControlLayoutCount": "{{count}} / {{max}}",
+    "playerControlLayoutFull": "Đảo chứa tối đa {{max}}",
+    "playerControlLayoutIslandEmpty": "Kéo vào đây",
+    "playerControlLayoutIslandItem": "{{name}}, thứ {{position}} trên {{count}} trong đảo. Phím mũi tên trái phải để di chuyển, Delete để gỡ",
+    "playerControlLayoutRemove": "Gỡ {{name}} khỏi đảo",
+    "playerControlLayoutSlot": "{{side}}: {{name}}. Chọn cái khác",
+    "playerControlLayoutPalette": "Bảng lệnh, luôn ở cuối",
+    "playerControlLayoutPool": "Điều khiển chưa đặt",
+    "playerControlLayoutPoolEmpty": "Đã đặt hết các điều khiển",
+    "playerControlLayoutPoolItem": "{{name}}. Thêm vào cuối đảo",
+    "playerControlLayoutReset": "Đặt lại",
+    "playerControlSlotAction_addToPlaylist": "Thêm vào danh sách phát",
+    "playerControlSlotAction_subtitles": "Cài đặt phụ đề",
+    "playerControlSlotAction_lyricStyle": "Kiểu lời bài hát",
     "hidePlayerTranslationSubtitle": "Ẩn lớp phụ đề dưới",
     "hidePlayerTranslationSubtitleDesc": "Không ảnh hưởng đến chế độ hiệu ứng thị giác có phụ đề độc lập.",
     "hidePlayerRightPanelButton": "Ẩn nút bên phải trình phát",
     "transparentPlayerBackground": "Nền trình phát trong suốt",
+    "alphaExportGroup": "Xuất video trong suốt",
+    "alphaExportFfmpeg": "ffmpeg",
+    "alphaExportFfmpegHint": "Xuất trong suốt dùng bản ffmpeg đầy đủ cài trên máy này",
+    "alphaExportFfmpegNote": "Khi chọn định dạng trong suốt ở \"Xuất video\" trong cửa sổ Điều khiển từ xa, Folia kết xuất lời bài hát từng khung hình ở nền và giao cho ffmpeg này mã hóa thành video có kênh alpha (không có tiếng). Tìm tự động xem PATH, winget, Scoop, Chocolatey và Program Files (Windows), Homebrew (macOS) và /usr/bin (Linux), và chỉ dùng bản đầy đủ đọc được khung hình thô và có bộ mã hóa hỗ trợ alpha. Bạn cũng có thể tự chọn tệp ffmpeg.",
+    "alphaExportSearching": "Đang tìm…",
+    "alphaExportSourceAuto": "Đã tìm thấy · {{version}}",
+    "alphaExportSourceManual": "Đã chọn · {{version}}",
+    "alphaExportSourceNone": "Không tìm thấy",
+    "alphaExportSearchAgain": "Tìm lại",
+    "alphaExportChoose": "Chọn…",
+    "alphaExportManualPath": "Tệp đã chọn",
+    "alphaExportUseSearch": "Dùng tìm tự động",
+    "alphaExportRejected": "Không dùng được tệp đã chọn: {{reason}}",
+    "alphaExportManualBroken": "Tệp đã chọn hiện không dùng được ({{reason}}); đang dùng kết quả tìm tự động.",
+    "alphaExportMissing": "Không tìm thấy ffmpeg nào xuất được video trong suốt. Hãy cài bản ffmpeg đầy đủ (ví dụ winget install Gyan.FFmpeg, brew install ffmpeg, apt install ffmpeg) rồi tìm lại, hoặc chọn tệp thực thi. Ghi cửa sổ thông thường không bị ảnh hưởng.",
+    "alphaExportFormats": "Định dạng trong suốt",
+    "alphaExportFormatsHint": "Các định dạng có alpha mà ffmpeg này ghi được",
+    "alphaExportFormatProres": "ProRes 4444",
+    "alphaExportFormatVp9": "VP9 Alpha",
+    "alphaExportFormatQtrle": "QuickTime Animation",
+    "alphaExportProblemNotFound": "tệp không tồn tại",
+    "alphaExportProblemNotRunnable": "không chạy được",
+    "alphaExportProblemNotFfmpeg": "không phải ffmpeg",
+    "alphaExportProblemNoRawvideo": "đây là bản ffmpeg rút gọn, không đọc được khung hình thô",
+    "alphaExportProblemNoAlphaEncoder": "ffmpeg này không có bộ mã hóa hỗ trợ alpha",
     "transparentPlayerBackgroundDesc": "Chỉ áp dụng trên trang trình phát. Khi bật, Folia chuyển sang chế độ cửa sổ trong suốt cho nguồn trình duyệt OBS hoặc lớp phủ phông nền.",
     "enablePlayerPageNativeBlur": "Bật làm mờ gốc trên trang phát",
     "enablePlayerPageNativeBlurHint": "Sử dụng hiệu ứng làm mờ hệ thống thay cho nền trang phát, tiêu tốn nhiều tài nguyên hơn",
     "enablePlayerPageNativeBlurDesc": "Khi bật, các nền chủ đề, ảnh, Monet sẽ bị ẩn và thay bằng hiệu ứng mờ gốc của hệ thống. Chỉ áp dụng ở chế độ không trong suốt trên máy tính; hiệu ứng này tốn nhiều tài nguyên hơn và có thể gây giật khi di chuyển cửa sổ.",
+    "enablePlayerPageNativeBlurUnsupported": "Cần Windows 11 22H2 trở lên; hệ thống này không hỗ trợ",
     "nativeBlurConfirmTitle": "Hiệu ứng kính hệ thống",
     "nativeBlurConfirmDesc": "Thao tác này đổi nền cửa sổ thành bán trong suốt bằng hiệu ứng kính hệ thống. Nền của Folia sẽ không hiển thị.",
     "nativeBlurConfirmAction": "Tôi đã hiểu",
@@ -3021,6 +4497,9 @@ export default {
     "disableVisualizerGeometricBackground": "Ẩn nền hình học chung",
     "disableVisualizerGeometricBackgroundDesc": "Ẩn các khối hình học nền dùng chung trên trang trình phát.",
     "desktopTrayBehavior": "Hành vi cửa sổ Desktop",
+    "uiZoom": "Thu phóng giao diện",
+    "uiZoomDesc": "Thu phóng toàn bộ cửa sổ chính theo các mức cố định. Khi tỷ lệ hiển thị của Windows lớn, giao diện trông chật chội; thu nhỏ để thấy nhiều nội dung hơn. Cửa sổ điều khiển giữ nguyên kích thước.",
+    "uiZoomStep": "Mức thu phóng",
     "minimizeToTray": "Thu nhỏ xuống khay hệ thống",
     "closeToTray": "Đóng cửa sổ xuống khay hệ thống",
     "closeToTrayDesc": "Nút đóng sẽ ẩn cửa sổ xuống khay hệ thống thay vì thoát, nhạc vẫn tiếp tục phát. Chọn Thoát trong menu khay để thoát hẳn.",
@@ -3041,13 +4520,15 @@ export default {
     "remoteLyricSourceAuto": "Theo nội dung phụ đề",
     "remoteLyricSourceAutoHint": "Hiển thị nội dung mà cài đặt Nội dung phụ đề chọn",
     "remoteLyricSourceNone": "Không hiển thị",
-    "hideRemoteControlTaskbarIcon": "Ẩn biểu tượng Remote Control trên thanh tác vụ",
-    "hideRemoteControlTitlebar": "Ẩn thanh nổi trên cùng của Remote Control",
+    "remoteControlOpen": "Mở cửa sổ điều khiển",
+    "remoteControlOpenHint": "Cũng có thể mở từ thanh tiêu đề của ứng dụng",
+    "hideRemoteControlTaskbarIcon": "Ẩn biểu tượng cửa sổ điều khiển trên thanh tác vụ",
+    "hideRemoteControlTitlebar": "Ẩn thanh nổi trên cùng của cửa sổ điều khiển",
     "hideRemoteControlTitlebarHint": "Không hiện thanh điều khiển cửa sổ khi di chuột lại gần mép trên",
     "hideRemoteControlTitlebarDesc": "Không hiển thị thanh điều khiển (hình nền, ghim, đóng) khi di chuột lên mép trên. Vẫn có thể kéo vùng trong suốt phía trên để di chuyển cửa sổ. Để đóng, dùng \"Cửa sổ điều khiển\" trong menu khay hoặc \"Bật/tắt cửa sổ điều khiển\" trong bảng lệnh.",
-    "remoteControlClickThrough": "Nhấp xuyên thấu Remote Control",
+    "remoteControlClickThrough": "Nhấp xuyên thấu cửa sổ điều khiển",
     "remoteControlClickThroughHint": "Cửa sổ bỏ qua chuột; thao tác nhấp sẽ xuyên qua màn hình và cửa sổ bên dưới",
-    "remoteControlClickThroughDesc": "Khi bật, cửa sổ Remote Control sẽ bỏ qua chuột và lượt nhấp sẽ xuyên thấu xuống màn hình nền và cửa sổ bên dưới; không thể thao tác hay kéo cửa sổ. Để dùng lại, chọn \"Mở khóa cửa sổ điều khiển\" trong menu khay hoặc trong bảng lệnh, hoặc tắt tùy chọn này tại đây.",
+    "remoteControlClickThroughDesc": "Khi bật, cửa sổ điều khiển sẽ bỏ qua chuột và lượt nhấp sẽ xuyên thấu xuống màn hình nền và cửa sổ bên dưới; không thể thao tác hay kéo cửa sổ. Để dùng lại, chọn \"Mở khóa cửa sổ điều khiển\" trong menu khay hoặc trong bảng lệnh, hoặc tắt tùy chọn này tại đây.",
     "remoteControlExpandCover": "Mở rộng ảnh bìa",
     "remoteControlExpandCoverHint": "Mở rộng ảnh bìa thành ảnh lớn khi cửa sổ điều khiển ở trạng thái chờ",
     "remoteControlTextShade": "Nền tối cho chữ",
@@ -3072,15 +4553,9 @@ export default {
     "preventDisplaySleepDuringPlaybackDesc": "Chỉ cho Desktop. Giữ màn hình luôn sáng khi đang phát nhạc; trở lại chế độ ngủ bình thường khi tạm dừng hoặc dừng phát.",
     "enableModSystem": "Hệ thống Mod",
     "enableModSystemDesc": "Chỉ cho Desktop. Bật lệnh Mod và trình quản lý mod, cho phép trình tải phát hiện và nạp mod; khi tắt sẽ không tải bất kỳ mã mod nào.",
-    "enableModSystemDescSub": "Mod chạy với toàn quyền của ứng dụng và từng mod phải được xác nhận riêng trước khi chạy. API chưa hoàn thiện và có thể thay đổi trong các phiên bản sau.",
-    "modResolutionGuard": "Hiệu năng mô-đun",
-    "modResolutionGuardDesc": "Giảm độ phân giải kết xuất và tắt dần các hiệu ứng chữ tốn tài nguyên",
-    "modResolutionGuardDescSub": "Một công tắc cho độ phân giải và hiệu ứng; tốc độ khung hình và hiệu ứng gốc không bị ảnh hưởng.",
-    "modResolutionGuardLevel": "Mức tối ưu",
-    "modResolutionGuardLevelDesc": "Nhẹ chỉ thu nhỏ canvas; cân bằng bỏ bóng; mạnh bỏ thêm blur và blending.",
-    "modResolutionGuardLight": "Nhẹ (75%)",
-    "modResolutionGuardMedium": "Cân bằng (50%)",
-    "modResolutionGuardStrong": "Mạnh (35%)",
+    "enableModSystemDescSub": "Mod chạy với toàn quyền của ứng dụng.",
+    "enableCommunityMods": "Mod cộng đồng",
+    "enableCommunityModsDesc": "Cho phép cài và chạy các mod ngoài mod nguồn chính thức; khi tắt, chỉ chạy mod nguồn có chữ ký chính thức",
     "showOpenPanelCloseButton": "Hiện nút đóng bảng",
     "showOpenPanelCloseButtonDesc": "Giữ nút đóng nổi hiển thị sau khi mở thẻ thông tin bài hát.",
     "showOpenPanelCloseButtonDescSub": "Tắt tùy chọn này để quay màn hình gọn gàng hơn. Người dùng di động có thể thích bật hơn.",
@@ -3105,7 +4580,6 @@ export default {
     "playerCapIgnoreClearHint": "Giữ lời bài hát khi tạm dừng, rảnh hoặc đóng cửa sổ; chỉ làm mới khi thực sự đổi trình phát.",
     "playerCapWaitingLyrics": "Đã kết nối, chờ lời bài hát",
     "playerCapConnecting": "Đang kết nối Nexus PlayerCap…",
-
     "stageAddress": "Địa chỉ Stage",
     "stageSession": "Phiên hiện tại",
     "stageSessionReady": "Phiên đã sẵn sàng",
@@ -3176,10 +4650,6 @@ export default {
     "urlBackgroundSettingsDesc": "Hiển thị trang web làm nền trình phát. Lưu ý: một số trang web chặn nhúng vào iframe và có thể không hiển thị.",
     "urlBackgroundNotePlaceholder": "Ghi chú (dễ nhận biết)",
     "urlBackgroundAdd": "Thêm URL",
-      "urlBackgroundUploadImage": "Tải ảnh lên",
-      "urlBackgroundReplaceImage": "Thay ảnh",
-      "urlBackgroundImageBadge": "Ảnh cục bộ",
-      "urlBackgroundImageReadFailed": "Không đọc được ảnh. Hãy thử tệp khác.",
     "urlBackgroundEdit": "Chỉnh sửa",
     "urlBackgroundDelete": "Xóa",
     "urlBackgroundEmpty": "Chưa có URL, nhấn nút phía trên để thêm",
@@ -3938,7 +5408,7 @@ export default {
     "customTheme": "Tùy chỉnh",
     "customThemeUnavailable": "Chưa có chủ đề tùy chỉnh",
     "clearAll": "Xóa tất cả",
-    "confirmClearAll": "Bạn có chắc muốn xóa tất cả bộ nhớ đệm?",
+    "confirmClearAll": "Bạn có chắc muốn xóa tất cả bộ nhớ đệm? Bình luận bài hát (thẻ, bình luận và mốc thời gian) vẫn được giữ lại.",
     "cacheClearing": "Đang dọn dẹp...",
     "aiServiceProviders": "Nhà cung cấp và khóa",
     "aiServiceDesc": "Áp dụng cho mọi tính năng AI: tạo chủ đề AI và mọi chỗ dùng AI về sau.",
@@ -4204,6 +5674,72 @@ export default {
     "autoAiLyricSegmentationDesc": "Khi phát bài có lời tiếng Trung hoặc tiếng Nhật chưa lưu cách tách từ, tự động dùng AI tách lời thành từ. Chỉ ảnh hưởng các kiểu lời sắp chữ theo từ. Chạy một lần cho mỗi bài và tốn yêu cầu AI.",
     "visualizerMode": "Chế độ",
     "noDescription": "Chưa có mô tả",
+    "latticePerformanceMode": "Performance first",
+    "latticePerformanceModeDesc": "On by default: drops the wall grain layer, vignette, poster stacking and hover filters, and lowers cover resolution one step.",
+    "aiApiKeySavedDescLocal": "The key is kept on this device (used to call the AI directly; never uploaded) and is not shown again. Type a new key and save to replace it.",
+    "localVideoCache": "Local video cache",
+    "localVideoCacheDesc": "The local video played behind the lyrics. Clearing it means picking it again.",
+    "localVideoCacheEmpty": "No local video cached",
+    "localVideoCacheCleared": "Cleared the local video",
+    "localVideoCacheClearFailed": "Could not clear the local video",
+    "colorOsLyrics": "ColorOS lock-screen lyrics",
+    "colorOsLyricsDesc": "Publish lyrics into the system MediaSession so the native lock-screen / AOD lyric page renders them. Enabled only when ColorOS 16+ is detected; there is no manual toggle. Installing ColorOS-Live-Lyrics-Bridge adds word-by-word rendering and styling.",
+    "colorOsLyricsActive": "Active",
+    "colorOsLyricsActiveDesc": "Lyrics are published to the system MediaSession.",
+    "colorOsLyricsInactive": "Inactive",
+    "colorOsLyricsInactiveDesc": "This device was not detected as ColorOS 16+, so this channel stays off.",
+    "settingsHeadingAndroid": "Android shell",
+    "modelBeatThis": "Mô hình nhịp Beat This!",
+    "modelHtdemucs": "Mô hình tách âm HTDemucs",
+    "modelInstalled": "Đã tải",
+    "modelNeedsDownload": "Cần tải (khoảng {{size}})",
+    "modelAnalysisModels": "Mô hình phân tích",
+    "modelImport": "Nhập",
+    "modelImporting": "Đang nhập…",
+    "modelImportFailed": "Nhập thất bại: sai tệp hoặc không đọc được",
+    "modelNeedsDownloadAll": "Cần tải (tổng khoảng 128 MB)",
+    "modelDownloadingName": "Đang tải {{name}} {{percent}}%",
+    "modelStorageTitle": "Mô hình phân tích",
+    "modelStorageDesc": "Trọng số cục bộ của Beat This! và HTDemucs",
+    "modelStorageEmpty": "Chưa tải",
+    "modelDeleted": "Đã xóa",
+    "modelDeleteFailed": "Xóa thất bại",
+    "modelCheck": "Kiểm tra",
+    "modelChecking": "Đang kiểm tra…",
+    "modelCheckValid": "Kiểm tra đạt: đã tải",
+    "modelCheckInvalid": "Kiểm tra thất bại: tệp không đầy đủ. Tải lại.",
+    "modelRetry": "Thử lại",
+    "modelDownload": "Tải",
+    "modelDownloading": "Đang tải {{percent}}%",
+    "modelDelete": "Xóa",
+    "modelDownloadFailed": "Tải thất bại. Kiểm tra mạng rồi thử lại.",
+    "adaptiveDisplay": "Adaptive screen resolution",
+    "adaptiveDisplayDesc": "When on, the system bars are hidden and the interface fills the whole screen; when off, the native layout is kept. If the device forces a fixed aspect ratio, turn off its app compatibility mode in the system settings.",
+    "keepScreenOn": "Keep screen on",
+    "keepScreenOnDesc": "Stops the screen from sleeping while the app is open, so lyrics stay readable on a stand or while you copy them. Turn it off to restore the system auto-sleep.",
+    "orientationFit": "Portrait / landscape fit",
+    "orientationFitDesc": "Off locks portrait compatibility; on switches to and locks landscape compatibility. It only applies while Phone layout fit is enabled.",
+    "orientationLandscape": "Current: landscape fit",
+    "orientationPortrait": "Current: portrait fit",
+    "phoneFit": "Vừa khung điện thoại",
+    "nativeStage": "Sân khấu phát native (thử nghiệm)",
+    "nativeStageDesc": "Vẽ nền và lời bài hát bằng View Android native để giảm tải WebView",
+    "nativeStageDescSub": "Tắt để quay lại sân khấu WebView; điều khiển, cài đặt và mô-đun vẫn giữ nguyên.",
+    "phoneFitDesc": "Forces the compact phone layout so tabs, settings, and audio effects stay inside the screen on landscape or high-resolution phones. Off by default and does not alter the upstream desktop layout.",
+    "autoHideCommandPaletteButton": "Auto-hide command palette button",
+    "autoHideCommandPaletteButtonDesc": "The bottom command palette button hides when idle and comes back on touch.",
+    "modResolutionGuard": "Hiệu năng mô-đun",
+    "modResolutionGuardDesc": "Giảm độ phân giải kết xuất và tắt dần các hiệu ứng chữ tốn tài nguyên",
+    "modResolutionGuardDescSub": "Một công tắc cho độ phân giải và hiệu ứng; tốc độ khung hình và hiệu ứng gốc không bị ảnh hưởng.",
+    "modResolutionGuardLevel": "Mức tối ưu",
+    "modResolutionGuardLevelDesc": "Nhẹ chỉ thu nhỏ canvas; cân bằng bỏ bóng; mạnh bỏ thêm blur và blending.",
+    "modResolutionGuardLight": "Nhẹ (75%)",
+    "modResolutionGuardMedium": "Cân bằng (50%)",
+    "modResolutionGuardStrong": "Mạnh (35%)",
+    "urlBackgroundUploadImage": "Tải ảnh lên",
+    "urlBackgroundReplaceImage": "Thay ảnh",
+    "urlBackgroundImageBadge": "Ảnh cục bộ",
+    "urlBackgroundImageReadFailed": "Không đọc được ảnh. Hãy thử tệp khác."
   },
   "releaseNotes": {
     "v0_7_0": {
@@ -4392,6 +5928,33 @@ export default {
       "qqPrivatePlaylists": {
         "title": "Danh sách phát QQ Music riêng tư",
         "description": "Sau khi đăng nhập, danh sách phát riêng tư của bạn nay có thể tải bài hát với phân trang thực tế. Máy chủ tự lưu trữ cần chạy qq-music-api 3.1.2 trở lên; phiên bản cũ hơn sẽ tự động quay về cơ chế dự phòng, và danh sách phát không đọc được sẽ báo rõ là danh sách không công khai thay vì hiển thị trống."
+      }
+    },
+    "v0_8_0": {
+      "intro": "Chào mừng bạn đến với 0.8.0, Severance Update—một bản cập nhật lớn. Mọi nguồn nhạc giờ đều là mod có thể bật tắt, cùng với kho mod, danh sách phát Folia trộn bài từ mọi nguồn, Khoảnh khắc để ghi chú cho bài hát, và bộ trộn stem.",
+      "sourceMods": {
+        "title": "Nguồn nhạc giờ là mod",
+        "description": "Cả mười nguồn tích hợp giờ là mod nguồn: bật hoặc tắt từng nguồn, xem dung lượng và xóa dữ liệu trong Cài đặt → Nguồn. Lần mở đầu tiên, Folia sẽ hỏi bạn dùng những nền tảng nào. Nguồn mới LX Music cho phép nhập tập lệnh nguồn tùy chỉnh."
+      },
+      "modMarket": {
+        "title": "Kho mod",
+        "description": "Duyệt, cài, cập nhật và gỡ mod trong cửa sổ Mod. Hệ thống mod được bật sẵn; mod cộng đồng của bên thứ ba cần bật công tắc trong trang Mod trước."
+      },
+      "foliaPlaylists": {
+        "title": "Danh sách phát Folia",
+        "description": "Một danh sách phát có thể chứa bài từ nhiều nguồn khác nhau. Lưu danh sách phát hoặc album của nền tảng thành danh sách phát Folia, sau này cập nhật từ bản gốc, và xuất hoặc nhập được. Các danh sách phát cục bộ cũ đã được chuyển vào đây, và các thẻ trang chủ giờ có hai cấp."
+      },
+      "moments": {
+        "title": "Khoảnh khắc",
+        "description": "Sổ ghi nhanh có thêm trang thứ tư, Khoảnh khắc: gắn thẻ cho bài, viết bình luận và để lại dấu trên dòng thời gian, hiện ngay trên thanh tiến trình. Bình luận có thể xuất và nhập."
+      },
+      "stemMixer": {
+        "title": "Bộ trộn stem",
+        "description": "Hiệu ứng âm thanh có bộ trộn stem mới: GPU tách bài hát theo thời gian thực thành trống, bass, khác và giọng hát, mỗi kênh chỉnh mức riêng, kèm cài đặt nhanh karaoke và chỉ giọng hát."
+      },
+      "moreDetails": {
+        "title": "Cải tiến khác",
+        "description": "Thanh tiến trình đánh dấu chỗ bắt đầu điệp khúc. Cửa sổ chính có thể phóng to toàn bộ. Khi đã cài ffmpeg bản đầy đủ, bạn có thể xuất video nền trong suốt. Kết quả tìm kiếm tự tải thêm khi cuộn đến cuối."
       }
     },
     "v0_7_29": {
@@ -4870,7 +6433,7 @@ export default {
     "noExportCodec": "Hệ thống không có codec xuất video khả dụng.",
     "windowResizeFailed": "Không thể đổi kích thước cửa sổ theo độ phân giải xuất.",
     "recordingCancelled": "Đã hủy quay.",
-    "recorderUnknownError": "Trình quay gặp lỗi không xác định.",
+    "recorderUnknownError": "Trình quay gặp lỗi không xác định."
   },
   "player": {
     "play": "Phát",
@@ -4891,13 +6454,12 @@ export default {
     "slotSuggestionReplacePrimary": "Thay nút bên trái ({{action}})",
     "slotSuggestionReplaceSecondary": "Thay nút bên phải ({{action}})",
     "capsuleQuickActions": "Thao tác nhanh",
-    "capsuleOpensPalette": "Nhấp để mở bảng lệnh",
+    "capsuleOpensPalette": "Nhấp để mở bảng lệnh"
   },
   "localMusic": {
     "foldersAndPlaylists": "Thư mục",
     "albums": "Album",
     "artists": "Nghệ sĩ",
-    "customPlaylists": "Danh sách phát",
     "favoritePlaylist": "Bài hát yêu thích",
     "unknownAlbum": "Album không rõ",
     "unknownArtist": "Nghệ sĩ không rõ",
@@ -4987,7 +6549,6 @@ export default {
     "resetLyricTimelineOffset": "Đặt lại độ lệch mốc thời gian",
     "coverSource": "Bìa",
     "metadataSource": "Siêu dữ liệu",
-    "kugouNoCover": "Kugou không cung cấp ảnh bìa, do đó ảnh bìa nội bộ sẽ được giữ lại.",
     "artistLabel": "Nghệ sĩ",
     "albumLabel": "Album",
     "noSelection": "Chọn bài hát ở bên trái",
@@ -5010,12 +6571,18 @@ export default {
     "editPlaylist": "Sửa danh sách phát",
     "finishEditing": "Hoàn tất chỉnh sửa",
     "deletePlaylist": "Xóa danh sách phát",
-    "exportPlaylist": "Xuất M3U8",
+    "deletePlaylistMessage": "Chỉ xóa danh sách phát này; các bài hát không bị ảnh hưởng. Không thể hoàn tác.",
+    "exportPlaylist": "Xuất danh sách phát…",
     "playlistImportSuccess": "Đã nhập “{{name}}” với {{count}} bài hát.",
     "playlistImportPartial": "Đã nhập {{count}} bài vào “{{name}}”; bỏ qua {{skipped}} đường dẫn thiếu hoặc không rõ ràng.",
     "playlistImportNoMatches": "Không có đường dẫn nào khớp với nhạc nội bộ hiện có trong Folia.",
-    "playlistImportFailed": "Nhập danh sách phát thất bại. Hãy đảm bảo tệp M3U hoặc M3U8 hợp lệ.",
+    "playlistImportFailed": "Nhập danh sách phát thất bại.",
     "playlistExportSuccess": "Đã xuất “{{name}}”.",
+    "folderUnreadable": "Hiện không đọc được thư mục “{{folder}}”.",
+    "folderScanEmpty": "Không đọc được tệp nào trong “{{folder}}”.",
+    "folderUnavailableNote": "Các bài hát đã có trong thư viện được giữ nguyên. Nếu thật sự muốn làm trống một thư mục, hãy gỡ thư mục đó khỏi thư viện.",
+    "playlistExportSkipped_one": "{{count}} bài không phải tệp nội bộ nên không được xuất.",
+    "playlistExportSkipped_other": "{{count}} bài không phải tệp nội bộ nên không được xuất.",
     "entityInfo": "Thông tin {{kind}}",
     "entityDisplayName": "Tên hiển thị",
     "mergeEntity": "Hợp nhất {{kind}}",
@@ -5098,6 +6665,176 @@ export default {
     "useLocalInfoForSelected": "Dùng thông tin nội bộ ({{count}})",
     "coverCacheFailed": "Đã lưu siêu dữ liệu nhưng không thể lưu đệm ảnh bìa. URL trực tuyến vẫn sẽ được dùng khi khả dụng.",
     "lyricsNotAppliedOtherSaved": "Chưa áp dụng lời bài hát; các lựa chọn khác đã được lưu.",
+    "customPlaylists": "Danh sách phát",
+    "kugouNoCover": "Kugou không cung cấp ảnh bìa, do đó ảnh bìa nội bộ sẽ được giữ lại.",
+    "scanDeviceMusic": "Quét nhạc trong thiết bị"
+  },
+  "foliaPlaylist": {
+    "rejectedNote": "{{count}} bài không thêm được",
+    "clearScratchpad": "Xóa sổ ghi nhanh",
+    "noneAdded": "Không bài nào có thể đưa vào danh sách phát",
+    "allDuplicates": "Đã có trong “{{name}}” ({{duplicates}})",
+    "addedSome": "Đã thêm {{added}} bài vào “{{name}}”; {{duplicates}} bài đã có sẵn",
+    "added": "Đã thêm {{added}} bài vào “{{name}}”",
+    "created": "Đã tạo “{{name}}”",
+    "navidromeUnconfigured": "Chưa thiết lập Navidrome",
+    "localMissing": "Tệp không có trong thư viện",
+    "sourceMissing": "Nguồn chưa được cài",
+    "sourceOff": "Nguồn đã tắt"
+  },
+  "foliaPlaylistFile": {
+    "exportTitle": "Xuất danh sách phát",
+    "exportDescription": "\"{{name}}\" · tổng cộng {{count}} bài",
+    "formatLabel": "Định dạng lưu",
+    "formatJson": "Tệp danh sách phát Folia (JSON)",
+    "formatJsonNote": "Đầy đủ: cả {{count}} bài, gồm bài của mọi nguồn, thời điểm thêm và nơi danh sách xuất phát. Folia có thể đọc lại.",
+    "formatJsonNoteSkips": "Ghi {{count}} bài, gồm bài của mọi nguồn, thời điểm thêm và nơi danh sách xuất phát. Còn {{skipped}} bài không có tệp trong thư viện nên không ghi được.",
+    "formatM3u": "Danh sách phát M3U8",
+    "formatM3uNoteAll": "Chỉ chứa được tệp cục bộ: cả {{count}} bài cục bộ đều được ghi. Trình phát khác cũng mở được.",
+    "formatM3uNoteSkips": "Chỉ chứa được tệp cục bộ: ghi {{count}} bài cục bộ và bỏ {{skipped}} bài còn lại vì không phải tệp cục bộ.",
+    "formatM3uNoteNone": "Danh sách phát này không có tệp cục bộ nào, nên tệp M3U8 sẽ trống.",
+    "exportConfirm": "Xuất",
+    "exportSkippedNote": "{{count}} bài không có tệp trong thư viện nên không được xuất.",
+    "exportFailed": "Xuất danh sách phát thất bại.",
+    "importTitle": "Nhập danh sách phát",
+    "reading": "Đang đọc tệp…",
+    "writing": "Đang ghi danh sách phát…",
+    "close": "Đóng",
+    "untitled": "Danh sách phát đã nhập",
+    "detectedJson": "Định dạng: tệp danh sách phát Folia (JSON)",
+    "detectedM3u": "Định dạng: danh sách phát M3U / M3U8 (chỉ tệp cục bộ)",
+    "nameLabel": "Tên danh sách phát",
+    "summary": "Tệp có {{total}} bài; sẽ nhập {{count}} bài",
+    "songCount": "{{count}} bài",
+    "localMatched": "tìm thấy {{matched}} bài trong thư viện",
+    "unavailableNote": "Nguồn của {{count}} bài hiện không dùng được trên thiết bị này. Chúng vẫn được nhập và sẽ phát được khi nguồn dùng được.",
+    "localUnmatched": "{{count}} bài cục bộ không có tệp tương ứng trong thư viện và sẽ không được nhập.",
+    "localUnmatchedNamed": "{{count}} bài cục bộ không có tệp tương ứng trong thư viện và sẽ không được nhập: {{titles}}",
+    "duplicateNote": "{{count}} bài xuất hiện nhiều lần trong tệp; mỗi bài chỉ giữ một mục.",
+    "invalidNote": "{{count}} mục trong tệp không đọc được và đã bị bỏ qua.",
+    "mismatchedIdNote": "{{count}} mục trực tuyến trong tệp có id không khớp với nguồn của nó (bài hiển thị có thể không phải bài sẽ phát) và không được nhập.",
+    "m3uSummary": "Tệp có {{total}} đường dẫn; {{count}} đường dẫn khớp với bài trong thư viện",
+    "m3uSkipped": "{{count}} đường dẫn không khớp, hoặc khớp nhiều hơn một bài, và sẽ không được nhập.",
+    "nothingToImport": "Không có gì để nhập.",
+    "nothingWritten": "Chưa ghi gì cả.",
+    "favoriteLabel": "Đây là \"Bài hát đã thích\" đã xuất",
+    "existingLabel": "Đã có một danh sách phát cùng tên",
+    "asNew": "Tạo danh sách phát mới",
+    "asNewNote": "Hai danh sách phát sẽ trùng tên.",
+    "mergeInto": "Thêm vào \"{{name}}\"",
+    "mergeNote": "Bài đã có sẵn không được thêm lần nữa; bài mới nằm ở cuối.",
+    "importConfirm": "Nhập",
+    "imported": "Đã nhập danh sách phát \"{{name}}\": tổng cộng {{count}} bài",
+    "errorNotJson": "JSON trong tệp này không đầy đủ hoặc bị hỏng nên không đọc được.",
+    "errorNotFoliaPlaylist": "Đây là tệp JSON nhưng không phải tệp danh sách phát Folia.",
+    "errorNewerVersion": "Tệp danh sách phát này do phiên bản Folia mới hơn xuất ra, phiên bản này không đọc được. Hãy cập nhật Folia trước.",
+    "errorDamaged": "Tệp danh sách phát Folia này không đầy đủ hoặc bị hỏng.",
+    "errorTooLarge": "Tệp quá lớn, hoặc chứa hơn {{max}} bài.",
+    "errorUnknownFormat": "Tệp này không phải tệp danh sách phát Folia (JSON) cũng không phải danh sách phát M3U / M3U8.",
+    "errorUnreadable": "Không đọc được tệp này."
+  },
+  "foliaPlaylistOrder": {
+    "changed": "Các danh sách đã thay đổi. Hãy mở lại trình chỉnh sửa để tải thứ tự mới nhất.",
+    "sortNotice": "Xếp tất cả {{count}} danh sách (kể cả đang giữ) theo tên từ A đến Z? Không thể hoàn tác sau khi lưu.",
+    "sortTitle": "Sắp xếp mọi danh sách theo tên?",
+    "sort": "Sắp xếp theo tên",
+    "selectedCount": "Đã chọn {{count}}",
+    "finishStaging": "Hãy chèn lại các danh sách đang giữ trước khi lưu.",
+    "listEmpty": "Mọi danh sách đang được giữ. Hãy chèn lại.",
+    "stageHint": "Đặt các danh sách đã chọn vào đây, rồi chèn lại theo nhóm.",
+    "insertHint": "Kéo cả nhóm vào giữa hai danh sách, hoặc dùng nút chèn ở cuối hàng.",
+    "insertBefore": "Chèn các danh sách đang giữ trước “{{title}}”",
+    "dragCount": "Di chuyển {{count}} danh sách",
+    "dragSong": "Kéo danh sách này hoặc các danh sách đã chọn",
+    "songCount": "{{count}} danh sách",
+    "list": "Thứ tự danh sách phát",
+    "edit": "Sắp xếp danh sách phát"
+  },
+  "foliaTransfer": {
+    "playViaPartlyFailedNote": "Chưa hỏi được {{source}} về {{count}} bài (hết thời gian hoặc lỗi); các bài này giữ nguyên.",
+    "savedViaPartly": "Đã lưu thành danh sách phát Folia “{{name}}”: {{count}} bài, {{swapped}} bài nay phát qua {{source}}, {{kept}} bài giữ nguồn gốc ({{failed}} bài trong đó chưa hỏi được)",
+    "noPlaylistCreated": "Không có danh sách phát nào được tạo.",
+    "nothingSavable": "Không bài nào trong {{count}} bài ở đây có thể đưa vào danh sách phát",
+    "saved_one": "Đã lưu thành playlist Folia “{{name}}” ({{count}} bài)",
+    "refreshedNoNewDetached": "“{{name}}” không có bài mới; {{detached}} bài không còn trong bản gốc vẫn được giữ",
+    "refreshedAddedDetached": "Đã cập nhật “{{name}}”: thêm {{count}} bài; {{detached}} bài không còn trong bản gốc vẫn được giữ",
+    "playViaRetryNote": "Lần cập nhật từ bản gốc tiếp theo sẽ thử lại.",
+    "savedNotAsked": "Đã lưu thành playlist Folia “{{name}}”: {{count}} bài, tất cả giữ nguồn gốc — không hỏi được {{source}} ({{reason}})",
+    "savedVia": "Đã lưu thành playlist Folia “{{name}}”: {{count}} bài, {{swapped}} bài nay phát qua {{source}}, {{kept}} bài giữ nguồn gốc",
+    "saveAction": "Lưu thành danh sách phát Folia",
+    "refreshAction": "Cập nhật từ bản gốc",
+    "saveTitle": "Lưu thành danh sách phát Folia",
+    "refreshTitle": "Cập nhật từ bản gốc",
+    "saveConfirm": "Lưu",
+    "refreshConfirm": "Cập nhật",
+    "fileOriginNotice": "Nguồn gốc của danh sách phát này được ghi trong tệp đã nhập; Folia chưa kiểm tra. Cập nhật sẽ đọc danh sách phát “{{name}}” (ID: {{id}}) từ {{source}} và thêm các bài mới. Bạn chỉ được hỏi lần này.",
+    "fileOriginConfirm": "Xác nhận và cập nhật",
+    "nameLabel": "Tên danh sách phát",
+    "playViaLabel": "Phát qua",
+    "playViaKeep": "Giữ nguồn gốc ({{source}})",
+    "playViaTarget": "Phát qua {{source}}",
+    "playViaHint": "Chỉ đổi những bài có bản tương ứng chính xác; số còn lại giữ nguồn gốc.",
+    "refreshHint": "Bài mới trong bản gốc sẽ được thêm vào. Bài không còn ở đó và bài bạn tự thêm vẫn nằm trong danh sách phát này.",
+    "fromPlaylist": "Từ danh sách phát “{{name}}” của {{source}}",
+    "fromAlbum": "Từ album “{{name}}” của {{source}}",
+    "savedAt": "đã lưu {{time}}",
+    "refreshedAt": "cập nhật lần cuối {{time}}",
+    "playedVia": "do {{source}} phát",
+    "targetNotRegistered": "chưa được cài hoặc chưa bật",
+    "targetSwitchedOff": "đã tắt",
+    "targetNotConfigured": "chưa thiết lập xong: hãy hoàn tất trong Cài đặt → Nguồn trước",
+    "targetUnsupported": "không thể đối chiếu bài hát của nguồn này",
+    "targetFailed": "hết thời gian hoặc lỗi",
+    "playViaNotAsked": "Không hỏi được {{source}} ({{reason}}).",
+    "saved": "Đã lưu thành danh sách phát Folia “{{name}}” ({{count}} bài)",
+    "savedNothing": "Không có bài hát nào để lưu",
+    "duplicatesNote": "{{count}} bài lặp trong bản gốc chỉ được lưu một lần.",
+    "originEmpty": "Bản gốc trả về rỗng; “{{name}}” được giữ nguyên",
+    "refreshedAdded": "Đã cập nhật “{{name}}”: thêm {{count}} bài",
+    "refreshedNoNew": "“{{name}}” không có bài mới từ bản gốc",
+    "swappedNote": "{{count}} bài nay do {{source}} phát.",
+    "originSourceMissing": "{{source}} chưa được cài hoặc chưa bật nên không thể đọc bản gốc",
+    "originSourceOff": "{{source}} đã bị tắt nên không thể đọc bản gốc",
+    "originReadFailed": "Không thể đọc bản gốc từ {{source}}",
+    "originReadFailedNote": "Có thể bạn chưa đăng nhập, hoặc bản gốc không còn tồn tại. Không có gì bị thay đổi.",
+    "nothingWritten": "Không có gì bị thay đổi.",
+    "failed": "Không thể hoàn tất",
+    "reading": "Đang đọc bản gốc từ {{source}}…",
+    "readingProgress": "Đang đọc bản gốc… {{loaded}} / {{total}} bài",
+    "readingCount": "Đang đọc bản gốc… {{loaded}} bài",
+    "asking": "Đang hỏi {{source}} về bài hát tương ứng… (tối đa khoảng một phút)",
+    "writing": "Đang lưu…",
+    "swappedFrom": "Vốn là bài hát của {{source}}; nay phát từ nguồn khác",
+    "swappedFromUnknown": "Đã đổi từ nguồn khác khi lưu danh sách phát này"
+  },
+  "localPlaylistOrder": {
+    "edit": "Sắp xếp lại bài hát",
+    "list": "Thứ tự bài hát",
+    "songCount_one": "{{count}} bài hát",
+    "songCount_other": "{{count}} bài hát",
+    "dragSong": "Kéo để di chuyển bài hát này hoặc các bài hát đã chọn",
+    "dragCount": "Di chuyển {{count}}",
+    "insertBefore": "Chèn nhóm bài hát tạm giữ trước {{title}}",
+    "insertStart": "Chèn vào đầu",
+    "insertEnd": "Chèn vào cuối",
+    "stageTitle": "Khu tạm giữ",
+    "dragGroup": "Kéo cả nhóm vào danh sách",
+    "insertHint": "Kéo cả nhóm vào giữa hai bài hát hoặc dùng nút chèn ở cuối dòng.",
+    "stageHint": "Đưa các bài hát đã chọn vào đây, rồi chèn cả nhóm vào vị trí mong muốn.",
+    "listEmpty": "Tất cả bài hát đang tạm giữ. Hãy chèn chúng trở lại.",
+    "finishStaging": "Chèn lại các bài hát đang tạm giữ vào danh sách trước khi lưu.",
+    "unsaved": "Đã đổi thứ tự, chưa lưu",
+    "selectAll": "Chọn tất cả",
+    "selectedCount": "Đã chọn {{count}}",
+    "stageSelected": "Tạm giữ",
+    "sort": "Sắp xếp theo tên",
+    "sortTitle": "Sắp xếp toàn bộ danh sách phát theo tên bài hát?",
+    "sortNotice": "Sắp xếp toàn bộ {{count}} bài hát, kể cả các bài đang tạm giữ, theo tên từ A đến Z? Sau khi lưu sẽ không thể hoàn tác.",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "changed": "Danh sách phát đã thay đổi. Hãy mở lại trình chỉnh sửa để tải thứ tự mới nhất.",
+    "failed": "Không thể lưu thứ tự. Hãy thử lại.",
+    "saving": "Đang lưu…"
   },
   "localCollectionCover": {
     "menuLabel": "Đặt ảnh bìa",
@@ -5175,20 +6912,7 @@ export default {
     "restoreServerPresetFailed": "Không thể kết nối cấu hình máy chủ sẵn có. Thử lại sau.",
     "cloudDrive": "Ổ đĩa đám mây",
     "cloudDriveDesc": "Ổ đĩa NetEase Cloud Music",
-    "qqCloudDriveDesc": "Ổ nhạc đám mây Weiyun",
-  },
-  "fnmusic": {
-    "serverUrl": "Địa chỉ máy chủ",
-    "serverUrlPlaceholder": "vd: http://192.168.1.10:5666 hoặc FN ID thuần (vd: mynas)",
-    "username": "Tài khoản",
-    "usernamePlaceholder": "Tài khoản fnOS Music hoặc tài khoản NAS",
-    "password": "Mật khẩu",
-    "login": "Đăng nhập",
-    "loginNote": "Nhập địa chỉ máy chủ fnOS Music (địa chỉ LAN hoặc FN ID thuần), tài khoản và mật khẩu",
-    "errorBadCredentials": "Sai tài khoản hoặc mật khẩu",
-    "errorNetwork": "Không thể kết nối máy chủ. Kiểm tra địa chỉ và kết nối của bạn.",
-    "errorBadResponse": "Máy chủ trả về phản hồi không nhận dạng được",
-    "errorBadServerUrl": "Địa chỉ máy chủ không hợp lệ, ví dụ: http://192.168.1.10:5666"
+    "qqCloudDriveDesc": "Ổ nhạc đám mây Weiyun"
   },
   "hifi": {
     "settings": {
@@ -5253,7 +6977,7 @@ export default {
       "navidrome": "Bài hát Navidrome cũng dùng mpv",
       "navidromeDesc": "Lấy tệp gốc từ máy chủ, không chuyển mã. Khi tắt, bài hát Navidrome dùng Web Audio.",
       "softwareVolume": "Âm lượng phần mềm",
-      "softwareVolumeDesc": "Để thanh âm lượng trong Folia điều chỉnh âm lượng của mpv. Khi đó đường tín hiệu không còn bit-perfect.",
+      "softwareVolumeDesc": "Để thanh âm lượng trong Folia điều chỉnh âm lượng của mpv. Khi đó đường tín hiệu không còn bit-perfect."
     },
     "player": {
       "badge": "HiFi · {{verdict}}",
@@ -5429,7 +7153,7 @@ export default {
   },
   "unifiedPanel": {
     "nowPlayingStageDescription": "Now Playing do trình phát ngoài điều khiển. Folia chỉ hiển thị lời bài hát và hiệu ứng thị giác.",
-    "stageLocalInputDescription": "Stage đang ở chế độ nhập nội bộ đơn luồng. Thiết bị ngoài có thể đẩy lời hoặc phương tiện, nhưng Folia sẽ tự kiểm soát phát và hiển thị.",
+    "stageLocalInputDescription": "Stage đang ở chế độ nhập nội bộ đơn luồng. Thiết bị ngoài có thể đẩy lời hoặc phương tiện, nhưng Folia sẽ tự kiểm soát phát và hiển thị."
   },
   "libraryBravaisArtist": {
     "allSongsCountUnit_one": "bài hát",
@@ -5467,7 +7191,7 @@ export default {
     "topSongsAddedToQueue_other": "Đã thêm {{count}} bài nổi bật vào hàng đợi phát",
     "noTopSongsToQueue": "Không có bài hát nổi bật để thêm vào hàng đợi",
     "allSongs": "Tất cả bài hát",
-    "allSongsCollectionName": "Tất cả bài hát của {{artistName}}",
+    "allSongsCollectionName": "Tất cả bài hát của {{artistName}}"
   },
   "obs": {
     "connecting": "Đang kết nối Folia",
@@ -5551,6 +7275,17 @@ export default {
       "description": "Nút Phát chỉ bắt đầu phát nhạc. Bạn vẫn ở lại thư viện, thẻ bài hát chuyển thành tạm dừng / tiếp tục."
     }
   },
+  "sourcesOnboarding": {
+    "title": "Bạn nghe nhạc trên những nền tảng nào?",
+    "description": "Đánh dấu các nền tảng bạn dùng. Nền tảng không đánh dấu sẽ bị ẩn, và nền tảng đã tắt không chạy nền; không chọn nền tảng nào thì nhạc cục bộ vẫn phát.",
+    "nameSeparator": ", ",
+    "noticeSeparator": ": ",
+    "matchingNote_one": "{{names}} vẫn chạy nền dù không đánh dấu, chỉ để tìm lời bài hát và thông tin cho bài hát cục bộ.",
+    "matchingNote_other": "{{names}} vẫn chạy nền dù không đánh dấu, chỉ để tìm lời bài hát và thông tin cho bài hát cục bộ.",
+    "settingsHint": "Có thể đổi sau tại Tùy chọn → Nguồn.",
+    "navidromeNote": "Navidrome là máy chủ nhạc do bạn tự dựng. Nó không có trong danh sách này; hãy kết nối trong Cài đặt.",
+    "navidromeButton": "Kết nối trong Cài đặt"
+  },
   "librarySuiteOnboarding": {
     "title": "Giao diện thư viện mong muốn?",
     "description": "Trang chủ, danh sách phát, album và nghệ sĩ đều duyệt theo giao diện bạn chọn ở đây. Cả hai đều đủ tính năng, chỉ khác cách duyệt.",
@@ -5619,81 +7354,6 @@ export default {
       "subtitle": "Tận hưởng hành trình âm nhạc cùng Folia."
     }
   },
-  "soloist": {
-    "method": {
-      "standard": "Tiêu chuẩn",
-      "standardNote": "Đăng nhập Spotify trong trình duyệt; Folia tự phát bài hát. Bộ cân bằng, Automix và các hiệu ứng theo nhạc đều hoạt động.",
-      "soloist": "Soloist",
-      "soloistNote": "Đăng nhập Spotify trong trình duyệt; chương trình Soloist chính thức của Spotify phát bài hát. Dành cho tài khoản không nhận được khóa âm thanh. Soloist được tải riêng, và khóa API của nó được tạo bằng tài khoản Premium."
-    },
-    "setup": {
-      "title": "Thiết lập Spotify Soloist",
-      "note": "Soloist là trình phát chính thức của Spotify, một chương trình trên máy này tự gửi âm thanh ra đầu ra của hệ thống; Folia điều khiển nó và theo vị trí của nó để hiện lời bài hát. Bộ cân bằng, Automix và các hiệu ứng theo nhạc của Folia không xử lý âm thanh của nó.",
-      "titleStandard": "Cách Spotify phát nhạc",
-      "noteStandard": "Hiện Folia tự phát bài hát Spotify. Nếu tài khoản này không nhận được khóa âm thanh và bài hát không phát được, bạn có thể chuyển sang Soloist chính thức của Spotify."
-    },
-    "noKey": {
-      "title": "Tài khoản này không nhận được khóa âm thanh từ Spotify",
-      "note": "Spotify không cấp khóa âm thanh cho tài khoản này, nên cách phát của Folia không phát được bài hát của nó (thường gặp với tài khoản tạo từ cuối năm 2024). Bạn có thể phát qua Soloist chính thức của Spotify: tải chương trình Soloist, tạo khóa API bằng tài khoản Premium, rồi chọn thiết bị một lần trong ứng dụng Spotify. Danh sách phát, lời bài hát và tìm kiếm không bị ảnh hưởng."
-    },
-    "step": {
-      "program": "Chương trình Soloist",
-      "key": "Khóa API",
-      "pair": "Ghép nối thiết bị",
-      "modeStandard": "Cách phát: tiêu chuẩn",
-      "modeSoloist": "Cách phát: Soloist"
-    },
-    "mode": {
-      "standardNote": "Folia tự phát bài hát Spotify.",
-      "soloistNote": "Soloist phát bài hát Spotify.",
-      "noKeyNote": "Cách phát của Folia không phát được bài hát của tài khoản này."
-    },
-    "program": {
-      "todo": "Tải Soloist cho máy này từ trang của Spotify, giải nén rồi chọn chương trình soloist bên trong (soloist.exe trên Windows). Folia không kèm theo chương trình này.",
-      "valid": "Phiên bản {{version}}, chạy đến {{expires}} (còn {{days}} ngày).",
-      "expiring": "Phiên bản {{version}} sẽ ngừng chạy sau {{days}} ngày ({{expires}}). Mỗi bản dựng chạy được 90 ngày: hãy tải bản mới, giải nén rồi chọn lại.",
-      "unknown": "Phiên bản {{version}}. Không đọc được ngày của bản dựng này nên không biết khi nào nó ngừng chạy. Mỗi bản dựng chạy được 90 ngày; sau đó Soloist từ chối khởi động.",
-      "clock": "Ngày của bản dựng này muộn hơn đồng hồ của máy: có thể đồng hồ sai, và không tính được số ngày còn lại.",
-      "expired": "Bản dựng này đã hết hạn ({{expires}}) và Soloist sẽ không khởi động. Hãy tải bản mới, giải nén rồi chọn lại.",
-      "missing": "Không còn thấy chương trình đã chọn trước đó; có thể nó đã bị di chuyển hoặc xóa. Hãy chọn lại.",
-      "invalid": "Tệp đã chọn không phải chương trình Soloist chạy được. Hãy chọn tệp khác."
-    },
-    "key": {
-      "label": "Khóa API Soloist",
-      "todo": "Mở bảng điều khiển nhà phát triển của Spotify bằng tài khoản Premium, tạo khóa API Soloist rồi nhập vào bên dưới. Khóa được lưu trên máy này, niêm phong bằng chuỗi khóa của hệ thống. Soloist chỉ nhận khóa qua dòng lệnh, nên người dùng khác của máy này có thể thấy nó trong danh sách tiến trình khi nó chạy.",
-      "saved": "Khóa đã được lưu và niêm phong. Soloist chỉ nhận khóa qua dòng lệnh, nên người dùng khác của máy này có thể thấy nó trong danh sách tiến trình khi nó chạy.",
-      "locked": "Hiện không mở được chuỗi khóa của hệ thống nên không đọc được khóa đã lưu. Hãy mở khóa rồi nhấn Kết nối lại.",
-      "noKeychain": "Máy này không có chuỗi khóa hệ thống để niêm phong khóa (ví dụ basic_text trên Linux), nên khóa không được lưu.",
-      "unreadable": "Không đọc được khóa đã lưu (có thể do tài khoản hệ thống hoặc chuỗi khóa khác). Hãy nhập lại."
-    },
-    "pair": {
-      "done": "Đã ghép nối: sẵn sàng phát.",
-      "waiting": "Hãy làm xong hai bước ở trên trước.",
-      "todo": "Trong ứng dụng Spotify trên cùng mạng (điện thoại hoặc máy tính), mở danh sách thiết bị và chọn \"Folia\". Chỉ cần một lần: sau đó nó tự đăng nhập.",
-      "starting": "Soloist chưa khởi động.",
-      "startFailed": "Soloist không khởi động được. Hãy kiểm tra chương trình và khóa, rồi nhấn Kết nối lại."
-    },
-    "action": {
-      "useStandard": "Phát theo cách tiêu chuẩn",
-      "useSoloist": "Phát qua Soloist",
-      "pick": "Chọn chương trình đã tải",
-      "pickAgain": "Chọn lại",
-      "download": "Trang tải chính thức",
-      "keyPage": "Mở bảng điều khiển nhà phát triển",
-      "saveKey": "Lưu khóa",
-      "reconnect": "Kết nối lại"
-    },
-    "message": {
-      "picked": "Đã chọn chương trình.",
-      "pickedExpired": "Bản dựng đó đã hết hạn nên không được dùng. Hãy tải bản mới.",
-      "pickedInvalid": "Tệp đó không phải chương trình Soloist chạy được nên không được dùng.",
-      "keySaved": "Đã lưu khóa.",
-      "keychain": "Chuỗi khóa hệ thống không khả dụng; khóa chưa được lưu.",
-      "keyShape": "Đó không phải khóa: khóa là một chuỗi ký tự liền, không có dấu cách.",
-      "startFailed": "Soloist không khởi động được.",
-      "failed": "Thao tác không thành công; nhật ký vận hành có ghi lý do."
-    }
-  },
   "remote": {
     "backgroundDefault": "Hình nền mặc định",
     "backgroundCover": "Màu bìa",
@@ -5713,7 +7373,7 @@ export default {
     "through": "Xuyên thấu",
     "pin": "Ghim",
     "pinUnavailable": "Không thể ghim trên cùng trên Wayland. Hãy sử dụng quy tắc cửa sổ của môi trường màn hình (ví dụ: «Giữ trên các cửa sổ khác» của KDE)",
-    "openSettings": "Cài đặt điều khiển từ xa",
+    "openSettings": "Cài đặt cửa sổ điều khiển",
     "portrait": "Dọc",
     "landscape": "Ngang",
     "square": "Vuông",
@@ -5727,6 +7387,19 @@ export default {
     "stopAndSave": "Dừng & Lưu",
     "cancel": "Hủy",
     "startRecording": "Bắt đầu ghi",
+    "startRendering": "Xuất trong suốt",
+    "rowFormat": "Định dạng",
+    "rowBackground": "Nền",
+    "exportOpaque": "Không trong suốt",
+    "exportTransparent": "Trong suốt",
+    "opaqueNote": "Ghi cửa sổ, có tiếng",
+    "tools": "Công cụ",
+    "formatProres": "ProRes",
+    "formatVp9": "VP9",
+    "formatQtrle": "Animation",
+    "rendering": "Đang kết xuất",
+    "alphaNeedsFfmpeg": "Trong suốt cần ffmpeg",
+    "alphaNeedsFfmpegHint": "Xuất trong suốt cần bản ffmpeg đầy đủ cài trên máy này. Chọn trong Cài đặt → Điều khiển từ xa → Xuất video trong suốt.",
     "saved": "Đã lưu",
     "error": "Lỗi",
     "saving": "Đang lưu...",
@@ -5760,7 +7433,7 @@ export default {
     "sizeCustom": "Tùy chỉnh",
     "save": "Lưu",
     "recording": "Đang ghi hình",
-    "startingSoon": "Sắp bắt đầu",
+    "startingSoon": "Sắp bắt đầu"
   },
   "aiHelp": {
     "openButton": "Cần trợ giúp?",
@@ -6246,7 +7919,7 @@ export default {
       },
       "lyricsAnimation": {
         "panel": "Cài đặt · Hiệu ứng lời bài hát",
-        "entry": "Kiểu hiệu ứng lời bài hát",
+        "entry": "Kiểu hiệu ứng lời bài hát"
       },
       "themeSettings": {
         "panel": "Cài đặt · Chủ đề cài sẵn",
@@ -6520,7 +8193,7 @@ export default {
       "localFolderActionsDelete": "Nút màu đỏ dùng để xóa",
       "localMetadataMatchReveal": "Biểu tượng bút chì và 3 điều kiện",
       "localTrackSortingFields": "Chỉ sắp xếp được thư mục nội bộ",
-      "localGridControlsSources": "Thư mục, album, nghệ sĩ và danh sách phát nội bộ",
+      "localGridControlsSources": "Thư mục, album và nghệ sĩ",
       "localGridControlsMaintenance": "Nhập và làm mới thư viện nội bộ",
       "onlineCollectionActionsCommon": "Thao tác chung cho bộ sưu tập trực tuyến",
       "onlineCollectionActionsProvider": "Thao tác phụ thuộc nguồn hiện tại",
@@ -6608,9 +8281,9 @@ export default {
         "collectionAbout": "Dưới tiêu đề lớn là mô tả của cấp này: giới thiệu danh sách hoặc ghi chú album. Trên trang nghệ sĩ có ảnh, tên và tiểu sử, trình bày như tập giới thiệu. Đoạn văn dài sẽ bị cắt bớt; nhấp để mở rộng.",
         "collectionActions": "Phát tất cả, thêm vào hàng đợi, và biểu tượng sao ở cuối hàng để yêu thích (chỉ với bộ sưu tập hỗ trợ yêu thích). Trên trang nghệ sĩ, hai mục này tác động lên bài hát nổi bật.",
         "collectionList": "“Danh sách” mở rộng thanh thành danh sách bài hát, và thanh điều hướng thêm cấp “Danh sách”. Rê chuột vào một hàng để làm sáng mọi bản sao của bài hát đó trên không gian album; nhấp để chuyển tới, nhấp đúp để phát. Quay lại sẽ đóng danh sách trước.",
-        "homeTabs": "Tại trang chủ, thanh thông tin là một dải hẹp: “Thư viện” cùng nút thu gọn ở trên cùng, bên dưới là các thẻ dọc: Danh sách phát, Radio, Album, Nội bộ, Navidrome.",
+        "homeTabs": "Tại trang chủ, thanh thông tin là một dải hẹp: “Thư viện” cùng nút thu gọn ở trên cùng, bên dưới là các thẻ cấp một viết dọc: Folia, nguồn trực tuyến hiện tại, Nội bộ, Navidrome. Thẻ trực tuyến mang tên của nguồn hiện tại; đổi nguồn ở phần tài khoản.",
         "homeFlip": "Chuyển thẻ sẽ lật toàn bộ thanh thông tin và đổi toàn bộ không gian sang thẻ đó. Trên bàn phím, dùng F6 / Shift + F6 để chuyển qua lại giữa các thẻ.",
-        "homeSections": "Mục Nội bộ và Navidrome có thêm một cột phân mục (thư mục, album, nghệ sĩ, danh sách phát…). Chỉ mục được chọn mới hiện tên; các mục còn lại là biểu tượng, rê chuột để xem tên đầy đủ. Chuyển đổi sẽ đổi nội dung hiển thị mà không mở cấp mới.",
+        "homeSections": "Mỗi nhóm có thêm một cột thẻ cấp hai bên dưới: danh sách phát, radio, khám phá và album của nguồn trực tuyến; thư mục, album, nghệ sĩ, danh sách phát… của Nội bộ và Navidrome. Chỉ mục được chọn mới hiện tên; các mục còn lại là biểu tượng, rê chuột để xem tên đầy đủ.",
         "homeShortcuts": "Các chữ dọc nhỏ bên dưới là lối tắt: Bài hát yêu thích, FM cá nhân, Tất cả bài hát… Nhấp vào tương tự như nhấp thẻ trong không gian album; FM cá nhân sẽ phát ngay lập tức. Khi hết chỗ, chúng được chuyển vào “⋯”.",
         "dockAccount": "Ngay phía trên lưới công cụ là lối vào tài khoản: ảnh đại diện và tên khi đã đăng nhập, hoặc “Kết nối dịch vụ phát nhạc” khi chưa đăng nhập.",
         "dockTools": "Bốn ô dưới cùng: tìm kiếm nền tảng trực tuyến, cài đặt, hàng đợi poster (vào Lattice) và “⋯”.",
@@ -6627,7 +8300,7 @@ export default {
         "noMode": "Folia không có chế độ phát ngẫu nhiên truyền thống và nút lặp lại không chuyển sang chế độ này. Để nghe ngẫu nhiên, chỉ cần xáo trộn hàng đợi hiện tại.",
         "once": "Xáo trộn là thao tác một lần: hàng đợi hiện tại được sắp xếp lại trực tiếp và phát theo thứ tự mới. Xáo trộn lần nữa để đổi thứ tự khác.",
         "command": "Cách nhanh nhất là dùng lệnh: khi đóng cửa sổ lệnh và không trỏ vào ô nhập, nhấn phím hai chấm để vào chế độ thực thi, rồi nhấn r. Bạn cũng có thể tìm \"Xáo trộn hàng đợi\" trong cửa sổ lệnh.",
-        "slot": "Nếu hay dùng, chọn \"Xáo trộn hàng đợi\" trong mục \"Nút thanh tiến trình\" ở Cài đặt · Cài đặt chung để thêm nút xáo trộn vào thanh điều khiển.",
+        "slot": "Nếu hay dùng, kéo \"Xáo trộn hàng đợi\" lên một nút hoặc lên đảo nút trong mục \"Nút thanh tiến trình\" ở Cài đặt · Cài đặt chung để thêm nút xáo trộn vào thanh điều khiển.",
         "panel": "Trong tab hàng đợi ở bảng bên phải, nút ngoài cùng bên phải ở trên cùng cũng xáo trộn hàng đợi.",
         "pinSlot": "Trong Cài đặt · Cài đặt chung, đặt \"Xáo trộn hàng đợi\" vào ô bất kỳ dưới mục \"Lệnh đã ghim\".",
         "pinRow": "Lệnh sẽ cố định ở đáy cửa sổ lệnh, chỉ cần một lần nhấp mỗi khi mở cửa sổ."
@@ -6747,7 +8420,7 @@ export default {
         "gridNavigation": "Cuộn, vuốt hoặc dùng phím mũi tên để di chuyển giữa các thẻ, sau đó chọn thẻ đang tiêu điểm để mở.",
         "gridSearch": "Gõ phím khi lưới đang hoạt động để lọc nội dung trên trang này. Escape để đóng bộ lọc.",
         "gridHelp": "Biểu tượng bánh răng mở Trợ giúp. Khi có bản cập nhật, huy hiệu thông báo cũng hiện tại đây. Trợ giúp chứa ghi chú phát hành và mục Khám phá cho trang trợ giúp.",
-        "gridTabs": "Các tab ở giữa chuyển đổi danh sách phát, radio, album, nhạc nội bộ, Navidrome và Stage. Lattice chỉ xuất hiện khi có hàng đợi phát.",
+        "gridTabs": "Hàng ở giữa là các tab cấp một: Folia, nguồn trực tuyến hiện tại, nhạc nội bộ, Navidrome và Stage; danh sách phát, radio, khám phá và album của nguồn trực tuyến nằm trong viên nhỏ bên dưới. Tab trực tuyến mang tên của nguồn hiện tại; đổi nguồn ở phần tài khoản. Lattice chỉ xuất hiện khi có hàng đợi phát.",
         "gridSearchBox": "Ô bên phải tìm bài hát trong nguồn hiện tại. Enter mở không gian tìm kiếm; ô này không lọc poster bộ sưu tập bên dưới.",
         "gridTabResult": "Chuyển tab sẽ đổi thanh trượt 3D sang bộ sưu tập của nguồn đó và ghi nhớ vị trí tiêu điểm gần nhất cho từng nguồn.",
         "gridSourceActions": "Các nút điều khiển này chỉ hiện khi nguồn yêu cầu: thao tác nhập và làm mới nội bộ, nhập tệp danh sách phát hoặc tải lại thư viện máy chủ.",
@@ -6968,9 +8641,9 @@ export default {
         "confirm": "Hệ thống sẽ xác nhận trước với hai mức: gỡ thư mục gốc khác với gỡ thư mục con, hộp thoại sẽ nêu rõ phạm vi tác động. Nên đọc kỹ trước khi bấm."
       },
       "localGridControls": {
-        "sources": "Hàng này chuyển đổi thư viện nội bộ giữa thư mục, album, nghệ sĩ và danh sách phát nội bộ. Nó đổi nội dung trên thanh Grid3D, không chuyển sang nguồn trực tuyến.",
-        "foldersAndPlaylists": "Thư mục giữ nguyên cấu trúc khi nhập. Danh sách phát nội bộ do Folia lưu trữ, độc lập với danh sách phát trực tuyến và Navidrome.",
-        "imports": "Nhập thư mục thêm nhạc từ một đường dẫn. Nhập danh sách phát đọc tệp M3U hoặc M3U8 và tạo danh sách phát nội bộ từ các bản nhạc Folia nhận diện được.",
+        "sources": "Hàng này chuyển thư viện cục bộ giữa thư mục, album và nghệ sĩ. Nó thay đổi nội dung của dải Grid3D, không chuyển sang nguồn trực tuyến.",
+        "foldersAndPlaylists": "Thư mục giữ nguyên cấu trúc khi nhập. Danh sách phát không nằm ở đây: chúng ở thẻ Folia trên trang chủ, nơi bài hát cục bộ và bài hát từ mọi nguồn có thể nằm chung một danh sách.",
+        "imports": "Nhập thư mục thêm nhạc từ một đường dẫn. Nhập danh sách phát M3U hoặc M3U8 nằm ở thẻ Folia trên trang chủ.",
         "refresh": "Làm mới sẽ quét lại các thư mục gốc đã nhập để tìm tệp mới, thay đổi hoặc bị thiếu. Thao tác không tạo thêm bản sao thư viện."
       },
       "onlineCollectionActions": {
@@ -6979,10 +8652,10 @@ export default {
         "destructive": "Nút xóa hoặc gỡ bỏ chỉ xuất hiện khi nguồn hỗ trợ và bộ sưu tập cho phép chỉnh sửa. Thao tác tác động lên bộ sưu tập từ xa hoặc máy chủ, không ảnh hưởng tệp âm thanh nội bộ."
       },
       "localGridMap": {
-        "page": "Đây là GridMap của thư viện nội bộ. Bản đồ trải các thư mục, album, nghệ sĩ hoặc danh sách phát hiện tại thành dạng tổ ong thay vì một thanh Grid3D duy nhất.",
+        "page": "Đây là GridMap của thư viện cục bộ. Nó xếp các thư mục, album hoặc nghệ sĩ hiện tại thành một tổ ong thay vì một dải Grid3D.",
         "cards": "Kéo hoặc cuộn chuột để di chuyển trên bản đồ. Nhấp vào thẻ sẽ quay lại Grid3D và tiêu điểm vào bộ sưu tập đó; kích hoạt thẻ để mở trực tiếp.",
-        "openPanel": "Bản đồ thư mục, album và nghệ sĩ có thể mở chọn hàng loạt từ tiêu đề: thư mục hiển thị cây thư mục, album và nghệ sĩ hiển thị danh sách phẳng. Bản đồ danh sách phát chỉ hỗ trợ duyệt.",
-        "batchActions": "Bảng điều khiển chuyển các mục đã chọn thành bài hát. Bạn có thể phát, thêm vào hàng đợi, tạo danh sách phát nội bộ và (ở bản đồ thư mục) xóa các bản ghi thư viện đã chọn.",
+        "openPanel": "Bản đồ có thể mở chọn hàng loạt từ tiêu đề: thư mục hiển thị cây thư mục, còn album và nghệ sĩ hiển thị danh sách phẳng.",
+        "batchActions": "Bảng chuyển các bộ sưu tập đã chọn thành bài hát. Bạn có thể phát, thêm vào hàng chờ, tạo danh sách phát Folia và—trên bản đồ thư mục—xóa các bản ghi thư viện đã chọn.",
         "filter": "{{mod}} + F hoặc gõ phím để lọc bản đồ. Chọn hàng loạt và cây thư mục sẽ bám theo các thẻ đã lọc, nên thao tác chỉ ảnh hưởng đến phần đang hiển thị.",
         "back": "Quay lại đóng GridMap và đưa bạn về danh mục cùng vị trí tiêu điểm Grid3D nội bộ trước đó."
       },
@@ -7020,14 +8693,13 @@ export default {
         "settings": "Nút trên cùng bên trái mở Cài đặt. Nhấn vào sẽ thu gọn bảng trước, sau đó mở cửa sổ cài đặt phủ lên trang.",
         "home": "Nút dưới cùng bên trái quay lại trang chủ thư viện, cũng thu gọn bảng trước. Nhạc vẫn tiếp tục phát.",
         "addToPlaylist": "Nút ngôi sao lưu bài hát này vào danh sách phát; dòng đầu tiên là Bài hát đã thích (trái tim). Nút sẽ mờ đi khi nguồn không hỗ trợ cả danh sách phát lẫn thích, và hiển thị lý do khi rê chuột.",
-
         "like": "Trái tim là thích bài hát này. Khi nguồn hiện tại không hỗ trợ, nút này sẽ mờ đi và rê chuột vào sẽ hiển thị lý do.",
         "playingFrom": "Khi hàng đợi được bắt đầu từ danh sách phát hoặc album, một nút có tên nguồn sẽ xuất hiện tại đây: nhấp vào để quay lại trang đó và tìm bài hát. Nút này sẽ biến mất khi hàng đợi chuyển sang các bài hát khác."
       },
       "lyricsAnimation": {
         "where": "Hiệu ứng chuyển động lời không đổi ở trang phát nhạc, mà nằm trong Cài đặt · Giao diện mục \"Hiệu ứng lời\", và hàng trên cùng này là lối vào.",
         "playground": "Mục này mở không gian tinh chỉnh hiệu ứng toàn màn hình. Khung lớn bên trái xem trước trực tiếp giao diện hiển thị; cột hẹp bên phải là phần cài đặt.",
-        "playgroundSections": "Kiểu hiệu ứng được chọn ở hàng mẫu dưới phần xem trước. Cột bên phải có năm trang: Lời bài hát, Hình nền, Chung, Phụ đề, Cài đặt chung; trang Lời bài hát chứa các thiết lập của kiểu bạn đã chọn.",
+        "playgroundSections": "Kiểu hiệu ứng được chọn ở hàng mẫu dưới phần xem trước. Cột bên phải có năm trang: Lời bài hát, Hình nền, Chung, Phụ đề, Cài đặt chung; trang Lời bài hát chứa các thiết lập của kiểu bạn đã chọn."
       },
       "themeSettings": {
         "presetDefault": "Bên trái là cài đặt sẵn tích hợp, Mực / Trắng: một chấm chuyển màu nhỏ trên nhãn, tự đổi giữa sáng và tối theo chế độ giao diện.",
@@ -7074,16 +8746,154 @@ export default {
         "notQueue": "Thêm vào sổ ghi nhanh không đụng đến hàng đợi phát; bài đang phát vẫn tiếp tục. Một dấu nhỏ, mờ luôn nằm ở phần trên mép trái; đưa chuột tới đó, nó mở ra thành nhãn giấy cho thấy số bài bên trong. Có thể đổi kiểu dấu trong Cài đặt.",
         "otherWays": "Với bài đang phát, nhấn : để vào chế độ thực thi rồi nhấn S. Ở trang bộ sưu tập, “Thêm tất cả vào sổ ghi nhanh” lấy các bài của trang đó một lần, chỉ những bài đã lọc khi đang lọc: ở Grid nằm trong bảng thông tin, ở Bravais nằm trong “⋯ Thêm” của dải thông tin.",
         "open": "Nhấn tay nắm, hoặc nhấn {{mod}} + J, để mở sổ ghi nhanh; trong chế độ thực thi là J. Nhấn lần nữa để đóng.",
+        "handleDrag": "Giữ tay nắm (hoặc giữ và kéo lên / xuống) để di chuyển; thả ở độ cao phù hợp thì lưu vào cài đặt \"vị trí thẻ\", lần sau vẫn ở đó.",
         "groups": "Bài hát được nhóm theo nguồn: mỗi nền tảng trực tuyến một nhóm, tệp cục bộ một nhóm, Navidrome một nhóm. Bài được lấy từ đâu (danh sách nào, lần tìm kiếm nào) ghi sau tên nghệ sĩ.",
         "groupActions": "Bên phải đầu nhóm: “Thêm nhóm này vào hàng đợi” và “Thêm nhóm này vào danh sách phát…”. Một danh sách phát chỉ nhận bài từ một nguồn; vì đã nhóm theo nguồn, cả nhóm vừa vặn một danh sách.",
         "rowActions": "Rê chuột lên một dòng để thấy: phát trong hàng đợi, thêm vào hàng đợi, thêm vào danh sách phát, và bỏ ra khỏi sổ. Bài vẫn ở lại sau khi đã vào hàng đợi hay danh sách phát; không cần nữa thì tự bỏ ra.",
         "footer": "Hàng phía trên các dải giấy: thêm tất cả vào hàng đợi, thay hàng đợi bằng sổ ghi nhanh, và xóa sạch. Xóa sạch cần nhấn hai lần.",
         "history": "“Lịch sử phát” trên dải giấy ở dưới cùng là trang thứ hai (bấm vào thì nó lên đầu, sổ ghi nhanh xuống dưới cùng): các bài đã phát trên thiết bị này trong 7 ngày qua (nền tảng trực tuyến, tệp cục bộ, Navidrome), theo ngày, mới nhất ở trên, mỗi bài là một tấm ảnh nhỏ. Mỗi dòng có thể phát trong hàng đợi, thêm vào hàng đợi, thêm vào sổ ghi nhanh hoặc lưu vào danh sách phát.",
+        "tabCycle": "Có thể đổi trang mà không cần bấm thẻ: khi sổ ghi nhanh đang mở, Tab sang trang kế tiếp, Shift + Tab về trang trước, xoay vòng bốn trang Sổ ghi nhanh, Lịch sử phát, Hàng đợi và Khoảnh khắc.",
         "expand": "Ô vuông tối ở đầu phải của dải: “Mở rộng toàn trang”.",
         "canvas": "Khi mở rộng toàn trang, cả tờ giấy nghiêng: dải của trang này chạy ngang phía trên, mỗi bài là một thẻ sổ tay, vẫn nhóm theo nguồn, và đầu nhóm có thêm “Chọn nhóm này”; cột bên phải là danh sách nhảy tới và các thao tác, hai trang còn lại gấp thành dải mỏng ở góc dưới bên trái. Esc bỏ chọn trước, rồi quay lại bảng bên.",
         "drag": "Kéo thẻ để sắp xếp lại. Thẻ chỉ di chuyển trong nhóm của nó, và bám vào vị trí gần nhất khi thả. Trên màn hình cảm ứng, nhấn giữ thẻ đến khi nó nhấc lên rồi kéo.",
         "select": "Kéo một khung ở chỗ trống để chọn các thẻ bên trong; {{mod}}-nhấn một thẻ để thêm hoặc bỏ chọn. Một bảng nổi bên cạnh các thẻ đã chọn: thêm vào hàng đợi, thêm vào danh sách phát, bỏ ra, bỏ chọn. Khi mục chọn đến từ nhiều nguồn, thêm vào danh sách phát sẽ bị mờ."
       }
+    }
+  },
+  "appUpdate": {
+    "title": "Có bản cập nhật mới",
+    "versionLine": "Phiên bản mới {{version}}",
+    "noNotes": "Bản cập nhật này không có ghi chú.",
+    "download": "Tải bản cập nhật",
+    "downloading": "Đang tải {{percent}}%",
+    "downloadingHint": "Đang tải. Hãy giữ ứng dụng ở phía trước.",
+    "later": "Để sau",
+    "skipVersion": "Bỏ qua phiên bản này",
+    "updateNow": "Cập nhật ngay",
+    "install": "Cài đặt",
+    "installing": "Đang mở trình cài đặt…",
+    "openInstallSetting": "Cho phép cài đặt",
+    "retry": "Thử lại",
+    "checkNow": "Kiểm tra cập nhật",
+    "checkNowHint": "Kiểm tra qua proxy tăng tốc GitHub trước, rồi chuyển sang GitHub nếu thất bại.",
+    "promptEnabled": "Hộp thoại cập nhật",
+    "promptEnabledDesc": "Hiện hộp thoại khi phát hiện phiên bản mới.",
+    "checking": "Đang kiểm tra…",
+    "upToDate": "Bạn đang dùng phiên bản mới nhất",
+    "checkFailed": "Kiểm tra thất bại",
+    "notConfigured": "Bản dựng này chưa cấu hình nguồn cập nhật"
+  },
+  "appleMusic": {
+    "libraryPlaylistName": "Tất cả bài hát"
+  },
+  "qishui": {
+    "recentPlayed": "Gần đây đã phát trên Qishui",
+    "recommended": "Được đề xuất cho bạn"
+  },
+  "qqPreferences": {
+    "note": "Lưu trên tài khoản; ảnh hưởng đến mọi bài hát được đề xuất",
+    "familiarity": "Độ quen thuộc của bài hát",
+    "familiarityExplore": "Khám phá thêm",
+    "keep": "Giữ nguyên",
+    "familiarityFamiliar": "Quen thuộc hơn",
+    "mood": "Cảm xúc âm nhạc",
+    "moodSad": "Buồn hơn",
+    "moodHappy": "Vui hơn",
+    "coverLive": "Cover & live",
+    "instrumental": "Nhạc không lời",
+    "mandarin": "Tiếng Quan Thoại",
+    "english": "Tiếng Anh",
+    "japanese": "Tiếng Nhật",
+    "korean": "Tiếng Hàn",
+    "cantonese": "Tiếng Quảng Đông",
+    "ai": "Bài hát AI"
+  },
+  "fnmusic": {
+    "serverUrl": "Địa chỉ máy chủ",
+    "serverUrlPlaceholder": "vd: http://192.168.1.10:5666 hoặc FN ID thuần (vd: mynas)",
+    "username": "Tài khoản",
+    "usernamePlaceholder": "Tài khoản fnOS Music hoặc tài khoản NAS",
+    "password": "Mật khẩu",
+    "login": "Đăng nhập",
+    "loginNote": "Nhập địa chỉ máy chủ fnOS Music (địa chỉ LAN hoặc FN ID thuần), tài khoản và mật khẩu",
+    "errorBadCredentials": "Sai tài khoản hoặc mật khẩu",
+    "errorNetwork": "Không thể kết nối máy chủ. Kiểm tra địa chỉ và kết nối của bạn.",
+    "errorBadResponse": "Máy chủ trả về phản hồi không nhận dạng được",
+    "errorBadServerUrl": "Địa chỉ máy chủ không hợp lệ, ví dụ: http://192.168.1.10:5666"
+  },
+  "soloist": {
+    "method": {
+      "standard": "Tiêu chuẩn",
+      "standardNote": "Đăng nhập Spotify trong trình duyệt; Folia tự phát bài hát. Bộ cân bằng, Automix và các hiệu ứng theo nhạc đều hoạt động.",
+      "soloist": "Soloist",
+      "soloistNote": "Đăng nhập Spotify trong trình duyệt; chương trình Soloist chính thức của Spotify phát bài hát. Dành cho tài khoản không nhận được khóa âm thanh. Soloist được tải riêng, và khóa API của nó được tạo bằng tài khoản Premium."
+    },
+    "setup": {
+      "title": "Thiết lập Spotify Soloist",
+      "note": "Soloist là trình phát chính thức của Spotify, một chương trình trên máy này tự gửi âm thanh ra đầu ra của hệ thống; Folia điều khiển nó và theo vị trí của nó để hiện lời bài hát. Bộ cân bằng, Automix và các hiệu ứng theo nhạc của Folia không xử lý âm thanh của nó.",
+      "titleStandard": "Cách Spotify phát nhạc",
+      "noteStandard": "Hiện Folia tự phát bài hát Spotify. Nếu tài khoản này không nhận được khóa âm thanh và bài hát không phát được, bạn có thể chuyển sang Soloist chính thức của Spotify."
+    },
+    "noKey": {
+      "title": "Tài khoản này không nhận được khóa âm thanh từ Spotify",
+      "note": "Spotify không cấp khóa âm thanh cho tài khoản này, nên cách phát của Folia không phát được bài hát của nó (thường gặp với tài khoản tạo từ cuối năm 2024). Bạn có thể phát qua Soloist chính thức của Spotify: tải chương trình Soloist, tạo khóa API bằng tài khoản Premium, rồi chọn thiết bị một lần trong ứng dụng Spotify. Danh sách phát, lời bài hát và tìm kiếm không bị ảnh hưởng."
+    },
+    "step": {
+      "program": "Chương trình Soloist",
+      "key": "Khóa API",
+      "pair": "Ghép nối thiết bị",
+      "modeStandard": "Cách phát: tiêu chuẩn",
+      "modeSoloist": "Cách phát: Soloist"
+    },
+    "mode": {
+      "standardNote": "Folia tự phát bài hát Spotify.",
+      "soloistNote": "Soloist phát bài hát Spotify.",
+      "noKeyNote": "Cách phát của Folia không phát được bài hát của tài khoản này."
+    },
+    "program": {
+      "todo": "Tải Soloist cho máy này từ trang của Spotify, giải nén rồi chọn chương trình soloist bên trong (soloist.exe trên Windows). Folia không kèm theo chương trình này.",
+      "valid": "Phiên bản {{version}}, chạy đến {{expires}} (còn {{days}} ngày).",
+      "expiring": "Phiên bản {{version}} sẽ ngừng chạy sau {{days}} ngày ({{expires}}). Mỗi bản dựng chạy được 90 ngày: hãy tải bản mới, giải nén rồi chọn lại.",
+      "unknown": "Phiên bản {{version}}. Không đọc được ngày của bản dựng này nên không biết khi nào nó ngừng chạy. Mỗi bản dựng chạy được 90 ngày; sau đó Soloist từ chối khởi động.",
+      "clock": "Ngày của bản dựng này muộn hơn đồng hồ của máy: có thể đồng hồ sai, và không tính được số ngày còn lại.",
+      "expired": "Bản dựng này đã hết hạn ({{expires}}) và Soloist sẽ không khởi động. Hãy tải bản mới, giải nén rồi chọn lại.",
+      "missing": "Không còn thấy chương trình đã chọn trước đó; có thể nó đã bị di chuyển hoặc xóa. Hãy chọn lại.",
+      "invalid": "Tệp đã chọn không phải chương trình Soloist chạy được. Hãy chọn tệp khác."
+    },
+    "key": {
+      "label": "Khóa API Soloist",
+      "todo": "Mở bảng điều khiển nhà phát triển của Spotify bằng tài khoản Premium, tạo khóa API Soloist rồi nhập vào bên dưới. Khóa được lưu trên máy này, niêm phong bằng chuỗi khóa của hệ thống. Soloist chỉ nhận khóa qua dòng lệnh, nên người dùng khác của máy này có thể thấy nó trong danh sách tiến trình khi nó chạy.",
+      "saved": "Khóa đã được lưu và niêm phong. Soloist chỉ nhận khóa qua dòng lệnh, nên người dùng khác của máy này có thể thấy nó trong danh sách tiến trình khi nó chạy.",
+      "locked": "Hiện không mở được chuỗi khóa của hệ thống nên không đọc được khóa đã lưu. Hãy mở khóa rồi nhấn Kết nối lại.",
+      "noKeychain": "Máy này không có chuỗi khóa hệ thống để niêm phong khóa (ví dụ basic_text trên Linux), nên khóa không được lưu.",
+      "unreadable": "Không đọc được khóa đã lưu (có thể do tài khoản hệ thống hoặc chuỗi khóa khác). Hãy nhập lại."
+    },
+    "pair": {
+      "done": "Đã ghép nối: sẵn sàng phát.",
+      "waiting": "Hãy làm xong hai bước ở trên trước.",
+      "todo": "Trong ứng dụng Spotify trên cùng mạng (điện thoại hoặc máy tính), mở danh sách thiết bị và chọn \"Folia\". Chỉ cần một lần: sau đó nó tự đăng nhập.",
+      "starting": "Soloist chưa khởi động.",
+      "startFailed": "Soloist không khởi động được. Hãy kiểm tra chương trình và khóa, rồi nhấn Kết nối lại."
+    },
+    "action": {
+      "useStandard": "Phát theo cách tiêu chuẩn",
+      "useSoloist": "Phát qua Soloist",
+      "pick": "Chọn chương trình đã tải",
+      "pickAgain": "Chọn lại",
+      "download": "Trang tải chính thức",
+      "keyPage": "Mở bảng điều khiển nhà phát triển",
+      "saveKey": "Lưu khóa",
+      "reconnect": "Kết nối lại"
+    },
+    "message": {
+      "picked": "Đã chọn chương trình.",
+      "pickedExpired": "Bản dựng đó đã hết hạn nên không được dùng. Hãy tải bản mới.",
+      "pickedInvalid": "Tệp đó không phải chương trình Soloist chạy được nên không được dùng.",
+      "keySaved": "Đã lưu khóa.",
+      "keychain": "Chuỗi khóa hệ thống không khả dụng; khóa chưa được lưu.",
+      "keyShape": "Đó không phải khóa: khóa là một chuỗi ký tự liền, không có dấu cách.",
+      "startFailed": "Soloist không khởi động được.",
+      "failed": "Thao tác không thành công; nhật ký vận hành có ghi lý do."
     }
   }
 } as const;

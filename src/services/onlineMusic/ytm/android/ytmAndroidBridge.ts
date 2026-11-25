@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { ProviderErrorCode, ProviderUser } from '../../../../types/onlineMusic';
-import type { YtmBridgeResult, YtmOperation, YtmParams, YtmWireCollection, YtmWireSong } from '../ytmTransport';
+import type { YtmBridgeResult, YtmOperation, YtmParams, YtmWireCollection, YtmWireSong } from '../../../../../sources/ytm/client/ytmTransport';
 import {
     VIDEO_ID, albumFromCard, albumFromPage, artistFromPage, bitrateOf, lrcFromLyricsPage, lyricsBrowseId,
     pickAudioFormat, songFromListItem, songFromQueueItem,

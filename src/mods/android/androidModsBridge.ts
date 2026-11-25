@@ -280,6 +280,12 @@ export const androidModsBridge = {
     getFfmpegStatus: async () => ({ available: false, path: null, version: null, candidates: [] }),
     openModsDirectory: async () => ({ ok: false, error: 'unsupported-on-android' }),
     installModFromZip: async () => ({ ok: false, error: 'unsupported-on-android' }),
+    // 「从 zip 安装模组」（设置 → 音源 / 模组窗口的那个按钮）在安卓上就是系统文件选择器 + 原生解压。
+    installModFromPickedZip: async () => {
+        const result = await importAndroidModZip();
+        if (result.canceled) return { ok: false, error: 'canceled' };
+        return result.imported ? { ok: true, id: result.imported } : { ok: false, error: result.error };
+    },
     getModStorageUsage: async () => ({ ok: true, data: 0, cache: 0 }),
     clearModCache: async () => ({ ok: false, error: 'unsupported-on-android' }),
     cancelExport: async () => undefined,

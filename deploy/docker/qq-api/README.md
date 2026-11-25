@@ -70,7 +70,7 @@ PORT=3200 \
   node node_modules/@yakult-green-tea/qq-music-api/dist/src/app.js
 ```
 
-该包在被 `require()` 时就会 `app.listen()`，并导出 http server 句柄 `server`。嵌入到其他 Node 进程时应等 `listening` 事件确认端口绑定成功、挂 `error` 监听避免绑定失败变成未处理异常，退出时主动 `close()`；因为 `require` 有模块缓存，同一进程内只应该 `require()` 一次。Electron 版走的正是这条路径（见 [`electron/qq/qqApiStartup.cjs`](../../../electron/qq/qqApiStartup.cjs)），端口动态分配，装置状态写在 `userData/qq-auth-state/qq-device.json`。
+该包在被 `require()` 时就会 `app.listen()`，并导出 http server 句柄 `server`。嵌入到其他 Node 进程时应等 `listening` 事件确认端口绑定成功、挂 `error` 监听避免绑定失败变成未处理异常，退出时主动 `close()`；因为 `require` 有模块缓存，同一进程内只应该 `require()` 一次。Electron 版走的正是这条路径（QQ 音源模组的 main 入口，见 [`sources/qq/main/qqApiStartup.cjs`](../../../sources/qq/main/qqApiStartup.cjs)），端口动态分配，装置状态写在 `userData/qq-auth-state/qq-device.json`。
 
 ### Web 版接法
 
@@ -232,6 +232,10 @@ Cloudflare 上可以用 Durable Object 补上它——DO 能跨调用持有那�
 - 账号的音乐偏好 `/user/recommendation-preferences` 与 `POST /user/recommendation-preferences/update`（只改交来的几项，写一次、读回核对，不自动重送）。后端低于 3.3.6 时，偏好设置面板读不出来。
 - 猜你喜欢电台的听歌模式目录 `/user/guess-you-like/modes` 与按模式取歌 `/user/guess-you-like/tracks`（只带 pool，不改账号的模式设置）。后端低于 3.3.6 时，猜你喜欢只有默认一种模式。
 - 后端低于 3.3.6 时，私人 FM 照旧读 `/user/guess-you-like`；每日推荐没有历史日期，点歌曲的不喜欢会提示失败，探索页没有首页 feed 那几栏，歌单里没有听歌排行，其他功能照旧。
+
+3.3.8 起：
+
+- 取播放地址时，上游明确说没给完整文件（104003）的歌，会换官方网页播放器的身份再要一次。想关掉可以设环境变量 `QQ_PLAYBACK_FALLBACK_ENABLED=0`。
 
 排查时先看容器日志：
 

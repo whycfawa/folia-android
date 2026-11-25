@@ -44,6 +44,7 @@ vi.mock('@/stores/useAudioSettingsStore', () => ({
 }));
 vi.mock('@/stores/useSearchNavigationStore', () => ({
     useSearchNavigationStore: (selector: (state: unknown) => unknown) => selector({}),
+    setLocalSearchCollectionsReader: () => {},
 }));
 vi.mock('@/services/hostExtensionHooks', () => ({ hasBeforePlayHook: () => false, lyricsForNoLyrics: () => null, notifyPlaybackFailed: vi.fn() }));
 vi.mock('@/services/onlineMusic/omni', () => ({
@@ -84,7 +85,9 @@ const { notifyPlaybackFailed } = await import('@/services/hostExtensionHooks');
 const { askForSong, askedSongKeyRef, dropPlaysInFlight, startOfAskedSong } = await import('@/components/app/playback/currentSong');
 const { mediaFailureOf, onlineFailureOf } = await import('@/services/onlineMusic/failure/onlineFailureCase');
 const { useLoginWindowStore } = await import('@/components/login/loginWindowStore');
-const { neteaseAnswerError } = await import('@/services/onlineMusic/netease/neteaseFailure');
+const { neteaseAnswerError } = await import('../../../sources/netease/core/neteaseFailure');
+// The NetEase source's errors are made through its env (createSource): the core is made for that.
+await (await import('../helpers/neteaseSource')).createNeteaseCore();
 const { hifiTransport } = await import('@/services/hifi/hifiPlayback');
 const notified = vi.mocked(notifyPlaybackFailed);
 const getSongReplacement = vi.mocked(omni.getSongReplacement);

@@ -2,8 +2,8 @@ import React from 'react';
 import { getColorOsLyricsSupport } from '../../../../platform/foliaColorOsLyrics';
 import { IS_ANDROID_WEBVIEW } from '../../../../utils/platform';
 import { useTranslation } from 'react-i18next';
-import { usePlaybackReportReady } from '../../../../services/onlineMusic/playbackReportGate';
-import { useAudioSettingsStore } from '../../../../stores/useAudioSettingsStore';
+import { usePlaybackReportReady, getPlaybackReportSettingProviderId } from '../../../../services/onlineMusic/playbackReportGate';
+import { useAudioSettingsStore, isPlaybackReportEnabled } from '../../../../stores/useAudioSettingsStore';
 import { usePlayerChromeSettingsStore } from '../../../../stores/usePlayerChromeSettingsStore';
 import { useStageSettingsStore } from '../../../../stores/useStageSettingsStore';
 import { Button, CopyValue, Group, Reveal, Row, Status, Toggle, Value, type SettingsOptionDef } from '../kit';
@@ -33,8 +33,6 @@ const IntegrationPage: React.FC = () => {
     const transparentPlayerBackground = usePlayerChromeSettingsStore(state => state.transparentPlayerBackground);
     const obsKeepAnimation = useStageSettingsStore(state => state.obsKeepMainWindowAnimation);
     const setObsKeepAnimation = useStageSettingsStore(state => state.handleToggleObsKeepMainWindowAnimation);
-    const scrobbleEnabled = useAudioSettingsStore(state => state.neteaseScrobbleEnabled);
-    const setScrobbleEnabled = useAudioSettingsStore(state => state.handleToggleNeteaseScrobble);
     // Subscribed to, so the row follows the reporting account signing in or out while the page is open.
     const canScrobble = usePlaybackReportReady();
     // ColorOS 16+ 的锁屏歌词是原生自动启用的；这里只显示探测结果，不给手动开关。
@@ -43,6 +41,13 @@ const IntegrationPage: React.FC = () => {
         if (!IS_ANDROID_WEBVIEW) return;
         void getColorOsLyricsSupport().then(result => setColorOsSupport({ supported: result.supported, colorOsMajor: result.colorOsMajor }));
     }, []);
+    // The setting is stored per source (Folium 2.0 S1); the one row is the setting of the source that takes reports.
+    const scrobbleSourceId = getPlaybackReportSettingProviderId();
+    const scrobbleEnabled = useAudioSettingsStore(state => isPlaybackReportEnabled(state, scrobbleSourceId));
+    const handleSetPlaybackReport = useAudioSettingsStore(state => state.handleSetPlaybackReport);
+    const setScrobbleEnabled = (enable: boolean) => {
+        if (scrobbleSourceId) handleSetPlaybackReport(scrobbleSourceId, enable);
+    };
 
     return (
         <>

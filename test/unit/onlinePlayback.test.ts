@@ -1,3 +1,4 @@
+// @builtin-sources
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cachedAudioMock = vi.hoisted(() => vi.fn());
@@ -30,6 +31,8 @@ vi.mock('@/services/onlineMusic/omni', () => ({
         getAlternateArtistName: otherArtistNameMock,
         resolveAudioQuality: (_providerId: string, preference: string) => preference,
         isPreviewAudioSource: () => false,
+        // Every source here is enabled (Folium 2.0 §5.3: a source used only for matching does not play).
+        isSourceSwitchedOn: () => true,
         prefersOwnWordByWordLyrics: prefersOwnWordByWordMock,
     },
 }));
@@ -388,6 +391,22 @@ describe('online QQ lyric candidate plumbing', () => {
         vi.clearAllMocks();
         songCacheMock.mockResolvedValue(null);
         loadLyricsStateMock.mockResolvedValue(null);
+    });
+
+    // With the best-lyric search on, the lyrics are fetched for the search anyway: an entry saved before chorus origins
+    // (#1333) is not fetched a second time ahead of the audio.
+    it('asks the source for the lyrics once when the cached entry predates chorus origins', async () => {
+        const stale = {
+            lines: [{ startTime: 0, endTime: 1, fullText: 'line', words: [], isChorus: true, chorusEffect: 'bars' as const }],
+            isWordByWord: false,
+        };
+        songCacheMock.mockResolvedValue(stale);
+        lyricsMock.mockResolvedValue({ lyrics: null, isPureMusic: false });
+        autoMatchMock.mockResolvedValue(null);
+
+        await loadOnlineSongLyrics(song, null, null, { isCurrent: () => true, onLyrics: vi.fn(), onDone: vi.fn() });
+
+        expect(lyricsMock).toHaveBeenCalledOnce();
     });
 
     it.each(['match', 'save'])('reports an automatic lyric %s failure separately from finishing audio preparation', async failure => {

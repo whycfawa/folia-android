@@ -8,14 +8,14 @@ import { create } from 'zustand';
 import i18n from '../i18n/config';
 
 
-import { normalizePinnedCommandIds, readPinnedCommandIds, writePinnedCommandIds, type PinnedCommandIds } from '../components/command-palette/pinnedCommandPreferences';
+import { normalizePinnedCommandIds, readPinnedCommandIds, writePinnedCommandIds, type PinnedCommandIds } from './pinnedCommandPreferences';
 import { applyAppLanguagePreference, readStoredAppLanguagePreference, type AppLanguagePreference } from '../i18n/config';
 import { setStatusMessage } from './useStatusMessageStore';
-import type { SettingsAnchorId } from '../components/modal/settings/navigation/settingsAnchorModel';
+import type { SettingsAnchorId } from '../utils/settingsAnchorModel';
 
 export type SettingsModalInitialTab = 'help' | 'options';
 
-export type SettingsSubviewId = 'appearance' | 'player' | 'home' | 'playback' | 'lyrics' | 'general' | 'interaction' | 'integration' | 'ai' | 'storage' | 'desktop' | 'remote' | 'graphics' | 'mods' | 'visualizer' | 'themePark' | 'scene' | 'lyricFilter' | 'globalLyricOffset';
+export type SettingsSubviewId = 'appearance' | 'player' | 'home' | 'playback' | 'lyrics' | 'sources' | 'general' | 'interaction' | 'integration' | 'ai' | 'storage' | 'desktop' | 'remote' | 'graphics' | 'mods' | 'visualizer' | 'themePark' | 'scene' | 'modsWindow' | 'lyricFilter' | 'globalLyricOffset';
 
 /** 歌词动画调参台的五页。列成数组是为了让「思索」的设置直达在单测里能核对 section 真实存在。 */
 export const VISUALIZER_SETTINGS_SECTIONS = ['common', 'background', 'visualizer', 'subtitle', 'global'] as const;
@@ -34,6 +34,13 @@ export type SettingsModalState = {
      * while that row is not on the page the landing falls back to the section.
      */
     initialAnchor?: { id: SettingsAnchorId; rowId?: string; seq: number } | null;
+    /**
+     * Counts openSettings calls. The dialog applies a request (tab, subview, the work window it names or
+     * the page under it) whenever this changes, so asking again for the subview already set still acts:
+     * the mods window's 「去音源设置」 while the request was already `sources`, or `modsWindow` again after
+     * the window was closed with its back button.
+     */
+    requestSeq?: number;
 };
 
 // Separate from the retired guide key so people who saw the old carousel still receive the Ponder lesson.
@@ -95,6 +102,7 @@ export const useSettingsModalStore = create<SettingsModalUiState>((set, get) => 
                     seq: (get().settingsModalState.initialAnchor?.seq ?? 0) + 1,
                 }
                 : null,
+            requestSeq: (get().settingsModalState.requestSeq ?? 0) + 1,
         },
     }),
     closeSettings: () => set(state => ({

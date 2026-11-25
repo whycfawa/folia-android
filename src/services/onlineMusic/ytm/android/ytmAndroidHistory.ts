@@ -1,4 +1,4 @@
-import type { YtmParams, YtmWirePage, YtmWireSong } from '../ytmTransport';
+import type { YtmParams, YtmWirePage, YtmWireSong } from '../../../../../sources/ytm/client/ytmTransport';
 import { VIDEO_ID, songFromListItem } from './ytmAndroidCatalog';
 
 // src/services/onlineMusic/ytm/android/ytmAndroidHistory.ts

@@ -10,7 +10,8 @@ import { loadBeatFxTrackBeats, loadBeatFxTrackDrums } from '../services/beatFx/b
 import { noteBeatFxWanted } from '../services/beatFx/beatFxWanted';
 import { getPlaybackAnalysisKey, getPlaybackAnalysisTarget } from '../services/playbackRecovery/representationRegistry';
 import { modelsPresent, subscribeModelAvailability } from '../services/analysis/modelAvailability';
-import { drumHitsSettled, setWantedDrumTrack } from '../services/analysis/drumHits';
+import { drumHitsSettled } from '../services/analysis/drumHits';
+import { claimStemTrack } from '../services/analysis/trackStemRun';
 import { setStemDrumsWanted } from '../services/analysis/stemRange';
 
 // src/hooks/useBeatFxTrack.ts
@@ -178,7 +179,7 @@ export function useBeatFxTrack(): boolean {
             if (retryTimer) clearTimeout(retryTimer);
             // The separation stops here (at its next segment) and keeps where it was, to carry on from
             // when the track is wanted again (drumHits.ts, DrumResume). See below.
-            setWantedDrumTrack(null);
+            claimStemTrack('beatFx', null);
         };
         // Keyed like the lookup above.
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,5 +1,11 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import type { FnMusicBridgeParams, FnMusicBridgeResult, FnMusicBridgeStatus } from './fnmusicTransport';
+import type { FnMusicBridgeStatus } from '../../../../sources/fnmusic/client/fnmusicTransport';
+
+// 桥操作与答复的形状（Folium 2.0 后 fnmusicTransport 里的这一对不再导出，安卓侧自己留一份）。
+type FnMusicBridgeParams = Record<string, unknown>;
+type FnMusicBridgeResult =
+    | { ok: true; data: unknown; status?: number }
+    | { ok: false; status?: number; error?: { code?: string | number; message?: string } };
 
 type FnMusicPlugin = {
     api: (options: { operation: string; params?: Record<string, unknown> }) => Promise<FnMusicBridgeResult>;

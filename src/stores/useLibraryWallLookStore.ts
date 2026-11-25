@@ -10,9 +10,12 @@ import { normalizeLibraryWallSeamDirection, type LibraryWallSeamDirection } from
 // src/stores/useLibraryWallLookStore.ts
 // bravais 资料库界面的墙面偏好：「透光」档位 look（实色 / 部分透明 / 全透明，默认实色）与部分透明时每块的窗数
 // windowsPerBlock（1–6，默认 3）；集合磁贴的叠页边开关 collectionStackEdges（默认开，设计稿 §7.7）；
+// 集合页张开竖的信息条时整层倾不倾斜 collectionTilt（默认开；关掉就是集合页的倾斜角取 0，见 bravaisTilt）；
 // 信息条（缝）的材质：始终透明 seamClear（默认开，用户定 2026-10-09）与实色模式的预设 seamStyle（默认主题纸色，透明开着时不生效）；
 // 透出的播放页画面（backdrop）要不要画歌词文字 backdropLyrics、要不要模糊 backdropBlur（都默认关，§11「墙后的画面」）；
 // 信息条的方向 seamDirection：竖向 / 横向（从块的横向缝隙裂开成横条）/ 自动（按视口宽高比，默认）/ 自动（反向），见 utils/libraryWallSeamDirection。
+// 首页只用有限墙 homeFinite（默认关）：开着时首页墙不再无限循环重复，浏览与管理隐藏也是以缝为中心、按 rank 排、不重复的
+// 有限拼贴（过滤、批量、只看隐藏时本来就是），见 bravaisHomeProjection 的 resolveHomeWallMode；探索页签的版面不受它管。
 // 放在 app 层而不是 suite 里，因为设置 UI（components/modal/settings）不能 import suite；bravais 的 stage 读这里。
 // 只在 bravais 是生效 suite 时才有界面入口（library/app/bravaisLibraryActive；界面设置的「Bravais」分组）。
 //
@@ -24,6 +27,10 @@ import { normalizeLibraryWallSeamDirection, type LibraryWallSeamDirection } from
 // seamClear / seamStyle / backdropLyrics / backdropBlur / seamDirection 同样没有用户例外，按规则进外观配置导入导出
 // （libraryWallSeamClear / libraryWallSeamStyle / libraryWallBackdropLyrics / libraryWallBackdropBlur / libraryWallSeamDirection，
 // 短码 lwsc / lwss / lwbl / lwbb / lwsd），同样不进同步快照。
+// collectionTilt 按用户 2026-11-08 的决定不进外观配置导入导出：配置码也用于 web 版 OBS 链接，只加 OBS 页面看得到的，
+// OBS 页面没有资料库墙（dev/dedicatus/appearanceDestinations.mjs 记着原因）。
+//
+// homeFinite 按 collectionTilt 那条同样的决定不进外观配置导入导出：它管的是首页墙怎么排，OBS 页面同样看不到这面墙。
 //
 // 存储读写都包 try/catch：存储不可用（隐私模式、配额满）时本次会话照常用内存里的值。
 // 读到非法档位回默认档，读到越界或非数字的窗数钳制 / 回默认（规则在 utils/libraryWallLook）。
@@ -36,6 +43,8 @@ const LIBRARY_WALL_SEAM_STYLE_KEY = 'library_wall_seam_style';
 const LIBRARY_WALL_BACKDROP_LYRICS_KEY = 'library_wall_backdrop_lyrics';
 const LIBRARY_WALL_BACKDROP_BLUR_KEY = 'library_wall_backdrop_blur';
 const LIBRARY_WALL_SEAM_DIRECTION_KEY = 'library_wall_seam_direction';
+const LIBRARY_WALL_COLLECTION_TILT_KEY = 'library_wall_collection_tilt';
+const LIBRARY_WALL_HOME_FINITE_KEY = 'library_wall_home_finite';
 
 const readStored = (key: string): string | null => {
     if (typeof window === 'undefined') return null;
@@ -74,6 +83,10 @@ const readAll = () => ({
     backdropLyrics: readStoredFlag(LIBRARY_WALL_BACKDROP_LYRICS_KEY),
     backdropBlur: readStoredFlag(LIBRARY_WALL_BACKDROP_BLUR_KEY),
     seamDirection: normalizeLibraryWallSeamDirection(readStored(LIBRARY_WALL_SEAM_DIRECTION_KEY)),
+    /** 默认开；只认 'false' 为关。 */
+    collectionTilt: readStored(LIBRARY_WALL_COLLECTION_TILT_KEY) !== 'false',
+    /** 默认关；只认 'true' 为开。 */
+    homeFinite: readStoredFlag(LIBRARY_WALL_HOME_FINITE_KEY),
 });
 
 export type LibraryWallLookState = {
@@ -98,6 +111,10 @@ export type LibraryWallLookState = {
      * 歌手 / 专辑海报仍是竖的开口）；自动时竖着的屏幕用横向。
      */
     seamDirection: LibraryWallSeamDirection;
+    /** 集合页（歌单、专辑与不画海报的歌手页）张开竖的信息条时整层倾斜；关掉时集合页端正（海报页照旧倾斜）。 */
+    collectionTilt: boolean;
+    /** 首页只用有限墙：开着时首页墙一直是以缝为中心、不重复的有限拼贴（拖到尽头停住），关掉是平常的无限拼贴。 */
+    homeFinite: boolean;
     /** 非法值回默认档后再写入。 */
     setLook: (look: LibraryWallLook) => void;
     /** 先钳到 1–6 再写入。 */
@@ -110,6 +127,8 @@ export type LibraryWallLookState = {
     setBackdropBlur: (enabled: boolean) => void;
     /** 非法值回默认（自动）后再写入。 */
     setSeamDirection: (direction: LibraryWallSeamDirection) => void;
+    setCollectionTilt: (enabled: boolean) => void;
+    setHomeFinite: (enabled: boolean) => void;
     /** 从存储重新读一遍（存储被别处改写、或测试模拟重启时用）。 */
     hydrate: () => void;
 };
@@ -150,5 +169,7 @@ export const useLibraryWallLookStore = create<LibraryWallLookState>(set => ({
         writeStored(LIBRARY_WALL_SEAM_DIRECTION_KEY, normalized);
         set({ seamDirection: normalized });
     },
+    setCollectionTilt: enabled => set({ collectionTilt: writeFlag(LIBRARY_WALL_COLLECTION_TILT_KEY, enabled) }),
+    setHomeFinite: enabled => set({ homeFinite: writeFlag(LIBRARY_WALL_HOME_FINITE_KEY, enabled) }),
     hydrate: () => set(readAll()),
 }));

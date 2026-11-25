@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 // The page-side guards behind "queued but never sounded": the storefront the player is moved to,
 // the single nudge for a start that did not begin, and a failure that gives way to real sound.
-const { validateRequest, requestExpression } = createRequire(import.meta.url)('../../../electron/appleMusic/companionRequests.cjs');
+const { validateRequest, requestExpression } = createRequire(import.meta.url)('../../../sources/appleMusic/main/companionRequests.cjs');
 
 const run = (context: Record<string, unknown>, operation: string, params = {}) => runInNewContext(
     requestExpression(validateRequest({ id: 'test', operation, params })),
@@ -56,36 +56,26 @@ describe('Apple Music Android playback guards', () => {
         expect(mk.storefrontId).toBe('cn');
     });
 
-    it('asks a stopped player once more and never restarts a finished or playing one', async () => {
-        const stopped = player({ playbackState: 4, isPlaying: false });
-        const stoppedContext = { window: { MusicKit: { getInstance: () => stopped } }, console };
-        await run(stoppedContext, 'playSong', { catalogId: '123' });
-        (stoppedContext.window as { __foliaStart?: { startedAt: number } }).__foliaStart!.startedAt = Date.now() - 5000;
-        await run(stoppedContext, 'playbackStatus');
-        expect(stopped.play).toHaveBeenCalledTimes(2);
-
-        const ended = player({ playbackState: 5, isPlaying: false });
-        const endedContext = { window: { MusicKit: { getInstance: () => ended } }, console };
-        await run(endedContext, 'playSong', { catalogId: '123' });
-        (endedContext.window as { __foliaStart?: { startedAt: number } }).__foliaStart!.startedAt = Date.now() - 5000;
-        await run(endedContext, 'playbackStatus');
-        expect(ended.play).toHaveBeenCalledTimes(1);
-
-        const sounding = player({ playbackState: 2, isPlaying: true });
-        const soundingContext = { window: { MusicKit: { getInstance: () => sounding } }, console };
-        await run(soundingContext, 'playSong', { catalogId: '123' });
-        (soundingContext.window as { __foliaStart?: { startedAt: number } }).__foliaStart!.startedAt = Date.now() - 5000;
-        await run(soundingContext, 'playbackStatus');
-        expect(sounding.play).toHaveBeenCalledTimes(1);
+    // 上游 0.8.0 起页面脚本不再自己「再喊一次播放」：停止、播完、正在响都只喊一次，失败交给宿主重试。
+    it('never starts the player again on its own: stopped, finished or playing', async () => {
+        for (const state of [4, 5, 2]) {
+            const mk = player({ playbackState: state, isPlaying: state === 2 });
+            const context = { window: { MusicKit: { getInstance: () => mk } }, console };
+            await run(context, 'playSong', { catalogId: '123' });
+            (context.window as { __foliaStart?: { startedAt: number } }).__foliaStart!.startedAt = Date.now() - 5000;
+            await run(context, 'playbackStatus');
+            expect(mk.play).toHaveBeenCalledTimes(1);
+        }
     });
 
-    it('lets a rejection give way to a track that is actually playing', async () => {
-        const mk = player({ playbackState: 2, isPlaying: false });
+    // 判失败要留退路：真响了（位置在往前走）就把可恢复的失败收回，别把正在放的歌报成失败。
+    it('lets a recoverable rejection give way to a track that is actually sounding', async () => {
+        const mk = player({ playbackState: 2, isPlaying: true, currentPlaybackTime: 1 });
         const context = { window: { MusicKit: { getInstance: () => mk } }, console };
         const playback = (context.window as { __foliaStart?: unknown });
         await run(context, 'playSong', { catalogId: '123' });
-        (playback.__foliaStart as { failed: boolean }).failed = true;
-        mk.isPlaying = true;
+        Object.assign(playback.__foliaStart as Record<string, unknown>, { failed: true, recoverable: true, heardAt: 0 });
+        mk.currentPlaybackTime = 2;
         expect(await run(context, 'playbackStatus')).toMatchObject({ ok: true, data: { isPlaying: true } });
     });
 

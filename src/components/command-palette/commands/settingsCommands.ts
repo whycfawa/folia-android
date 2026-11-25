@@ -201,6 +201,43 @@ export const settingsCommands: CommandPaletteCommand[] = [
             return true;
         },
     },
+    // 分轨调音台（音效窗口里的一节）：开关和三组强度；GPU 分不了的机器上不出现，与窗口置灰同一个判断。
+    createToggleCommand(
+        'stem-mixer-toggle',
+        'settings',
+        'Stem mixer',
+        'Turn the live four-stem mixer on or off',
+        ['stems', 'stem separation', 'demucs', 'remix', '分轨', '调音台', '音轨分离'],
+        context => context.settings.toggleStemMixer(),
+        { isAvailable: context => (context ? context.settings.canUseStemMixer() : true) },
+    ),
+    createToggleCommand(
+        'stem-mixer-karaoke',
+        'settings',
+        'Stem mixer: karaoke',
+        'Take the vocals out of the playing song',
+        ['karaoke', 'instrumental', 'no vocals', 'stem mixer', '伴奏', '去人声', '分轨调音台'],
+        context => context.settings.applyStemMixerPreset('karaoke'),
+        { isAvailable: context => (context ? context.settings.canUseStemMixer() : true) },
+    ),
+    createToggleCommand(
+        'stem-mixer-vocals',
+        'settings',
+        'Stem mixer: vocals only',
+        'Keep only the vocals of the playing song',
+        ['vocals only', 'acapella', 'voice', 'stem mixer', '只听人声', '清唱', '人声', '分轨调音台'],
+        context => context.settings.applyStemMixerPreset('vocals'),
+        { isAvailable: context => (context ? context.settings.canUseStemMixer() : true) },
+    ),
+    createToggleCommand(
+        'stem-mixer-reset',
+        'settings',
+        'Stem mixer: as recorded',
+        'Put all four stems back to 1.0x',
+        ['reset stems', 'as recorded', 'stem mixer', '原样', '复位', '分轨调音台'],
+        context => context.settings.applyStemMixerPreset('reset'),
+        { isAvailable: context => (context ? context.settings.canUseStemMixer() : true) },
+    ),
     {
         id: 'transition-mode-crossfade',
         isAvailable: context => (context ? context.settings.transitionMode !== 'crossfade' : true),
@@ -363,7 +400,8 @@ export const settingsCommands: CommandPaletteCommand[] = [
         { isAvailable: context => context?.settings.canAutoScanLocalLibrary() ?? true },
     ),
     createSettingsCommand('settings-desktop', 'Desktop settings', 'Open desktop app settings', ['desktop', 'electron', '桌面', '桌面端'], 'options', 'desktop', { platform: ['electron'] }),
-    createSettingsCommand('settings-remote', 'Remote Control settings', 'Open the Remote Control window settings: its switches and lyric rows', ['remote control', 'remote window', 'mini player', 'remote lyrics', '遥控窗口', '遥控窗口设置', '迷你播放器', '遥控歌词'], 'options', 'remote', { platform: ['electron'] }),
+    createSettingsCommand('settings-sources', 'Sources settings', 'Open the online sources: enable each, use it only for matching, or disable it', ['sources', 'online sources', 'providers', 'platforms', 'disable source', 'matching only', '音源', '音源设置', '平台', '停用音源', '只用于匹配'], 'options', 'sources', { platform: ['electron'] }),
+    createSettingsCommand('settings-remote', 'Remote Control settings', 'Open the Remote Control window settings: its switches and lyric rows', ['remote control', 'remote window', 'mini player', 'remote lyrics', '遥控窗口', '遥控窗口设置', '妙控窗', '迷你播放器', '遥控歌词'], 'options', 'remote', { platform: ['electron'] }),
     createSettingsAnchorCommand('settings-update-channel', 'Update channel', 'Choose the desktop app release channel', ['release channel', 'realeco', 'limo', 'cielo', '更新通道', '发布通道'], 'updateCheck', { platform: ['electron'] }),
     {
         id: 'desktop-toggle-voice-input-pause',
@@ -390,6 +428,35 @@ export const settingsCommands: CommandPaletteCommand[] = [
             return true;
         },
     },
+    // 界面缩放（#1264）：开关，和一挡一挡地放大缩小（走到 100% 就是关掉）。
+    createSettingsAnchorCommand('settings-ui-zoom', 'Interface zoom settings', 'Jump to the zoom of the whole main window', ['interface zoom', 'ui scale', 'page zoom', 'interface size', '界面缩放', '界面大小', '缩放'], 'uiZoom', { platform: ['electron'] }),
+    createToggleCommand(
+        'ui-zoom-toggle',
+        'settings',
+        'Interface zoom',
+        'Turn zooming the whole main window to the chosen size on or off',
+        ['ui scale', 'page zoom', 'interface size', '界面缩放', '界面大小', '缩放'],
+        context => context.settings.toggleUiZoom(),
+        { platform: ['electron'] },
+    ),
+    defineCommand({
+        id: 'ui-zoom-in',
+        group: 'settings',
+        title: 'Zoom interface in',
+        description: 'Make the whole main window one step larger',
+        keywords: ['zoom in', 'larger interface', 'bigger ui', 'interface zoom', '放大界面', '界面变大', '界面缩放'],
+        platform: ['electron'],
+        execute: (_input, context) => context.settings.stepUiZoom(1),
+    }),
+    defineCommand({
+        id: 'ui-zoom-out',
+        group: 'settings',
+        title: 'Zoom interface out',
+        description: 'Make the whole main window one step smaller',
+        keywords: ['zoom out', 'smaller interface', 'smaller ui', 'interface zoom', '缩小界面', '界面变小', '界面缩放'],
+        platform: ['electron'],
+        execute: (_input, context) => context.settings.stepUiZoom(-1),
+    }),
     createToggleCommand(
         'desktop-toggle-background-throttling',
         'settings',
@@ -398,6 +465,16 @@ export const settingsCommands: CommandPaletteCommand[] = [
         ['throttle when hidden', 'pause lyrics when minimized', 'stop animation in background', 'power saving', '后台节流', '后台暂停歌词', '最小化停止动画', '省电'],
         context => context.settings.toggleBackgroundThrottling(),
         { platform: ['electron'] },
+    ),
+    // Folium 2.0: the community mods switch. The main process asks before turning it on, so this only asks it.
+    createToggleCommand(
+        'desktop-toggle-community-mods',
+        'settings',
+        'Community mods',
+        'Toggle installing and running mods that are not official source mods',
+        ['third party mods', 'unofficial mods', 'allow mods', '第三方模组', '非官方模组'],
+        context => context.settings.toggleCommunityMods(),
+        { platform: ['electron'], isAvailable: context => context?.settings.modSystemEnabled ?? true },
     ),
     createSettingsCommand('settings-wallpaper-mode', 'Wallpaper mode settings', 'Open wallpaper mode settings', ['wallpaper mode', 'desktop wallpaper', 'lyrics wallpaper', '壁纸模式', '桌面壁纸', '歌词壁纸'], 'options', 'desktop', { platform: ['linux', 'win', 'mac'] }),
     {
@@ -565,10 +642,19 @@ export const settingsCommands: CommandPaletteCommand[] = [
     },
     // 用 anchor 版而不是 createSettingsCommand：后者只认页面，落在「通用」页顶部，
     // 而槽位选择器在这一页的底部界面那一节里，跳过去等于没跳。
+    // The transparent export's ffmpeg (found, chosen by hand, or none) sits at the bottom of the Remote Control page.
+    createSettingsAnchorCommand(
+        'settings-alpha-video-export',
+        'Transparent video export',
+        'Choose the ffmpeg the transparent video export uses and see which formats it can write',
+        ['ffmpeg', 'transparent video', 'alpha', 'prores', 'vp9', 'export video', '透明视频导出', '透明导出', '选择 ffmpeg', '带透明通道'],
+        'alphaVideoExport',
+        { platform: ['electron'] },
+    ),
     createSettingsAnchorCommand(
         'settings-player-control-slots',
         'Player button slots',
-        'Choose which actions the two buttons beside the progress bar run',
+        'Arrange the two buttons beside the progress bar and the button island',
         [
             'progress bar buttons', 'customize player buttons',
             '进度条按钮', '播放按钮自定义', '按钮槽位',
@@ -727,6 +813,7 @@ export const settingsCommands: CommandPaletteCommand[] = [
     createToggleCommand('settings-toggle-follow-system-reduced-motion', 'settings', 'Follow system reduced motion', 'Toggle whether the system animation setting is allowed to reduce motion in the app', ['system animation setting', 'os reduced motion', 'system motion preference', '跟随系统动画设置', '跟随系统减少动画', '系统动效偏好'], context => context.settings.toggleFollowSystemReducedMotion()),
     createToggleCommand('settings-toggle-track-switch-buttons', 'settings', 'Always show track switch arrows', 'Toggle whether the progress bar track switch arrows stay visible beside the title', ['track switch buttons', 'previous next arrows', 'progress bar arrows', 'song switch buttons', '切歌箭头', '切换箭头', '始终显示切歌按钮', '进度条切歌按钮', '上一首下一首按钮', 'jinduting qiege', 'sysqgan'], context => context.settings.toggleAlwaysShowTrackSwitchButtons()),
     createToggleCommand('settings-toggle-main-window-titlebar', 'settings', 'Always show window control buttons', 'Toggle whether the main window control buttons stay visible', ['always show window controls', 'window control buttons', 'always show titlebar', 'main window titlebar', 'titlebar', '标题栏', '控制按钮', '始终显示标题栏', '始终显示控制按钮', '主窗口标题栏', 'kongzhi annniu', 'bt', 'zckbt'], context => context.settings.toggleAlwaysShowMainWindowTitlebar()),
+    createToggleCommand('settings-toggle-progress-chorus-marker', 'settings', 'Chorus marker on progress bar', 'Toggle the small tick on the progress bar where the chorus starts, shown when the lyric source marks the chorus', ['chorus marker', 'progress bar chorus', 'chorus start', 'highlight marker', 'seek bar tick', '副歌标记', '进度条副歌', '副歌起点', '高潮标记', '进度条标记'], context => context.settings.toggleProgressBarChorusMarker()),
     createToggleCommand('settings-toggle-player-header-blur', 'settings', 'Blurred player header', 'Toggle a frosted bar behind the window titlebar on the player page so its buttons stay readable', ['player header blur', 'titlebar blur', 'frosted titlebar', 'header background', 'window controls visibility', '播放页顶栏模糊背景', '顶栏模糊', '标题栏模糊', '标题栏背景', '磨砂标题栏'], context => context.settings.togglePlayerHeaderBlur(), { platform: ['electron'] }),
     createToggleCommand('settings-toggle-titlebar-side', 'settings', 'Switch window controls side', 'Move window controls between left and right', ['window buttons placement', 'titlebar side', '窗口按钮位置', '左右切换'], context => context.settings.toggleTitlebarSide(), { platform: ['electron'] }),
     createToggleCommand('settings-toggle-fullscreen-titlebar-button', 'settings', 'Toggle fullscreen button visibility', 'Show or hide the fullscreen button in the desktop window controls', ['fullscreen button', 'titlebar fullscreen', 'window fullscreen button', 'show fullscreen control', 'hide fullscreen button', 'fullscreen button visibility', '全屏按钮', '标题栏全屏按钮', '显示全屏按钮', '隐藏全屏按钮', '窗口全屏控制', 'quanping annniu', 'biaotilan quanping'], context => context.settings.toggleHideFullscreenButton(), { platform: ['electron'] }),

@@ -25,10 +25,12 @@ import {
 import { getLocalCoverAssetUrl } from '../../../../services/localCoverAssetUrl';
 import { isPureMusicLyricText } from '../../../../utils/lyrics/pureMusic';
 import { migrateLyricDataRenderHints } from '../../../../utils/lyrics/renderHints';
+import { readCachedPlaybackLyrics } from '../../../../services/onlineMusic/cachedPlaybackLyrics';
 import { resolveLocalSongLyrics } from '../../../../utils/lyrics/localSongLyrics';
 import { loadOnlineLyricsState, resolveOnlineLyrics } from '../../../../utils/onlineLyricsState';
 import type { AudioQualityPreference, MediaId } from '../../../../types/onlineMusic';
 import { omni } from '../../../../services/onlineMusic/omni';
+import { itemTraits } from '../../../../services/onlineMusic/itemTraits';
 import { onlineFailureOf, type OnlineFailure } from '../../../../services/onlineMusic/failure/onlineFailureCase';
 import { getCachedSongCoverUrl, getSongCacheWithLegacyMigration } from '../../../../services/onlineMusic/resourceCache';
 import { getSongCoverUrl } from '../../../../services/onlineMusic/songMetadata';
@@ -439,7 +441,7 @@ const restoreSourceForSong = async (
     // the session restore would take back the autoplay and the window hand-off would put the old
     // address back over the fresh one. A throw that comes after the listener moved on is stale.
     try {
-        const cachedLyrics = await getSongCacheWithLegacyMigration<LyricData>('lyric', song, migrateLyricDataRenderHints);
+        const cachedLyrics = await readCachedPlaybackLyrics(song);
         if (overtaken()) return 'stale';
         const restoredPreferredLyrics = resolveOnlineLyrics(onlineLyricsState, cachedLyrics);
         if (restoredPreferredLyrics) {
@@ -457,6 +459,8 @@ const restoreSourceForSong = async (
             return 'restored';
         }
 
+        // An item of a kind with no lyrics (plan §4.4) is not asked for any.
+        if (itemTraits(song).lyrics === 'none') return 'restored';
         const songProviderId = song.sourceRef?.kind === 'online' ? song.sourceRef.providerId : null;
         const effectiveUserId = songProviderId
             ? (useOnlineProviderAccountStore.getState().accounts[songProviderId]?.user?.id ?? userId)

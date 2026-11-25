@@ -1,16 +1,16 @@
 import { useWindowButtonsAtTopLeft } from '../../../../hooks/useWindowButtonsAtTopLeft';
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, useMotionValue, animate, AnimatePresence, useDragControls, useIsPresent } from 'framer-motion';
-import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
+import { ChevronLeft, Crosshair, Disc, Download, ImagePlus, Play, Plus, Shuffle, Loader2, Heart, ListOrdered, ListPlus, NotebookPen, Pencil, RefreshCw, Trash2, Star, Tags } from 'lucide-react';
 import GridPanelToggleIndicator from '../shared/GridPanelToggleIndicator';
 import { useTranslation } from 'react-i18next';
 import { SongResult, type LocalSong, type StatusMessage, Theme, type UnifiedSong } from '../../../../types';
-import { isSongUnavailable } from '../../../../services/onlineMusic/songAvailability';
+import { getTrackSourceKey, getTrackSourceLabel, getTrackSwappedFromLabel, getTrackUnplayableLabel, TRACK_SWAPPED_MARK, isTrackShownUnplayable, readTrackSourcesVersion, subscribeTrackSources, trackSourceHue } from '../../../../services/foliaPlaylist/trackSourceState';
 import { formatSongName } from '../../../../utils/songNameFormatter';
 import { getSizedCoverUrl } from '../../../../utils/coverUrl';
 import { getSongCoverUrl } from '../../../../services/onlineMusic/songMetadata';
 import { resolveCollectionArtistCatalogId } from '../../../../services/onlineMusic/catalogRefs';
-import { colorWithAlpha } from '../../../../components/visualizer/colorMix';
+import { colorWithAlpha } from '../../../../utils/colorMix';
 import { onlineFailureOf, type OnlineFailure } from '../../../../services/onlineMusic/failure/onlineFailureCase';
 import { onlineFailureMessage } from '../../../../services/onlineMusic/failure/onlineFailureTexts';
 import { getPlaybackSongKey } from '../../../../utils/appPlaybackGuards';
@@ -494,6 +494,8 @@ export const GridView: React.FC<GridViewProps> = ({
     const [isPlaylistPickerOpen, setIsPlaylistPickerOpen] = useState(false);
     const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
     const [isDeleteFolderOpen, setIsDeleteFolderOpen] = useState(false);
+    // 删歌单（Folia 歌单、Navidrome 歌单）也先问一句：删了找不回来。
+    const [isDeletePlaylistOpen, setIsDeletePlaylistOpen] = useState(false);
     const [showCutInPanel, setShowCutInPanel] = useState(false);
     const [showSidePanel, setShowSidePanel] = useState(false);
     // 退场动画期间旧网格仍挂着：只有在场的那一个接键盘、筛选框和命令面板，
@@ -545,6 +547,10 @@ export const GridView: React.FC<GridViewProps> = ({
 
     const collectionSource = collection?.source as string | undefined;
     const isLocalCollection = collectionSource === 'local';
+    // Folia 聚合歌单（本地集合里带 playlistId 的那种）混着各个来源的歌：每行标出来源。
+    // 卡片记着上一次的属性不重画：来源的状态变了，靠这个版本号让它们跟上。
+    const sourcesVersion = useSyncExternalStore(subscribeTrackSources, readTrackSourcesVersion);
+    const showTrackSource = isLocalCollection && Boolean((collection as { playlistId?: string } | null)?.playlistId);
     const isNavidromeCollection = collectionSource === 'navidrome';
     const isAlbumCollection = collection?.type === 'album';
     const isDailyRecommendationsCollection = collectionSource === 'online' && collection?.type === 'daily_recommendations';
@@ -649,7 +655,7 @@ export const GridView: React.FC<GridViewProps> = ({
         title,
     ]);
 
-    // 删除成功才返回上一层（文件夹先经确认对话框）。
+    // 删除成功才返回上一层（文件夹、歌单都先经确认对话框）。
     const handleDeleteSourceCollection = useCallback(async () => {
         const result = await mutations?.deleteCollection();
         if (result?.ok) onBack();
@@ -1228,6 +1234,10 @@ export const GridView: React.FC<GridViewProps> = ({
                                 cardWidth={layoutConfig.cardWidth}
                                 cardHeight={layoutConfig.cardHeight}
                                 fullBleedCover={fullBleedCover}
+                                sourceLabel={showTrackSource && item.rawTrack ? getTrackSourceLabel(item.rawTrack, t) : undefined}
+                                swappedFromLabel={showTrackSource && item.rawTrack ? getTrackSwappedFromLabel(item.rawTrack, t) || undefined : undefined}
+                                sourceHue={showTrackSource && item.rawTrack ? trackSourceHue(getTrackSourceKey(item.rawTrack)) : undefined}
+                                sourcesVersion={sourcesVersion}
                                 isEditMode={isEditMode}
                                 onRemoveTrack={isRemovingTrack ? undefined : () => {
                                     if (item.rawTrack) void handleRemoveTrack(item.rawTrack, trackKey);
@@ -1411,6 +1421,7 @@ export const GridView: React.FC<GridViewProps> = ({
                     || isPlaylistPickerOpen
                     || isCreatePlaylistOpen
                     || isDeleteFolderOpen
+                    || isDeletePlaylistOpen
                 ) return;
 
                 const focusedItem = gridItems[focusedIndex];
@@ -1470,6 +1481,7 @@ export const GridView: React.FC<GridViewProps> = ({
         gridItems,
         isCreatePlaylistOpen,
         isDeleteFolderOpen,
+        isDeletePlaylistOpen,
         isEditMode,
         isActive,
         isPlaylistPickerOpen,
@@ -1538,7 +1550,8 @@ export const GridView: React.FC<GridViewProps> = ({
     // the background; a read that failed (the first page, a page of the background fill, or a
     // Navidrome read) brings nothing more and leaves the list short of what it did not reach. The
     // snapshot says both in one update with the tracks they speak of.
-    const hasReadFailed = Boolean(loadError || backgroundLoadError);
+    // 重读失败但手上还是上次整张读完的那份（resource 的 tracksWhole）：列表是全的，不算「没读全」。
+    const hasReadFailed = Boolean((loadError && !resourceSnapshot?.tracksWhole) || backgroundLoadError);
     const cardsStillArriving = isLoading || loading || backgroundLoading;
     const pageKey = navigationKey ?? collectionKey(collection);
     const isLocateAsked = locateRequest !== null && mode === 'tracks' && locateRequest.collectionKey === pageKey;
@@ -2098,6 +2111,26 @@ export const GridView: React.FC<GridViewProps> = ({
                                             : t('scratchpad.collectScope')}
                                     </button>
                                 )}
+                                {mutationCapabilities.saveToFolia.supported && (
+                                    <button
+                                        onClick={() => void mutations?.saveToFolia()}
+                                        data-grid-action="save-to-folia"
+                                        className="w-full py-2.5 rounded-full text-xs font-semibold bg-zinc-800/10 dark:bg-zinc-100/10 hover:bg-zinc-900 hover:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                        <ListPlus size={14} />
+                                        {t('foliaTransfer.saveAction')}
+                                    </button>
+                                )}
+                                {mutationCapabilities.refreshFromOrigin.supported && (
+                                    <button
+                                        onClick={() => void mutations?.refreshFromOrigin()}
+                                        data-grid-action="refresh-from-origin"
+                                        className="w-full py-2.5 rounded-full text-xs font-semibold bg-zinc-800/10 dark:bg-zinc-100/10 hover:bg-zinc-900 hover:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                        <RefreshCw size={14} />
+                                        {t('foliaTransfer.refreshAction')}
+                                    </button>
+                                )}
                                 {canAddNavidromeToPlaylist && (
                                     <button
                                         onClick={() => setIsPlaylistPickerOpen(true)}
@@ -2161,6 +2194,15 @@ export const GridView: React.FC<GridViewProps> = ({
                                             : (isEditMode ? t('localMusic.finishEditing') : t('localMusic.editPlaylist'))}
                                     </button>
                                 )}
+                                {mutationCapabilities.reorderPlaylist.supported && (
+                                    <button
+                                        onClick={() => void mutations?.reorderPlaylist()}
+                                        className="w-full py-2.5 rounded-full text-xs font-semibold bg-zinc-800/10 dark:bg-zinc-100/10 hover:bg-zinc-900 hover:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                        <ListOrdered size={14} />
+                                        {t('localPlaylistOrder.edit')}
+                                    </button>
+                                )}
                                 {mutationCapabilities.exportPlaylist.supported && (
                                     <button
                                         onClick={handleExportLocalPlaylist}
@@ -2195,7 +2237,7 @@ export const GridView: React.FC<GridViewProps> = ({
                                 )}
                                 {mutationCapabilities.deleteCollection.supported && (
                                     <button
-                                        onClick={() => isLocalFolderCollection ? setIsDeleteFolderOpen(true) : void handleDeleteSourceCollection()}
+                                        onClick={() => (isLocalFolderCollection ? setIsDeleteFolderOpen(true) : setIsDeletePlaylistOpen(true))}
                                         disabled={isSourceActionPending}
                                         className="w-full py-2.5 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-red-500/10 text-red-500 border border-red-500/25 hover:bg-red-500/20 disabled:opacity-40"
                                     >
@@ -2246,6 +2288,19 @@ export const GridView: React.FC<GridViewProps> = ({
                     void handleDeleteSourceCollection();
                 }}
                 onClose={() => setIsDeleteFolderOpen(false)}
+                isDaylight={isDaylight}
+            />
+            <ConfirmDialog
+                isOpen={isDeletePlaylistOpen}
+                title={t('libraryTui.confirmDelete', { name: title })}
+                description={t('localMusic.deletePlaylistMessage')}
+                confirmText={t('localMusic.deletePlaylist')}
+                confirmVariant="danger"
+                onConfirm={() => {
+                    setIsDeletePlaylistOpen(false);
+                    void handleDeleteSourceCollection();
+                }}
+                onClose={() => setIsDeletePlaylistOpen(false)}
                 isDaylight={isDaylight}
             />
 
@@ -2317,7 +2372,10 @@ export const GridView: React.FC<GridViewProps> = ({
                             track={track}
                             index={index}
                             style={style}
-                            isUnavailable={isSongUnavailable(track)}
+                            isUnavailable={isTrackShownUnplayable(track)}
+                            // 列表里一行只有一串字：换过来源的在来源后面带同一个记号（悬停说明在卡片上）。
+                            sourceLabel={showTrackSource ? `${getTrackSourceLabel(track, t)}${getTrackSwappedFromLabel(track, t) ? ` ${TRACK_SWAPPED_MARK}` : ''}` : undefined}
+                            unavailableLabel={getTrackUnplayableLabel(track, t, t('status.songUnavailableTag'))}
                             isActive={index === listFocusedIndex}
                             albumTrackLabel={getAlbumTrackLabel(track)}
                             onPlay={() => {

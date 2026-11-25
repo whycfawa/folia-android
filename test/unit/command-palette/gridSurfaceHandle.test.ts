@@ -22,7 +22,10 @@ const params = (overrides: Partial<GridSurfaceParams> = {}): GridSurfaceParams =
     canResyncFolder: false,
     canResyncAllFolders: false,
     canOrganizeSongInfo: false,
+    canReorderPlaylist: false,
     canExportPlaylist: false,
+    canSaveToFolia: false,
+    canRefreshFromOrigin: false,
     canEditEntity: false,
     canSetCover: false,
     canEditPlaylist: false,
@@ -46,7 +49,10 @@ const params = (overrides: Partial<GridSurfaceParams> = {}): GridSurfaceParams =
     resyncFolder: vi.fn(),
     resyncAllFolders: vi.fn(),
     organizeSongInfo: vi.fn(),
+    reorderPlaylist: vi.fn(),
     exportPlaylist: vi.fn(),
+    saveToFolia: vi.fn(),
+    refreshFromOrigin: vi.fn(),
     editEntity: vi.fn(),
     setCover: vi.fn(),
     toggleEditMode: vi.fn(),
@@ -166,7 +172,10 @@ const fakeController = (snapshot: CollectionMutationSnapshot) => {
         deleteCollection: vi.fn(ok),
         resyncFolder: vi.fn(ok),
         resyncAllFolders: vi.fn(ok),
+        reorderPlaylist: vi.fn(ok),
         exportPlaylist: vi.fn(ok),
+        saveToFolia: vi.fn(ok),
+        refreshFromOrigin: vi.fn(ok),
         addToPlaylist: vi.fn(ok),
         createPlaylist: vi.fn(ok),
         editEntity: vi.fn(ok),
@@ -289,7 +298,7 @@ describe('core surface actions across suites', () => {
     });
 
     it('runs the published mutation commands on the controller', () => {
-        const snapshot = snapshotWith({ subscribe: READY, resyncFolder: READY, exportPlaylist: READY });
+        const snapshot = snapshotWith({ subscribe: READY, resyncFolder: READY, exportPlaylist: READY, reorderPlaylist: READY });
         const controller = fakeController(snapshot);
         const surface = buildCoreSurfaceParams({
             ...coreInputs(snapshot, controller),
@@ -299,6 +308,7 @@ describe('core surface actions across suites', () => {
         runGridSurfaceAction('toggle-subscribe', surface);
         runGridSurfaceAction('resync-folder', surface);
         runGridSurfaceAction('export-playlist', surface);
+        runGridSurfaceAction('reorder-playlist', surface);
         // TUI 也声明了 subscribe：经它的 surface 执行的是同一个控制器动作。
         runGridSurfaceAction('toggle-subscribe', buildCoreSurfaceParams({
             ...coreInputs(snapshot, controller),
@@ -314,5 +324,6 @@ describe('core surface actions across suites', () => {
         expect(controller.toggleSubscribe).toHaveBeenCalledTimes(2);
         expect(controller.resyncFolder).toHaveBeenCalledTimes(1);
         expect(controller.exportPlaylist).toHaveBeenCalledTimes(1);
+        expect(controller.reorderPlaylist).toHaveBeenCalledTimes(1);
     });
 });

@@ -6,7 +6,7 @@ import { Tooltip } from '../../modal/settings/kit/Tooltip';
 import { SettingsKitThemeContext } from '../../modal/settings/kit/kitTheme';
 import { useElementWidth } from '../../../hooks/useElementWidth';
 import { DEFAULT_MONET_TUNING } from '../../../types';
-import { colorWithAlpha } from '../colorMix';
+import { colorWithAlpha } from '../../../utils/colorMix';
 import { type VisualizerSharedProps } from '../definition';
 import { useVisualizerRuntime } from '../runtime';
 import { useLyricRenderQuality } from '../renderQuality/useLyricRenderQuality';
@@ -303,21 +303,26 @@ const VisualizerMonet: React.FC<VisualizerMonetProps> = (props) => {
                                         the clip box cuts into the glyphs — descenders (g, j, p, y, CJK) at the bottom,
                                         accented caps at the top. Grow the padding box on both sides to hold them.
                                         The top is pulled back in full; the bottom only most of the way, so the
-                                        ~0.13em left over keeps a descender from crowding the album line below. */}
-                                    <div
-                                        className="line-clamp-2 font-semibold leading-[1.06]"
-                                        style={{
-                                            color: theme.primaryColor,
-                                            fontSize: `clamp(1.45rem, 3.3vw, ${titleMaxRem}rem)`,
-                                            letterSpacing: 0,
-                                            overflowWrap: 'anywhere',
-                                            paddingBlock: '0.25em',
-                                            marginTop: '-0.25em',
-                                            marginBottom: '-0.12em',
-                                            textShadow: `0 14px 36px ${colorWithAlpha(theme.backgroundColor, 0.28)}`,
-                                        }}
-                                    >
-                                        {songTitle || 'Monet'}
+                                        ~0.13em left over keeps a descender from crowding the album line below.
+                                        The shadow is the wrapper's filter, not a text-shadow: a text-shadow is painted
+                                        inside the clamp's clip box, which cut its soft edge off square (#1301); the
+                                        filter shadows the clipped result from outside it. Its blur is half the old 36px:
+                                        drop-shadow takes the Gaussian's deviation, text-shadow twice that. */}
+                                    <div style={{ filter: `drop-shadow(0 14px 18px ${colorWithAlpha(theme.backgroundColor, 0.28)})` }}>
+                                        <div
+                                            className="line-clamp-2 font-semibold leading-[1.06]"
+                                            style={{
+                                                color: theme.primaryColor,
+                                                fontSize: `clamp(1.45rem, 3.3vw, ${titleMaxRem}rem)`,
+                                                letterSpacing: 0,
+                                                overflowWrap: 'anywhere',
+                                                paddingBlock: '0.25em',
+                                                marginTop: '-0.25em',
+                                                marginBottom: '-0.12em',
+                                            }}
+                                        >
+                                            {songTitle || 'Monet'}
+                                        </div>
                                     </div>
                                     <div
                                         className="truncate text-sm uppercase"
@@ -436,7 +441,7 @@ const VisualizerMonet: React.FC<VisualizerMonetProps> = (props) => {
                                                 border: `1px solid ${colorWithAlpha(theme.primaryColor, 0.16)}`,
                                                 boxShadow: `0 4px 12px ${colorWithAlpha('#000000', 0.12)}`,
                                             }}
-                                            title={t('common.reset')}
+                                            title={t('ui.reset')}
                                         >
                                             <RotateCcw size={14} />
                                         </button>
