@@ -600,6 +600,16 @@ export interface FoliumSourceExternalStatus {
     /** It accepted a start and is still buffering. */
     starting?: boolean;
     /**
+     * The player says it plays but its position has not moved for a while: a stream stuck in the player (Apple's
+     * WebView has done this on DRM buffering). Not the end of the track, not a pause: the host restarts the stream.
+     */
+    stalled?: boolean;
+    /**
+     * The player went on to another song before this one was heard to its end (a stream it could not play). Not the
+     * end of the track either: the host starts this one again instead of skipping it.
+     */
+    movedOn?: boolean;
+    /**
      * The player itself says this song cannot play at all: Apple answers `CONTENT_RESTRICTED` (mk-007) for a
      * few tracks in some storefronts, and a start it accepted may deliver no media data at all. No restart
      * changes that answer, so the host says it once — the same notice a song with no address gets, "content

@@ -1079,6 +1079,13 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
   现在 `externalStatus()` 把 `unplayable` 交给路线（`src/services/onlineMusic/externalPlayback.ts`
   上游本来就有 `refuseUnplayableSong`），提示与「未获取到音频」同款，之后按「无法播放自动跳过」走。
   位置不在 0 的不算（出过声之后的失败是中断，不是拒绝）。
+- **Apple Music 的 stalled / movedOn**：两条都是 2026-11-20 的安卓报告修出来的，合并时一起丢了。
+  MusicKit 一边说在放、一边位置不动（DRM 缓冲卡住）时，那段静止不算收听时间——算进去会把后面的
+  答复推到歌曲结尾，然后这首歌连原因都没有就被跳过；现在连续 6 秒不动就报 `stalled`，路线重开这一路流。
+  另一条：放不动的歌被 MusicKit 自己走到预备队列的下一首，以前当成「上一首播完了」，于是静默跳过；
+  现在只有听到结尾 5 秒以内才算结束，否则报 `movedOn`，路线把这首歌重新起一遍。
+  `src/mods/folium/sources/contract.ts` 的 `FoliumSourceExternalStatus` 补上 `stalled`/`movedOn` 两个可选字段
+  （宿主 `externalPlayback.ts` 一直在读它们，只是音源侧的类型声明合并时没跟上），`mods/folium.d.ts` 重新生成。
 - **桌面伴侣页也补上**：`sources/appleMusic/main/companionRequests.cjs` 的 `playbackStatus` 同样会
   报 `unplayable`（它读 MusicKit 的 `mediaPlaybackError` 代码与 `__foliaPlayerError.mkCode`）。
   注意这个文件是用 `readFromPage.toString()` 注入页面的，所以判定用的常量必须写在 `readFromPage` 里，
@@ -1096,6 +1103,7 @@ AI 合并上游模型发现/预设接口并保留安卓直连运行时；`packag
   是这个入口的打包产物，本轮的内容按同样的形状手工同步（本机没有 esbuild，没法重新打包）。
 - 单测：`test/unit/appleMusic/companionStartFailure.test.ts` 原有一条「被拒绝的起播算失败」改成新口径
   （答 `unplayable` 而不是 `playback-failed`），另加三条：mk-007 认得出来、普通拒绝仍是失败、出过声的不算拒绝；
-  `test/unit/appleMusic/appleMusicProvider.test.ts` 加一条「页面说放不了就原样交给路线，别的一概当没说」。
+  `test/unit/appleMusic/appleMusicProvider.test.ts` 加三条：页面说放不了就原样交给路线（别的一概当没说）、
+  卡住的流报 `stalled` 且静止不算收听、没播到结尾就换歌报 `movedOn`（后两条是从 .472/.474 的旧用例搬回来的）。
 - 未真机验证：这些改动只过了 `tsc --noEmit`、`dev/sources/typecheck.mjs`、相关单测与打包标记检查，
   内容受限的歌到底会不会按预期提示并跳过，要等真机点一首受限的歌才知道。

@@ -33,6 +33,16 @@ const isEndedState = (state: number | null): boolean => state === 5 || state ===
 // this close to its end.
 const STOPPED_STATE = 4;
 const STOPPED_AT_END_SLACK_MS = 3000;
+// MusicKit keeps saying it plays while the element under it sits in waiting and its clock stops (Apple's
+// Android WebView has, mid-song on DRM). An answer that does not move is a stalled stream, not listening
+// time: read as listening it pushes a later answer to the end of the song, and the track is skipped with
+// nothing said about why.
+const STALL_MOVE_SLACK_MS = 50;
+const STALL_AFTER_MS = 6000;
+// The player moved on to the prepared successor: that is this song's end only if it was heard up to its
+// end. A song it could not play is left behind exactly the same way (2026-11-20: a song that stalls at
+// 148 s, MusicKit goes on to the next one), and taken for an end it is skipped with nothing said.
+const HANDOFF_END_SLACK_MS = 5000;
 // Chromium's intensive throttling lets a hidden page's chained timers run once a minute.
 const HEARD_GAP_LIMIT_MS = 90_000;
 // MusicKit's PlayerRepeatMode.one: going round passes through a stopped answer with no item, which
@@ -121,9 +131,11 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
     // Only a change is logged: the player is asked twice a second while a track is loaded.
     let lastHadTrack: boolean | null = null;
     // MusicKit clears nowPlayingItem at completion. Retain only this attempt's observed identity.
-    let playback: { catalogId: string; hasPlayed: boolean; durationMs: number; positionMs: number; heardAtMs: number; heardPlaying: boolean; nextIds: string[]; nativeNextId: string; queueRevision: number } | null = null;
+    let playback: { catalogId: string; hasPlayed: boolean; durationMs: number; positionMs: number; heardAtMs: number; heardPlaying: boolean; nextIds: string[]; nativeNextId: string; queueRevision: number; stalledSinceMs: number; stalled: boolean } | null = null;
     // Attempts whose stopped-at-end reading has been logged: the player is asked again until Folia moves on.
     const stoppedEndLogged = new WeakSet();
+    // Attempts whose "left the song before its end" reading has been logged (once per song, not per answer).
+    const movedOnLogged = new WeakSet();
 
     // Window actions take turns so an older cancellation cannot hide a newer login.
     function scheduleWindowAction(action: () => Promise<void>): Promise<void> {
@@ -257,7 +269,7 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
                     const adoptCurrent = handoffId === catalogId && seconds === 0;
                     handoffId = null;
                     const requestKey = `play_${playNonce}_${++playSequence}`;
-                    const attempt = { catalogId, hasPlayed: false, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [] as string[], nativeNextId: '', queueRevision: 0 };
+                    const attempt = { catalogId, hasPlayed: false, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [] as string[], nativeNextId: '', queueRevision: 0, stalledSinceMs: 0, stalled: false };
                     playback = attempt;
                     let result;
                     try {
@@ -281,7 +293,7 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
                         return;
                     }
                     liveStationId = null;
-                    playback = { catalogId: appleMusicPlaybackSongId(song), hasPlayed: true, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [], nativeNextId: '', queueRevision: 0 };
+                    playback = { catalogId: appleMusicPlaybackSongId(song), hasPlayed: true, durationMs: 0, positionMs: 0, heardAtMs: 0, heardPlaying: false, nextIds: [], nativeNextId: '', queueRevision: 0, stalledSinceMs: 0, stalled: false };
                 },
                 async pause() {
                     await requestAppleMusic('pause');
@@ -313,6 +325,10 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
                     const data = await requestAppleMusic<unknown>('playbackStatus');
                     const answeredAtMs = Date.now();
                     let status = externalStatus(data);
+                    /** This answer reads the same song, still playing, at the same place: a stalled stream. */
+                    let stalledAnswer = false;
+                    /** The player went on to the next song with this one unheard to its end. */
+                    let movedOn = false;
                     if (attempt && playback === attempt && attempt.catalogId === (appleMusicLiveStationId(song) || appleMusicPlaybackSongId(song))) {
                         if (status.mediaId === attempt.catalogId) {
                             attempt.hasPlayed ||= status.isPlaying;
@@ -322,15 +338,38 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
                             const wentBackAtEnd = !status.isPlaying && status.positionMs === 0 && attempt.heardPlaying
                                 && attempt.durationMs > 0 && attempt.positionMs >= attempt.durationMs - STOPPED_AT_END_SLACK_MS;
                             if (!wentBackAtEnd) {
+                                // A position that does not move while MusicKit says it plays is a stuck stream.
+                                const moved = status.positionMs > attempt.positionMs + STALL_MOVE_SLACK_MS;
+                                if (moved || !status.isPlaying || status.seeking === true) {
+                                    attempt.stalled = false;
+                                    attempt.stalledSinceMs = 0;
+                                } else if (attempt.stalledSinceMs === 0) {
+                                    attempt.stalledSinceMs = answeredAtMs;
+                                } else if (answeredAtMs - attempt.stalledSinceMs >= STALL_AFTER_MS) {
+                                    attempt.stalled = true;
+                                }
                                 attempt.positionMs = status.positionMs;
                                 attempt.heardAtMs = answeredAtMs;
-                                attempt.heardPlaying = status.isPlaying && status.seeking !== true;
+                                attempt.heardPlaying = status.isPlaying && status.seeking !== true && !attempt.stalled;
+                                stalledAnswer = attempt.stalled;
                             }
                         } else if (status.mediaId && attempt.hasPlayed && (status.mediaId === attempt.nextIds[0] || status.mediaId === attempt.nativeNextId)) {
-                            handoffId = status.mediaId;
-                            // MusicKit already started the approved next song. Let Folia adopt it without resetting its queue.
-                            status = { mediaId: attempt.catalogId, isPlaying: false, ended: true,
-                                durationMs: attempt.durationMs, positionMs: attempt.durationMs || attempt.positionMs };
+                            const heardToEnd = attempt.durationMs > 0
+                                ? attempt.positionMs >= attempt.durationMs - HANDOFF_END_SLACK_MS
+                                : true;
+                            if (heardToEnd) {
+                                handoffId = status.mediaId;
+                                // MusicKit already started the approved next song. Let Folia adopt it without resetting its queue.
+                                status = { mediaId: attempt.catalogId, isPlaying: false, ended: true,
+                                    durationMs: attempt.durationMs, positionMs: attempt.durationMs || attempt.positionMs };
+                            } else {
+                                if (!movedOnLogged.has(attempt)) {
+                                    movedOnLogged.add(attempt);
+                                    console.info('[AppleMusic] the player left the song before it was heard to its end',
+                                        { positionMs: attempt.positionMs, durationMs: attempt.durationMs });
+                                }
+                                movedOn = true;
+                            }
                         } else if (status.mediaId) {
                             // The user selected a different song in the web window: its end is not ours.
                             attempt.hasPlayed = false;
@@ -371,7 +410,15 @@ export function createAppleMusicSource(env: AppleMusicSourceEnv): FoliumSourceDe
                             queueKeys: (data as { queueKeys?: unknown } | null)?.queueKeys ?? null,
                         });
                     }
-                    return status;
+                    // 页面自己说放不了：原样交出去，别的说法都只是那件事的回声。
+                    if (status.unplayable) return status;
+                    return stalledAnswer || movedOn
+                        ? {
+                            ...status,
+                            ...(stalledAnswer ? { stalled: true } : {}),
+                            ...(movedOn ? { movedOn: true } : {}),
+                        }
+                        : status;
                 },
                 // The companion reports the catalog id it was given (an upload: its library id), so a library song matches too.
                 isStatusForSong(song: FoliumSourceSong, status: FoliumSourceExternalStatus) {

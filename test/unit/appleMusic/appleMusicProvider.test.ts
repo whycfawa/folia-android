@@ -124,7 +124,7 @@ describe('Apple Music lyrics and external playback', () => {
         stubAppleMusicBridge(vi.fn(async () => ({ ok: true, data })));
         const provider = freshAppleMusicProvider();
         const external = provider.externalPlayback!;
-        await external.play(song);
+        await external.play(song, 0);
         await expect(external.getStatus(song)).resolves.toMatchObject({ unplayable: 'content-restricted' });
 
         data = { ...data, unplayable: 'no-audio' };
@@ -310,6 +310,47 @@ describe('Apple Music lyrics and external playback', () => {
         await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '123', ended: true });
         await external.prepareNext!(song, []);
         await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '456', ended: false });
+    });
+
+    // 2026-11-20（安卓 .472 报告）：MusicKit 一边说在放、一边位置停在原地（DRM 缓冲卡住）。那段静止不是
+    // 收听时间：当成收听会把后面的答复推到歌曲结尾，然后连原因都没有就被跳过。
+    it('reads a stalled stream as stalled, and does not count its stillness as listening', async () => {
+        let now = 1_000_000;
+        vi.spyOn(Date, 'now').mockImplementation(() => now);
+        let data: Record<string, unknown> = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, repeatMode: 0, positionMs: 148300, durationMs: 200000 };
+        stubAppleMusicBridge(vi.fn(async () => ({ ok: true, data })));
+        const external = freshAppleMusicProvider().externalPlayback!;
+        await external.play(song, 0);
+        const first = await external.getStatus(song);
+        expect(first).toMatchObject({ mediaId: '123', isPlaying: true, ended: false });
+        expect(first.stalled).toBeUndefined();
+        // Six seconds of answers that do not move: the stream is stuck, and said so.
+        for (let answer = 0; answer < 13; answer += 1) {
+            now += 500;
+            await external.getStatus(song);
+        }
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '123', isPlaying: true, ended: false, stalled: true });
+
+        // The player then gives up and clears its item a minute later. None of that minute was listened
+        // to: the song never reached its end, and must not be skipped as if it had.
+        now += 60000;
+        data = { itemId: '', catalogId: '', isPlaying: false, state: 4, repeatMode: 0, positionMs: 0, durationMs: 0 };
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '', ended: false });
+    });
+
+    // 2026-11-20（安卓 .474 报告）：一首放不动的歌，MusicKit 自己走到预备队列的下一首。原先这种移动被当成
+    // 「上一首播完了」，于是这首歌被静默跳过。只有听到结尾附近才算它自己的结束。
+    it('does not take the player leaving an unplayed song for that song end', async () => {
+        let data = { itemId: '123', catalogId: '123', isPlaying: true, state: 2, positionMs: 148300, durationMs: 200000 };
+        stubAppleMusicBridge(vi.fn(async () => ({ ok: true, data })));
+        const external = freshAppleMusicProvider().externalPlayback!;
+        await external.play(song, 0);
+        await external.getStatus(song);
+        const next = hostAppleMusicSong({ id: '456', type: 'songs', attributes: { name: 'Next' } });
+        await external.prepareNext!(song, [next]);
+        // 51 秒之前就换了歌：这首歌没有播到它的结尾。
+        data = { ...data, itemId: '456', catalogId: '456', isPlaying: true, positionMs: 1200 };
+        await expect(external.getStatus(song)).resolves.toMatchObject({ mediaId: '456', ended: false, movedOn: true });
     });
 
     it('keeps an already prepared handoff when an edit arrives after native advancement', async () => {
