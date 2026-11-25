@@ -124,8 +124,46 @@ Folia是一个以全屏沉浸式歌词播放为核心的在线音乐播放器，
 桌面版内置前后端运行环境，适合希望即装即用的用户。
 
 
-## 模组系统（Folium v1.x）
+### One-click deployment (upstream)
 
+如果你希望快速上线 Web 版本，请阅读 [Vercel 一键部署指南](https://folia-site.cielaniska.top/guide/deploy-vercel) 来创建项目
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chthollyphile/folia-major) 
+
+项目也支持一键部署到 Cloudflare，请参考 Vercel 的部署教程进行相应调整。
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chthollyphile/folia-major)
+
+Vercel 与 Cloudflare 上的 QQ 音乐不再需要额外部署一个常驻 API 实例：把 `VITE_QQ_API_BASE` 填成 `/api/qq`，再配一个 `QQ_SESSION_SECRET`（服务端密钥，**不加 `VITE_` 前缀**）即可。这种形态支持微信扫码和手机 QQ 扫码登录（手机 QQ 扫码要 qq-music-api 3.3.3 或更高版本），且播放前必须先登录；Cloudflare 上可以再绑定一个 Durable Object，让 QQ 扫码改走长连接，并多一个 QQ 音乐 App 扫码。完整步骤、平台差异和排错方法见 [QQ 音乐部署指南](docs/qq-music-deployment.md)。
+
+自托管用户可以使用 [Docker Compose 全栈部署](deploy/docker/README.md)。本地音乐目录访问依赖可信 HTTPS 安全上下文，部署文档包含 NAS 反向代理和证书要求。
+
+### 直接下载
+
+- **Windows / macOS / Linux**: 最新版本的安装包请前往 [Releases 页面](https://github.com/chthollyphile/folia-major/releases/latest) 下载。
+- **Arch Linux**: 可通过 AUR 获取 [folia-major-bin](https://aur.archlinux.org/packages/folia-major-bin)。
+- **Flatpak**: 社区提供的第三方 flatpak，详情见 [Flatpark](https://flatpark.org/apps/top.izuna.foliamajor/)。
+- **Android**: 社区第三方移植版见下方 [移动端](#移动端)。
+
+> [!IMPORTANT]
+> 如果国内网络从 GitHub Releases 下载较慢，可以使用 [夸克网盘](https://pan.quark.cn/s/6e4c6fa3bc6f) 或 [百度云](https://pan.baidu.com/s/1f0x3g-8PMcNCO-TJ5z1rPw?pwd=flia) 下载。网盘链接仅提供 Windows 与 Apple silicon 的正式版安装包.
+
+> [!WARNING]
+> **装了卡巴斯基，Folia 打开后是黑窗口并弹出崩溃提示？**
+>
+> 卡巴斯基不认识没有代码签名的 `Folia.exe`，会把它放进受限制的组，由「系统监控」拦下页面进程。
+>
+> 解决办法：在卡巴斯基的「受信任的应用程序」里添加 `Folia.exe`，并勾选「不监控应用程序活动」，然后退出 Folia 再重新打开。只把信任组改成「受信任」不管用。详见 [#1346](https://github.com/chthollyphile/folia-major/issues/1346)。
+
+Linux 包、Wayland / Hyprland 遥控窗和桌面端细节见 [技术与开发说明](docs/technical.md)。
+
+### 移动端
+
+| 方式 | 说明 |
+| --- | --- |
+| **PWA（推荐）** | 部署 Web 版本或自托管版本后，在 Chrome for Android / iOS Safari 中将网页添加到主屏幕，即可作为 PWA 应用使用。 |
+| **社区移植版（Android）** | [folia-ce/folia-sonnet](https://github.com/folia-ce/folia-sonnet) · [whycfawa/folia-android](https://github.com/whycfawa/folia-android) |
+| **自行打包（Android）** | 有一定技术基础的用户可以用 Capacitor 将 Web 版本打包为可安装的 APK，参考示范仓库 [chthollyphile/folia-sonnet](https://github.com/chthollyphile/folia-sonnet)。 |
 > [!NOTE]
 > 模组系统是实验性功能，node模组在移动版不可用，默认关闭，需要在「设置 → 模组 → 模组系统」中开启。
 

@@ -120,8 +120,48 @@ Each lyric animation has its own typography, mood, and tunable parameters, givin
 
 The desktop app bundles both frontend and backend, so it works right after install.
 
-## Mods (Folium v1.x)
+### One-click deployment (upstream)
 
+### One-click deployment
+
+To put the web app online quickly, follow the [Vercel deployment guide](https://folia-site.cielaniska.top/guide/deploy-vercel).
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chthollyphile/folia-major)
+
+Folia also deploys to Cloudflare in one click; adapt the Vercel guide accordingly.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chthollyphile/folia-major)
+
+On Vercel and Cloudflare, QQ Music no longer needs a separate, always-on API instance: set `VITE_QQ_API_BASE` to `/api/qq` and add a `QQ_SESSION_SECRET` (a server-side secret, **without the `VITE_` prefix**). This setup supports login by scanning a QR code with WeChat or mobile QQ (mobile QQ requires qq-music-api 3.3.3 or later), and you must log in before playback. On Cloudflare you can also bind a Durable Object so QQ QR login uses a long-lived connection and gains QR login with the QQ Music app. For full steps, platform differences, and troubleshooting, see the [QQ Music deployment guide](docs/qq-music-deployment.md) (Chinese).
+
+Self-hosters can use the [Docker Compose full-stack deployment](deploy/docker/README.md). Access to local music folders requires a trusted HTTPS secure context; the deployment docs cover NAS reverse proxies and certificate requirements.
+
+### Direct download
+
+- **Windows / macOS / Linux**: Download the latest installers from the [Releases page](https://github.com/chthollyphile/folia-major/releases/latest).
+- **Arch Linux**: Install [folia-major-bin](https://aur.archlinux.org/packages/folia-major-bin) from the AUR.
+- **Flatpak**: A community-maintained third-party Flatpak is available on [Flatpark](https://flatpark.org/apps/top.izuna.foliamajor/).
+- **Android**: Third-party community ports are listed under [Mobile](#mobile) below.
+
+> [!IMPORTANT]
+> If GitHub Releases is slow from mainland China, download from [Quark](https://pan.quark.cn/s/6e4c6fa3bc6f) or [Baidu](https://pan.baidu.com/s/1f0x3g-8PMcNCO-TJ5z1rPw?pwd=flia) instead. These links host stable installers for Windows and Apple silicon only.
+
+> [!WARNING]
+> **Kaspersky installed, and Folia opens to a black window with a crash dialog?**
+>
+> Kaspersky does not recognize the unsigned `Folia.exe`, puts it in a restricted group, and its System Watcher stops the page process.
+>
+> Fix: in Kaspersky, add `Folia.exe` to "Trusted applications" and tick "Do not monitor application activity", then quit Folia and open it again. Moving it to the Trusted group alone does not help. See [#1346](https://github.com/chthollyphile/folia-major/issues/1346).
+
+For Linux packages, the Wayland / Hyprland remote control window, and other desktop details, see [Technical Notes](docs/technical.md) (Chinese).
+
+### Mobile
+
+| Option | Details |
+| --- | --- |
+| **PWA (recommended)** | Deploy the web or self-hosted version, then add it to your home screen from Chrome for Android or iOS Safari to use it as a PWA. |
+| **Community ports (Android)** | [maimai993/folia-sonnet](https://github.com/maimai993/folia-sonnet) · [whycfawa/folia-android](https://github.com/whycfawa/folia-android) |
+| **Build it yourself (Android)** | If you are comfortable with the tooling, package the web version as an installable APK with Capacitor. See the example repository [chthollyphile/folia-sonnet](https://github.com/chthollyphile/folia-sonnet). |
 > [!NOTE]
 > Mods are experimental. Node-based mods are not available on mobile. They are off by default; turn them on in **Settings → Mods → Mod system**.
 
