@@ -1673,6 +1673,85 @@ function mapKGPlaylist(item, userId) {
   };
 }
 
+/**
+ * 一条账号收藏行是不是专辑。
+ *
+ * 上游（sources/kugou/core/kugouProvider.ts 的 getKugouUserCollectionType）用同一套规则判断：
+ * `source === 2` 或带 `musiclib_id` 的是专辑；两者都没有、只剩专辑 id 而没有歌单 id 的也算专辑。
+ * 安卓桥以前把 get_all_list 的每一行都当歌单映射，专辑的这几个标记在 mapKGPlaylist 里被丢掉，
+ * 于是收藏专辑全跑进「歌单」一栏、「专辑」一栏永远是空的（Issue #19）。
+ */
+export function isKGAlbumCollection(item) {
+  if (!item || typeof item !== 'object') return false;
+  if (Number(item.source) === 2) return true;
+  const musiclibId = item.musiclib_id ?? item.musicLibId;
+  if (musiclibId !== undefined && musiclibId !== null && String(musiclibId).trim() !== '') return true;
+  const albumId = item.album_id ?? item.albumid ?? item.albumId ?? item.AlbumID;
+  const playlistId = item.global_collection_id ?? item.globalCollectionId ?? item.gid
+    ?? item.listid ?? item.list_id ?? item.specialid ?? item.special_id;
+  const hasAlbumId = albumId !== undefined && albumId !== null && String(albumId).trim() !== '';
+  const hasPlaylistId = playlistId !== undefined && playlistId !== null && String(playlistId).trim() !== '';
+  return hasAlbumId && !hasPlaylistId;
+}
+
+function kgAlbumIdOf(item) {
+  item = item || {};
+  const candidates = [
+    item.musiclib_id,
+    item.musicLibId,
+    item.album_id,
+    item.albumid,
+    item.albumId,
+    item.AlbumID,
+    item.list_create_listid,
+  ];
+  for (const value of candidates) {
+    if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
+  }
+  // 专辑行没有歌单 id 时才退到通用 id；有 listid 的行按歌单处理，不走这里。
+  const fallback = item.specialid ?? item.special_id ?? item.id;
+  return fallback !== undefined && fallback !== null ? String(fallback).trim() : '';
+}
+
+function mapKGAlbum(item) {
+  item = item || {};
+  const id = kgAlbumIdOf(item);
+  const name = stripKGHighlightHtml(
+    item.album_name || item.albumname || item.name || item.listname || item.specialname || '',
+  );
+  const authorName = stripKGHighlightHtml(
+    item.author_name || item.singername || item.singer_name || item.nickname || '',
+  );
+  return {
+    provider: 'kg',
+    source: 'kg',
+    type: 'album',
+    id,
+    albumId: id,
+    name: name || '未命名专辑',
+    cover: extractKGPlaylistCover(item, 240),
+    trackCount: kgPlaylistSongCount(item),
+    ...(authorName ? { artists: [{ name: authorName }] } : {}),
+    creator: authorName || '酷狗音乐',
+    ownerId: String(item.list_create_userid || item.create_userid || '').trim(),
+    subscribed: true,
+    ownedByMe: false,
+  };
+}
+
+/** 收藏行 → 歌单或专辑（两种行混在同一个 get_all_list 应答里）。 */
+export function mapKGUserCollection(item, userId) {
+  return isKGAlbumCollection(item)
+    ? mapKGAlbum(item)
+    : mapKGPlaylist(item, userId);
+}
+
+function keepKGUserCollection(pl, userId) {
+  if (!pl) return false;
+  if (pl.type === 'album') return Boolean(pl.id);
+  return keepKGUserPlaylist(pl, userId);
+}
+
 function keepKGUserPlaylist(pl, userId) {
   if (!pl || !pl.id) return false;
   if (pl.isFavorite || pl.subscribed) return true;
@@ -3729,11 +3808,12 @@ async function fetchKGWebSignedLists(cookieHeader) {
           count: Array.isArray(lists) ? lists.length : 0,
         });
         (Array.isArray(lists) ? lists : []).forEach((item) => {
-          const pl = mapKGPlaylist(Object.assign({}, item, {
+          // 专辑行与歌单行的 id 可能是同一串数字，去重键要带上类型，否则专辑会把歌单顶掉。
+          const pl = mapKGUserCollection(Object.assign({}, item, {
             type: item.type != null ? item.type : listType,
           }), userId);
-          if (!keepKGUserPlaylist(pl, userId)) return;
-          const key = String(pl.listId || pl.globalCollectionId || pl.id);
+          if (!keepKGUserCollection(pl, userId)) return;
+          const key = `${pl.type}:${pl.listId || pl.globalCollectionId || pl.id}`;
           const prev = merged.get(key);
           if (!prev) merged.set(key, pl);
           else {
@@ -3824,7 +3904,8 @@ async function fetchKGPlaylistCoverFromTracks(listId, globalCollectionId, cookie
 }
 
 async function enrichKGFavoritePlaylist(playlists, cookieHeader, userId) {
-  let list = (Array.isArray(playlists) ? playlists : []).filter((pl) => keepKGUserPlaylist(pl, userId));
+  // 收藏专辑与歌单混在同一份列表里：这次只补「我喜欢」，专辑原样留着。
+  let list = (Array.isArray(playlists) ? playlists : []).filter((pl) => keepKGUserCollection(pl, userId));
   // Pick the best heart list — never prefer empty 「默认收藏」 over 「我喜欢」 with songs
   const favCandidates = list.filter((pl) => pl && (
     pl.isFavorite || isKGFavoriteName(pl.name) || String(pl.listId) === '2' || String(pl.id) === '2'
@@ -3949,8 +4030,8 @@ export async function handleKGUserPlaylists(cookieHeader) {
       const official = await fetchKGUserPlaylistOfficial(cookieHeader, 1, 50, { preferAppToken: true });
       attempts = attempts.concat(official.attempts || []);
       playlists = (official.lists || [])
-        .map((item) => mapKGPlaylist(item, userId))
-        .filter((pl) => keepKGUserPlaylist(pl, userId));
+        .map((item) => mapKGUserCollection(item, userId))
+        .filter((pl) => keepKGUserCollection(pl, userId));
       if (playlists.length) source = 'user/playlist';
     } catch (_) {}
   }

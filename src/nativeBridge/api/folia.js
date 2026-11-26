@@ -214,27 +214,47 @@ function qqPlaylistRow(item) {
   };
 }
 
-function kgCollectionRow(item) {
+/**
+ * 桥里的收藏行 → 音源看到的 KuGouMusicApi 行。
+ *
+ * 专辑行必须带 `album_id` / `musiclib_id` / `album_name`，并带 `source: 2`：
+ * sources/kugou/core/kugouProvider.ts 的 getKugouUserCollectionType 就是按这几个字段把收藏专辑
+ * 分到「专辑」而不是「歌单」的。以前这里只回歌单字段，专辑被当成歌单，书库「专辑」永远是空的。
+ */
+export function kgCollectionRow(item) {
   const data = item?.providerData || {};
-  return {
-    listid: data.listId || item?.id,
-    list_id: data.listId || item?.id,
-    global_collection_id: data.globalCollectionId || item?.id,
-    specialid: data.specialId,
+  const isAlbum = item?.type === 'album';
+  const cover = item?.coverUrl || item?.cover || '';
+  /** @type {Record<string, any>} */
+  const row = {
     name: item?.name || '',
     listname: item?.name || '',
     song_count: item?.trackCount,
     count: item?.trackCount,
-    img: item?.coverUrl || '',
-    cover: item?.coverUrl || '',
-    type: item?.type === 'album' ? 1 : 0,
-    source: item?.type === 'album' ? 2 : 1,
+    img: cover,
+    cover,
+    type: isAlbum ? 1 : 0,
+    source: isAlbum ? 2 : 1,
     is_pri: item?.isOwned ? 0 : 1,
     create_userid: data.creatorUserId,
     list_create_userid: data.creatorUserId,
     list_create_listid: data.creatorListId,
     list_create_gid: data.creatorGid,
   };
+  if (isAlbum) {
+    const albumId = item?.albumId || item?.id;
+    row.album_id = albumId;
+    row.musiclib_id = albumId;
+    row.album_name = item?.name || '';
+    if (Array.isArray(item?.artists) && item.artists.length) row.artists = item.artists;
+    if (item?.creator) row.author_name = item.creator;
+  } else {
+    row.listid = data.listId || item?.id;
+    row.list_id = data.listId || item?.id;
+    row.global_collection_id = data.globalCollectionId || item?.id;
+    row.specialid = data.specialId;
+  }
+  return row;
 }
 
 /**
