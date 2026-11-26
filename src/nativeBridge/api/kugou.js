@@ -1522,6 +1522,34 @@ function stripKGAudioExt(text) {
   return String(text || '').replace(/\.(mp3|flac|m4a|ape|wav|ogg|aac|wma|mp4|mkv)(\?.*)?$/i, '').trim();
 }
 
+/**
+ * 一首歌的专辑名。
+ *
+ * 各接口的字段名不一样：搜索是 `AlbumName`，歌单 / 云盘行（pubsongs、get_list_all_file）是
+ * `albumname`，KRM 是嵌套的 `album_info.name`。以前只认 `AlbumName` / `album_name` / `album`，
+ * 歌单行两个都不占，专辑名就丢了 —— 安卓上这些歌的聚焦卡只有「歌手 · 时长」
+ *（PC 用的是原始行，音源读得到 albumname，所以 PC 正常）。
+ */
+export function kugouSongAlbumName(item) {
+  item = item || {};
+  const albumInfo = [
+    item.album_info,
+    item.albumInfo,
+    item.albuminfo,
+  ].find((value) => value && typeof value === 'object') || {};
+  return stripKGHighlightHtml(
+    item.AlbumName
+    || item.album_name
+    || item.albumName
+    || item.albumname
+    || albumInfo.name
+    || albumInfo.album_name
+    || albumInfo.albumName
+    || (typeof item.album === 'string' ? item.album : '')
+    || '',
+  );
+}
+
 function mapKGSong(item, fromSearch) {
   item = item || {};
   const audio = item.audio_info || item.audioInfo || item.base || item.base_info || {};
@@ -1603,6 +1631,7 @@ function mapKGSong(item, fromSearch) {
   const singerId = String(
     item.SingerId || item.singerid || item.singer_id || item.SingerID || item.author_id || authorIds[0] || '',
   ).trim();
+  const albumName = kugouSongAlbumName(item);
   return {
     provider: 'kg',
     source: 'kg',
@@ -1619,7 +1648,8 @@ function mapKGSong(item, fromSearch) {
     artists: authorRefs,
     name,
     artist,
-    album: stripKGHighlightHtml(item.AlbumName || item.album_name || item.album || ''),
+    album: albumName,
+    album_name: albumName,
     cover: extractKGCover(item, 240),
     duration: normalizeKGDuration(
       item.Duration || item.duration || item.timelength || item.timelen || item.time_length
