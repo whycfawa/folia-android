@@ -51,6 +51,17 @@ describe('saveTextFile', () => {
         expect(await saveTextFile('x', 'demo.json', 'application/json')).toBe(false);
     });
 
+    it('comes back with a failure instead of leaving the export button disabled for good', async () => {
+        vi.useFakeTimers();
+        installAndroidSave();
+        // 原生调用既不 resolve 也不 reject（面板没起来 / 回调丢了）。
+        (window as any).Capacitor.Plugins.FoliaNative.saveTextFile = vi.fn(() => new Promise(() => undefined));
+        const pending = saveTextFile('x', 'demo.json', 'application/json');
+        const assertion = expect(pending).rejects.toThrow('System save dialog did not answer');
+        await vi.advanceTimersByTimeAsync(60_001);
+        await assertion;
+    });
+
     it('surfaces a native failure instead of pretending the file was saved', async () => {
         (window as unknown as { Capacitor?: unknown }).Capacitor = {
             Plugins: { FoliaNative: { saveTextFile: vi.fn(async () => { throw new Error('no activity'); }) } },

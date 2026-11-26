@@ -35,7 +35,17 @@ export const saveTextFile = async (content: string, fileName: string, mimeType: 
     // Intent.setType 不收 `;charset=…` 这类参数，交给原生前先去掉。
     const nativeMimeType = mimeType.split(';')[0].trim() || 'text/plain';
     if (typeof plugin?.saveTextFile === 'function') {
-        const answer = await plugin.saveTextFile({ filename: fileName, content, mimeType: nativeMimeType });
+        const task = Promise.resolve(plugin.saveTextFile({ filename: fileName, content, mimeType: nativeMimeType }));
+        const answer = await Promise.race([
+            task,
+            // 系统面板起来后用户可能挑很久，这里只兜底“调用根本没出去/回调丢了”的情况：
+            // 超过 60 秒还没消息就当失败，绝不让「导出」按钮永远灰着。用户稍后真点了保存也不会出乱子，
+            // 原生那边仍会写文件，只是这次界面不再提示成功。
+            new Promise<never>((_, reject) => setTimeout(
+                () => reject(new Error('System save dialog did not answer')),
+                60_000,
+            )),
+        ]);
         return !(answer && typeof answer === 'object' && (answer as { saved?: unknown }).saved === false);
     }
     if (typeof plugin?.shareTextFile === 'function') {

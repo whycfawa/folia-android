@@ -90,6 +90,8 @@ public class FoliaNativePlugin extends Plugin {
         .build();
     private LocalAudioServer localAudioServer;
     private boolean isAudioPickerOpen = false;
+    /** 系统保存面板同一次调用只开一个，避免重复点击把前一次 PluginCall 顶掉。 */
+    private boolean isSaveDialogOpen = false;
 
     @Override
     public void load() {
@@ -917,11 +919,21 @@ public class FoliaNativePlugin extends Plugin {
      */
     @PluginMethod
     public void saveTextFile(PluginCall call) {
+        if (isSaveDialogOpen) {
+            call.reject("Save dialog is already open");
+            return;
+        }
         Activity activity = getActivity();
         if (activity == null) {
             call.reject("Activity is not available");
             return;
         }
+        // 系统保存面板是单独一个 Activity，必须切到主线程启动；在插件的 JS 线程里发它，
+        // 面板可能根本不出现，调用也永远不回来（界面上的「导出」就一直灰着）。
+        activity.runOnUiThread(() -> openSaveTextFile(call, activity));
+    }
+
+    private void openSaveTextFile(PluginCall call, Activity activity) {
         try {
             String rawName = call.getString("filename", "folia-export.txt");
             String mimeType = call.getString("mimeType", "text/plain");
@@ -929,8 +941,10 @@ public class FoliaNativePlugin extends Plugin {
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType(mimeType == null || mimeType.isEmpty() ? "text/plain" : mimeType);
             intent.putExtra(Intent.EXTRA_TITLE, sanitizeExportFileName(rawName));
+            isSaveDialogOpen = true;
             startActivityForResult(call, intent, "handleSavedTextFile");
         } catch (Exception error) {
+            isSaveDialogOpen = false;
             call.reject("Could not open the save dialog: " + error.getMessage(), error);
         }
     }
@@ -938,6 +952,7 @@ public class FoliaNativePlugin extends Plugin {
     /** saveTextFile 的答案：写进用户选的 uri，回 `{ saved: true }`；取消回 `{ saved: false }`。 */
     @ActivityCallback
     private void handleSavedTextFile(PluginCall call, ActivityResult result) {
+        isSaveDialogOpen = false;
         if (call == null) return;
         JSObject answer = new JSObject();
         if (result == null || result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
