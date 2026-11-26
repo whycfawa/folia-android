@@ -113,6 +113,8 @@ export const FoliaPlaylistExportDialog: React.FC<{
     });
     // 歌单里有 M3U 装不下的歌时默认 JSON（不让人不知不觉丢歌）；全是本地歌时默认 M3U8（别的播放器也认，和以前一样）。
     const [format, setFormat] = useState<ExportFormat>(counts.m3u.skipped > 0 || counts.m3u.exported === 0 ? 'json' : 'm3u');
+    // 安卓保存会拉起系统分享面板，要等它真的起来；这期间按钮不再响应，免得连点导出两次。
+    const [busy, setBusy] = useState(false);
 
     const jsonNote = counts.json.skipped > 0
         ? t('foliaPlaylistFile.formatJsonNoteSkips', { count: counts.json.exported, skipped: counts.json.skipped })
@@ -123,11 +125,13 @@ export const FoliaPlaylistExportDialog: React.FC<{
             ? t('foliaPlaylistFile.formatM3uNoteSkips', { count: counts.m3u.exported, skipped: counts.m3u.skipped })
             : t('foliaPlaylistFile.formatM3uNoteAll', { count: counts.m3u.exported });
 
-    const run = () => {
+    const run = async () => {
+        if (busy) return;
+        setBusy(true);
         try {
             const exported = format === 'json'
-                ? downloadFoliaPlaylistJson(playlist, localSongs, name)
-                : downloadFoliaPlaylistM3u(playlist, localSongs, name);
+                ? await downloadFoliaPlaylistJson(playlist, localSongs, name)
+                : await downloadFoliaPlaylistM3u(playlist, localSongs, name);
             setStatusMessage({
                 type: 'success',
                 text: t('localMusic.playlistExportSuccess', { name }),
@@ -135,11 +139,13 @@ export const FoliaPlaylistExportDialog: React.FC<{
                     ? t(format === 'json' ? 'foliaPlaylistFile.exportSkippedNote' : 'localMusic.playlistExportSkipped', { count: exported.skippedCount })
                     : undefined,
             });
+            onClose();
         } catch (error) {
             console.warn('[FoliaPlaylist] Failed to export a playlist', error);
             setStatusMessage({ type: 'error', text: t('foliaPlaylistFile.exportFailed') });
+        } finally {
+            setBusy(false);
         }
-        onClose();
     };
 
     return (
@@ -154,7 +160,7 @@ export const FoliaPlaylistExportDialog: React.FC<{
                 <>
                     <SheetButton onClick={onClose} data-folia-file-action="cancel">{t('localMusic.cancel')}</SheetButton>
                     {/* 打开时焦点落在「导出」上：默认的格式不用改时按一下回车就行。 */}
-                    <SheetButton variant="primary" onClick={run} data-folia-file-action="confirm" data-autofocus>
+                    <SheetButton variant="primary" onClick={run} disabled={busy} data-folia-file-action="confirm" data-autofocus>
                         {t('foliaPlaylistFile.exportConfirm')}
                     </SheetButton>
                 </>
@@ -166,7 +172,7 @@ export const FoliaPlaylistExportDialog: React.FC<{
                     labelId="folia-file-export-format"
                     name="format"
                     value={format}
-                    busy={false}
+                    busy={busy}
                     onChange={setFormat}
                     options={[
                         { value: 'json', label: t('foliaPlaylistFile.formatJson'), note: jsonNote },

@@ -1,8 +1,8 @@
 import type { LocalSong } from '../../types';
 import type { FoliaPlaylist, FoliaPlaylistAddResult, FoliaPlaylistSummary } from '../../types/foliaPlaylist';
 import type { FoliaEntryAvailabilityDeps } from '../../library/core/foliaPlaylist/foliaPlaylist.contract';
-import { createSafeObjectUrl } from '../../utils/blobGuards';
 import { sanitizeDownloadFileName } from '../../utils/downloadFileName';
+import { saveTextFile } from '../../utils/saveTextFile';
 import { getNavidromeConfig, navidromeApi } from '../navidromeService';
 import { omni } from '../onlineMusic/omni';
 import {
@@ -31,18 +31,9 @@ import {
 // 规则在 foliaPlaylistFile.ts（JSON）与 foliaPlaylistM3u.ts（M3U）；这里接上曲库、音源的状态、Navidrome 的配置和下载。
 // 读文件只读不写：预览出来之前、用户取消、文件不对，歌单都不动。
 
-/** 把一段文字下载成文件（歌单文件、「时刻」的文件共用）。 */
-export const downloadText = (content: string, fileName: string, mimeType: string): void => {
-    const url = createSafeObjectUrl(new Blob([content], { type: mimeType }));
-    if (!url) throw new Error('Failed to create playlist download');
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-};
+/** 把一段文字存成文件（歌单文件、「时刻」的文件共用）。安卓走原生分享面板，其余运行时下载。 */
+export const downloadText = (content: string, fileName: string, mimeType: string): Promise<void> =>
+    saveTextFile(content, fileName, mimeType);
 
 /** 导出之前先算一遍两种格式各写得进几首（导出窗口里要写明）。 */
 export const describeFoliaPlaylistExports = (
@@ -55,16 +46,16 @@ export const describeFoliaPlaylistExports = (
 });
 
 /** 下载歌单的 JSON 文件；`name` 是给人看的歌单名（「我喜欢的音乐」用翻译过的名字）。 */
-export const downloadFoliaPlaylistJson = (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): FoliaPlaylistFileExport => {
+export const downloadFoliaPlaylistJson = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<FoliaPlaylistFileExport> => {
     const exported = serializeFoliaPlaylistFile(playlist, localSongs, { name });
-    downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}${FOLIA_PLAYLIST_FILE_EXTENSION}`, 'application/json;charset=utf-8');
+    await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}${FOLIA_PLAYLIST_FILE_EXTENSION}`, 'application/json;charset=utf-8');
     return exported;
 };
 
 /** 下载歌单的 .m3u8（只有本地歌）。 */
-export const downloadFoliaPlaylistM3u = (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): FoliaPlaylistM3uExport => {
+export const downloadFoliaPlaylistM3u = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<FoliaPlaylistM3uExport> => {
     const exported = serializeFoliaPlaylistToM3u8({ ...playlist, name }, [...localSongs]);
-    downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}.m3u8`, 'application/vnd.apple.mpegurl;charset=utf-8');
+    await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}.m3u8`, 'application/vnd.apple.mpegurl;charset=utf-8');
     return exported;
 };
 

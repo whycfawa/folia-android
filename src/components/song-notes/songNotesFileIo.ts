@@ -37,7 +37,7 @@ export const exportSongNotesFile = async (): Promise<SongNotesFileExport | 'too-
     const exported = serializeSongNotesFile(data, data.rows.some(row => row.key.startsWith('local:')) ? await getLocalSongs() : []);
     // 读不回来的文件不导出（读入有上限）。
     if (exported.exportedCount > SONG_NOTES_FILE_MAX_SONGS || exported.content.length > SONG_NOTES_FILE_MAX_BYTES) return 'too-large';
-    downloadText(exported.content, `folia-notes-${formatLocalDateTimeStamp()}${SONG_NOTES_FILE_EXTENSION}`, 'application/json;charset=utf-8');
+    await downloadText(exported.content, `folia-notes-${formatLocalDateTimeStamp()}${SONG_NOTES_FILE_EXTENSION}`, 'application/json;charset=utf-8');
     return exported;
 };
 

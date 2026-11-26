@@ -884,7 +884,7 @@ public class FoliaNativePlugin extends Plugin {
                 call.reject("Could not create diagnostics directory");
                 return;
             }
-            File target = new File(directory, sanitizeDiagnosticFileName(rawName));
+            File target = new File(directory, sanitizeExportFileName(rawName));
             try (FileOutputStream output = new FileOutputStream(target)) {
                 output.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
@@ -925,11 +925,19 @@ public class FoliaNativePlugin extends Plugin {
     }
 
     /** 只保留文件名，挡掉路径分隔符和 `..`，并保证以 .txt 结尾。 */
-    private static String sanitizeDiagnosticFileName(String rawName) {
+    /**
+     * 分享出去的文件名：去掉路径分隔符与 `..`，保留调用方给的扩展名。
+     *
+     * 以前这里不管传什么都补成 `.txt`：诊断报告本来就是 txt 没问题，但歌单导出的 .json / .m3u8
+     * 也会被改成 `.json.txt`，用户存下来就打不开了。没有扩展名的才补 .txt。
+     */
+    private static String sanitizeExportFileName(String rawName) {
         String name = rawName == null ? "" : rawName.trim();
         name = name.replace('/', '_').replace('\\', '_');
-        if (name.isEmpty() || name.contains("..")) name = "folia-diagnostics.txt";
-        if (!name.toLowerCase(Locale.ROOT).endsWith(".txt")) name = name + ".txt";
+        if (name.isEmpty() || name.contains("..")) name = "folia-export.txt";
+        int dot = name.lastIndexOf('.');
+        boolean hasExtension = dot > 0 && dot < name.length() - 1 && name.length() - dot <= 12;
+        if (!hasExtension) name = name + ".txt";
         return name;
     }
 
