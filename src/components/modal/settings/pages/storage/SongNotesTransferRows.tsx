@@ -57,6 +57,7 @@ export const SongNotesTransferRows: React.FC = () => {
             const exported = await exportSongNotesFile();
             if (!exported) setStatusMessage({ type: 'error', text: t('songNotes.exportFailed') });
             else if (exported === 'too-large') setStatusMessage({ type: 'error', text: t('songNotes.exportTooLarge') });
+            else if (exported === 'cancelled') { /* 系统保存对话框被取消：什么都不提示。 */ }
             else if (exported.exportedCount === 0 && exported.skippedCount === 0) setStatusMessage({ type: 'info', text: t('songNotes.exportEmpty') });
             else {
                 setStatusMessage({

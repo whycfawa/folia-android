@@ -31,8 +31,8 @@ import {
 // 规则在 foliaPlaylistFile.ts（JSON）与 foliaPlaylistM3u.ts（M3U）；这里接上曲库、音源的状态、Navidrome 的配置和下载。
 // 读文件只读不写：预览出来之前、用户取消、文件不对，歌单都不动。
 
-/** 把一段文字存成文件（歌单文件、「时刻」的文件共用）。安卓走原生分享面板，其余运行时下载。 */
-export const downloadText = (content: string, fileName: string, mimeType: string): Promise<void> =>
+/** 把一段文字存成文件（歌单文件、「时刻」的文件共用）。安卓走系统保存对话框，其余运行时下载。 */
+export const downloadText = (content: string, fileName: string, mimeType: string): Promise<boolean> =>
     saveTextFile(content, fileName, mimeType);
 
 /** 导出之前先算一遍两种格式各写得进几首（导出窗口里要写明）。 */
@@ -46,17 +46,17 @@ export const describeFoliaPlaylistExports = (
 });
 
 /** 下载歌单的 JSON 文件；`name` 是给人看的歌单名（「我喜欢的音乐」用翻译过的名字）。 */
-export const downloadFoliaPlaylistJson = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<FoliaPlaylistFileExport> => {
+export const downloadFoliaPlaylistJson = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<{ exported: FoliaPlaylistFileExport; saved: boolean }> => {
     const exported = serializeFoliaPlaylistFile(playlist, localSongs, { name });
-    await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}${FOLIA_PLAYLIST_FILE_EXTENSION}`, 'application/json;charset=utf-8');
-    return exported;
+    const saved = await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}${FOLIA_PLAYLIST_FILE_EXTENSION}`, 'application/json;charset=utf-8');
+    return { exported, saved };
 };
 
 /** 下载歌单的 .m3u8（只有本地歌）。 */
-export const downloadFoliaPlaylistM3u = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<FoliaPlaylistM3uExport> => {
+export const downloadFoliaPlaylistM3u = async (playlist: FoliaPlaylist, localSongs: readonly LocalSong[], name: string): Promise<{ exported: FoliaPlaylistM3uExport; saved: boolean }> => {
     const exported = serializeFoliaPlaylistToM3u8({ ...playlist, name }, [...localSongs]);
-    await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}.m3u8`, 'application/vnd.apple.mpegurl;charset=utf-8');
-    return exported;
+    const saved = await downloadText(exported.content, `${sanitizeDownloadFileName(name, 'playlist')}.m3u8`, 'audio/x-mpegurl;charset=utf-8');
+    return { exported, saved };
 };
 
 export type PlaylistFileReadError = FoliaPlaylistFileError | 'unknown-format' | 'unreadable';

@@ -129,9 +129,14 @@ export const FoliaPlaylistExportDialog: React.FC<{
         if (busy) return;
         setBusy(true);
         try {
-            const exported = format === 'json'
+            const { exported, saved } = format === 'json'
                 ? await downloadFoliaPlaylistJson(playlist, localSongs, name)
                 : await downloadFoliaPlaylistM3u(playlist, localSongs, name);
+            // 用户在系统保存对话框里点了取消：不给「已导出」的提示，直接收起。
+            if (!saved) {
+                onClose();
+                return;
+            }
             setStatusMessage({
                 type: 'success',
                 text: t('localMusic.playlistExportSuccess', { name }),

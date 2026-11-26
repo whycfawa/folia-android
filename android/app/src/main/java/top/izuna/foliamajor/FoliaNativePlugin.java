@@ -908,6 +908,63 @@ public class FoliaNativePlugin extends Plugin {
         }
     }
 
+    /**
+     * 保存一段文字成文件：拉起系统的「保存到…」对话框（ACTION_CREATE_DOCUMENT），
+     * 用户在对话框里自己选文件夹和文件名，和桌面的「另存为」一样。
+     *
+     * 歌单导出用这条；导诊断报告仍走上面的分享面板。用户取消时回 `{ saved: false }`，
+     * 调用方据此不显示「已导出」。
+     */
+    @PluginMethod
+    public void saveTextFile(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("Activity is not available");
+            return;
+        }
+        try {
+            String rawName = call.getString("filename", "folia-export.txt");
+            String mimeType = call.getString("mimeType", "text/plain");
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType(mimeType == null || mimeType.isEmpty() ? "text/plain" : mimeType);
+            intent.putExtra(Intent.EXTRA_TITLE, sanitizeExportFileName(rawName));
+            startActivityForResult(call, intent, "handleSavedTextFile");
+        } catch (Exception error) {
+            call.reject("Could not open the save dialog: " + error.getMessage(), error);
+        }
+    }
+
+    /** saveTextFile 的答案：写进用户选的 uri，回 `{ saved: true }`；取消回 `{ saved: false }`。 */
+    @ActivityCallback
+    private void handleSavedTextFile(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject answer = new JSObject();
+        if (result == null || result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+            answer.put("saved", false);
+            call.resolve(answer);
+            return;
+        }
+        Uri uri = result.getData().getData();
+        if (uri == null) {
+            answer.put("saved", false);
+            call.resolve(answer);
+            return;
+        }
+        String content = call.getString("content", "");
+        try (OutputStream output = getContext().getContentResolver().openOutputStream(uri)) {
+            if (output == null) {
+                call.reject("Could not open the chosen file");
+                return;
+            }
+            output.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            answer.put("saved", true);
+            call.resolve(answer);
+        } catch (Exception error) {
+            call.reject("Could not write the chosen file: " + error.getMessage(), error);
+        }
+    }
+
     /** 「删除诊断」：清掉之前导出到缓存目录的诊断 txt，返回实际删除的文件数。 */
     @PluginMethod
     public void deleteDiagnosticFiles(PluginCall call) {

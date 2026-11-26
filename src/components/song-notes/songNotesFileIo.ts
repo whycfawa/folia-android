@@ -30,14 +30,15 @@ import { importSongNotes, listSongNoteKeys, readAllSongNotesForExport, type Song
 //
 // 导入分两步：先读、认歌（不碰网络，给确认框里的数），确认之后才补快照、写库。
 
-/** 导出全部时刻并下载。读不出库回 null。 */
-export const exportSongNotesFile = async (): Promise<SongNotesFileExport | 'too-large' | null> => {
+/** 导出全部时刻并保存。读不出库回 null；用户在系统保存对话框里取消回 'cancelled'。 */
+export const exportSongNotesFile = async (): Promise<SongNotesFileExport | 'too-large' | 'cancelled' | null> => {
     const data = await readAllSongNotesForExport();
     if (!data) return null;
     const exported = serializeSongNotesFile(data, data.rows.some(row => row.key.startsWith('local:')) ? await getLocalSongs() : []);
     // 读不回来的文件不导出（读入有上限）。
     if (exported.exportedCount > SONG_NOTES_FILE_MAX_SONGS || exported.content.length > SONG_NOTES_FILE_MAX_BYTES) return 'too-large';
-    await downloadText(exported.content, `folia-notes-${formatLocalDateTimeStamp()}${SONG_NOTES_FILE_EXTENSION}`, 'application/json;charset=utf-8');
+    const saved = await downloadText(exported.content, `folia-notes-${formatLocalDateTimeStamp()}${SONG_NOTES_FILE_EXTENSION}`, 'application/json;charset=utf-8');
+    if (!saved) return 'cancelled';
     return exported;
 };
 
