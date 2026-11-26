@@ -5930,6 +5930,33 @@ export default {
         "description": "Setelah masuk, playlist pribadi buatan Anda kini dapat memuat lagu dengan paging sungguhan. Backend yang di-host sendiri harus memakai qq-music-api 3.1.2 atau lebih baru; backend lama beralih otomatis, dan playlist yang tidak dapat dibaca kini menjelaskan bahwa playlist itu tidak publik, alih-alih tampil kosong tanpa keterangan."
       }
     },
+    "v0_8_2": {
+      "intro": "Selamat datang di 0.8.2, Severance Update SP2—perbaikan cepat kedua untuk 0.8.0. Sejak 0.8.1, folder lokal yang diimpor versi lama tidak bisa dibaca setelah aplikasi dibuka ulang, sehingga lagunya tidak bisa diputar dan impor ulang tidak tersimpan; kini Folia menampilkan folder-folder itu saat dibuka, dan memilih ulang setiap folder aslinya akan memulihkannya, dengan playlist, lirik yang dicocokkan, dan catatan tetap tersimpan. Berikut ini tetap isi Severance Update: Setiap sumber musik kini adalah mod yang bisa dinyalakan dan dimatikan, dan ada pasar mod, playlist Folia yang mencampur lagu dari sumber mana pun, Momen untuk menulis catatan pada lagu, serta mixer stem.",
+      "sourceMods": {
+        "title": "Sumber musik kini berupa mod",
+        "description": "Kesepuluh sumber bawaan kini menjadi mod sumber: nyalakan atau matikan satu per satu, lihat penyimpanannya, dan hapus datanya di Pengaturan → Sumber. Saat pertama dibuka, Folia menanyakan platform yang kamu pakai. Sumber baru LX Music bisa mengimpor skrip sumber kustom."
+      },
+      "modMarket": {
+        "title": "Pasar mod",
+        "description": "Jelajahi, pasang, perbarui, dan copot mod di jendela Mod. Sistem mod aktif secara default; mod komunitas pihak ketiga perlu dinyalakan dulu sakelarnya di halaman Mod."
+      },
+      "foliaPlaylists": {
+        "title": "Playlist Folia",
+        "description": "Satu playlist bisa berisi lagu dari sumber yang berbeda. Simpan playlist atau album platform sebagai playlist Folia, perbarui dari aslinya nanti, dan ekspor atau impor. Playlist lokal lamamu sudah dipindahkan ke sini, dan tab beranda kini punya dua tingkat."
+      },
+      "moments": {
+        "title": "Momen",
+        "description": "Buku catatan punya halaman keempat, Momen: beri tag pada lagu, tulis komentar, dan tinggalkan tanda di linimasa yang muncul di bilah progres. Komentar bisa diekspor dan diimpor."
+      },
+      "stemMixer": {
+        "title": "Mixer stem",
+        "description": "Efek audio punya mixer stem baru: GPU memisahkan lagu secara langsung menjadi drum, bas, lainnya, dan vokal, masing-masing dengan levelnya sendiri, plus preset karaoke dan hanya vokal sekali ketuk."
+      },
+      "moreDetails": {
+        "title": "Peningkatan lainnya",
+        "description": "Bilah progres menandai awal reff. Jendela utama bisa diperbesar secara keseluruhan. Dengan ffmpeg lengkap terpasang, kamu bisa mengekspor video berlatar transparan. Hasil pencarian memuat lebih banyak saat digulir sampai bawah."
+      }
+    },
     "v0_8_1": {
       "intro": "Selamat datang di 0.8.1, Severance Update SP1—perbaikan cepat untuk 0.8.0. Penginstal kini memperbaiki instalasi di folder tertentu yang langsung keluar saat dibuka; saat perangkat lunak keamanan seperti Kaspersky memblokir aplikasi, dialog menjelaskan penyebab dan solusinya; FM Pribadi QQ Music berpindah ke halaman berikutnya saat berlanjut, dan lagu yang sudah ditarik ditandai serta dicarikan versi lain yang bisa diputar. Berikut ini tetap isi Severance Update: Setiap sumber musik kini adalah mod yang bisa dinyalakan dan dimatikan, dan ada pasar mod, playlist Folia yang mencampur lagu dari sumber mana pun, Momen untuk menulis catatan pada lagu, serta mixer stem.",
       "sourceMods": {
@@ -7310,6 +7337,25 @@ export default {
     "settingsHint": "Anda bisa mengubahnya nanti di Opsi → Sumber.",
     "navidromeNote": "Navidrome adalah server musik yang Anda jalankan sendiri. Tidak ada di daftar ini; hubungkan di Pengaturan.",
     "navidromeButton": "Hubungkan di Pengaturan"
+  },
+  "localFolderAccess": {
+    "title": "Pilih ulang folder lokal",
+    "description": "Perubahan keamanan dalam pembaruan ini membatalkan akses folder yang disimpan versi lama, jadi lagu di folder berikut untuk sementara tidak bisa diputar. Pilih ulang setiap folder, folder yang sama seperti sebelumnya, untuk memulihkannya; playlist, lirik yang dicocokkan, dan catatan tetap tersimpan.",
+    "songCount_one": "{{count}} lagu",
+    "songCount_other": "{{count}} lagu",
+    "pick": "Pilih ulang",
+    "result": {
+      "restored": "Dipulihkan",
+      "scanning": "Memproses…",
+      "mismatch": "Lagu-lagu ini tidak ada di folder itu. Pilih folder aslinya",
+      "failed": "Gagal dipulihkan. Coba lagi",
+      "retry": "Klik \"Pilih ulang\" sekali lagi"
+    },
+    "laterHint": "Halaman ini hanya muncul sekali. Nanti, klik \"Impor Ulang\" pada folder lokal untuk memilihnya lagi.",
+    "later": "Nanti saja",
+    "done": "Selesai",
+    "mismatch": "Lagu dari \"{{folder}}\" tidak ada di folder yang dipilih. Pilih folder aslinya.",
+    "clickAgain": "Klik sekali lagi untuk memilih folder \"{{folder}}\"."
   },
   "librarySuiteOnboarding": {
     "title": "Pustaka mau tampil seperti apa?",

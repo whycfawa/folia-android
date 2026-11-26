@@ -244,7 +244,7 @@ function kgCollectionRow(item) {
  * 以前这里只认 `typeof body === 'object'`，QQ 的写入就全都拿到空参数 —— 红心（user_song_like）、
  * 歌单增删（user_playlist_tracks）、歌单/专辑收藏（user_playlist_subscribe、user_album_subscribe）
  * 一律回 `UNSUPPORTED`，界面提示「不支持对这首歌这样操作」。字符串正文要按 JSON 解开。
- * 网易云、酷狗、汽水、波点的写入把参数放在 query 或 `params` 里，不经过这一处。
+ * 其他平台的写入把参数放在 query 或 `params` 里，不经过这一处。
  */
 function operationBody(input) {
   const body = input?.body;

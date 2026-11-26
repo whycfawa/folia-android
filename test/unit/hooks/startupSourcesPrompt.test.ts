@@ -32,6 +32,14 @@ const ipc = vi.hoisted(() => ({
 }));
 vi.mock('@/mods/ipc', () => ipc);
 
+// The start sequence also runs the imported-folder check (0.8.2), and its loader pulls in the whole local music
+// service. This test is only about the sources page: keep that import out of the way, otherwise the file's
+// timing depends on how loaded the machine is.
+vi.mock('@/components/local-folder-access/localFolderAccessCheck', async importOriginal => ({
+    ...(await importOriginal<typeof import('@/components/local-folder-access/localFolderAccessCheck')>()),
+    loadLocalFolderAccessCheck: async () => {},
+}));
+
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
@@ -64,6 +72,8 @@ afterEach(() => {
 });
 
 describe('the sources page in the start sequence', () => {
+    // Mounting the gate pulls in the start sequence's whole module graph; under a full parallel run that import is
+    // the slow part, not the assertions. 30 s keeps the file from timing out on a busy machine.
     it('opens the prompt with the sources page first when a fresh profile owes it', async () => {
         flags.skipsStartupExperience = false;
         await mountGate();
@@ -71,7 +81,7 @@ describe('the sources page in the start sequence', () => {
         expect(ipc.getSourceStates).toHaveBeenCalledTimes(1);
         expect(usePlaybackEntryViewStore.getState().isPlaybackEntryViewPromptOpen).toBe(true);
         expect(usePlaybackEntryViewStore.getState().promptPages[0]).toBe('sources');
-    });
+    }, 30_000);
 
     it('under ?skipStartup neither asks the main process nor opens anything', async () => {
         flags.skipsStartupExperience = true;
@@ -80,5 +90,5 @@ describe('the sources page in the start sequence', () => {
         expect(ipc.getSourceStates).not.toHaveBeenCalled();
         expect(usePlaybackEntryViewStore.getState().isPlaybackEntryViewPromptOpen).toBe(false);
         expect(ipc.invokeAnswerSourcesOnboarding).not.toHaveBeenCalled();
-    });
+    }, 30_000);
 });
