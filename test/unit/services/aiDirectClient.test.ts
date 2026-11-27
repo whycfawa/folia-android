@@ -106,4 +106,43 @@ describe('AI direct client in the Android shell', () => {
         expect(result.errorKind).toBe('invalid');
         expect(result.error).toContain('Incorrect API key');
     });
+
+    it('lists models directly in the Android shell (model discovery is not desktop-only)', async () => {
+        httpRequest.mockResolvedValue({
+            status: 200,
+            data: { data: [{ id: 'models/gpt-test', display_name: 'GPT Test' }, { id: 'bad\u0001' }] },
+        });
+        const { ai } = await loadAi();
+
+        expect(ai.canListAiModels()).toBe(true);
+        const result = await ai.fetchAiModels({
+            provider: 'openai', presetId: 'custom', apiKey: 'sk-typed',
+            apiUrl: 'https://api.example.test/v1', model: '',
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.models).toEqual([{ id: 'gpt-test', name: 'GPT Test' }]);
+        const [request] = httpRequest.mock.calls[0];
+        expect(request.url).toBe('https://api.example.test/v1/models');
+        expect(request.method).toBe('GET');
+        expect(request.headers.Authorization).toBe('Bearer sk-typed');
+    });
+
+    it('turns a rejected model listing into an auth failure', async () => {
+        httpRequest.mockResolvedValue({ status: 403, data: { error: 'Forbidden' } });
+        const { ai } = await loadAi();
+
+        const result = await ai.fetchAiModels({ provider: 'gemini', apiKey: 'bad' });
+
+        expect(result).toMatchObject({ ok: false, errorKind: 'auth', status: 403 });
+        expect(httpRequest.mock.calls[0][0].headers['x-goog-api-key']).toBe('bad');
+    });
+
+    it('refuses to list models without a key', async () => {
+        const { ai } = await loadAi();
+
+        expect(await ai.fetchAiModels({ provider: 'openai', apiKey: '', apiUrl: 'https://api.example.test/v1' }))
+            .toEqual({ ok: false, errorKind: 'config' });
+        expect(httpRequest).not.toHaveBeenCalled();
+    });
 });

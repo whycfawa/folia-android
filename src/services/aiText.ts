@@ -14,6 +14,7 @@ import { applyStoredAnimationIntensityToDualTheme } from "./themePreferences";
 import { sanitizeDualTheme } from "./themeSanitizer";
 import { getWebAiProvider, type WebAiProvider } from "./runtimeConfig";
 import { segmentLyricLines } from '../../shared/lyricSegmentationService.mjs';
+import { getAiAdapter, resolveAiConnection } from '../../shared/ai/providerRegistry.mjs';
 export {
   AI_PROVIDER_PRESETS,
   inferAiProviderFromUrl,
@@ -143,19 +144,21 @@ const postDirectAiJson = async (
   url: string,
   headers: Record<string, string>,
   body: unknown,
+  method = 'POST',
+  timeoutMs = AI_DIRECT_TIMEOUT_MS,
 ): Promise<DirectAiReply> => {
   const controller = typeof AbortController === 'undefined' ? null : new AbortController();
-  const timer = controller ? window.setTimeout(() => controller.abort(), AI_DIRECT_TIMEOUT_MS) : null;
+  const timer = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
     // 原生外壳里先走 CapacitorHttp：WebView 的 CORS 策略对第三方 AI 接口不一定放行。
     if (typeof CapacitorHttp?.request === 'function') {
       const response = await CapacitorHttp.request({
         url,
-        method: 'POST',
+        method,
         headers,
         data: body,
-        connectTimeout: AI_DIRECT_TIMEOUT_MS,
-        readTimeout: AI_DIRECT_TIMEOUT_MS,
+        connectTimeout: timeoutMs,
+        readTimeout: timeoutMs,
       });
       return {
         status: response.status,
@@ -164,16 +167,16 @@ const postDirectAiJson = async (
       };
     }
     const response = await fetch(url, {
-      method: 'POST',
+      method,
       headers,
-      body: JSON.stringify(body),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: controller?.signal,
     });
     return { status: response.status, ok: response.ok, text: await response.text() };
   } catch (error) {
     const name = error instanceof Error ? error.name : '';
     if (name === 'AbortError' || name === 'TimeoutError') {
-      throw new Error(`${DIRECT_AI_ERROR_PREFIX}: timed out after ${Math.round(AI_DIRECT_TIMEOUT_MS / 1000)}s`);
+      throw new Error(`${DIRECT_AI_ERROR_PREFIX}: timed out after ${Math.round(timeoutMs / 1000)}s`);
     }
     throw error;
   } finally {
@@ -472,14 +475,101 @@ export const requestLyricSegmentation = async (lines: string[], signal?: AbortSi
   return (payload as { lines?: unknown }).lines;
 };
 
-/** Whether model discovery can run here; saved credentials stay in the desktop main process. */
-export const canListAiModels = (): boolean => Boolean(window.electron?.listAiModels);
+/** Whether model discovery can run here: desktop's main process, or Android's direct client. */
+export const canListAiModels = (): boolean => Boolean(window.electron?.listAiModels) || isDirectAiTextRuntime();
+
+const DIRECT_MODEL_LIST_TIMEOUT_MS = 30_000;
+const DIRECT_MODEL_MAX_PAGES = 20;
+const DIRECT_MODEL_MAX_MODELS = 2000;
+const DIRECT_MODEL_MAX_BODY_BYTES = 2_000_000;
+
+/**
+ * 安卓壳没有主进程的 `/models` 代理：这里用与 electron/ai/modelDiscovery.cjs 相同的适配器数据
+ *（shared/ai 的 `models` 描述）和同样的限值，在 WebView 里直连服务商；密钥用设置页里这一份
+ *（未保存时用刚输入的），网络出口仍是 CapacitorHttp，避开 CORS。
+ *
+ * 只取模型清单，不跟随服务端给的地址，正文有大小上限，回传的模型 id 与名字都剥掉密钥，
+ * 失败时把适配器的 suggestedModels 一起带回去让设置页还能选。
+ */
+const fetchDirectAiModels = async (payload: AiConnectionTestPayload): Promise<AiModelListResult> => {
+  const typedKey = payload.apiKey.trim();
+  const settings = useAiClientSettingsStore.getState().settings;
+  const provider = payload.provider === 'openai' ? 'openai' : 'gemini';
+  const savedKey = aiClientApiKeyOf(settings, provider);
+  const apiKey = typedKey || savedKey;
+  if (!apiKey.trim()) return { ok: false, errorKind: 'config' };
+  const connection = resolveAiConnection({
+    AI_PROVIDER: provider,
+    AI_PROVIDER_PRESET: payload.presetId,
+    OPENAI_API_URL: payload.apiUrl ?? '',
+    OPENAI_API_MODEL: payload.model ?? '',
+    GEMINI_API_MODEL: payload.model ?? '',
+  });
+  const adapter = getAiAdapter(connection.adapterId);
+  const catalogue = adapter?.models;
+  const suggested = Array.isArray(adapter?.suggestedModels) && adapter.suggestedModels.length
+    ? { suggestedModels: [...adapter.suggestedModels] } : {};
+  const withSuggestions = (result: AiModelListResult): AiModelListResult => ({ ...result, ...suggested });
+  if (!catalogue) return withSuggestions({ ok: false, errorKind: 'empty' });
+
+  const url = new URL(
+    adapter.protocol === 'gemini' ? adapter.endpoints[0].baseUrl
+      : adapter.protocol === 'anthropic' ? (payload.apiUrl || 'https://api.anthropic.com/v1')
+        : directOpenAiChatCompletionsUrl(payload.apiUrl ?? ''),
+  );
+  url.pathname = catalogue.path ?? url.pathname.replace(/\/(?:chat\/completions|messages|models)\/?$/, '') + '/models';
+  for (const [name, value] of Object.entries(catalogue.query ?? {})) url.searchParams.set(name, value);
+  const headers: Record<string, string> = adapter.protocol === 'gemini' ? { 'x-goog-api-key': apiKey }
+    : adapter.protocol === 'anthropic' ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
+      : { Authorization: 'Bearer ' + apiKey };
+  const models = new Map<string, { id: string; name: string }>();
+  const cursors = new Set<string>();
+  const failure = (errorKind: AiModelListResult['errorKind'], status?: number): AiModelListResult => ({
+    ok: false, errorKind, ...(status ? { status } : {}),
+  });
+
+  try {
+    for (let page = 0; page < DIRECT_MODEL_MAX_PAGES; page += 1) {
+      const reply = await postDirectAiJson(url.toString(), headers, undefined, 'GET', DIRECT_MODEL_LIST_TIMEOUT_MS);
+      if (!reply.ok) return withSuggestions(failure(reply.status === 401 || reply.status === 403 ? 'auth' : 'http', reply.status));
+      if (reply.text.length > DIRECT_MODEL_MAX_BODY_BYTES) return withSuggestions(failure('invalid'));
+      const data = JSON.parse(reply.text);
+      if (!data || typeof data !== 'object') return withSuggestions(failure('invalid'));
+      const rows = catalogue.rows(data);
+      if (!Array.isArray(rows)) return withSuggestions(failure('invalid'));
+      for (const row of rows) {
+        if (!row || typeof row !== 'object') continue;
+        const rawId = catalogue.id(row);
+        const id = typeof rawId === 'string' ? rawId.replace(/^models\//, '').trim() : '';
+        if (!id || id.length > 256 || /[\u0000-\u001f]/.test(id)) continue;
+        if (!catalogue.keep(row, id) || id.includes(apiKey)) continue;
+        const rawName = catalogue.name(row);
+        const name = typeof rawName === 'string' ? rawName.split(apiKey).join('***').slice(0, 256) : id;
+        models.set(id, { id, name });
+        if (models.size > DIRECT_MODEL_MAX_MODELS) return withSuggestions(failure('invalid'));
+      }
+      const cursor = catalogue.next ? catalogue.next(data, rows, page) : null;
+      if (!cursor) {
+        return models.size ? { ok: true, models: [...models.values()] } : withSuggestions(failure('empty'));
+      }
+      if (typeof cursor.value !== 'string' || !cursor.value) return withSuggestions(failure('invalid'));
+      url.searchParams.set(cursor.param, cursor.value);
+      if (cursors.has(cursor.value) || page === DIRECT_MODEL_MAX_PAGES - 1) return withSuggestions(failure('invalid'));
+      cursors.add(cursor.value);
+    }
+  } catch (error) {
+    const kind = error instanceof Error && /timed out/.test(error.message) ? 'timeout'
+      : error instanceof SyntaxError || error instanceof RangeError ? 'invalid' : 'network';
+    return withSuggestions(failure(kind));
+  }
+  return withSuggestions(failure('invalid'));
+};
 
 /** Loads the current connection's models without exposing its saved key to the renderer. */
 export const fetchAiModels = (payload: AiConnectionTestPayload): Promise<AiModelListResult> => (
   window.electron?.listAiModels
     ? window.electron.listAiModels(payload)
-    : Promise.resolve({ ok: false, errorKind: 'config' })
+    : fetchDirectAiModels(payload)
 );
 
 /** Whether the connection test can run here. It is desktop only: there is no web route for it. */
