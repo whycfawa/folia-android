@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     clearAmllDbLyricsCache,
@@ -12,6 +13,11 @@ import { parseLyricsByFormat } from '@/utils/lyrics/parserCore';
 
 vi.mock('@/utils/lyrics/parserCore', () => ({
     parseLyricsByFormat: vi.fn()
+}));
+
+const httpRequest = vi.hoisted(() => vi.fn());
+vi.mock('@capacitor/core', () => ({
+    CapacitorHttp: { request: httpRequest },
 }));
 
 const TTML = '<tt xmlns="http://www.w3.org/ns/ttml"><body /></tt>';
@@ -62,11 +68,14 @@ describe('amllDbProvider', () => {
         vi.resetAllMocks();
         clearAmllDbLyricsCache();
         vi.stubGlobal('fetch', fetchMock);
+        Object.defineProperty(window, 'Capacitor', { configurable: true, value: undefined });
+        httpRequest.mockReset();
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
+        delete (window as unknown as { Capacitor?: unknown }).Capacitor;
     });
 
     it('requests the official API directly and parses data.lyrics', async () => {
@@ -86,6 +95,27 @@ describe('amllDbProvider', () => {
         expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('headers');
         expect(parseLyricsByFormatMock).toHaveBeenCalledWith('ttml', TTML);
         expect(result?.isWordByWord).toBe(true);
+    });
+
+    it('uses the native HTTP bridge in the Android shell to avoid CORS', async () => {
+        Object.defineProperty(window, 'Capacitor', {
+            configurable: true,
+            value: { getPlatform: () => 'android' },
+        });
+        httpRequest.mockResolvedValue({
+            status: 200,
+            data: JSON.stringify({ status: 200, data: songItem({ lyrics: TTML, format: 'ttml' }) }),
+        });
+        parseLyricsByFormatMock.mockReturnValue(parsedLyrics);
+
+        await expect(fetchAmllDbLyrics('ncm', 2048982668)).resolves.toEqual(parsedLyrics);
+
+        expect(httpRequest).toHaveBeenCalledWith(expect.objectContaining({
+            url: 'https://api.amll.dev/v1/lyrics/get?ncmMusicId=2048982668',
+            method: 'GET',
+            responseType: 'text',
+        }));
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it('uses qqMusicId for QQ lookups', async () => {

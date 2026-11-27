@@ -1,4 +1,5 @@
 import type { AmllDbPlatform } from '../../../types';
+import { isAndroidNativeRuntime } from '../../../utils/platform';
 
 // src/utils/lyrics/providers/amllApi.ts
 // AMLL TTML DB 官方 API 客户端：https://amll.dev/reference/http-api/overview
@@ -85,6 +86,21 @@ async function requestAmllApi(url: string): Promise<{ status: number; bodyText: 
             ...(userAgent ? { headers: { 'User-Agent': userAgent } } : {}),
         });
         return { status: response.status, bodyText: response.bodyText };
+    }
+
+    // 安卓壳里的 WebView 直接 fetch 第三方域名会被 CORS 拦掉，搜索结果和歌词预览于是都变成
+    // “无可用歌词”。这里走 Capacitor 的原生 HTTP（不受 CORS 约束），桌面浏览器仍保持直连。
+    if (isAndroidNativeRuntime()) {
+        const { CapacitorHttp } = await import('@capacitor/core');
+        const response = await CapacitorHttp.request({
+            url,
+            method: 'GET',
+            headers: { accept: 'application/json, text/plain, */*' },
+            connectTimeout: AMLL_API_TIMEOUT_MS,
+            readTimeout: AMLL_API_TIMEOUT_MS,
+            responseType: 'text',
+        });
+        return { status: Number(response.status ?? 0), bodyText: typeof response.data === 'string' ? response.data : '' };
     }
 
     const response = await fetch(url, {
