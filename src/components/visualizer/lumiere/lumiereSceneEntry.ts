@@ -29,6 +29,8 @@ export interface LumiereSceneQuality {
     graphicsResolution: number | null;
     bloomLevelDrop: number;
     passthrough: Filter | null;
+    /** 文字组 filter 分辨率；null = 跟随渲染器。 */
+    textResolution: number | null;
 }
 
 export interface LumiereSceneBuildContext {
@@ -62,7 +64,7 @@ export const applyLumiereSceneQuality = (
     applyLumiereGroupQuality(groups.text, {
         preset: LUMIERE_BLOOM.text,
         multiplier: quality.textBloom,
-        resolution: null,
+        resolution: quality.textResolution,
         levelDrop: 0,
         passthrough: null,
     });

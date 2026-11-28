@@ -76,6 +76,7 @@ export interface LumiereRuntimeOptions {
 const REBUILD_DEBOUNCE_MS = 220;
 const MIN_WIDTH = 320;
 const MIN_HEIGHT = 240;
+const TEXT_FILTER_SPAN = 1.25;
 
 export class LumierePixiRuntime {
     /** 换歌时换下来的场景进缓存的 retired 队列，之后一帧销毁一个，免得交接那一帧卡住。 */
@@ -95,8 +96,9 @@ export class LumierePixiRuntime {
     private width = 0;
     private height = 0;
     private renderResolution = 1;
+    private maxTexturePx: number | null = null;
     private readonly quality: LumiereSceneQuality = {
-        bloom: 1, textBloom: 1, graphicsResolution: null, bloomLevelDrop: 0, passthrough: null,
+        bloom: 1, textBloom: 1, graphicsResolution: null, bloomLevelDrop: 0, passthrough: null, textResolution: null,
     };
     /** 所有场景共用、就地修改的场景 tuning：每帧现读的字段改了立刻生效（见 LUMIERE_LIVE_SCENE_KEYS）。 */
     private readonly sceneTuning: LumiereSceneTuning;
@@ -158,7 +160,10 @@ export class LumierePixiRuntime {
             app.destroy({ removeView: true });
             throw new Error('Lumiere requires WebGL');
         }
+        const gl = (app.renderer as { gl?: WebGLRenderingContext | WebGL2RenderingContext }).gl;
+        const maxTexturePx = gl ? Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) : NaN;
         const runtime = new LumierePixiRuntime(pixi, options, app);
+        runtime.maxTexturePx = Number.isFinite(maxTexturePx) && maxTexturePx > 0 ? Math.floor(maxTexturePx) : null;
         runtime.renderResolution = resolution;
         runtime.sprites = createLightSprites(pixi);
         // 抗锯齿跟随画布（样式的抗锯齿设置；Pixi 的默认是 off）。
@@ -230,10 +235,19 @@ export class LumierePixiRuntime {
         const graphicsResolution = resolveLumiereGraphicsResolution(
             this.width, this.height, this.renderResolution, this.options.tuning.renderQuality,
         );
+        const textFilterWidth = this.width * TEXT_FILTER_SPAN;
+        const textFilterHeight = this.height * TEXT_FILTER_SPAN;
+        const textTextureLimit = this.maxTexturePx ?? Number.POSITIVE_INFINITY;
+        const textResolution = Math.min(
+            this.renderResolution,
+            textTextureLimit / textFilterWidth,
+            textTextureLimit / textFilterHeight,
+        );
         this.quality.bloom = this.sceneTuning.bloom;
         this.quality.textBloom = this.sceneTuning.textBloom;
         this.quality.graphicsResolution = graphicsResolution < this.renderResolution ? graphicsResolution : null;
         this.quality.bloomLevelDrop = resolveLumiereBloomLevelDrop(this.renderResolution, graphicsResolution);
+        this.quality.textResolution = textResolution < this.renderResolution ? textResolution : null;
         this.sceneCache.forEach(entry => applyLumiereSceneQuality(entry.unit.scene, this.quality));
         if (this.songSwap.staged) applyLumiereSceneQuality(this.songSwap.staged.unit.scene, this.quality);
         this.credits.applyQuality(this.quality);

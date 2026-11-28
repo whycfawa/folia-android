@@ -6,6 +6,8 @@ import type { Theme } from '@/types';
 import { DEFAULT_THEME } from '@/services/baseThemes';
 import type { MenuItem } from '../../components/modal/settings/kit';
 import { useElementWidth } from '../../hooks/useElementWidth';
+import { useConfirmDialog } from '../../components/shared/useConfirmDialog';
+import { isCapacitorAndroid } from '../../platform/runtime';
 import { useDesktopSettingsStore } from '../../stores/useDesktopSettingsStore';
 import { openOutsideLink, opensThroughDesktopApp } from '../../utils/system/outsideLink';
 import { FOLIUM_MARKET_ORIGIN } from '../folium/shared';
@@ -70,6 +72,7 @@ type ModsWorkbenchProps = {
 
 export const ModsWorkbench: React.FC<ModsWorkbenchProps> = ({ classes, isDaylight, theme, fill = false }) => {
     const { t, i18n } = useTranslation();
+    const { ask: askConfirm, dialog: confirmDialog } = useConfirmDialog(isDaylight);
     const bridgeAvailable = useModsStore((state) => state.bridgeAvailable);
     const mods = useModsStore((state) => state.mods);
     const ffmpeg = useModsStore((state) => state.ffmpeg);
@@ -176,7 +179,22 @@ export const ModsWorkbench: React.FC<ModsWorkbenchProps> = ({ classes, isDayligh
                 })();
             },
             uninstall: (modId) => {
-                void market().uninstall(modId).then((answer) => report(answer, 'uninstall-failed', t('mods.view.uninstalled', { id: modId })));
+                void (async () => {
+                    if (isCapacitorAndroid()) {
+                        const confirmed = await askConfirm({
+                            title: t('mods.view.uninstallConfirmTitle'),
+                            description: t('mods.view.uninstallConfirmDesc', { id: modId }),
+                            confirmText: t('mods.view.uninstall'),
+                            confirmVariant: 'danger',
+                        });
+                        if (!confirmed) return;
+                    }
+                    const answer = await market().uninstall(modId);
+                    const success = isCapacitorAndroid()
+                        ? t('mods.view.uninstalledPermanently', { id: modId })
+                        : t('mods.view.uninstalled', { id: modId });
+                    report(answer, 'uninstall-failed', success);
+                })();
             },
             toggle: (modId, on) => {
                 const mod = useModsStore.getState().mods.find((entry) => entry.id === modId);
@@ -200,7 +218,7 @@ export const ModsWorkbench: React.FC<ModsWorkbenchProps> = ({ classes, isDayligh
                 void useModsStore.getState().openModsDirectory().then((answer) => report(answer, 'open-directory-failed', t('mods.directoryOpened')));
             },
         };
-    }, [report, t, toggleMod]);
+    }, [askConfirm, report, t, toggleMod]);
 
     const updatable = items.filter((item) => item.hasUpdate).map((item) => item.id);
 
@@ -445,6 +463,7 @@ export const ModsWorkbench: React.FC<ModsWorkbenchProps> = ({ classes, isDayligh
                     )}
                 </div>
             )}
+            {confirmDialog}
         </div>
     );
 };

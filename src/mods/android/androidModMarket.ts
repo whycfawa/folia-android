@@ -1,6 +1,6 @@
 import { unzipSync, strFromU8 } from 'fflate';
 import shared from '../../../electron/modSystem/foliumShared.json';
-import type { ModMarketCatalog, ModMarketCatalogResult, ModRuntimeInfo } from '../types';
+import type { ModAwesomeEntry, ModMarketCatalog, ModMarketCatalogResult, ModMarketOwner, ModRuntimeInfo } from '../types';
 import { getStoredString, setStoredString } from '../../stores/storagePrimitives';
 
 // src/mods/android/androidModMarket.ts
@@ -22,6 +22,9 @@ const MOD_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const VERSION_PATTERN = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/;
+const CATEGORY_ID_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
+const AWESOME_KINDS = new Set(['source', 'plugin', 'app', 'tool', 'other']);
+const ISSUE_PATHS: Record<string, string> = { 'github.com': '/issues', 'codeberg.org': '/issues', 'gitlab.com': '/-/issues' };
 
 type RawCatalog = {
     format?: unknown;
@@ -50,8 +53,81 @@ const text = (value: unknown, limit: number): string | null => (
 );
 
 const stringList = (value: unknown, limit = 64): string[] => (Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0).slice(0, limit)
+    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0 && item.length <= 200).slice(0, limit)
     : []);
+
+const httpsLink = (value: unknown): string | null => {
+    if (typeof value !== 'string' || value.length > 512) return null;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+    } catch {
+        return null;
+    }
+};
+
+const issuesUrlOf = (value: unknown): string | null => {
+    const link = httpsLink(value);
+    if (!link) return null;
+    try {
+        const url = new URL(link);
+        const suffix = ISSUE_PATHS[url.hostname.toLowerCase()];
+        const parts = url.pathname.split('/').filter(Boolean);
+        if (!suffix || parts.length < 2) return null;
+        return `${url.origin}/${parts[0]}/${parts[1].replace(/\.git$/i, '')}${suffix}`;
+    } catch {
+        return null;
+    }
+};
+
+const ownerOf = (value: unknown): { login: string; url: string | null } | null => {
+    if (typeof value === 'string') {
+        const login = text(value, 200);
+        return login ? { login, url: null } : null;
+    }
+    if (value && typeof value === 'object') {
+        const owner = value as Record<string, unknown>;
+        const login = text(owner.login, 200);
+        return login ? { login, url: httpsLink(owner.url) } : null;
+    }
+    return null;
+};
+
+const normalizeCategory = (entry: unknown): { id: string; label: { 'zh-CN': string; en: string } } | null => {
+    if (!entry || typeof entry !== 'object') return null;
+    const item = entry as Record<string, unknown>;
+    if (typeof item.id !== 'string' || !CATEGORY_ID_PATTERN.test(item.id)) return null;
+    const label = item.label && typeof item.label === 'object' ? item.label as Record<string, unknown> : {};
+    return {
+        id: item.id,
+        label: {
+            'zh-CN': text(label['zh-CN'] ?? label.zh, 40) ?? item.id,
+            en: text(label.en, 40) ?? item.id,
+        },
+    };
+};
+
+const normalizeAwesome = (entry: unknown): ModAwesomeEntry | null => {
+    if (!entry || typeof entry !== 'object') return null;
+    const item = entry as Record<string, unknown>;
+    const id = typeof item.id === 'string' && MOD_ID_PATTERN.test(item.id) ? item.id : null;
+    const url = httpsLink(item.url);
+    if (!id || !url) return null;
+    return {
+        id,
+        name: text(item.name, 120) ?? id,
+        kind: (typeof item.kind === 'string' && AWESOME_KINDS.has(item.kind) ? item.kind : 'other') as ModAwesomeEntry['kind'],
+        category: text(item.category, 40),
+        description: text(item.description, 2000),
+        url,
+        homepage: httpsLink(item.homepage),
+        bugs: httpsLink(item.bugs) ?? issuesUrlOf(item.repository) ?? issuesUrlOf(url),
+        owners: (Array.isArray(item.owners) ? item.owners : []).map(ownerOf).filter((owner): owner is ModMarketOwner => owner !== null).slice(0, 16),
+        tags: stringList(item.tags, 24),
+        addedAt: text(item.addedAt, 40),
+        updatedAt: text(item.updatedAt, 40) ?? text(item.addedAt, 40),
+    };
+};
 
 // Same three checks as market.cjs's marketLink: it must be a file served by the market site.
 const marketLink = (value: unknown, prefix: string): string | null => {
@@ -65,11 +141,12 @@ const marketLink = (value: unknown, prefix: string): string | null => {
     }
 };
 
-const normalizeCatalog = (raw: unknown): ModMarketCatalog | null => {
+export const normalizeAndroidMarketCatalog = (raw: unknown): ModMarketCatalog | null => {
     if (!raw || typeof raw !== 'object') return null;
     const source = raw as RawCatalog;
     if (source.format !== CATALOG_FORMAT || !Array.isArray(source.mods)) return null;
     const seen = new Set<string>();
+    const awesomeSeen = new Set<string>();
     const mods = source.mods.flatMap(entry => {
         if (!entry || typeof entry !== 'object') return [];
         const item = entry as Record<string, unknown>;
@@ -81,6 +158,10 @@ const normalizeCatalog = (raw: unknown): ModMarketCatalog | null => {
         const digest = typeof item.digest === 'string' && DIGEST_PATTERN.test(item.digest) ? item.digest : null;
         if (!id || !version || !url || !sha256 || !digest || seen.has(id)) return [];
         seen.add(id);
+        const sourceLink = httpsLink(item.source);
+        const repository = httpsLink(item.repository) ?? sourceLink;
+        const previewItem = item.preview && typeof item.preview === 'object' ? item.preview as Record<string, unknown> : null;
+        const previewUrl = marketLink(previewItem?.url, '/previews/');
         return [{
             id,
             name: text(item.name, 120) ?? id,
@@ -98,10 +179,10 @@ const normalizeCatalog = (raw: unknown): ModMarketCatalog | null => {
             depends: stringList(item.depends),
             folia: text(item.folia, 80),
             hasMain: item.hasMain === true,
-            owners: [],
-            source: typeof item.source === 'string' ? item.source : null,
-            repository: typeof item.repository === 'string' ? item.repository : null,
-            bugs: typeof item.bugs === 'string' ? item.bugs : null,
+            owners: (Array.isArray(item.owners) ? item.owners : []).map(ownerOf).filter((owner): owner is ModMarketOwner => owner !== null).slice(0, 16),
+            source: sourceLink,
+            repository,
+            bugs: httpsLink(item.bugs) ?? issuesUrlOf(repository),
             readmeUrl: marketLink(item.readme, '/readmes/'),
             keyLabel: text(item.keyLabel, 200),
             keyId: text(item.keyId, 200),
@@ -110,21 +191,36 @@ const normalizeCatalog = (raw: unknown): ModMarketCatalog | null => {
             updatedAt: text(item.updatedAt, 40) ?? text(item.signedAt, 40),
             digest,
             download: { url, sha256, size: Number(download.size) > 0 ? Number(download.size) : null },
-            preview: null,
+            preview: previewUrl ? {
+                url: previewUrl,
+                width: Number(previewItem?.width) || null,
+                height: Number(previewItem?.height) || null,
+            } : null,
             page: `${MARKET_ORIGIN}/#mod-${id}`,
             hostRange: 'ok' as const,
             communityBlocked: false,
         }];
     });
+    const awesome = (Array.isArray(source.awesome) ? source.awesome : [])
+        .map(normalizeAwesome)
+        .filter((entry): entry is ModAwesomeEntry => {
+            if (!entry || awesomeSeen.has(entry.id)) return false;
+            awesomeSeen.add(entry.id);
+            return true;
+        });
     return {
         version: Number(source.version) || null,
         commit: text(source.commit, 64),
         origin: MARKET_ORIGIN,
-        categories: [],
+        categories: (Array.isArray(source.categories) ? source.categories : [])
+            .map(normalizeCategory)
+            .filter((entry): entry is { id: string; label: { 'zh-CN': string; en: string } } => entry !== null),
         mods,
-        awesome: [],
+        awesome,
     };
 };
+
+const normalizeCatalog = normalizeAndroidMarketCatalog;
 
 const httpGet = async (url: string, headers: Record<string, string>, timeoutMs: number): Promise<{
     status: number;

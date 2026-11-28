@@ -360,7 +360,8 @@ export const createLumiereScene = (pixi: PixiModule, options: LumiereSceneOption
     // 文字组的 bloom 区域必须固定在画面上：不给 filterArea 时 Pixi 每帧按内容包围盒取区域（取整到像素），
     // 字一动，降采样金字塔的网格原点与纹理尺寸就跟着跳，1/32 级的光晕相对字来回错位，看起来一直在抖。
     // 给一块远大于画面的区域，经运镜变换后被视口裁剪，结果每帧都正好是整个视口。区域已覆盖全画面，所以不再加 padding。
-    text.filterArea = new pixi.Rectangle(-width, -height, width * 3, height * 3);
+    // 区域只比画面略大：旧安卓 WebView 的 MAX_TEXTURE_SIZE 常见只有 4096，3 倍视口乘满分辨率会超上限。
+    text.filterArea = new pixi.Rectangle(-width * 0.125, -height * 0.125, width * 1.25, height * 1.25);
     graphics.filters = tuning.bloom > 0 ? [graphicsBloom] : [];
     text.filters = tuning.textBloom > 0 ? [textBloom] : [];
 

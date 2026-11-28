@@ -135,7 +135,34 @@ const parseMod = (native: NativeMod): ModRuntimeInfo | null => {
         folium: manifest.folium === 2 ? 2 : 1,
         tier: 'user',
         kind,
+        uninstallable: true,
     };
+};
+
+/** 原生列表的 id 是模组目录名；清单 id 才是界面和桌面主进程用的 id。 */
+const nativeManifestId = (native: NativeMod): string => {
+    try {
+        return text((JSON.parse(native.manifest) as Record<string, unknown>).id, native.id);
+    } catch {
+        return native.id;
+    }
+};
+
+/*
+ * 清单 id 才是界面上点卸载的 id，目录名不能拿来当同一性判断：两个包的清单 id 相同，
+ * 或某个目录名恰好等于另一个包的清单 id 时，按 `find` 取第一个会删错包。
+ * 所以只认清单 id，且必须唯一；0 个（不是用户模组）与多个（有歧义）都拒绝删除。
+ */
+const nativeDirectoryOf = async (id: string): Promise<{ directory: string | null; ambiguous: boolean }> => {
+    try {
+        const answer = await FoliaMods.list();
+        const mods = Array.isArray(answer?.mods) ? answer.mods : [];
+        const matches = mods.filter((mod) => nativeManifestId(mod) === id);
+        if (matches.length === 1) return { directory: matches[0].id, ambiguous: false };
+        return { directory: null, ambiguous: matches.length > 1 };
+    } catch {
+        return { directory: null, ambiguous: false };
+    }
 };
 
 export const listAndroidMods = async (): Promise<ModsListPayload> => {
@@ -208,13 +235,28 @@ export const importAndroidModZip = async (): Promise<{ imported?: string; cancel
     }
 };
 
-export const removeAndroidMod = async (id: string): Promise<boolean> => {
+const removeNativeModDirectory = async (dir: string): Promise<boolean> => {
     try {
-        const answer = await FoliaMods.remove({ id });
+        const answer = await FoliaMods.remove({ id: dir });
         return answer?.deleted === true;
     } catch {
         return false;
     }
+};
+
+export const removeAndroidMod = async (id: string): Promise<boolean> => {
+    const { directory: dir, ambiguous } = await nativeDirectoryOf(id);
+    return !ambiguous && dir !== null && removeNativeModDirectory(dir);
+};
+
+/** 与桌面主进程 folia-mods:uninstall 同形；只处理用户模组目录里的包。 */
+const uninstallAndroidMod = async (id: string): Promise<{ ok: boolean; error?: string; mods?: ModRuntimeInfo[] }> => {
+    const { directory: dir, ambiguous } = await nativeDirectoryOf(id);
+    if (ambiguous) return { ok: false, error: `uninstall-ambiguous:${id}`, mods: (await listAndroidMods()).mods };
+    if (dir === null) return { ok: false, error: 'uninstall-not-user-mod', mods: (await listAndroidMods()).mods };
+    const deleted = await removeNativeModDirectory(dir);
+    if (!deleted) return { ok: false, error: 'uninstall-failed', mods: (await listAndroidMods()).mods };
+    return { ok: true, mods: (await listAndroidMods()).mods };
 };
 
 /** 与 electron 的 window.electron.mods 同形的最小子集；clientLoader 只用到 list/set/reload。 */
@@ -407,6 +449,7 @@ export const androidModsBridge = {
     getMarketReadme: androidModMarketBridge.getMarketReadme,
     installFromMarket: androidModMarketBridge.installFromMarket,
     onMarketProgress: androidModMarketBridge.onMarketProgress,
+    uninstallMod: uninstallAndroidMod,
     // 桌面版音源开关表在主进程；安卓用同形的本地表 + 现成的音源注册/注销。
     getSourceStates: getAndroidSourceStates,
     setSourceState: setAndroidSourceState,
