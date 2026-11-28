@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useNowPlayingCardPositioningEntry } from './now-playing-toast/useNowPlayingCardPositioningEntry';
 import { useNowPlayingCardLayoutStore } from './now-playing-toast/nowPlayingCardLayoutStore';
 import { currentTime, lyricCurrentTime } from '../../../stores/motionSignals';
@@ -18,6 +18,7 @@ import {
 } from '../../../stores/usePlaybackStore';
 import { resolveLikeAvailability } from '../../../utils/playerLikeAvailability';
 import { canShuffleQueue } from '../../../utils/playbackNeighbors';
+import { getPlaybackSongKey } from '../../../utils/appPlaybackGuards';
 import { buildAppOverlaysModel, type AppOverlaysDeps, type AppOverlaysModel } from './buildAppOverlaysModel';
 import { usePlayerChromeSettingsStore } from '../../../stores/usePlayerChromeSettingsStore';
 
@@ -61,6 +62,17 @@ export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => 
     const displayCoverUrl = usePlaybackStore(selectDisplayCoverUrl);
     const displayDuration = usePlaybackStore(selectDisplayDuration);
     const displayPlayerState = usePlaybackStore(selectDisplayPlayerState);
+    const cardCoverUrlRef = useRef<string | null>(null);
+    const cardCoverTrackKeyRef = useRef<string | null>(null);
+    const previewCoverUrl = deps.stageIsNextUp ? deps.stageNextUp?.coverUrl ?? null : null;
+    const displayTrackKey = deps.stageIsNextUp && deps.stageNextUp
+        ? `next:${deps.stageNextUp.title}:${deps.stageNextUp.artist ?? ''}`
+        : displaySong ? getPlaybackSongKey(displaySong) : '';
+    const cardCoverSource = previewCoverUrl ?? displayCoverUrl;
+    if (cardCoverTrackKeyRef.current !== displayTrackKey || (!cardCoverUrlRef.current && cardCoverSource)) {
+        cardCoverTrackKeyRef.current = displayTrackKey;
+        cardCoverUrlRef.current = cardCoverSource;
+    }
     const playerControlSlotContext = useMemo(() => ({
         onShuffle: deps.shuffleQueue,
         canShuffle: canShuffleQueue(playQueue.length, isFmMode, deps.isNowPlayingStageActive),
@@ -106,11 +118,11 @@ export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => 
         isPlayerChromeHidden: effectivePlayerChromeHidden,
         playQueue,
         isFmMode,
-        coverUrl: displayCoverUrl,
         stageTrackPillMode: cardPositioning ? 'always' : stageTrackPillMode,
         stageTrackPillOnScreen: deps.stageTrackPillOnScreen || (cardPositioning && currentView === 'player'),
         stageTrackPillTimeoutSec,
         noTrackText: t('ui.noTrack'),
+        coverUrl: cardCoverUrlRef.current,
         prevTrackLabel: t('ui.previousTrack'),
         nextTrackLabel: t('ui.nextTrack'),
         stageTrackPillOpenPlayerLabel: t('ui.stageTrackPillOpenPlayer'),
@@ -135,6 +147,7 @@ export const useAppOverlaysModel = (deps: AppOverlaysDeps): AppOverlaysModel => 
         displaySong,
         displayPlayerState,
         displayDuration,
+        displayCoverUrl,
         audioSrc,
         displayLyrics,
         activePlaybackContext,
